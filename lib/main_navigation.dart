@@ -1,33 +1,8 @@
+// lib/main_navigation.dart
+
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart'; // 추가
-import 'firebase_options.dart'; // 추가
-import 'theme/theme.dart';
-import 'screens/sign_in_screen.dart';
+import 'theme/theme.dart'; // theme가 lib/theme/theme.dart에 있다고 가정
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized(); // 추가
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-
-  runApp(const ROMIApp());
-}
-
-class ROMIApp extends StatelessWidget {
-  const ROMIApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'ROMI',
-      debugShowCheckedModeBanner: false,
-      theme: romiTheme,
-      home: const SignInScreen(), // 로그인 화면 먼저 보여주기
-    );
-  }
-}
-
-// 로그인 완료 후 보여줄 화면
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
 
