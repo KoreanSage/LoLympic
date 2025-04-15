@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart'; // 추가
-import 'firebase_options.dart'; // 추가
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'theme/theme.dart';
-import 'screens/sign_in_screen.dart';
+
+// 시작화면: 캐릭터 생성 시작
+import 'screens/character_creation/name_input_screen.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized(); // 추가
+  WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
@@ -22,54 +24,7 @@ class ROMIApp extends StatelessWidget {
       title: 'ROMI',
       debugShowCheckedModeBanner: false,
       theme: romiTheme,
-      home: const SignInScreen(), // 로그인 화면 먼저 보여주기
-    );
-  }
-}
-
-// 로그인 완료 후 보여줄 화면
-class MainNavigation extends StatefulWidget {
-  const MainNavigation({super.key});
-
-  @override
-  State<MainNavigation> createState() => _MainNavigationState();
-}
-
-class _MainNavigationState extends State<MainNavigation> {
-  int _selectedIndex = 0;
-
-  final List<Widget> _screens = const [
-    Center(child: Text('Home')),
-    Center(child: Text('Chat')),
-    Center(child: Text('Gallery')),
-    Center(child: Text('Friends')),
-    Center(child: Text('Settings')),
-  ];
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: _screens[_selectedIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        selectedItemColor: AppColors.slateNavy,
-        unselectedItemColor: AppColors.slateNavy.withOpacity(0.4),
-        onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.chat_bubble), label: 'Chat'),
-          BottomNavigationBarItem(icon: Icon(Icons.photo_library), label: 'Gallery'),
-          BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Friends'),
-          BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Settings'),
-        ],
-      ),
+      home: const NameInputScreen(), // 처음 시작은 캐릭터 생성
     );
   }
 }

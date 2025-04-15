@@ -1,6 +1,6 @@
 name: romi_app
 description: "A new Flutter project."
-publish_to: 'none'
+publish_to: 'none' # Remove this line if you plan to publish to pub.dev
 
 version: 1.0.0+1
 
@@ -12,10 +12,16 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.8
 
-  # 🔥 Firebase 패키지들
+  # ✅ Firebase 관련 패키지
   firebase_core: ^2.25.4
   firebase_auth: ^4.17.3
   cloud_firestore: ^4.13.1
+
+  # ✅ 이미지 선택
+  image_picker: ^1.1.2
+
+  # ✅ AI 연동을 위한 HTTP 패키지 추가
+  http: ^0.13.0
 
 dev_dependencies:
   flutter_test:
@@ -27,6 +33,7 @@ flutter:
 
   assets:
     - assets/fonts/
+    - assets/images/
 
   fonts:
     - family: SpoqaHanSansNeo
