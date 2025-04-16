@@ -47,8 +47,16 @@ class _PersonalityInputScreenState extends State<PersonalityInputScreen> {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 24),
+              // 🔙 뒤로가기 버튼
+              IconButton(
+                icon: const Icon(Icons.arrow_back, color: AppColors.slateNavy),
+                onPressed: () {
+                  Navigator.pop(context); // ← name_input_screen 으로 돌아감
+                },
+              ),
+              const SizedBox(height: 8),
               Center(
                 child: Text(
                   "Describe Your ROMI's Personality",
@@ -56,9 +64,11 @@ class _PersonalityInputScreenState extends State<PersonalityInputScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              Text(
-                "What kind of friend will your AI be?",
-                style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+              Center(
+                child: Text(
+                  "What kind of friend will your AI be?",
+                  style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+                ),
               ),
               const SizedBox(height: 28),
 
@@ -97,10 +107,9 @@ class _PersonalityInputScreenState extends State<PersonalityInputScreen> {
               const SizedBox(height: 32),
 
               /// 말투 예시 입력
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text("Speech Style Examples (max 5)",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.slateNavy)),
+              Text(
+                "Speech Style Examples (max 5)",
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.slateNavy),
               ),
               const SizedBox(height: 12),
               Row(
@@ -126,8 +135,9 @@ class _PersonalityInputScreenState extends State<PersonalityInputScreen> {
                 ],
               ),
 
-              /// 예시 리스트 출력
               const SizedBox(height: 12),
+
+              /// 예시 리스트 출력
               Column(
                 children: _speechExamples.asMap().entries.map((entry) {
                   int index = entry.key;
@@ -146,28 +156,30 @@ class _PersonalityInputScreenState extends State<PersonalityInputScreen> {
               const Spacer(),
 
               /// 다음 페이지 이동 버튼
-              ElevatedButton(
-                onPressed: () {
-                  final personality = _personalityController.text.trim();
-                  if (personality.isNotEmpty) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => SpaceStyleInputScreen(
-                          name: widget.characterName,
-                          personality: personality,
-                          speechStyles: _speechExamples,
+              Center(
+                child: ElevatedButton(
+                  onPressed: () {
+                    final personality = _personalityController.text.trim();
+                    if (personality.isNotEmpty) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => SpaceStyleInputScreen(
+                            name: widget.characterName,
+                            personality: personality,
+                            speechStyles: _speechExamples,
+                          ),
                         ),
-                      ),
-                    );
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.slateNavy,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 14),
+                      );
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.slateNavy,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 14),
+                  ),
+                  child: const Text('Next'),
                 ),
-                child: const Text('Next'),
               ),
               const SizedBox(height: 24),
             ],

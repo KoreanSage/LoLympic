@@ -1,8 +1,7 @@
-import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:typed_data';
-
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:romi_app/theme/colors.dart';
 import 'illustration_select_screen.dart';
 
@@ -55,12 +54,12 @@ class _PreviewScreenState extends State<PreviewScreen> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        print('✅ Response: $data');
+        final base64 = data['imageBase64'];
+        final message = data['aiMessage'];
 
         setState(() {
-          aiMessage = data['aiMessage'];
-          final base64 = data['imageBase64'];
-          imageBytes = base64 != null ? base64Decode(base64) : null;
+          aiMessage = message;
+          imageBytes = base64Decode(base64);
           isLoading = false;
         });
       } else {
@@ -75,32 +74,8 @@ class _PreviewScreenState extends State<PreviewScreen> {
     }
   }
 
-  Widget buildCharacterInfo(String label, String value, IconData icon) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 20, color: AppColors.slateNavy),
-          const SizedBox(width: 8),
-          Expanded(
-            child: RichText(
-              text: TextSpan(
-                text: '$label: ',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black),
-                children: [
-                  TextSpan(
-                    text: value,
-                    style: const TextStyle(fontWeight: FontWeight.normal),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  TextStyle get _infoStyle => const TextStyle(fontSize: 18, fontWeight: FontWeight.bold);
+  TextStyle get _detailStyle => const TextStyle(fontSize: 16, color: Colors.black87);
 
   @override
   Widget build(BuildContext context) {
@@ -114,70 +89,44 @@ class _PreviewScreenState extends State<PreviewScreen> {
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : Padding(
-              padding: const EdgeInsets.all(20.0),
+              padding: const EdgeInsets.all(24.0),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 캐릭터 정보
-                  Card(
-                    elevation: 1,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        children: [
-                          buildCharacterInfo('Name', widget.name, Icons.person),
-                          buildCharacterInfo('Personality', widget.personality, Icons.spa),
-                          buildCharacterInfo('Speech Style', widget.speechStyles.join(', '), Icons.chat),
-                          buildCharacterInfo('Space Style', widget.spaceStyle, Icons.home),
-                          buildCharacterInfo('Appearance', widget.appearance, Icons.pets),
-                        ],
-                      ),
-                    ),
-                  ),
+                  Text('👤 Name: ${widget.name}', style: _infoStyle),
+                  const SizedBox(height: 8),
+                  Text('🌱 Personality:', style: _infoStyle),
+                  Text(widget.personality, style: _detailStyle),
+                  const SizedBox(height: 8),
+                  Text('💬 Speech Style:', style: _infoStyle),
+                  ...widget.speechStyles.map((s) => Text('- $s', style: _detailStyle)),
+                  const SizedBox(height: 8),
+                  Text('🏡 Space Style:', style: _infoStyle),
+                  Text(widget.spaceStyle, style: _detailStyle),
+                  const SizedBox(height: 8),
+                  Text('🧬 Appearance:', style: _infoStyle),
+                  Text(widget.appearance, style: _detailStyle),
                   const SizedBox(height: 20),
 
-                  // 이미지
                   if (imageBytes != null)
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.memory(
-                        imageBytes!,
-                        width: 280,
-                        height: 280,
-                        fit: BoxFit.cover,
+                    Center(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.memory(
+                          imageBytes!,
+                          width: 300,
+                          height: 300,
+                          fit: BoxFit.cover,
+                        ),
                       ),
-                    )
-                  else
-                    const Text('⚠️ No image available.'),
+                    ),
+
                   const SizedBox(height: 20),
-
-                  // 메시지
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppColors.iceBlue.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          '✨ AI Message',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          aiMessage ?? '',
-                          style: const TextStyle(fontSize: 14, color: Colors.black87),
-                        ),
-                      ],
-                    ),
-                  ),
-
+                  Text('✨ AI Message:', style: _infoStyle),
+                  const SizedBox(height: 4),
+                  Text(aiMessage ?? '', style: _detailStyle),
                   const Spacer(),
 
-                  // 버튼 영역
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -196,6 +145,8 @@ class _PreviewScreenState extends State<PreviewScreen> {
                                 speechStyles: widget.speechStyles,
                                 spaceStyle: widget.spaceStyle,
                                 appearance: widget.appearance,
+                                aiMessage: aiMessage ?? '',
+                                imageBytes: imageBytes,
                               ),
                             ),
                           );

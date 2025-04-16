@@ -46,7 +46,15 @@ class _SpaceStyleInputScreenState extends State<SpaceStyleInputScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 12),
+              // 🔙 뒤로가기 버튼
+              IconButton(
+                icon: const Icon(Icons.arrow_back, color: AppColors.slateNavy),
+                onPressed: () {
+                  Navigator.pop(context); // <- personality_input_screen으로 돌아감
+                },
+              ),
+              const SizedBox(height: 8),
+
               Text(
                 'Character Space & Appearance',
                 style: TextStyle(

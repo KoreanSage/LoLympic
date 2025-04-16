@@ -1,10 +1,16 @@
-// lib/main_navigation.dart
-
 import 'package:flutter/material.dart';
-import 'theme/theme.dart'; // theme가 lib/theme/theme.dart에 있다고 가정
+import 'package:romi_app/screens/home_tab_screen.dart';
+import 'package:romi_app/theme/colors.dart';
 
 class MainNavigation extends StatefulWidget {
-  const MainNavigation({super.key});
+  final String characterName;
+  final String imageUrl;
+
+  const MainNavigation({
+    super.key,
+    required this.characterName,
+    required this.imageUrl,
+  });
 
   @override
   State<MainNavigation> createState() => _MainNavigationState();
@@ -13,13 +19,22 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation> {
   int _selectedIndex = 0;
 
-  final List<Widget> _screens = const [
-    Center(child: Text('Home')),
-    Center(child: Text('Chat')),
-    Center(child: Text('Gallery')),
-    Center(child: Text('Friends')),
-    Center(child: Text('Settings')),
-  ];
+  late final List<Widget> _screens;
+
+  @override
+  void initState() {
+    super.initState();
+    _screens = [
+      HomeTabScreen(
+        characterName: widget.characterName,
+        imageUrl: widget.imageUrl,
+      ),
+      const Center(child: Text('Chat')),
+      const Center(child: Text('Gallery')),
+      const Center(child: Text('Friends')),
+      const Center(child: Text('Settings')),
+    ];
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -33,8 +48,9 @@ class _MainNavigationState extends State<MainNavigation> {
       body: _screens[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
-        selectedItemColor: AppColors.slateNavy,
-        unselectedItemColor: AppColors.slateNavy.withOpacity(0.4),
+        backgroundColor: AppColors.slateNavy,
+        selectedItemColor: Colors.white,
+        unselectedItemColor: Colors.white.withOpacity(0.5),
         onTap: _onItemTapped,
         type: BottomNavigationBarType.fixed,
         items: const [
