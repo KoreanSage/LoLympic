@@ -82,6 +82,16 @@ class _IllustrationSelectScreenState extends State<IllustrationSelectScreen> {
                 'Upload your character’s profile image',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
+              const SizedBox(height: 8),
+              const Text(
+                'A profile image has been automatically generated.',
+                style: TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Want to use your own? Tap below to upload a different image.',
+                style: TextStyle(fontSize: 13, color: Colors.grey),
+              ),
               const SizedBox(height: 20),
               GestureDetector(
                 onTap: _pickImage,
@@ -115,7 +125,7 @@ class _IllustrationSelectScreenState extends State<IllustrationSelectScreen> {
                           MaterialPageRoute(
                             builder: (_) => MainNavigation(
                               characterName: widget.name,
-                              imageUrl: imageUrl, // ✅ ✅ imageBytes → imageUrl 로 변경
+                              imageUrl: imageUrl,
                             ),
                           ),
                         );

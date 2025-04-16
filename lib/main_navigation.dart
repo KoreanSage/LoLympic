@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:romi_app/screens/home_tab_screen.dart';
+import 'package:romi_app/screens/chat_screen.dart';
+import 'package:romi_app/screens/gallery_screen.dart';
 import 'package:romi_app/theme/colors.dart';
 
 class MainNavigation extends StatefulWidget {
@@ -29,8 +31,13 @@ class _MainNavigationState extends State<MainNavigation> {
         characterName: widget.characterName,
         imageUrl: widget.imageUrl,
       ),
-      const Center(child: Text('Chat')),
-      const Center(child: Text('Gallery')),
+      ChatScreen(
+        characterName: widget.characterName,
+        characterImageUrl: widget.imageUrl,
+      ),
+      GalleryScreen(
+        characterName: widget.characterName,
+      ),
       const Center(child: Text('Friends')),
       const Center(child: Text('Settings')),
     ];
