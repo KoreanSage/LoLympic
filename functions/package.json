@@ -1,0 +1,14 @@
+{
+  "name": "functions",
+  "engines": {
+    "node": "18"
+  },
+  "scripts": {
+    "lint": "echo \"Skipping lint...\""
+  },
+  "dependencies": {
+    "firebase-functions": "^4.0.0",
+    "firebase-admin": "^11.0.0",
+    "openai": "^4.0.0"
+  }
+}

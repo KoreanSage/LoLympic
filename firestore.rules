@@ -1,0 +1,44 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 🔹 댓글 (guestbook)
+    match /guestbook/{entryId} {
+      allow read: if true;
+
+      // 생성
+      allow create: if request.auth != null
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.message is string
+        && request.resource.data.message.size() > 0;
+
+      // 수정 (좋아요 포함)
+      allow update: if request.auth != null;
+
+      // 삭제 (본인만)
+      allow delete: if request.auth != null
+        && request.auth.uid == resource.data.uid;
+
+      // 🔹 대댓글 (replies)
+      match /replies/{replyId} {
+        allow read: if true;
+
+        // 생성
+        allow create: if request.auth != null
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.message is string
+          && request.resource.data.message.size() > 0;
+
+        // 대댓글은 업데이트 필요 없음 (좋아요 없음)
+        allow delete: if request.auth != null
+          && request.auth.uid == resource.data.uid;
+      }
+    }
+
+    // 모든 그 외 문서 차단
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

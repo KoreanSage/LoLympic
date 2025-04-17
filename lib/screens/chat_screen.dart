@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'package:romi_app/theme/colors.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../services/user_memory_service.dart';
 
 class ChatScreen extends StatefulWidget {
   final String characterName;
@@ -17,25 +21,59 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _controller = TextEditingController();
+  final List<Map<String, dynamic>> _messages = [];
 
-  final List<Map<String, dynamic>> _messages = [
-    {
-      'text': "Hi, how are you today?",
-      'isUser': false,
-    },
-    {
-      'text': "I feel a bit tired, but excited to talk to you!",
-      'isUser': true,
-    },
-  ];
-
-  void _sendMessage() {
+  Future<void> _sendMessage() async {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
+
     setState(() {
       _messages.add({'text': text, 'isUser': true});
       _controller.clear();
     });
+
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) {
+      print("❌ 사용자 인증 실패: userId 없음");
+      return;
+    }
+
+    try {
+      final systemPrompt = await buildSystemPrompt(userId);
+
+      final response = await http.post(
+        Uri.parse('http://localhost:3000/chat'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'userId': userId,
+          'messages': [
+            {'role': 'system', 'content': systemPrompt},
+            ..._messages.map((msg) => {
+              'role': msg['isUser'] ? 'user' : 'assistant',
+              'content': msg['text'],
+            }),
+            {'role': 'user', 'content': text},
+          ],
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final reply = data['reply'];
+        final memory = data['savedMemory'];
+
+        print("✅ AI 응답: $reply");
+        if (memory != null) print("🧠 저장된 기억: $memory");
+
+        setState(() {
+          _messages.add({'text': reply, 'isUser': false});
+        });
+      } else {
+        print('❌ Error from server: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('❌ Chat error: $e');
+    }
   }
 
   @override
