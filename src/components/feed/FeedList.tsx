@@ -12,6 +12,7 @@ interface FeedPost {
     username: string;
     displayName?: string | null;
     avatarUrl?: string | null;
+    isChampion?: boolean;
   };
   country?: {
     flagEmoji: string;
@@ -72,6 +73,7 @@ function mapApiPost(post: any): FeedPost {
       username: post.author?.username || "unknown",
       displayName: post.author?.displayName,
       avatarUrl: post.author?.avatarUrl,
+      isChampion: post.author?.isChampion || false,
     },
     country: post.country
       ? { flagEmoji: post.country.flagEmoji, nameEn: post.country.nameEn }

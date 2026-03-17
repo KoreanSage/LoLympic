@@ -19,6 +19,7 @@ interface FeedCardProps {
     username: string;
     displayName?: string | null;
     avatarUrl?: string | null;
+    isChampion?: boolean;
   };
   country?: {
     flagEmoji: string;
@@ -211,6 +212,7 @@ export default function FeedCard({
           alt={author.displayName || author.username}
           size="md"
           countryFlag={country?.flagEmoji}
+          isChampion={author.isChampion}
         />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">

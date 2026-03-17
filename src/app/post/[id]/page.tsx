@@ -107,6 +107,7 @@ export default function PostPage() {
           username: post.author?.username || "unknown",
           displayName: post.author?.displayName,
           avatarUrl: post.author?.avatarUrl,
+          isChampion: post.author?.isChampion || false,
         }}
         country={
           post.country

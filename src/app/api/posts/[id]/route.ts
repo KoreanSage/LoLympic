@@ -26,6 +26,7 @@ export async function GET(
             profileTitle: true,
             profileBorder: true,
             countryId: true,
+            isChampion: true,
           },
         },
         country: {

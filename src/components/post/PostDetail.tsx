@@ -23,6 +23,7 @@ interface PostDetailProps {
     username: string;
     displayName?: string | null;
     avatarUrl?: string | null;
+    isChampion?: boolean;
   };
   country?: {
     flagEmoji: string;
@@ -244,6 +245,7 @@ export default function PostDetail({
           alt={author.displayName || author.username}
           size="lg"
           countryFlag={country?.flagEmoji}
+          isChampion={author.isChampion}
         />
         <div className="flex-1">
           <div className="flex items-center gap-2">

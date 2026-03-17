@@ -93,6 +93,18 @@ export default function WelcomePage() {
           </p>
         </div>
 
+        {/* Season Info Banner */}
+        <div className="bg-[#c9a84c]/10 border border-[#c9a84c]/30 rounded-xl p-4 mb-4 text-center">
+          <p className="text-sm font-medium text-[#c9a84c] mb-1">
+            🏆 Global Meme Olympics
+          </p>
+          <p className="text-xs text-foreground-muted">
+            Upload memes, get them translated to 5 languages by AI, and compete
+            for your country! The most liked meme each month wins, and at
+            year&apos;s end, the champion gets eternal glory.
+          </p>
+        </div>
+
         <form
           onSubmit={handleSubmit}
           className="bg-background-surface border border-border rounded-2xl p-6 space-y-5"

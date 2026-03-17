@@ -4,6 +4,7 @@ import { useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import FeedFilters from "@/components/feed/FeedFilters";
 import FeedList from "@/components/feed/FeedList";
+import MonthlyWinnerBanner from "@/components/competition/MonthlyWinnerBanner";
 
 const TRANSLATE_LANGUAGES = [
   { code: "", label: "Original" },
@@ -20,6 +21,7 @@ export default function HomePage() {
   return (
     <MainLayout>
       <div className="space-y-0">
+        <MonthlyWinnerBanner />
         <FeedFilters />
 
         {/* Translation language selector */}

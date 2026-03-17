@@ -71,6 +71,7 @@ export async function GET(request: NextRequest) {
               avatarUrl: true,
               profileTitle: true,
               profileBorder: true,
+              isChampion: true,
             },
           },
           country: {
