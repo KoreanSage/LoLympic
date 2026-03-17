@@ -160,6 +160,14 @@ export default function UploadStudio() {
       // Done! (even if some translations failed, post is created)
       setProgress((p) => p && { ...p, phase: "done" });
 
+      // Trigger image generation in background (non-blocking, best-effort)
+      // Clean image + translated images — don't await, just fire off
+      fetch("/api/translate/generate-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ postId, type: "clean" }),
+      }).catch(() => {});
+
       // Redirect after a moment
       setTimeout(() => {
         if (postId) router.push(`/post/${postId}`);

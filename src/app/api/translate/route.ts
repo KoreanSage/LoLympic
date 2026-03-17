@@ -620,28 +620,8 @@ export async function POST(request: NextRequest) {
           return translationPayload;
         });
 
-        // Generate translated image in BACKGROUND (fire-and-forget)
-        // This saves ~15-30 seconds per translation, preventing timeouts
-        if (payload.segments.length > 0) {
-          fireAndForget(
-            generateTranslatedImage(
-              imageBase64,
-              mimeType,
-              payload.segments.map((s) => ({
-                sourceText: s.sourceText,
-                translatedText: s.translatedText,
-              })),
-              targetLang
-            ).then(async (translatedImageUrl) => {
-              if (translatedImageUrl) {
-                await prisma.translationPayload.update({
-                  where: { id: payload.id },
-                  data: { translatedImageUrl },
-                });
-              }
-            })
-          );
-        }
+        // NOTE: Translated image generation is skipped here to avoid timeout.
+        // It can be triggered separately via /api/translate/generate-image.
 
         results[targetLang] = {
           payloadId: payload.id,
@@ -655,24 +635,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Generate clean image in BACKGROUND (fire-and-forget)
-    fireAndForget(
-      (async () => {
-        const postImage = await prisma.postImage.findFirst({
-          where: { postId },
-          orderBy: { orderIndex: "asc" },
-        });
-        if (postImage && !postImage.cleanUrl) {
-          const cleanUrl = await generateCleanImage(imageBase64, mimeType);
-          if (cleanUrl) {
-            await prisma.postImage.update({
-              where: { id: postImage.id },
-              data: { cleanUrl },
-            });
-          }
-        }
-      })()
-    );
+    // NOTE: Clean image generation is skipped here to avoid timeout.
+    // It can be triggered separately via /api/translate/generate-image.
 
     return NextResponse.json({
       postId,

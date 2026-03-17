@@ -227,8 +227,6 @@ export default function FeedCard({
             )}
           </div>
           <div className="flex items-center gap-1.5 text-xs text-foreground-subtle">
-            <span>@{author.username}</span>
-            <span>&middot;</span>
             <span>{timeAgo}</span>
           </div>
         </div>

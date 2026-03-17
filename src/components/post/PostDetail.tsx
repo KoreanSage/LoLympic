@@ -255,8 +255,6 @@ export default function PostDetail({
             )}
           </div>
           <div className="flex items-center gap-2 text-xs text-foreground-subtle">
-            <span>@{author.username}</span>
-            <span>&middot;</span>
             <span suppressHydrationWarning>{new Date(createdAt).toLocaleDateString()}</span>
           </div>
         </div>
