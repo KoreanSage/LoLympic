@@ -1,0 +1,182 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================================
+   Google Fonts — CJK + Latin
+   ============================================================================ */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+KR:wght@300;400;500;700;900&family=Noto+Sans+JP:wght@300;400;500;700;900&family=Noto+Sans+SC:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap");
+
+/* ============================================================================
+   Base Layer — Theme Variables
+   ============================================================================ */
+@layer base {
+  /* Light mode (default) */
+  :root {
+    --color-background: 255 255 255;
+    --color-background-surface: 248 248 248;
+    --color-background-elevated: 240 240 240;
+    --color-background-overlay: 232 232 232;
+    --color-foreground: 17 17 17;
+    --color-foreground-muted: 102 102 102;
+    --color-foreground-subtle: 153 153 153;
+    --color-border: 224 224 224;
+    --color-border-hover: 208 208 208;
+    --color-border-active: 192 192 192;
+    --color-accent-gold: 201 168 76;
+    --color-accent-gold-hover: 180 148 60;
+  }
+
+  /* Dark mode */
+  .dark {
+    --color-background: 0 0 0;
+    --color-background-surface: 10 10 10;
+    --color-background-elevated: 17 17 17;
+    --color-background-overlay: 26 26 26;
+    --color-foreground: 245 245 245;
+    --color-foreground-muted: 163 163 163;
+    --color-foreground-subtle: 115 115 115;
+    --color-border: 31 31 31;
+    --color-border-hover: 42 42 42;
+    --color-border-active: 51 51 51;
+    --color-accent-gold: 201 168 76;
+    --color-accent-gold-hover: 212 184 94;
+  }
+
+  html {
+    @apply bg-background text-foreground antialiased;
+  }
+
+  .dark html,
+  html.dark {
+    color-scheme: dark;
+  }
+
+  html:not(.dark) {
+    color-scheme: light;
+  }
+
+  body {
+    @apply min-h-screen bg-background font-sans text-foreground;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Selection color */
+  ::selection {
+    @apply bg-accent-gold/30 text-foreground;
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-border-active;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-foreground-subtle;
+  }
+
+  /* Focus ring */
+  *:focus-visible {
+    @apply outline-2 outline-offset-2 outline-accent-gold;
+  }
+}
+
+/* ============================================================================
+   Component Layer — Reusable Patterns
+   ============================================================================ */
+@layer components {
+  /* Glass-like card surface */
+  .card-surface {
+    @apply rounded-2xl border border-border bg-background-surface p-4;
+  }
+
+  .card-elevated {
+    @apply rounded-2xl border border-border bg-background-elevated p-4;
+  }
+
+  /* Gold accent button */
+  .btn-gold {
+    @apply inline-flex items-center justify-center rounded-xl bg-accent-gold px-4 py-2
+           font-semibold text-background transition-all
+           hover:bg-accent-gold-hover active:scale-[0.98];
+  }
+
+  /* Ghost button */
+  .btn-ghost {
+    @apply inline-flex items-center justify-center rounded-xl px-4 py-2
+           font-medium text-foreground-muted transition-all
+           hover:bg-background-overlay hover:text-foreground;
+  }
+
+  /* Medal badge */
+  .medal-gold {
+    @apply bg-medal-gold/20 text-medal-gold;
+  }
+
+  .medal-silver {
+    @apply bg-medal-silver/20 text-medal-silver;
+  }
+
+  .medal-bronze {
+    @apply bg-medal-bronze/20 text-medal-bronze;
+  }
+
+  /* Text gradient */
+  .text-gradient-gold {
+    @apply bg-gold-shimmer bg-clip-text text-transparent;
+  }
+}
+
+/* ============================================================================
+   Utility Layer
+   ============================================================================ */
+@layer utilities {
+  /* Hide scrollbar but keep scroll functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Safe area padding for mobile */
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  /* Soft card shadows */
+  .shadow-card {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25), 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  .shadow-card-hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.15);
+  }
+
+  /* Gold glow */
+  .glow-gold {
+    box-shadow: 0 0 12px rgba(201, 168, 76, 0.15), 0 0 4px rgba(201, 168, 76, 0.1);
+  }
+}

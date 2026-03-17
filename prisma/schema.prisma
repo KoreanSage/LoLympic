@@ -1,0 +1,913 @@
+// ============================================================================
+// LoLympic — Prisma Schema (Step 1)
+// AI-powered global meme translation + Olympic-style country competition
+// Stack: Next.js + Prisma + PostgreSQL
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// ENUMS
+// ============================================================================
+
+enum UserRole {
+  USER
+  MODERATOR
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum LanguageCode {
+  ko
+  en
+  ja
+  zh
+  es
+}
+
+enum PostStatus {
+  DRAFT
+  PROCESSING    // AI translation in progress
+  PUBLISHED
+  HIDDEN
+  REMOVED
+}
+
+enum Visibility {
+  PUBLIC
+  UNLISTED
+  PRIVATE
+}
+
+// Using string field for PostCategory instead of enum.
+// Meme categories evolve rapidly (e.g. trending formats, regional genres).
+// A rigid enum would require schema migrations for every new category.
+// Categories are managed via application logic / admin panel.
+
+enum TranslationPayloadStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  APPROVED
+  REJECTED
+  SUPERSEDED   // replaced by community-approved version
+}
+
+enum CreatorType {
+  AI
+  COMMUNITY
+  ADMIN
+}
+
+enum SemanticRole {
+  HEADLINE
+  CAPTION
+  DIALOGUE
+  LABEL
+  WATERMARK
+  SUBTITLE
+  OVERLAY
+  OTHER
+}
+
+enum TextAlign {
+  LEFT
+  CENTER
+  RIGHT
+}
+
+enum CommentStatus {
+  VISIBLE
+  HIDDEN
+  REMOVED
+}
+
+enum SuggestionType {
+  TRANSLATION
+  CULTURE_NOTE
+}
+
+enum SuggestionStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  SUPERSEDED
+}
+
+enum TargetEntityType {
+  TRANSLATION_PAYLOAD
+  TRANSLATION_SEGMENT
+  CULTURE_NOTE
+}
+
+enum ReactionType {
+  FIRE
+  LAUGH
+  SKULL
+  HEART
+  CRY
+}
+
+enum SeasonStatus {
+  UPCOMING
+  ACTIVE
+  JUDGING
+  COMPLETED
+  ARCHIVED
+}
+
+enum SeasonEntryStatus {
+  SUBMITTED
+  QUALIFIED
+  DISQUALIFIED
+  WITHDRAWN
+}
+
+enum MedalType {
+  GOLD
+  SILVER
+  BRONZE
+}
+
+enum MedalScope {
+  COUNTRY
+  CREATOR
+  MEME
+  TRANSLATOR
+  CULTURE_CONTRIBUTOR
+  EDITOR
+}
+
+enum RewardType {
+  PROFILE_BORDER
+  PROFILE_TITLE
+  BADGE
+  FLAIR
+  CUSTOM
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWING
+  RESOLVED
+  DISMISSED
+}
+
+enum NotificationType {
+  REACTION
+  COMMENT
+  REPLY
+  SUGGESTION
+  SUGGESTION_APPROVED
+  MEDAL_AWARDED
+  REWARD_GRANTED
+  FOLLOW
+  SEASON_START
+  SEASON_END
+  SYSTEM
+  DIRECT_MESSAGE
+}
+
+enum CultureNoteStatus {
+  DRAFT
+  PUBLISHED
+  APPROVED
+  REJECTED
+  SUPERSEDED
+}
+
+// ============================================================================
+// CORE MODELS
+// ============================================================================
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model User {
+  id                String   @id @default(cuid())
+  email             String   @unique
+  emailVerified     DateTime?
+  username          String   @unique
+  displayName       String?
+  avatarUrl         String?
+  bio               String?
+  passwordHash      String?
+  countryId         String?
+  preferredLanguage LanguageCode @default(en)
+  uiLanguage        LanguageCode @default(en)
+  role              UserRole     @default(USER)
+
+  // Visible profile cosmetics (driven by rewards)
+  profileTitle      String?
+  profileBorder     String?
+  activeRewardCode  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  accounts             Account[]
+  country              Country?          @relation(fields: [countryId], references: [id])
+  posts                Post[]
+  comments             Comment[]
+  suggestions          Suggestion[]
+  suggestionVotes      SuggestionVote[]
+  reactions            PostReaction[]
+  savedPosts           PostSave[]
+  followers            Follow[]          @relation("Following")
+  following            Follow[]          @relation("Follower")
+  seasonEntries        SeasonEntry[]
+  userSeasonStats      UserSeasonStat[]
+  medals               Medal[]
+  rewardGrants         RewardGrant[]
+  reports              Report[]          @relation("Reporter")
+  notifications        Notification[]    @relation("Recipient")
+  actedNotifications   Notification[]    @relation("Actor")
+  translationPayloads  TranslationPayload[]
+  cultureNotes         CultureNote[]
+  conversationParticipants ConversationParticipant[]
+  sentMessages         DirectMessage[]
+  commentLikes         CommentLike[]
+
+  @@index([countryId])
+  @@index([username])
+  @@index([email])
+}
+
+model Country {
+  id          String  @id // ISO 3166-1 alpha-2: "KR", "JP", "CN", "US", "MX"
+  nameEn      String  // English name
+  nameLocal   String  // Native name (e.g. 대한민국, 日本)
+  flagEmoji   String  // 🇰🇷, 🇯🇵, etc.
+  isActive    Boolean @default(true)
+  themeColor  String? // Optional hex color for UI theming
+  themeMeta   Json?   // Optional extended theme metadata
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  users              User[]
+  posts              Post[]
+  seasonEntries      SeasonEntry[]
+  countrySeasonStats CountrySeasonStat[]
+  postSeasonStats    PostSeasonStat[]
+  userSeasonStats    UserSeasonStat[]
+  medals             Medal[]
+  rewardGrants       RewardGrant[]
+}
+
+model Post {
+  id            String     @id @default(cuid())
+  authorId      String
+  countryId     String?
+  seasonId      String?
+  title         String
+  body          String?
+  category      String?    // Flexible string — see enum note above
+  tags          String[]   @default([])
+  sourceLanguage LanguageCode
+  visibility    Visibility @default(PUBLIC)
+  status        PostStatus @default(DRAFT)
+
+  // Cached engagement counts (denormalized for performance)
+  reactionCount    Int @default(0)
+  commentCount     Int @default(0)
+  shareCount       Int @default(0)
+  saveCount        Int @default(0)
+  viewCount        Int @default(0)
+  translationCount Int @default(0)
+
+  // Cached ranking score (computed by ranking jobs)
+  rankingScore Float @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  author              User                @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  country             Country?            @relation(fields: [countryId], references: [id])
+  season              Season?             @relation(fields: [seasonId], references: [id])
+  images              PostImage[]
+  translationPayloads TranslationPayload[]
+  cultureNotes        CultureNote[]
+  comments            Comment[]
+  suggestions         Suggestion[]
+  reactions           PostReaction[]
+  saves               PostSave[]
+  seasonEntries       SeasonEntry[]
+  postSeasonStats     PostSeasonStat[]
+  reports             Report[]
+  notifications       Notification[]
+
+  @@index([authorId])
+  @@index([countryId])
+  @@index([seasonId])
+  @@index([status, visibility])
+  @@index([rankingScore(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
+  @@index([category])
+}
+
+model PostImage {
+  id              String @id @default(cuid())
+  postId          String
+  originalUrl     String // Original uploaded image
+  cleanUrl        String? // Text-stripped clean version for re-rendering
+  width           Int?
+  height          Int?
+  fileSizeBytes   Int?
+  mimeType        String?
+  altText         String?
+  orderIndex      Int    @default(0)
+
+  createdAt DateTime @default(now())
+
+  // Relations
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+}
+
+model TranslationPayload {
+  id               String                   @id @default(cuid())
+  postId           String
+  sourceLanguage   LanguageCode
+  targetLanguage   LanguageCode
+  version          Int                      @default(1)
+  status           TranslationPayloadStatus @default(PENDING)
+  confidence       Float?                   // AI confidence score 0.0–1.0
+  translatedImageUrl String?                // Pre-rendered image with translated text burned in
+  creatorType      CreatorType              @default(AI)
+  creatorId        String?                  // User who created (null if AI)
+  approvedFromId   String?                  // Suggestion that replaced this payload
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  post             Post                  @relation(fields: [postId], references: [id], onDelete: Cascade)
+  creator          User?                 @relation(fields: [creatorId], references: [id])
+  approvedFrom     Suggestion?           @relation("ApprovedTranslation", fields: [approvedFromId], references: [id])
+  segments         TranslationSegment[]
+
+  @@unique([postId, targetLanguage, version])
+  @@index([postId, targetLanguage])
+  @@index([status])
+}
+
+model TranslationSegment {
+  id                  String       @id @default(cuid())
+  translationPayloadId String
+  orderIndex          Int
+
+  // Text content
+  sourceText          String
+  translatedText      String
+  semanticRole        SemanticRole @default(OTHER)
+
+  // Absolute box coordinates for pixel-perfect rendering
+  boxX                Float?
+  boxY                Float?
+  boxWidth            Float?
+  boxHeight           Float?
+
+  // Text style metadata
+  fontFamily          String?
+  fontWeight          Int?         // 100–900
+  fontSizePixels      Float?
+  lineHeightRatio     Float?       // e.g. 1.2
+  letterSpacing       Float?
+  color               String?      // hex color
+  backgroundColor     String?      // hex color for text background
+
+  // Alignment & transform
+  textAlign           TextAlign    @default(CENTER)
+  rotation            Float?       // degrees
+  isUppercase         Boolean      @default(false)
+
+  // Stroke / shadow for readability on images
+  strokeColor         String?
+  strokeWidth         Float?
+  shadowColor         String?
+  shadowOffsetX       Float?
+  shadowOffsetY       Float?
+  shadowBlur          Float?
+
+  // Font hint for rendering engine
+  fontHint            String?      // e.g. "impact", "noto-sans-kr", "ms-gothic"
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  translationPayload TranslationPayload @relation(fields: [translationPayloadId], references: [id], onDelete: Cascade)
+
+  @@index([translationPayloadId])
+  @@index([orderIndex])
+}
+
+model CultureNote {
+  id              String          @id @default(cuid())
+  postId          String
+  language        LanguageCode
+  summary         String          // Short one-liner
+  explanation     String          // Detailed cultural context
+  translationNote String?         // How this affects translation choices
+  creatorType     CreatorType     @default(AI)
+  creatorId       String?
+  status          CultureNoteStatus @default(DRAFT)
+  confidence      Float?
+  version         Int             @default(1)
+  approvedFromId  String?         // Suggestion that replaced this note
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  post         Post        @relation(fields: [postId], references: [id], onDelete: Cascade)
+  creator      User?       @relation(fields: [creatorId], references: [id])
+  approvedFrom Suggestion? @relation("ApprovedCultureNote", fields: [approvedFromId], references: [id])
+
+  @@unique([postId, language, version])
+  @@index([postId, language])
+  @@index([status])
+}
+
+// ============================================================================
+// COMMUNITY MODELS
+// ============================================================================
+
+model Comment {
+  id        String        @id @default(cuid())
+  postId    String
+  authorId  String
+  parentId  String?       // 2-depth reply support
+  body      String
+  language  LanguageCode?
+  status    CommentStatus @default(VISIBLE)
+  isPinned  Boolean       @default(false)
+
+  // Cached counts
+  replyCount Int @default(0)
+  likeCount  Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  post          Post          @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author        User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent        Comment?      @relation("CommentReplies", fields: [parentId], references: [id])
+  replies       Comment[]     @relation("CommentReplies")
+  likes         CommentLike[]
+  reports       Report[]
+  notifications Notification[]
+
+  @@index([postId, createdAt(sort: Desc)])
+  @@index([authorId])
+  @@index([parentId])
+}
+
+model CommentLike {
+  id        String   @id @default(cuid())
+  commentId String
+  userId    String
+  createdAt DateTime @default(now())
+
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId, userId])
+  @@index([userId])
+}
+
+model Suggestion {
+  id               String           @id @default(cuid())
+  postId           String
+  authorId         String
+  type             SuggestionType
+  targetLanguage   LanguageCode?
+  targetEntityType TargetEntityType
+  targetEntityId   String           // Polymorphic: ID of the target entity
+
+  originalText     String
+  proposedText     String
+  reason           String?
+
+  // Vote counts (denormalized)
+  upvoteCount      Int              @default(0)
+  downvoteCount    Int              @default(0)
+
+  // Approval
+  status           SuggestionStatus @default(PENDING)
+  reviewedBy       String?
+  reviewedAt       DateTime?
+  reviewNote       String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  post                       Post                @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author                     User                @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  votes                      SuggestionVote[]
+  approvedTranslationPayloads TranslationPayload[] @relation("ApprovedTranslation")
+  approvedCultureNotes       CultureNote[]        @relation("ApprovedCultureNote")
+  reports                    Report[]
+  notifications              Notification[]
+
+  @@index([postId, type])
+  @@index([authorId])
+  @@index([targetEntityType, targetEntityId])
+  @@index([status])
+}
+
+model SuggestionVote {
+  id           String   @id @default(cuid())
+  suggestionId String
+  userId       String
+  isUpvote     Boolean
+
+  createdAt DateTime @default(now())
+
+  // Relations
+  suggestion Suggestion @relation(fields: [suggestionId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([suggestionId, userId])
+}
+
+model PostReaction {
+  id       String       @id @default(cuid())
+  postId   String
+  userId   String
+  type     ReactionType @default(FIRE)
+
+  createdAt DateTime @default(now())
+
+  // Relations
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId, type])
+  @@index([postId])
+}
+
+model PostSave {
+  id     String @id @default(cuid())
+  postId String
+  userId String
+
+  createdAt DateTime @default(now())
+
+  // Relations
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+}
+
+model Follow {
+  id          String @id @default(cuid())
+  followerId  String
+  followingId String
+
+  createdAt DateTime @default(now())
+
+  // Relations
+  follower  User @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followingId])
+}
+
+// ============================================================================
+// COMPETITION MODELS
+// ============================================================================
+
+model Season {
+  id          String       @id @default(cuid())
+  name        String       // e.g. "Season 1 — Meme World Cup"
+  number      Int          @unique
+  status      SeasonStatus @default(UPCOMING)
+  description String?
+  startAt     DateTime
+  endAt       DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  posts              Post[]
+  entries            SeasonEntry[]
+  countrySeasonStats CountrySeasonStat[]
+  postSeasonStats    PostSeasonStat[]
+  userSeasonStats    UserSeasonStat[]
+  medals             Medal[]
+  rewardGrants       RewardGrant[]
+}
+
+model SeasonEntry {
+  id        String            @id @default(cuid())
+  seasonId  String
+  postId    String
+  authorId  String
+  countryId String?
+  status    SeasonEntryStatus @default(SUBMITTED)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  season  Season   @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  post    Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author  User     @relation(fields: [authorId], references: [id])
+  country Country? @relation(fields: [countryId], references: [id])
+
+  @@unique([seasonId, postId])
+  @@index([seasonId, countryId])
+  @@index([authorId])
+}
+
+model CountrySeasonStat {
+  id        String    @id @default(cuid())
+  seasonId  String
+  countryId String
+  rank      Int?
+  medal     MedalType?
+
+  // Aggregate scores
+  totalScore       Float @default(0)
+  totalPosts       Int   @default(0)
+  totalCreators    Int   @default(0)
+  totalReactions   Int   @default(0)
+  totalShares      Int   @default(0)
+  totalTranslationViews Int @default(0)
+
+  computedAt DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  season  Season  @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  country Country @relation(fields: [countryId], references: [id])
+
+  @@unique([seasonId, countryId])
+}
+
+model PostSeasonStat {
+  id         String    @id @default(cuid())
+  seasonId   String
+  postId     String
+  countryId  String?
+
+  globalRank  Int?
+  countryRank Int?
+  medal       MedalType?
+
+  // Scoring
+  totalScore         Float @default(0)
+  reactionScore      Float @default(0)
+  commentScore       Float @default(0)
+  shareScore         Float @default(0)
+  translationScore   Float @default(0)
+  cultureScore       Float @default(0)
+  decayAdjustedScore Float @default(0)
+
+  computedAt DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  season  Season   @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  post    Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  country Country? @relation(fields: [countryId], references: [id])
+
+  @@unique([seasonId, postId])
+  @@index([seasonId, globalRank])
+  @@index([seasonId, countryId, countryRank])
+}
+
+model UserSeasonStat {
+  id        String    @id @default(cuid())
+  seasonId  String
+  userId    String
+  countryId String?
+
+  globalRank  Int?
+  countryRank Int?
+  medal       MedalType?
+
+  // Aggregate scores
+  totalScore                Float @default(0)
+  totalPosts                Int   @default(0)
+  totalApprovedSuggestions  Int   @default(0)
+  totalCultureContributions Int   @default(0)
+
+  computedAt DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  season  Season   @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  country Country? @relation(fields: [countryId], references: [id])
+
+  @@unique([seasonId, userId])
+  @@index([seasonId, globalRank])
+  @@index([seasonId, countryId, countryRank])
+}
+
+model Medal {
+  id          String     @id @default(cuid())
+  seasonId    String
+  type        MedalType
+  scope       MedalScope
+  label       String     // e.g. "Best Meme — Gold"
+  description String?
+
+  // Nullable links depending on scope
+  userId    String?
+  countryId String?
+  postId    String?
+
+  createdAt DateTime @default(now())
+
+  // Relations
+  season  Season   @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  user    User?    @relation(fields: [userId], references: [id])
+  country Country? @relation(fields: [countryId], references: [id])
+
+  // Medal → RewardGrant
+  rewardGrants RewardGrant[]
+
+  @@index([seasonId, scope])
+  @@index([userId])
+  @@index([countryId])
+}
+
+model Reward {
+  id          String     @id @default(cuid())
+  code        String     @unique // e.g. "gold-border-s1", "champion-title"
+  name        String
+  description String?
+  type        RewardType
+  config      Json?      // Type-specific config (border style, title text, badge URL, etc.)
+  isActive    Boolean    @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  grants RewardGrant[]
+}
+
+model RewardGrant {
+  id         String   @id @default(cuid())
+  rewardId   String
+  userId     String?
+  countryId  String?
+  seasonId   String?
+  medalId    String?  // Source medal that triggered this grant
+
+  validFrom  DateTime @default(now())
+  validUntil DateTime?
+  metadata   Json?    // Extra context
+
+  createdAt DateTime @default(now())
+
+  // Relations
+  reward  Reward   @relation(fields: [rewardId], references: [id])
+  user    User?    @relation(fields: [userId], references: [id])
+  country Country? @relation(fields: [countryId], references: [id])
+  season  Season?  @relation(fields: [seasonId], references: [id])
+  medal   Medal?   @relation(fields: [medalId], references: [id])
+
+  @@index([userId])
+  @@index([rewardId])
+  @@index([seasonId])
+}
+
+// ============================================================================
+// OPS / SUPPORT MODELS
+// ============================================================================
+
+model Report {
+  id            String       @id @default(cuid())
+  reporterId    String
+  postId        String?
+  commentId     String?
+  suggestionId  String?
+  reason        String
+  detail        String?
+  status        ReportStatus @default(PENDING)
+
+  resolvedBy    String?
+  resolvedAt    DateTime?
+  resolutionNote String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  reporter   User        @relation("Reporter", fields: [reporterId], references: [id])
+  post       Post?       @relation(fields: [postId], references: [id])
+  comment    Comment?    @relation(fields: [commentId], references: [id])
+  suggestion Suggestion? @relation(fields: [suggestionId], references: [id])
+
+  @@index([reporterId])
+  @@index([status])
+  @@index([postId])
+}
+
+model Notification {
+  id           String           @id @default(cuid())
+  recipientId  String
+  actorId      String?
+  postId       String?
+  commentId    String?
+  suggestionId String?
+  type         NotificationType
+  metadata     Json?            // Flexible extra context
+  isRead       Boolean          @default(false)
+
+  createdAt DateTime @default(now())
+
+  // Relations
+  recipient  User        @relation("Recipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  actor      User?       @relation("Actor", fields: [actorId], references: [id])
+  post       Post?       @relation(fields: [postId], references: [id])
+  comment    Comment?    @relation(fields: [commentId], references: [id])
+  suggestion Suggestion? @relation(fields: [suggestionId], references: [id])
+
+  @@index([recipientId, isRead, createdAt(sort: Desc)])
+  @@index([recipientId, createdAt(sort: Desc)])
+}
+
+// ============================================================================
+// DIRECT MESSAGING
+// ============================================================================
+
+model Conversation {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  participants ConversationParticipant[]
+  messages     DirectMessage[]
+}
+
+model ConversationParticipant {
+  id             String    @id @default(cuid())
+  conversationId String
+  userId         String
+  lastReadAt     DateTime  @default(now())
+  createdAt      DateTime  @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@index([userId])
+  @@index([conversationId])
+}
+
+model DirectMessage {
+  id             String   @id @default(cuid())
+  conversationId String
+  senderId       String
+  body           String
+  imageUrl       String?
+  imageWidth     Int?
+  imageHeight    Int?
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt(sort: Desc)])
+  @@index([senderId])
+}

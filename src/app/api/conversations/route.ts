@@ -1,0 +1,133 @@
+import { NextResponse } from "next/server";
+import { getSessionUser } from "@/lib/auth";
+import prisma from "@/lib/prisma";
+
+// GET /api/conversations — list user's conversations
+export async function GET() {
+  try {
+    const user = await getSessionUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const participations = await prisma.conversationParticipant.findMany({
+      where: { userId: user.id },
+      include: {
+        conversation: {
+          include: {
+            participants: {
+              include: {
+                user: {
+                  select: { id: true, username: true, displayName: true, avatarUrl: true },
+                },
+              },
+            },
+            messages: {
+              orderBy: { createdAt: "desc" },
+              take: 1,
+              select: { body: true, createdAt: true, senderId: true },
+            },
+          },
+        },
+      },
+      orderBy: { conversation: { updatedAt: "desc" } },
+    });
+
+    const conversations = participations.map((p) => {
+      const otherParticipant = p.conversation.participants.find(
+        (pp) => pp.userId !== user.id
+      );
+      const lastMessage = p.conversation.messages[0] || null;
+      // Count unread: messages after lastReadAt that aren't from this user
+      return {
+        id: p.conversation.id,
+        updatedAt: p.conversation.updatedAt.toISOString(),
+        otherUser: otherParticipant?.user || {
+          id: "unknown",
+          username: "Deleted User",
+          displayName: null,
+          avatarUrl: null,
+        },
+        lastMessage: lastMessage
+          ? {
+              body: lastMessage.body,
+              createdAt: lastMessage.createdAt.toISOString(),
+              senderId: lastMessage.senderId,
+            }
+          : null,
+        lastReadAt: p.lastReadAt.toISOString(),
+      };
+    });
+
+    // Get unread counts per conversation
+    const conversationsWithUnread = await Promise.all(
+      conversations.map(async (conv, idx) => {
+        const unreadCount = await prisma.directMessage.count({
+          where: {
+            conversationId: conv.id,
+            senderId: { not: user.id },
+            createdAt: { gt: participations[idx].lastReadAt },
+          },
+        });
+        return { ...conv, unreadCount };
+      })
+    );
+
+    return NextResponse.json({ conversations: conversationsWithUnread });
+  } catch (error) {
+    console.error("GET /api/conversations error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
+
+// POST /api/conversations — create or find existing conversation
+export async function POST(request: Request) {
+  try {
+    const user = await getSessionUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const { participantId } = await request.json();
+    if (!participantId) {
+      return NextResponse.json({ error: "participantId required" }, { status: 400 });
+    }
+
+    if (participantId === user.id) {
+      return NextResponse.json({ error: "Cannot message yourself" }, { status: 400 });
+    }
+
+    // Check if participant exists
+    const otherUser = await prisma.user.findUnique({ where: { id: participantId } });
+    if (!otherUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Check if conversation already exists between these two users
+    const existing = await prisma.conversation.findFirst({
+      where: {
+        AND: [
+          { participants: { some: { userId: user.id } } },
+          { participants: { some: { userId: participantId } } },
+        ],
+      },
+    });
+
+    if (existing) {
+      return NextResponse.json({ conversationId: existing.id });
+    }
+
+    // Create new conversation
+    const conversation = await prisma.conversation.create({
+      data: {
+        participants: {
+          create: [
+            { userId: user.id },
+            { userId: participantId },
+          ],
+        },
+      },
+    });
+
+    return NextResponse.json({ conversationId: conversation.id }, { status: 201 });
+  } catch (error) {
+    console.error("POST /api/conversations error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}

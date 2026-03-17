@@ -1,3 +1,24 @@
+# Dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+
+# Uploads (user-generated content)
+uploads/
+
+# TypeScript build info
+tsconfig.tsbuildinfo
+
+# Claude
+.claude/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
 # Miscellaneous
 *.class
 *.log
