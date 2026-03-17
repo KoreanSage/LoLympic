@@ -7,6 +7,9 @@ import { GoogleGenAI } from "@google/genai";
 import { LanguageCode } from "@prisma/client";
 import crypto from "crypto";
 
+// Vercel Hobby: max 60s, Pro: up to 300s
+export const maxDuration = 60;
+
 const USE_BLOB = !!process.env.BLOB_READ_WRITE_TOKEN;
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
@@ -247,6 +250,36 @@ function stripMarkdownFences(text: string): string {
 }
 
 // ---------------------------------------------------------------------------
+// Retry helper — retries a function up to `retries` times with delay
+// ---------------------------------------------------------------------------
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  retries = 2,
+  delayMs = 1000
+): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastError = err;
+      console.warn(`Attempt ${attempt + 1} failed:`, err instanceof Error ? err.message : err);
+      if (attempt < retries) {
+        await new Promise((r) => setTimeout(r, delayMs * (attempt + 1)));
+      }
+    }
+  }
+  throw lastError;
+}
+
+// ---------------------------------------------------------------------------
+// Fire-and-forget: runs a promise in background, logs errors silently
+// ---------------------------------------------------------------------------
+function fireAndForget(promise: Promise<unknown>) {
+  promise.catch((err) => console.error("Background task failed:", err));
+}
+
+// ---------------------------------------------------------------------------
 // Generate clean image (text removed) using Gemini image editing
 // ---------------------------------------------------------------------------
 async function generateCleanImage(
@@ -466,7 +499,7 @@ export async function POST(request: NextRequest) {
       const systemPrompt = buildTranslationSystemPrompt(sourceLanguage, targetLang);
 
       try {
-        // Call Gemini with vision
+        // Call Gemini with vision — WITH RETRY (up to 2 retries)
         const model = genAI.getGenerativeModel({
           model: "gemini-2.5-flash",
           systemInstruction: systemPrompt,
@@ -477,21 +510,20 @@ export async function POST(request: NextRequest) {
           },
         });
 
-        const result = await model.generateContent([
-          `Translate this meme from ${sourceLanguage} to ${targetLang}. Analyze the image, detect all text regions, and provide transcendent translations.`,
-          {
-            inlineData: {
-              data: imageBase64,
-              mimeType,
+        const content = await withRetry(async () => {
+          const result = await model.generateContent([
+            `Translate this meme from ${sourceLanguage} to ${targetLang}. Analyze the image, detect all text regions, and provide transcendent translations.`,
+            {
+              inlineData: {
+                data: imageBase64,
+                mimeType,
+              },
             },
-          },
-        ]);
-
-        const content = result.response.text();
-        if (!content) {
-          results[targetLang] = { error: "No response from AI" };
-          continue;
-        }
+          ]);
+          const text = result.response.text();
+          if (!text) throw new Error("Empty response from AI");
+          return text;
+        }, 1, 2000); // 1 retry, 2s delay
 
         let parsed: AITranslationResult;
         try {
@@ -504,14 +536,15 @@ export async function POST(request: NextRequest) {
         }
 
         // Ensure segments is an array
-        if (!Array.isArray(parsed.segments)) {
-          results[targetLang] = { error: "Invalid AI response: segments not an array" };
+        if (!Array.isArray(parsed.segments) || parsed.segments.length === 0) {
+          // If no segments found, create a minimal result with empty segments
+          console.warn(`No segments found for ${targetLang}, creating empty translation`);
+          results[targetLang] = { error: "No translatable text detected in image" };
           continue;
         }
 
         // Store TranslationPayload + segments in a transaction
         const payload = await prisma.$transaction(async (tx) => {
-          // Determine next version number inside transaction to avoid race
           const latestPayload = await tx.translationPayload.findFirst({
             where: {
               postId,
@@ -587,23 +620,27 @@ export async function POST(request: NextRequest) {
           return translationPayload;
         });
 
-        // Generate pre-rendered translated image via Gemini
+        // Generate translated image in BACKGROUND (fire-and-forget)
+        // This saves ~15-30 seconds per translation, preventing timeouts
         if (payload.segments.length > 0) {
-          const translatedImageUrl = await generateTranslatedImage(
-            imageBase64,
-            mimeType,
-            payload.segments.map((s) => ({
-              sourceText: s.sourceText,
-              translatedText: s.translatedText,
-            })),
-            targetLang
+          fireAndForget(
+            generateTranslatedImage(
+              imageBase64,
+              mimeType,
+              payload.segments.map((s) => ({
+                sourceText: s.sourceText,
+                translatedText: s.translatedText,
+              })),
+              targetLang
+            ).then(async (translatedImageUrl) => {
+              if (translatedImageUrl) {
+                await prisma.translationPayload.update({
+                  where: { id: payload.id },
+                  data: { translatedImageUrl },
+                });
+              }
+            })
           );
-          if (translatedImageUrl) {
-            await prisma.translationPayload.update({
-              where: { id: payload.id },
-              data: { translatedImageUrl },
-            });
-          }
         }
 
         results[targetLang] = {
@@ -618,20 +655,24 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Generate clean (text-removed) image if not already done
-    const postImage = await prisma.postImage.findFirst({
-      where: { postId },
-      orderBy: { orderIndex: "asc" },
-    });
-    if (postImage && !postImage.cleanUrl) {
-      const cleanUrl = await generateCleanImage(imageBase64, mimeType);
-      if (cleanUrl) {
-        await prisma.postImage.update({
-          where: { id: postImage.id },
-          data: { cleanUrl },
+    // Generate clean image in BACKGROUND (fire-and-forget)
+    fireAndForget(
+      (async () => {
+        const postImage = await prisma.postImage.findFirst({
+          where: { postId },
+          orderBy: { orderIndex: "asc" },
         });
-      }
-    }
+        if (postImage && !postImage.cleanUrl) {
+          const cleanUrl = await generateCleanImage(imageBase64, mimeType);
+          if (cleanUrl) {
+            await prisma.postImage.update({
+              where: { id: postImage.id },
+              data: { cleanUrl },
+            });
+          }
+        }
+      })()
+    );
 
     return NextResponse.json({
       postId,
