@@ -157,13 +157,13 @@ export default function UploadStudio() {
         }
       }
 
-      // Done!
+      // Done! (even if some translations failed, post is created)
       setProgress((p) => p && { ...p, phase: "done" });
 
       // Redirect after a moment
       setTimeout(() => {
-        router.push(`/post/${postId}`);
-      }, 1500);
+        if (postId) router.push(`/post/${postId}`);
+      }, 2000);
     } catch (error) {
       setProgress((p) => ({
         ...(p || { languages: langStatuses }),
@@ -258,7 +258,14 @@ export default function UploadStudio() {
             })}
           </div>
 
-          {/* Error retry */}
+          {/* Actions: retry failed or continue */}
+          {progress.phase === "done" && Object.values(progress.languages).some((s) => s === "error") && (
+            <div className="mt-4 text-center">
+              <p className="text-xs text-foreground-subtle mb-2">
+                Some translations failed. You can retry them from the post page.
+              </p>
+            </div>
+          )}
           {progress.phase === "error" && (
             <div className="mt-6 flex gap-3">
               <Button

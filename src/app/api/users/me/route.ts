@@ -48,7 +48,8 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { displayName, bio, countryId, avatarUrl, preferredLanguage, uiLanguage } = body as {
+    const { username, displayName, bio, countryId, avatarUrl, preferredLanguage, uiLanguage } = body as {
+      username?: string;
       displayName?: string;
       bio?: string;
       countryId?: string;
@@ -58,6 +59,22 @@ export async function PATCH(request: NextRequest) {
     };
 
     const data: Record<string, unknown> = {};
+
+    if (username !== undefined) {
+      const trimmed = username.trim();
+      if (trimmed.length < 3 || trimmed.length > 30) {
+        return NextResponse.json({ error: "Username must be 3-30 characters" }, { status: 400 });
+      }
+      if (!/^[a-zA-Z0-9_]+$/.test(trimmed)) {
+        return NextResponse.json({ error: "Username can only contain letters, numbers, and underscores" }, { status: 400 });
+      }
+      // Check uniqueness
+      const existing = await prisma.user.findUnique({ where: { username: trimmed } });
+      if (existing && existing.id !== sessionUser.id) {
+        return NextResponse.json({ error: "Username is already taken" }, { status: 409 });
+      }
+      data.username = trimmed;
+    }
 
     if (displayName !== undefined) {
       if (displayName.length > 50) {

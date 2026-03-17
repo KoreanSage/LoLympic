@@ -146,6 +146,7 @@ export const authOptions: NextAuthOptions = {
           token.countryId = dbUser.countryId;
           token.preferredLanguage = dbUser.preferredLanguage;
           token.role = dbUser.role;
+          token.needsSetup = false;
         }
         return token;
       }
@@ -163,6 +164,9 @@ export const authOptions: NextAuthOptions = {
             token.countryId = dbUser.countryId;
             token.preferredLanguage = dbUser.preferredLanguage;
             token.role = dbUser.role;
+            // Check if profile looks auto-generated (email prefix as username)
+            const emailPrefix = (user.email || "").split("@")[0].replace(/[^a-zA-Z0-9_]/g, "_");
+            token.needsSetup = dbUser.username === emailPrefix || dbUser.username.startsWith(emailPrefix + "_");
           }
         } else {
           token.id = user.id;
@@ -186,6 +190,7 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).countryId = token.countryId;
         (session.user as any).preferredLanguage = token.preferredLanguage;
         (session.user as any).role = token.role;
+        (session.user as any).needsSetup = token.needsSetup ?? false;
       }
       return session;
     },

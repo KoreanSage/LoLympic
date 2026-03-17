@@ -106,7 +106,7 @@ export default function LoginPage() {
 
           {/* Google Sign In */}
           <button
-            onClick={() => signIn("google", { callbackUrl: "/" })}
+            onClick={() => signIn("google", { callbackUrl: "/welcome" })}
             disabled={loading}
             className="w-full flex items-center justify-center gap-2 py-2.5 bg-white hover:bg-gray-100 text-black font-medium rounded-lg transition-colors disabled:opacity-50"
           >
