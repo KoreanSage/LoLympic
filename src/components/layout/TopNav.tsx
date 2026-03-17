@@ -156,7 +156,7 @@ export default function TopNav() {
       .catch(() => {});
   }, [status]);
 
-  // Fetch notifications when dropdown opens
+  // Fetch notifications when dropdown opens & auto mark as read
   const fetchNotifications = useCallback(async () => {
     setNotifLoading(true);
     try {
@@ -165,6 +165,18 @@ export default function TopNav() {
         const data = await res.json();
         setNotifications(data.notifications ?? []);
         setUnreadCount(data.unreadCount ?? 0);
+
+        // Auto mark all as read when opening dropdown
+        if ((data.unreadCount ?? 0) > 0) {
+          fetch("/api/notifications", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ markAllRead: true }),
+          }).then(() => {
+            setUnreadCount(0);
+            setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+          }).catch(() => {});
+        }
       }
     } catch {
       // ignore
@@ -285,6 +297,7 @@ export default function TopNav() {
           {status === "authenticated" && (
             <Link
               href="/messages"
+              onClick={() => setDmUnreadCount(0)}
               className="relative p-2 rounded-lg text-foreground-subtle hover:text-foreground-muted hover:bg-background-elevated transition-colors"
               title="Messages"
             >
@@ -378,19 +391,17 @@ export default function TopNav() {
           {status === "loading" ? (
             <div className="w-8 h-8 rounded-full bg-background-overlay animate-pulse" />
           ) : session?.user ? (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               <Link
                 href={`/user/${username}`}
-                className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-background-elevated transition-colors"
+                title={`@${username}`}
               >
                 <Avatar
                   src={userAvatarUrl}
                   alt={(session.user as any).displayName || username}
                   size="sm"
                 />
-                <span className="hidden sm:inline text-sm text-foreground-muted hover:text-foreground transition-colors">
-                  {(session.user as any).username || session.user.name}
-                </span>
               </Link>
               <Link
                 href="/settings"
