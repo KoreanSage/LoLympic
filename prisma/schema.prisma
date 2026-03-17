@@ -226,6 +226,10 @@ model User {
   profileBorder     String?
   activeRewardCode  String?
 
+  // Champion status (permanent gold border)
+  isChampion        Boolean      @default(false)
+  championSeasonId  String?      // Which season they won
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -252,6 +256,8 @@ model User {
   conversationParticipants ConversationParticipant[]
   sentMessages         DirectMessage[]
   commentLikes         CommentLike[]
+  monthlyWinners       MonthlyWinner[]
+  finalVotes           FinalVote[]
 
   @@index([countryId])
   @@index([username])
@@ -279,6 +285,7 @@ model Country {
   userSeasonStats    UserSeasonStat[]
   medals             Medal[]
   rewardGrants       RewardGrant[]
+  monthlyWinners     MonthlyWinner[]
 }
 
 model Post {
@@ -323,6 +330,7 @@ model Post {
   postSeasonStats     PostSeasonStat[]
   reports             Report[]
   notifications       Notification[]
+  monthlyWinner       MonthlyWinner?
 
   @@index([authorId])
   @@index([countryId])
@@ -620,6 +628,13 @@ model Season {
   startAt     DateTime
   endAt       DateTime
 
+  // Champion info (set when season is COMPLETED)
+  championPostId    String?   // Winning meme
+  championUserId    String?   // Winner user
+  championCountryId String?   // Winning country
+  votingStartAt     DateTime? // Final vote start (e.g. Dec 15)
+  votingEndAt       DateTime? // Final vote end (e.g. Dec 31)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -631,6 +646,8 @@ model Season {
   userSeasonStats    UserSeasonStat[]
   medals             Medal[]
   rewardGrants       RewardGrant[]
+  monthlyWinners     MonthlyWinner[]
+  finalVotes         FinalVote[]
 }
 
 model SeasonEntry {
@@ -809,6 +826,49 @@ model RewardGrant {
   @@index([userId])
   @@index([rewardId])
   @@index([seasonId])
+}
+
+// ============================================================================
+// MONTHLY WINNER & FINAL VOTE
+// ============================================================================
+
+model MonthlyWinner {
+  id        String   @id @default(cuid())
+  seasonId  String
+  month     Int      // 1-12
+  year      Int
+  postId    String   @unique
+  authorId  String
+  countryId String?
+  likeCount Int      @default(0)
+
+  createdAt DateTime @default(now())
+
+  // Relations
+  season     Season    @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  post       Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author     User      @relation(fields: [authorId], references: [id])
+  country    Country?  @relation(fields: [countryId], references: [id])
+  finalVotes FinalVote[]
+
+  @@unique([seasonId, month])
+  @@index([seasonId])
+}
+
+model FinalVote {
+  id              String   @id @default(cuid())
+  seasonId        String
+  monthlyWinnerId String
+  userId          String
+  createdAt       DateTime @default(now())
+
+  // Relations
+  season        Season        @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  monthlyWinner MonthlyWinner @relation(fields: [monthlyWinnerId], references: [id], onDelete: Cascade)
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([seasonId, userId]) // One vote per user per season
+  @@index([monthlyWinnerId])
 }
 
 // ============================================================================

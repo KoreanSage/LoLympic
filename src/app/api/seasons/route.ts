@@ -9,17 +9,38 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const includeAll = searchParams.get("all") === "true";
 
-    // Get the currently active season
+    // Get the currently active or judging season
     const activeSeason = await prisma.season.findFirst({
-      where: { status: "ACTIVE" },
+      where: { status: { in: ["ACTIVE", "JUDGING"] } },
+      orderBy: { startAt: "desc" },
       include: {
         _count: {
           select: {
             entries: true,
             posts: true,
             medals: true,
+            monthlyWinners: true,
+            finalVotes: true,
           },
         },
+      },
+    });
+
+    // Get the most recent completed season with champion info (for banner)
+    const championSeason = await prisma.season.findFirst({
+      where: {
+        status: { in: ["COMPLETED", "ARCHIVED"] },
+        championCountryId: { not: null },
+      },
+      orderBy: { endAt: "desc" },
+      select: {
+        id: true,
+        name: true,
+        number: true,
+        championCountryId: true,
+        championUserId: true,
+        championPostId: true,
+        endAt: true,
       },
     });
 
@@ -68,10 +89,23 @@ export async function GET(request: NextRequest) {
       orderBy: { startAt: "asc" },
     });
 
+    // If there's a champion, fetch the country info
+    let championCountry = null;
+    if (championSeason?.championCountryId) {
+      championCountry = await prisma.country.findUnique({
+        where: { id: championSeason.championCountryId },
+        select: { id: true, nameEn: true, flagEmoji: true },
+      });
+    }
+
     return NextResponse.json({
       active: activeSeason,
       upcoming: upcomingSeason,
       recent: recentSeasons,
+      champion: championSeason ? {
+        ...championSeason,
+        country: championCountry,
+      } : null,
     });
   } catch (error) {
     console.error("Error fetching seasons:", error);

@@ -238,6 +238,7 @@ export default function TopNav() {
           <div className="hidden md:flex items-center gap-1">
             <NavLink href="/" label="Explore" />
             <NavLink href="/leaderboard" label="Leaderboard" />
+            <NavLink href="/seasons" label="Season" />
             <NavLink href="/upload" label="Upload" />
           </div>
         </div>
@@ -441,6 +442,7 @@ export default function TopNav() {
         <div className="border-t border-border bg-background/95 backdrop-blur-xl px-4 py-3 space-y-1">
           <MobileNavLink href="/" label="Explore" active={pathname === "/"} />
           <MobileNavLink href="/leaderboard" label="Leaderboard" active={pathname === "/leaderboard"} />
+          <MobileNavLink href="/seasons" label="Season" active={pathname?.startsWith("/seasons")} />
           <MobileNavLink href="/upload" label="Upload" active={pathname === "/upload"} />
           <MobileNavLink href="/bookmarks" label="Bookmarks" active={pathname === "/bookmarks"} />
           {session?.user && (

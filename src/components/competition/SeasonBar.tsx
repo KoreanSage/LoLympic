@@ -1,13 +1,25 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 interface SeasonData {
   active: {
     number: number;
     name: string;
+    status: string;
     startAt: string;
     endAt: string;
+    votingStartAt?: string;
+    votingEndAt?: string;
+  } | null;
+  champion: {
+    id: string;
+    name: string;
+    number: number;
+    championCountryId: string;
+    endAt: string;
+    country: { id: string; nameEn: string; flagEmoji: string } | null;
   } | null;
 }
 
@@ -17,32 +29,27 @@ interface LeadingCountry {
 }
 
 export default function SeasonBar({ className = "" }: { className?: string }) {
-  const [season, setSeason] = useState<SeasonData["active"]>(null);
+  const [data, setData] = useState<SeasonData | null>(null);
   const [leading, setLeading] = useState<LeadingCountry | null>(null);
   const [timeLeft, setTimeLeft] = useState("");
   const [progress, setProgress] = useState(0);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    // Fetch season info
     fetch("/api/seasons")
       .then((r) => r.json())
-      .then((data) => {
-        setSeason(data.active || null);
+      .then((d) => {
+        setData({ active: d.active || null, champion: d.champion || null });
         setLoaded(true);
       })
       .catch(() => setLoaded(true));
 
-    // Fetch leading country from leaderboard
     fetch("/api/leaderboard?type=country&limit=1")
       .then((r) => r.json())
-      .then((data) => {
-        const entry = data.entries?.[0];
+      .then((d) => {
+        const entry = d.entries?.[0];
         if (entry?.country) {
-          setLeading({
-            flag: entry.country.flagEmoji,
-            name: entry.country.nameEn,
-          });
+          setLeading({ flag: entry.country.flagEmoji, name: entry.country.nameEn });
         }
       })
       .catch(() => {});
@@ -50,6 +57,7 @@ export default function SeasonBar({ className = "" }: { className?: string }) {
 
   // Update time left every minute
   useEffect(() => {
+    const season = data?.active;
     if (!season?.endAt) return;
 
     function update() {
@@ -81,23 +89,71 @@ export default function SeasonBar({ className = "" }: { className?: string }) {
     update();
     const interval = setInterval(update, 60000);
     return () => clearInterval(interval);
-  }, [season]);
+  }, [data?.active]);
 
   if (!loaded) return null;
 
-  // No active season — show open/all-time mode
-  if (!season) {
-    return (
-      <div
-        className={`bg-background-surface border-b border-border px-4 py-1.5 ${className}`}
-      >
+  const season = data?.active;
+  const champion = data?.champion;
+
+  // Champion banner — show above season bar if there's a recent champion
+  // (visible for 1 year after season ends)
+  const showChampionBanner = champion?.country && (() => {
+    const endDate = new Date(champion.endAt);
+    const oneYearAfter = new Date(endDate);
+    oneYearAfter.setFullYear(oneYearAfter.getFullYear() + 1);
+    return Date.now() < oneYearAfter.getTime();
+  })();
+
+  return (
+    <div className={className}>
+      {/* Champion Banner */}
+      {showChampionBanner && champion?.country && (
+        <div className="bg-gradient-to-r from-[#c9a84c]/20 via-[#c9a84c]/10 to-[#c9a84c]/20 border-b border-[#c9a84c]/30 px-4 py-1.5">
+          <div className="max-w-[1280px] mx-auto flex items-center justify-center gap-2 text-xs">
+            <span className="text-lg">{champion.country.flagEmoji}</span>
+            <span className="text-[#c9a84c] font-bold">
+              {new Date(champion.endAt).getFullYear()} Champion — {champion.country.nameEn}
+            </span>
+            <span className="text-lg">{champion.country.flagEmoji}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Season Bar */}
+      <div className="bg-background-surface border-b border-border px-4 py-1.5">
         <div className="max-w-[1280px] mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3 text-xs">
-            <span className="text-[#c9a84c] font-semibold">
-              🌐 Open Season
-            </span>
-            <span className="text-foreground-subtle">&middot;</span>
-            <span className="text-foreground-muted">All-time rankings</span>
+            {!season ? (
+              // No active season
+              <>
+                <span className="text-[#c9a84c] font-semibold">Open Season</span>
+                <span className="text-foreground-subtle">&middot;</span>
+                <span className="text-foreground-muted">All-time rankings</span>
+              </>
+            ) : season.status === "JUDGING" ? (
+              // Voting phase
+              <>
+                <span className="text-[#c9a84c] font-semibold">Season {season.number}</span>
+                <span className="text-foreground-subtle">&middot;</span>
+                <Link
+                  href="/seasons/vote"
+                  className="text-[#c9a84c] hover:underline font-medium"
+                >
+                  Final Vote Open — Cast your vote!
+                </Link>
+              </>
+            ) : (
+              // Active season
+              <>
+                <Link href="/seasons" className="text-[#c9a84c] font-semibold hover:underline">
+                  Season {season.number}
+                </Link>
+                <span className="text-foreground-subtle">&middot;</span>
+                <span className="text-foreground-muted">{timeLeft} left</span>
+              </>
+            )}
+
             {leading && (
               <>
                 <span className="text-foreground-subtle">&middot;</span>
@@ -107,42 +163,19 @@ export default function SeasonBar({ className = "" }: { className?: string }) {
               </>
             )}
           </div>
-        </div>
-      </div>
-    );
-  }
 
-  // Active season
-  return (
-    <div
-      className={`bg-background-surface border-b border-border px-4 py-1.5 ${className}`}
-    >
-      <div className="max-w-[1280px] mx-auto flex items-center justify-between">
-        <div className="flex items-center gap-3 text-xs">
-          <span className="text-[#c9a84c] font-semibold">
-            Season {season.number}
-          </span>
-          <span className="text-foreground-subtle">&middot;</span>
-          <span className="text-foreground-muted">{timeLeft} left</span>
-          {leading && (
-            <>
-              <span className="text-foreground-subtle">&middot;</span>
-              <span className="text-foreground-muted">
-                Leading: {leading.flag} {leading.name}
-              </span>
-            </>
+          {/* Progress bar (only for active season) */}
+          {season && season.status === "ACTIVE" && (
+            <div className="hidden sm:flex items-center gap-2">
+              <div className="w-24 h-1 bg-background-overlay rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-[#c9a84c] rounded-full transition-all duration-500"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <span className="text-[10px] text-foreground-subtle">{progress}%</span>
+            </div>
           )}
-        </div>
-
-        {/* Progress bar */}
-        <div className="hidden sm:flex items-center gap-2">
-          <div className="w-24 h-1 bg-background-overlay rounded-full overflow-hidden">
-            <div
-              className="h-full bg-[#c9a84c] rounded-full transition-all duration-500"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-          <span className="text-[10px] text-foreground-subtle">{progress}%</span>
         </div>
       </div>
     </div>

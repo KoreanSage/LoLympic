@@ -3,12 +3,14 @@
 interface AvatarProps {
   src?: string | null;
   alt?: string;
-  size?: "sm" | "md" | "lg" | "xl";
+  size?: "xs" | "sm" | "md" | "lg" | "xl";
   countryFlag?: string;
+  isChampion?: boolean;
   className?: string;
 }
 
 const sizeMap = {
+  xs: "w-5 h-5",
   sm: "w-6 h-6",
   md: "w-8 h-8",
   lg: "w-10 h-10",
@@ -16,10 +18,19 @@ const sizeMap = {
 };
 
 const flagSizeMap = {
+  xs: "w-2.5 h-2.5 text-[6px]",
   sm: "w-3 h-3 text-[8px]",
   md: "w-4 h-4 text-[10px]",
   lg: "w-5 h-5 text-xs",
   xl: "w-6 h-6 text-sm",
+};
+
+const ringSizeMap = {
+  xs: "ring-[1.5px]",
+  sm: "ring-[1.5px]",
+  md: "ring-2",
+  lg: "ring-2",
+  xl: "ring-[3px]",
 };
 
 export default function Avatar({
@@ -27,19 +38,24 @@ export default function Avatar({
   alt = "User",
   size = "md",
   countryFlag,
+  isChampion = false,
   className = "",
 }: AvatarProps) {
+  const championRing = isChampion
+    ? `${ringSizeMap[size]} ring-[#c9a84c] ring-offset-1 ring-offset-background`
+    : "";
+
   return (
     <div className={`relative inline-flex shrink-0 ${className}`}>
       {src ? (
         <img
           src={src}
           alt={alt}
-          className={`${sizeMap[size]} rounded-full object-cover bg-background-overlay`}
+          className={`${sizeMap[size]} rounded-full object-cover bg-background-overlay ${championRing}`}
         />
       ) : (
         <div
-          className={`${sizeMap[size]} rounded-full bg-background-overlay flex items-center justify-center text-foreground-subtle`}
+          className={`${sizeMap[size]} rounded-full bg-background-overlay flex items-center justify-center text-foreground-subtle ${championRing}`}
         >
           <span className="font-medium">
             {alt.charAt(0).toUpperCase()}
@@ -51,6 +67,13 @@ export default function Avatar({
           className={`absolute -bottom-0.5 -right-0.5 ${flagSizeMap[size]} flex items-center justify-center rounded-full bg-background-surface border border-border leading-none`}
         >
           {countryFlag}
+        </span>
+      )}
+      {isChampion && !countryFlag && (
+        <span
+          className={`absolute -bottom-0.5 -right-0.5 ${flagSizeMap[size]} flex items-center justify-center leading-none`}
+        >
+          🏆
         </span>
       )}
     </div>
