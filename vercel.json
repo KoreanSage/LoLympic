@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/monthly-winner",
+      "schedule": "5 0 1 * *"
+    },
+    {
+      "path": "/api/cron/season-check",
+      "schedule": "10 0 * * *"
+    }
+  ]
+}

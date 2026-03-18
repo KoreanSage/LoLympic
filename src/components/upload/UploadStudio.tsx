@@ -108,15 +108,16 @@ export default function UploadStudio() {
 
       setProgress((p) => p && { ...p, phase: "translating", postId });
 
-      for (const lang of targetLangs) {
-        setProgress((p) => {
-          if (!p) return p;
-          return {
-            ...p,
-            languages: { ...p.languages, [lang.code]: "translating" },
-          };
-        });
+      // Mark all as translating
+      setProgress((p) => {
+        if (!p) return p;
+        const langs = { ...p.languages };
+        targetLangs.forEach((l) => (langs[l.code] = "translating"));
+        return { ...p, languages: langs };
+      });
 
+      // Translate all languages in parallel for speed
+      const translatePromises = targetLangs.map(async (lang) => {
         try {
           const translateRes = await fetch("/api/translate", {
             method: "POST",
@@ -155,7 +156,9 @@ export default function UploadStudio() {
             };
           });
         }
-      }
+      });
+
+      await Promise.allSettled(translatePromises);
 
       // Done! (even if some translations failed, post is created)
       setProgress((p) => p && { ...p, phase: "done" });
