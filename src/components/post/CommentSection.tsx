@@ -299,6 +299,7 @@ function CommentItem({
   onEdit?: (commentId: string, newBody: string) => void;
   onReport?: (commentId: string, reason: string, details?: string) => void;
 }) {
+  const { data: session } = useSession();
   const [showReplyBox, setShowReplyBox] = useState(false);
   const [replyText, setReplyText] = useState("");
   const [liked, setLiked] = useState(comment.userLiked ?? false);
@@ -310,9 +311,35 @@ function CommentItem({
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportReason, setReportReason] = useState("");
   const [reportDetails, setReportDetails] = useState("");
+  const [translatedText, setTranslatedText] = useState<string | null>(null);
+  const [isTranslating, setIsTranslating] = useState(false);
 
+  const userLang = (session?.user as any)?.preferredLanguage || "en";
   const isOwn = sessionUsername === comment.author.username;
   const timeAgo = formatTimeAgo(comment.createdAt);
+
+  const handleTranslate = async () => {
+    if (translatedText) {
+      setTranslatedText(null); // Toggle off
+      return;
+    }
+    setIsTranslating(true);
+    try {
+      const res = await fetch("/api/translate-text", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: comment.body, targetLanguage: userLang }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setTranslatedText(data.translated);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setIsTranslating(false);
+    }
+  };
 
   const handleLike = async () => {
     if (likePending) return;
@@ -416,9 +443,16 @@ function CommentItem({
                 </div>
               </div>
             ) : (
-              <p className="text-sm text-foreground-muted leading-relaxed">
-                {comment.body}
-              </p>
+              <div>
+                <p className="text-sm text-foreground-muted leading-relaxed">
+                  {comment.body}
+                </p>
+                {translatedText && (
+                  <p className="text-sm text-foreground leading-relaxed mt-1 pl-2 border-l-2 border-[#c9a84c]/40 italic">
+                    {translatedText}
+                  </p>
+                )}
+              </div>
             )}
 
             {/* Actions */}
@@ -435,6 +469,28 @@ function CommentItem({
                   </svg>
                   {localLikeCount > 0 && localLikeCount}
                 </button>
+                {/* Translate */}
+                {session && (
+                  <button
+                    onClick={handleTranslate}
+                    disabled={isTranslating}
+                    className={`flex items-center gap-1 text-xs transition-colors ${
+                      translatedText
+                        ? "text-[#c9a84c]"
+                        : "text-foreground-subtle hover:text-foreground-muted"
+                    }`}
+                    title={translatedText ? "Hide translation" : "Translate"}
+                  >
+                    {isTranslating ? (
+                      <div className="w-3 h-3 border border-foreground-subtle border-t-[#c9a84c] rounded-full animate-spin" />
+                    ) : (
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+                      </svg>
+                    )}
+                    {translatedText ? "Original" : "Translate"}
+                  </button>
+                )}
                 {depth === 0 && (
                   <button
                     onClick={() => setShowReplyBox(!showReplyBox)}
