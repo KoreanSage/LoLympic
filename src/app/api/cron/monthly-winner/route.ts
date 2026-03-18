@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { broadcastNotification } from "@/lib/notifications";
+
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
 
 /**
  * GET /api/cron/monthly-winner
@@ -70,6 +76,20 @@ export async function GET(request: NextRequest) {
         postId: topPost.id,
         authorId: topPost.authorId,
         countryId: topPost.countryId,
+        likeCount: topPost.reactionCount,
+      },
+    });
+
+    // Broadcast notification to all users
+    await broadcastNotification({
+      type: "SYSTEM",
+      postId: topPost.id,
+      metadata: {
+        subtype: "MONTHLY_WINNER",
+        month: targetMonth,
+        year: targetYear,
+        monthName: MONTH_NAMES[targetMonth - 1],
+        postTitle: topPost.title,
         likeCount: topPost.reactionCount,
       },
     });

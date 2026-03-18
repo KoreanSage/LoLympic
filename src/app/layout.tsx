@@ -36,6 +36,10 @@ export const metadata: Metadata = {
     description:
       "AI-powered global meme translation and Olympic-style country competition",
   },
+  icons: {
+    icon: "/icon.svg",
+    apple: "/icon.svg",
+  },
   robots: {
     index: true,
     follow: true,

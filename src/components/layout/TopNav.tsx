@@ -13,6 +13,7 @@ interface NotificationData {
   type: string;
   isRead: boolean;
   createdAt: string;
+  metadata?: Record<string, unknown> | null;
   actor?: {
     id: string;
     username: string;
@@ -62,6 +63,13 @@ function notifText(n: NotificationData): string {
       return `A new season has started!`;
     case "SEASON_END":
       return `The season has ended`;
+    case "SYSTEM": {
+      const meta = n.metadata as Record<string, unknown> | null;
+      if (meta?.subtype === "MONTHLY_WINNER") {
+        return `🏆 ${meta.monthName} Meme of the Month has been selected!`;
+      }
+      return `System announcement`;
+    }
     default:
       return `New notification`;
   }
@@ -218,6 +226,8 @@ export default function TopNav() {
 
   const userAvatarUrl = (session?.user as any)?.avatarUrl || session?.user?.image || null;
   const username = (session?.user as any)?.username || "me";
+  const userRole = (session?.user as any)?.role;
+  const isAdmin = userRole === "ADMIN" || userRole === "SUPER_ADMIN";
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/85 backdrop-blur-xl border-b border-border">
@@ -240,6 +250,7 @@ export default function TopNav() {
             <NavLink href="/leaderboard" label="Leaderboard" />
             <NavLink href="/seasons" label="Season" />
             <NavLink href="/upload" label="Upload" />
+            {isAdmin && <NavLink href="/admin" label="Admin" />}
           </div>
         </div>
 
