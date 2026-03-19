@@ -220,9 +220,12 @@ export async function POST(
     ]);
 
     // Create notification (fire and forget)
+    const notifiedUserIds = new Set<string>();
+
     if (parentId && parentComment) {
       // REPLY notification for the parent comment author
       if (parentComment.authorId !== user.id) {
+        notifiedUserIds.add(parentComment.authorId);
         prisma.notification
           .create({
             data: {
@@ -238,6 +241,7 @@ export async function POST(
     } else {
       // COMMENT notification for the post author
       if (post.authorId !== user.id) {
+        notifiedUserIds.add(post.authorId);
         prisma.notification
           .create({
             data: {
@@ -250,6 +254,36 @@ export async function POST(
           })
           .catch(() => {});
       }
+    }
+
+    // @mention notifications — extract @username patterns and notify
+    const mentionMatches = commentBody.match(/@(\w+)/g);
+    if (mentionMatches && mentionMatches.length > 0) {
+      const usernames = Array.from(new Set(mentionMatches.map((m: string) => m.slice(1))));
+      // Look up mentioned users
+      prisma.user
+        .findMany({
+          where: { username: { in: usernames } },
+          select: { id: true, username: true },
+        })
+        .then((mentionedUsers) => {
+          for (const mu of mentionedUsers) {
+            // Skip self and already-notified users (reply/comment author)
+            if (mu.id === user.id || notifiedUserIds.has(mu.id)) continue;
+            prisma.notification
+              .create({
+                data: {
+                  recipientId: mu.id,
+                  actorId: user.id,
+                  postId,
+                  commentId: comment.id,
+                  type: "COMMENT",
+                },
+              })
+              .catch(() => {});
+          }
+        })
+        .catch(() => {});
     }
 
     return NextResponse.json({ comment }, { status: 201 });

@@ -3,8 +3,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import Avatar from "@/components/ui/Avatar";
-import Badge from "@/components/ui/Badge";
-import Button from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 
 interface Suggestion {
@@ -20,6 +18,7 @@ interface Suggestion {
     username: string;
     displayName?: string | null;
     avatarUrl?: string | null;
+    country?: { flagEmoji?: string } | null;
   };
   createdAt: string;
 }
@@ -31,34 +30,38 @@ interface SuggestionPanelProps {
   className?: string;
 }
 
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days}d`;
+  return new Date(dateStr).toLocaleDateString();
+}
+
 export default function SuggestionPanel({
   suggestions: initialSuggestions,
   postId,
-  segments = [],
   className = "",
 }: SuggestionPanelProps) {
   const { data: session } = useSession();
   const { toast } = useToast();
   const [suggestions, setSuggestions] = useState<Suggestion[]>(initialSuggestions);
-  const [showForm, setShowForm] = useState(false);
-  const [originalText, setOriginalText] = useState("");
-  const [proposedText, setProposedText] = useState("");
-  const [reason, setReason] = useState("");
-  const [selectedSegmentId, setSelectedSegmentId] = useState("");
+  const [body, setBody] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Fetch suggestions from API on mount
   const fetchSuggestions = useCallback(async () => {
     try {
       const res = await fetch(`/api/suggestions?postId=${postId}`);
       if (res.ok) {
         const data = await res.json();
-        if (data.suggestions) {
-          setSuggestions(data.suggestions);
-        }
+        if (data.suggestions) setSuggestions(data.suggestions);
       }
     } catch {
-      // Fall back to initial
+      // ignore
     }
   }, [postId]);
 
@@ -67,10 +70,7 @@ export default function SuggestionPanel({
   }, [fetchSuggestions]);
 
   const handleSubmit = async () => {
-    if (!proposedText.trim() || !originalText.trim()) {
-      toast("Please fill in original and proposed text", "error");
-      return;
-    }
+    if (!body.trim()) return;
     setIsSubmitting(true);
     try {
       const res = await fetch("/api/suggestions", {
@@ -79,27 +79,21 @@ export default function SuggestionPanel({
         body: JSON.stringify({
           postId,
           type: "TRANSLATION",
-          targetEntityType: selectedSegmentId ? "TRANSLATION_SEGMENT" : "TRANSLATION_PAYLOAD",
-          targetEntityId: selectedSegmentId || postId,
-          originalText: originalText.trim(),
-          proposedText: proposedText.trim(),
-          reason: reason.trim() || undefined,
+          targetEntityType: "TRANSLATION_PAYLOAD",
+          targetEntityId: postId,
+          originalText: "",
+          proposedText: body.trim(),
         }),
       });
       if (res.ok) {
-        toast("Suggestion submitted!", "success");
-        setShowForm(false);
-        setOriginalText("");
-        setProposedText("");
-        setReason("");
-        setSelectedSegmentId("");
+        setBody("");
         fetchSuggestions();
       } else {
         const data = await res.json().catch(() => null);
-        toast(data?.error || "Failed to submit suggestion", "error");
+        toast(data?.error || "Failed to post", "error");
       }
     } catch {
-      toast("Failed to submit suggestion", "error");
+      toast("Failed to post", "error");
     } finally {
       setIsSubmitting(false);
     }
@@ -117,258 +111,180 @@ export default function SuggestionPanel({
         setSuggestions((prev) =>
           prev.map((s) =>
             s.id === suggestionId
-              ? {
-                  ...s,
-                  upvoteCount: data.upvoteCount,
-                  downvoteCount: data.downvoteCount,
-                  userVote: data.vote,
-                }
+              ? { ...s, upvoteCount: data.upvoteCount, downvoteCount: data.downvoteCount, userVote: data.vote }
               : s
           )
         );
-      } else {
-        const data = await res.json().catch(() => null);
-        toast(data?.error || "Failed to vote", "error");
       }
     } catch {
       toast("Failed to vote", "error");
     }
   };
 
-  // Sort: approved first, then by net votes
   const sorted = [...suggestions].sort((a, b) => {
     if (a.status === "APPROVED" && b.status !== "APPROVED") return -1;
     if (b.status === "APPROVED" && a.status !== "APPROVED") return 1;
-    const netA = a.upvoteCount - a.downvoteCount;
-    const netB = b.upvoteCount - b.downvoteCount;
-    return netB - netA;
+    return (b.upvoteCount - b.downvoteCount) - (a.upvoteCount - a.downvoteCount);
   });
 
   return (
     <div className={`space-y-4 ${className}`}>
-      {/* Submit suggestion button / form */}
+      {/* Input */}
       {session && (
-        <div>
-          {!showForm ? (
-            <button
-              onClick={() => setShowForm(true)}
-              className="w-full py-3 rounded-lg border border-dashed border-border-active text-sm text-foreground-muted hover:text-foreground hover:border-[#c9a84c]/40 hover:bg-background-surface transition-colors"
-            >
-              + Suggest a better translation
-            </button>
-          ) : (
-            <div className="bg-background-surface border border-border rounded-lg p-4 space-y-3">
-              <h4 className="text-sm font-medium text-foreground">New Suggestion</h4>
-
-              {/* Segment selector if available */}
-              {segments.length > 0 && (
-                <div>
-                  <label className="block text-xs text-foreground-muted mb-1">Select segment (optional)</label>
-                  <select
-                    value={selectedSegmentId}
-                    onChange={(e) => {
-                      setSelectedSegmentId(e.target.value);
-                      const seg = segments.find((s) => s.id === e.target.value);
-                      if (seg) {
-                        setOriginalText(seg.translatedText);
-                      }
-                    }}
-                    className="w-full bg-background-elevated border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-border-active transition-colors"
-                  >
-                    <option value="">General suggestion</option>
-                    {segments.map((seg) => (
-                      <option key={seg.id} value={seg.id}>
-                        {seg.sourceText.slice(0, 50)}{seg.sourceText.length > 50 ? "..." : ""}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              <div>
-                <label className="block text-xs text-foreground-muted mb-1">Original / Current translation</label>
-                <textarea
-                  value={originalText}
-                  onChange={(e) => setOriginalText(e.target.value)}
-                  placeholder="The current translation text..."
-                  className="w-full bg-background-elevated border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder-foreground-subtle resize-none focus:outline-none focus:border-border-active transition-colors"
-                  rows={2}
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs text-foreground-muted mb-1">Your proposed translation</label>
-                <textarea
-                  value={proposedText}
-                  onChange={(e) => setProposedText(e.target.value)}
-                  placeholder="Your improved version..."
-                  className="w-full bg-background-elevated border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder-foreground-subtle resize-none focus:outline-none focus:border-border-active transition-colors"
-                  rows={2}
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs text-foreground-muted mb-1">Reason (optional)</label>
-                <input
-                  value={reason}
-                  onChange={(e) => setReason(e.target.value)}
-                  placeholder="Why is this better?"
-                  className="w-full bg-background-elevated border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder-foreground-subtle focus:outline-none focus:border-border-active transition-colors"
-                />
-              </div>
-
-              <div className="flex items-center gap-2 justify-end">
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => {
-                    setShowForm(false);
-                    setOriginalText("");
-                    setProposedText("");
-                    setReason("");
-                    setSelectedSegmentId("");
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  size="sm"
-                  variant="primary"
-                  onClick={handleSubmit}
-                  disabled={isSubmitting || !originalText.trim() || !proposedText.trim()}
-                >
-                  {isSubmitting ? "Submitting..." : "Submit"}
-                </Button>
-              </div>
-            </div>
-          )}
+        <div className="flex gap-3">
+          <textarea
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) handleSubmit();
+            }}
+            placeholder="Share your thoughts on this translation..."
+            className="flex-1 bg-background-elevated border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder-foreground-subtle resize-none focus:outline-none focus:border-[#c9a84c]/50 transition-colors"
+            rows={2}
+          />
+          <button
+            onClick={handleSubmit}
+            disabled={isSubmitting || !body.trim()}
+            className="self-end px-4 py-2 rounded-lg bg-[#c9a84c] text-black text-sm font-medium hover:bg-[#d4b85e] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            {isSubmitting ? "..." : "Post"}
+          </button>
         </div>
       )}
 
-      {/* Suggestions list */}
+      {/* List */}
       {sorted.length === 0 ? (
         <p className="text-sm text-foreground-subtle text-center py-8">
-          No suggestions yet. Be the first to improve this translation!
+          No discussion yet. Be the first to share your thoughts!
         </p>
       ) : (
         sorted.map((s) => (
-          <SuggestionItem key={s.id} suggestion={s} onVote={handleVote} />
+          <DiscussionItem key={s.id} item={s} onVote={handleVote} />
         ))
       )}
     </div>
   );
 }
 
-function SuggestionItem({
-  suggestion,
+function DiscussionItem({
+  item,
   onVote,
 }: {
-  suggestion: Suggestion;
+  item: Suggestion;
   onVote: (id: string, vote: "up" | "down") => void;
 }) {
-  const isApproved = suggestion.status === "APPROVED";
-  const net = suggestion.upvoteCount - suggestion.downvoteCount;
+  const [translatedText, setTranslatedText] = useState<string | null>(null);
+  const [isTranslating, setIsTranslating] = useState(false);
+  const { data: session } = useSession();
+  const preferredLang = (session?.user as any)?.preferredLanguage || "en";
+
+  const handleTranslate = async () => {
+    if (translatedText) {
+      setTranslatedText(null);
+      return;
+    }
+    setIsTranslating(true);
+    try {
+      const res = await fetch("/api/translate-text", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: item.proposedText,
+          targetLanguage: preferredLang,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setTranslatedText(data.translatedText);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
+  const net = item.upvoteCount - item.downvoteCount;
 
   return (
-    <div
-      className={`
-        bg-background-surface rounded-lg p-4 border transition-colors
-        ${isApproved ? "border-[#c9a84c]/30" : "border-border"}
-      `}
-    >
-      {/* Author + status */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <Avatar
-            src={suggestion.author.avatarUrl}
-            alt={suggestion.author.username}
-            size="sm"
-          />
-          <span className="text-xs text-foreground-muted">
-            {suggestion.author.displayName || suggestion.author.username}
-          </span>
-          <span className="text-xs text-foreground-subtle" suppressHydrationWarning>
-            {new Date(suggestion.createdAt).toLocaleDateString()}
-          </span>
-        </div>
-        {isApproved && (
-          <Badge variant="gold" size="sm">
-            Approved
-          </Badge>
+    <div className="bg-background-surface rounded-lg p-4 border border-border">
+      {/* Header */}
+      <div className="flex items-center gap-2 mb-2">
+        <Avatar src={item.author.avatarUrl} alt={item.author.username} size="sm" />
+        <span className="text-sm font-medium text-foreground">
+          {item.author.displayName || item.author.username}
+        </span>
+        {item.author.country?.flagEmoji && (
+          <span className="text-xs">{item.author.country.flagEmoji}</span>
         )}
-        {suggestion.status === "PENDING" && (
-          <Badge variant="warning" size="sm">
-            Pending
-          </Badge>
-        )}
-        {suggestion.status === "REJECTED" && (
-          <Badge variant="danger" size="sm">
-            Rejected
-          </Badge>
-        )}
+        <span className="text-xs text-foreground-subtle" suppressHydrationWarning>
+          {timeAgo(item.createdAt)}
+        </span>
       </div>
 
-      {/* Original vs Proposed */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-        <div>
-          <span className="text-[10px] uppercase tracking-wider text-foreground-subtle block mb-1">
-            Original
-          </span>
-          <p className="text-sm text-foreground-muted line-through decoration-border-active">
-            {suggestion.originalText}
-          </p>
-        </div>
-        <div>
-          <span className="text-[10px] uppercase tracking-wider text-[#c9a84c]/60 block mb-1">
-            Proposed
-          </span>
-          <p className="text-sm text-foreground">{suggestion.proposedText}</p>
-        </div>
-      </div>
+      {/* Body */}
+      <p className="text-sm text-foreground mb-2 whitespace-pre-wrap">{item.proposedText}</p>
 
-      {/* Reason */}
-      {suggestion.reason && (
-        <p className="text-xs text-foreground-subtle italic mb-3">
-          &ldquo;{suggestion.reason}&rdquo;
-        </p>
+      {/* Translated text */}
+      {translatedText && (
+        <div className="border-l-2 border-[#c9a84c]/50 pl-3 mb-2">
+          <p className="text-sm text-foreground-muted italic">{translatedText}</p>
+        </div>
       )}
 
-      {/* Vote buttons */}
-      <div className="flex items-center gap-2">
+      {/* Actions */}
+      <div className="flex items-center gap-3">
+        {/* Upvote */}
         <button
-          onClick={() => onVote(suggestion.id, "up")}
+          onClick={() => onVote(item.id, "up")}
           className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs transition-colors ${
-            suggestion.userVote === "up"
+            item.userVote === "up"
               ? "text-emerald-400 bg-emerald-500/10"
-              : "text-foreground-subtle hover:text-emerald-400 hover:bg-emerald-500/10"
+              : "text-foreground-subtle hover:text-emerald-400"
           }`}
         >
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
           </svg>
-          {suggestion.upvoteCount}
+          {item.upvoteCount}
         </button>
+
+        {/* Downvote */}
         <button
-          onClick={() => onVote(suggestion.id, "down")}
+          onClick={() => onVote(item.id, "down")}
           className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs transition-colors ${
-            suggestion.userVote === "down"
+            item.userVote === "down"
               ? "text-red-400 bg-red-500/10"
-              : "text-foreground-subtle hover:text-red-400 hover:bg-red-500/10"
+              : "text-foreground-subtle hover:text-red-400"
           }`}
         >
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
-          {suggestion.downvoteCount}
+          {item.downvoteCount}
         </button>
-        <span
-          className={`text-xs font-mono ml-1 ${
-            net > 0 ? "text-emerald-400" : net < 0 ? "text-red-400" : "text-foreground-subtle"
-          }`}
+
+        {net !== 0 && (
+          <span className={`text-xs font-mono ${net > 0 ? "text-emerald-400" : "text-red-400"}`}>
+            {net > 0 ? "+" : ""}{net}
+          </span>
+        )}
+
+        {/* Translate */}
+        <button
+          onClick={handleTranslate}
+          disabled={isTranslating}
+          className="flex items-center gap-1 px-2 py-1 rounded-md text-xs text-foreground-subtle hover:text-[#c9a84c] transition-colors ml-auto"
         >
-          {net > 0 ? "+" : ""}
-          {net}
-        </span>
+          {isTranslating ? (
+            <span className="w-3 h-3 border border-foreground-subtle border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+            </svg>
+          )}
+          {translatedText ? "Original" : "Translate"}
+        </button>
       </div>
     </div>
   );

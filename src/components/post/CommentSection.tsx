@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
+import Link from "next/link";
 import Avatar from "@/components/ui/Avatar";
 import Button from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
@@ -30,6 +31,188 @@ interface CommentSectionProps {
   className?: string;
 }
 
+// ── Mention types & helpers ──────────────────────────────────────────────────
+
+interface MentionUser {
+  id: string;
+  username: string;
+  displayName: string | null;
+  avatarUrl: string | null;
+  countryFlag: string | null;
+}
+
+/** Render comment body with @username turned into profile links */
+function renderBodyWithMentions(body: string) {
+  const parts = body.split(/(@\w+)/g);
+  return parts.map((part, i) => {
+    if (/^@\w+$/.test(part)) {
+      const username = part.slice(1);
+      return (
+        <Link
+          key={i}
+          href={`/profile/${username}`}
+          className="text-[#c9a84c] hover:underline font-medium"
+        >
+          {part}
+        </Link>
+      );
+    }
+    return <span key={i}>{part}</span>;
+  });
+}
+
+// ── MentionDropdown ──────────────────────────────────────────────────────────
+
+function MentionDropdown({
+  query,
+  postId,
+  onSelect,
+  visible,
+  position,
+}: {
+  query: string;
+  postId: string;
+  onSelect: (user: MentionUser) => void;
+  visible: boolean;
+  position: { top: number; left: number };
+}) {
+  const [users, setUsers] = useState<MentionUser[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const listRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!visible || query.length === 0) {
+      setUsers([]);
+      return;
+    }
+    setLoading(true);
+    const controller = new AbortController();
+    fetch(`/api/users/mentions?q=${encodeURIComponent(query)}&postId=${postId}`, {
+      signal: controller.signal,
+    })
+      .then((r) => r.json())
+      .then((d) => {
+        setUsers(d.users || []);
+        setActiveIndex(0);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+    return () => controller.abort();
+  }, [query, postId, visible]);
+
+  if (!visible) return null;
+
+  return (
+    <div
+      ref={listRef}
+      className="absolute z-50 bg-background-surface border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto w-64"
+      style={{ top: position.top, left: position.left }}
+    >
+      {loading && users.length === 0 && (
+        <div className="px-3 py-2 text-xs text-foreground-subtle">Searching...</div>
+      )}
+      {!loading && users.length === 0 && query.length > 0 && (
+        <div className="px-3 py-2 text-xs text-foreground-subtle">No users found</div>
+      )}
+      {users.map((user, idx) => (
+        <button
+          key={user.id}
+          className={`w-full flex items-center gap-2 px-3 py-2 text-left text-xs hover:bg-background-overlay transition-colors ${
+            idx === activeIndex ? "bg-background-overlay" : ""
+          }`}
+          onMouseDown={(e) => {
+            e.preventDefault(); // prevent blur
+            onSelect(user);
+          }}
+          onMouseEnter={() => setActiveIndex(idx)}
+        >
+          <Avatar src={user.avatarUrl} alt={user.username} size="xs" />
+          <div className="flex-1 min-w-0">
+            <span className="text-foreground font-medium truncate block">
+              {user.countryFlag && <span className="mr-1">{user.countryFlag}</span>}
+              {user.displayName || user.username}
+            </span>
+            <span className="text-foreground-subtle truncate block">@{user.username}</span>
+          </div>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ── useMention hook ──────────────────────────────────────────────────────────
+
+function useMention(textareaRef: React.RefObject<HTMLTextAreaElement | null>) {
+  const [mentionQuery, setMentionQuery] = useState("");
+  const [mentionVisible, setMentionVisible] = useState(false);
+  const [mentionPos, setMentionPos] = useState({ top: 0, left: 0 });
+  const [mentionStart, setMentionStart] = useState(-1);
+
+  const handleInputChange = useCallback(
+    (value: string, cursorPos: number) => {
+      // Look backwards from cursor for an @ not preceded by a word character
+      const textBefore = value.slice(0, cursorPos);
+      const match = textBefore.match(/(^|[\s])@(\w*)$/);
+      if (match) {
+        const query = match[2];
+        setMentionQuery(query);
+        setMentionStart(cursorPos - query.length - 1); // position of '@'
+        setMentionVisible(true);
+        // Position dropdown below textarea
+        if (textareaRef.current) {
+          const rect = textareaRef.current.getBoundingClientRect();
+          const parentRect = textareaRef.current.offsetParent?.getBoundingClientRect();
+          setMentionPos({
+            top: rect.bottom - (parentRect?.top || 0) + 4,
+            left: rect.left - (parentRect?.left || 0),
+          });
+        }
+      } else {
+        setMentionVisible(false);
+        setMentionQuery("");
+      }
+    },
+    [textareaRef]
+  );
+
+  const insertMention = useCallback(
+    (user: MentionUser, value: string, setValue: (v: string) => void) => {
+      if (mentionStart < 0) return;
+      const before = value.slice(0, mentionStart);
+      const after = value.slice(mentionStart + mentionQuery.length + 1); // +1 for '@'
+      const newValue = `${before}@${user.username} ${after}`;
+      setValue(newValue);
+      setMentionVisible(false);
+      setMentionQuery("");
+      // Focus textarea and set cursor after inserted mention
+      setTimeout(() => {
+        if (textareaRef.current) {
+          const pos = mentionStart + user.username.length + 2; // @ + username + space
+          textareaRef.current.focus();
+          textareaRef.current.selectionStart = pos;
+          textareaRef.current.selectionEnd = pos;
+        }
+      }, 0);
+    },
+    [mentionStart, mentionQuery, textareaRef]
+  );
+
+  const closeMention = useCallback(() => {
+    setMentionVisible(false);
+    setMentionQuery("");
+  }, []);
+
+  return {
+    mentionQuery,
+    mentionVisible,
+    mentionPos,
+    handleInputChange,
+    insertMention,
+    closeMention,
+  };
+}
+
 export default function CommentSection({
   comments: initialComments,
   postId,
@@ -40,6 +223,8 @@ export default function CommentSection({
   const [comments, setComments] = useState<Comment[]>(initialComments);
   const [newComment, setNewComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const mainTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const mainMention = useMention(mainTextareaRef);
 
   const sessionUsername = (session?.user as any)?.username;
   const sessionAvatarUrl = (session?.user as any)?.avatarUrl || session?.user?.image || null;
@@ -190,18 +375,40 @@ export default function CommentSection({
       {session ? (
       <div className="flex gap-3">
         <Avatar src={sessionAvatarUrl} size="md" alt={sessionDisplayName || "You"} />
-        <div className="flex-1">
+        <div className="flex-1 relative">
           <textarea
+            ref={mainTextareaRef}
             value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
-            placeholder="Add a comment..."
+            onChange={(e) => {
+              setNewComment(e.target.value);
+              mainMention.handleInputChange(e.target.value, e.target.selectionStart);
+            }}
+            placeholder="Add a comment... Use @ to mention someone"
             className="w-full bg-background-surface border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder-foreground-subtle resize-none focus:outline-none focus:border-border-active transition-colors"
             rows={2}
             onKeyDown={(e) => {
+              if (e.key === "Escape" && mainMention.mentionVisible) {
+                mainMention.closeMention();
+                e.preventDefault();
+                return;
+              }
               if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
                 handleSubmit();
               }
             }}
+            onBlur={() => {
+              // Delay to allow dropdown click
+              setTimeout(() => mainMention.closeMention(), 200);
+            }}
+          />
+          <MentionDropdown
+            query={mainMention.mentionQuery}
+            postId={postId}
+            visible={mainMention.mentionVisible}
+            position={mainMention.mentionPos}
+            onSelect={(user) =>
+              mainMention.insertMention(user, newComment, setNewComment)
+            }
           />
           <div className="flex justify-end mt-2">
             <Button
@@ -304,6 +511,8 @@ function CommentItem({
   const { data: session } = useSession();
   const [showReplyBox, setShowReplyBox] = useState(false);
   const [replyText, setReplyText] = useState("");
+  const replyTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const replyMention = useMention(replyTextareaRef);
   const [liked, setLiked] = useState(comment.userLiked ?? false);
   const [localLikeCount, setLocalLikeCount] = useState(comment.likeCount);
   const [likePending, setLikePending] = useState(false);
@@ -448,7 +657,7 @@ function CommentItem({
             ) : (
               <div>
                 <p className="text-sm text-foreground-muted leading-relaxed">
-                  {comment.body}
+                  {renderBodyWithMentions(comment.body)}
                 </p>
                 {translatedText && (
                   <p className="text-sm text-foreground leading-relaxed mt-1 pl-2 border-l-2 border-[#c9a84c]/40 italic">
@@ -616,28 +825,55 @@ function CommentItem({
 
             {/* Reply box */}
             {showReplyBox && (
-              <div className="mt-2 flex gap-2">
-                <input
-                  value={replyText}
-                  onChange={(e) => setReplyText(e.target.value)}
-                  placeholder="Write a reply..."
-                  className="flex-1 bg-background-surface border border-border rounded-lg px-3 py-1.5 text-xs text-foreground placeholder-foreground-subtle focus:outline-none focus:border-border-active"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") handleReply();
-                    if (e.key === "Escape") {
-                      setShowReplyBox(false);
-                      setReplyText("");
-                    }
-                  }}
+              <div className="mt-2 relative">
+                <div className="flex gap-2">
+                  <textarea
+                    ref={replyTextareaRef}
+                    value={replyText}
+                    onChange={(e) => {
+                      setReplyText(e.target.value);
+                      replyMention.handleInputChange(e.target.value, e.target.selectionStart);
+                    }}
+                    placeholder="Write a reply... Use @ to mention"
+                    className="flex-1 bg-background-surface border border-border rounded-lg px-3 py-1.5 text-xs text-foreground placeholder-foreground-subtle resize-none focus:outline-none focus:border-border-active"
+                    rows={1}
+                    onKeyDown={(e) => {
+                      if (e.key === "Escape" && replyMention.mentionVisible) {
+                        replyMention.closeMention();
+                        e.preventDefault();
+                        return;
+                      }
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        handleReply();
+                      }
+                      if (e.key === "Escape") {
+                        setShowReplyBox(false);
+                        setReplyText("");
+                      }
+                    }}
+                    onBlur={() => {
+                      setTimeout(() => replyMention.closeMention(), 200);
+                    }}
+                  />
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={handleReply}
+                    disabled={!replyText.trim()}
+                  >
+                    Reply
+                  </Button>
+                </div>
+                <MentionDropdown
+                  query={replyMention.mentionQuery}
+                  postId={postId}
+                  visible={replyMention.mentionVisible}
+                  position={replyMention.mentionPos}
+                  onSelect={(user) =>
+                    replyMention.insertMention(user, replyText, setReplyText)
+                  }
                 />
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={handleReply}
-                  disabled={!replyText.trim()}
-                >
-                  Reply
-                </Button>
               </div>
             )}
           </div>

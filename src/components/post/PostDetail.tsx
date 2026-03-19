@@ -232,7 +232,7 @@ export default function PostDetail({
 
   const tabs = [
     { id: "culture", label: "Culture Note", count: cultureNotes.length },
-    { id: "suggestions", label: "Suggestions", count: suggestions.length },
+    { id: "suggestions", label: "Discussion", count: suggestions.length },
     { id: "comments", label: "Comments", count: commentCount },
   ];
 

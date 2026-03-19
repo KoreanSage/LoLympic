@@ -131,13 +131,10 @@ export async function POST(request: NextRequest) {
       reason?: string;
     } = body;
 
-    // Validation
-    if (!postId || !type || !targetEntityType || !targetEntityId || !originalText || !proposedText) {
+    // Validation — only postId and proposedText are required now
+    if (!postId || !proposedText) {
       return NextResponse.json(
-        {
-          error:
-            "Required: postId, type, targetEntityType, targetEntityId, originalText, proposedText",
-        },
+        { error: "Required: postId, proposedText" },
         { status: 400 }
       );
     }
