@@ -84,7 +84,7 @@ export default function FeedFilters({
 
   return (
     <div
-      className={`sticky top-[7.5rem] z-40 bg-background/90 backdrop-blur-md border-b border-border py-3 -mx-4 px-4 ${className}`}
+      className={`border-b border-border py-3 -mx-4 px-4 ${className}`}
     >
       <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide">
         {/* Sort tabs */}
