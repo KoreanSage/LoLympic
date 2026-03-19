@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { useTranslation } from "@/i18n";
 import MainLayout from "@/components/layout/MainLayout";
 import Avatar from "@/components/ui/Avatar";
 import type { ConversationListItem } from "@/types/messages";
@@ -21,6 +22,7 @@ function formatTimeAgo(dateStr: string): string {
 
 export default function MessagesPage() {
   const { data: session, status } = useSession();
+  const { t } = useTranslation();
   const router = useRouter();
   const [conversations, setConversations] = useState<ConversationListItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,7 +59,7 @@ export default function MessagesPage() {
     return (
       <MainLayout showSidebar={false}>
         <div className="max-w-2xl mx-auto py-6">
-          <h1 className="text-2xl font-bold text-foreground mb-6">Messages</h1>
+          <h1 className="text-2xl font-bold text-foreground mb-6">{t("messages.title")}</h1>
           <div className="flex items-center justify-center py-20">
             <div className="w-8 h-8 rounded-full border-2 border-border border-t-[#c9a84c] animate-spin" />
           </div>
@@ -69,7 +71,7 @@ export default function MessagesPage() {
   return (
     <MainLayout showSidebar={false}>
       <div className="max-w-2xl mx-auto py-6">
-        <h1 className="text-2xl font-bold text-foreground mb-6">Messages</h1>
+        <h1 className="text-2xl font-bold text-foreground mb-6">{t("messages.title")}</h1>
 
         {conversations.length === 0 ? (
           <div className="bg-background-surface border border-border rounded-xl p-12 text-center">
@@ -86,9 +88,9 @@ export default function MessagesPage() {
                 d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"
               />
             </svg>
-            <p className="text-foreground-muted text-sm">No conversations yet</p>
+            <p className="text-foreground-muted text-sm">{t("messages.empty")}</p>
             <p className="text-foreground-subtle text-xs mt-1">
-              Visit a user&apos;s profile and click &quot;Message&quot; to start a conversation
+              {t("messages.startHint")}
             </p>
           </div>
         ) : (
@@ -119,7 +121,7 @@ export default function MessagesPage() {
                     <p className="text-xs text-foreground-muted truncate">
                       {conv.lastMessage
                         ? conv.lastMessage.body
-                        : "No messages yet"}
+                        : t("messages.empty")}
                     </p>
                     {conv.unreadCount > 0 && (
                       <span className="flex-shrink-0 ml-2 w-5 h-5 rounded-full bg-[#c9a84c] text-black text-[10px] font-bold flex items-center justify-center">

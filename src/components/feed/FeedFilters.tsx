@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "@/i18n";
 
 interface FilterOption {
   value: string;
@@ -17,47 +18,48 @@ interface FeedFiltersProps {
   className?: string;
 }
 
-const SORT_OPTIONS: FilterOption[] = [
-  { value: "trending", label: "Trending" },
-  { value: "recent", label: "Recent" },
-  { value: "top", label: "Top" },
-];
-
-const COUNTRY_OPTIONS: FilterOption[] = [
-  { value: "", label: "All Countries" },
-  { value: "US", label: "\u{1F1FA}\u{1F1F8} USA" },
-  { value: "KR", label: "\u{1F1F0}\u{1F1F7} Korea" },
-  { value: "JP", label: "\u{1F1EF}\u{1F1F5} Japan" },
-  { value: "CN", label: "\u{1F1E8}\u{1F1F3} China" },
-  { value: "MX", label: "\u{1F1F2}\u{1F1FD} Mexico" },
-];
-
-const LANGUAGE_OPTIONS: FilterOption[] = [
-  { value: "", label: "All Languages" },
-  { value: "en", label: "English" },
-  { value: "ko", label: "\uD55C\uAD6D\uC5B4" },
-  { value: "ja", label: "\u65E5\u672C\u8A9E" },
-  { value: "zh", label: "\u4E2D\u6587" },
-  { value: "es", label: "Espa\u00F1ol" },
-];
-
-const CATEGORY_OPTIONS: FilterOption[] = [
-  { value: "", label: "All Categories" },
-  { value: "reaction", label: "Reaction" },
-  { value: "comic", label: "Comic" },
-  { value: "screenshot", label: "Screenshot" },
-  { value: "classic", label: "Classic" },
-  { value: "anime", label: "Anime" },
-];
-
 export default function FeedFilters({
   onFilterChange,
   className = "",
 }: FeedFiltersProps) {
+  const { t } = useTranslation();
   const [sort, setSort] = useState("trending");
   const [country, setCountry] = useState("");
   const [language, setLanguage] = useState("");
   const [category, setCategory] = useState("");
+
+  const SORT_OPTIONS: FilterOption[] = [
+    { value: "trending", label: t("filter.trending") },
+    { value: "recent", label: t("filter.recent") },
+    { value: "top", label: t("filter.top") },
+  ];
+
+  const COUNTRY_OPTIONS: FilterOption[] = [
+    { value: "", label: t("filter.allCountries") },
+    { value: "US", label: "\u{1F1FA}\u{1F1F8} " + t("filter.usa") },
+    { value: "KR", label: "\u{1F1F0}\u{1F1F7} " + t("filter.korea") },
+    { value: "JP", label: "\u{1F1EF}\u{1F1F5} " + t("filter.japan") },
+    { value: "CN", label: "\u{1F1E8}\u{1F1F3} " + t("filter.china") },
+    { value: "MX", label: "\u{1F1F2}\u{1F1FD} " + t("filter.mexico") },
+  ];
+
+  const LANGUAGE_OPTIONS: FilterOption[] = [
+    { value: "", label: t("filter.allLanguages") },
+    { value: "en", label: t("filter.english") },
+    { value: "ko", label: t("filter.korean") },
+    { value: "ja", label: t("filter.japanese") },
+    { value: "zh", label: t("filter.chinese") },
+    { value: "es", label: t("filter.spanish") },
+  ];
+
+  const CATEGORY_OPTIONS: FilterOption[] = [
+    { value: "", label: t("filter.allCategories") },
+    { value: "reaction", label: t("filter.reaction") },
+    { value: "comic", label: t("filter.comic") },
+    { value: "screenshot", label: t("filter.screenshot") },
+    { value: "classic", label: t("filter.classic") },
+    { value: "anime", label: t("filter.anime") },
+  ];
 
   const handleChange = (key: string, value: string) => {
     const newFilters = { country, language, category, sort };

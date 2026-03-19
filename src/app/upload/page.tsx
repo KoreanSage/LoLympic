@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import UploadStudio from "@/components/upload/UploadStudio";
+import { useTranslation } from "@/i18n";
 
 export default function UploadPage() {
   const { status } = useSession();
   const router = useRouter();
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -30,10 +32,10 @@ export default function UploadPage() {
     <MainLayout showSidebar={false}>
       <div className="py-6">
         <h1 className="text-2xl font-bold text-foreground text-center mb-2">
-          Share a Meme
+          {t("upload.title")}
         </h1>
         <p className="text-sm text-foreground-subtle text-center mb-8">
-          Upload a meme and we&apos;ll translate it to 5 languages automatically.
+          {t("upload.subtitle")}
         </p>
         <UploadStudio />
       </div>

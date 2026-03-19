@@ -4,6 +4,7 @@ import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useTranslation } from "@/i18n";
 
 const COUNTRIES = [
   { id: "KR", flag: "\u{1F1F0}\u{1F1F7}", name: "Korea" },
@@ -14,6 +15,7 @@ const COUNTRIES = [
 ];
 
 export default function SignUpPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -29,19 +31,19 @@ export default function SignUpPage() {
     setError("");
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match");
+      setError(t("auth.passwordMismatch"));
       return;
     }
     if (password.length < 6) {
-      setError("Password must be at least 6 characters");
+      setError(t("auth.passwordMinLength"));
       return;
     }
     if (!countryId) {
-      setError("Please select your country");
+      setError(t("auth.selectCountryError"));
       return;
     }
     if (!agreedToTerms) {
-      setError("You must agree to the Terms of Service and Privacy Policy");
+      setError(t("auth.agreeTerms"));
       return;
     }
 
@@ -63,7 +65,7 @@ export default function SignUpPage() {
     const data = await res.json();
 
     if (!res.ok) {
-      setError(data.error || "Failed to create account");
+      setError(data.error || t("auth.signUpFailed"));
       setLoading(false);
       return;
     }
@@ -78,7 +80,7 @@ export default function SignUpPage() {
     setLoading(false);
 
     if (result?.error) {
-      setError("Account created but auto-login failed. Please sign in.");
+      setError(t("auth.signUpSuccessLoginFailed"));
     } else {
       router.push("/");
       router.refresh();
@@ -104,7 +106,7 @@ export default function SignUpPage() {
         {/* Sign Up Form */}
         <div className="bg-background-surface border border-border rounded-xl p-6">
           <h2 className="text-lg font-semibold text-foreground mb-6">
-            Create Account
+            {t("auth.signUp")}
           </h2>
 
           {error && (
@@ -116,7 +118,7 @@ export default function SignUpPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-foreground-muted mb-1.5">
-                Username
+                {t("auth.username")}
               </label>
               <input
                 type="text"
@@ -130,7 +132,7 @@ export default function SignUpPage() {
 
             <div>
               <label className="block text-sm font-medium text-foreground-muted mb-1.5">
-                Email
+                {t("auth.email")}
               </label>
               <input
                 type="email"
@@ -144,7 +146,7 @@ export default function SignUpPage() {
 
             <div>
               <label className="block text-sm font-medium text-foreground-muted mb-1.5">
-                Country
+                {t("auth.country")}
               </label>
               <select
                 value={countryId}
@@ -152,7 +154,7 @@ export default function SignUpPage() {
                 className="w-full px-3 py-2.5 bg-background-elevated border border-border-hover rounded-lg text-foreground focus:outline-none focus:border-[#c9a84c] focus:ring-1 focus:ring-[#c9a84c]/50 transition-colors"
                 required
               >
-                <option value="">Select your country</option>
+                <option value="">{t("auth.selectCountry")}</option>
                 {COUNTRIES.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.flag} {c.name}
@@ -163,13 +165,13 @@ export default function SignUpPage() {
 
             <div>
               <label className="block text-sm font-medium text-foreground-muted mb-1.5">
-                Password
+                {t("auth.password")}
               </label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Min 6 characters"
+                placeholder={t("auth.passwordPlaceholder6")}
                 className="w-full px-3 py-2.5 bg-background-elevated border border-border-hover rounded-lg text-foreground placeholder-foreground-subtle focus:outline-none focus:border-[#c9a84c] focus:ring-1 focus:ring-[#c9a84c]/50 transition-colors"
                 required
                 minLength={6}
@@ -178,13 +180,13 @@ export default function SignUpPage() {
 
             <div>
               <label className="block text-sm font-medium text-foreground-muted mb-1.5">
-                Confirm Password
+                {t("auth.confirmPassword")}
               </label>
               <input
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Re-enter password"
+                placeholder={t("auth.reenterPassword")}
                 className="w-full px-3 py-2.5 bg-background-elevated border border-border-hover rounded-lg text-foreground placeholder-foreground-subtle focus:outline-none focus:border-[#c9a84c] focus:ring-1 focus:ring-[#c9a84c]/50 transition-colors"
                 required
                 minLength={6}
@@ -199,13 +201,9 @@ export default function SignUpPage() {
                 className="mt-0.5 w-4 h-4 rounded border-border-active accent-[#c9a84c]"
               />
               <span className="text-xs text-foreground-muted leading-relaxed">
-                I agree to the{" "}
+                {t("auth.agreeTermsLabel")}{" "}
                 <Link href="/terms" className="text-[#c9a84c] hover:underline" target="_blank">
-                  Terms of Service
-                </Link>{" "}
-                and{" "}
-                <Link href="/terms#privacy" className="text-[#c9a84c] hover:underline" target="_blank">
-                  Privacy Policy
+                  {t("auth.termsAndPrivacy")}
                 </Link>
               </span>
             </label>
@@ -215,14 +213,14 @@ export default function SignUpPage() {
               disabled={loading || !agreedToTerms}
               className="w-full py-2.5 bg-[#c9a84c] hover:bg-[#d4b65e] text-black font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? "Creating account..." : "Create Account"}
+              {loading ? t("auth.creatingAccount") : t("auth.signUp")}
             </button>
           </form>
 
           {/* Divider */}
           <div className="flex items-center gap-3 my-5">
             <div className="flex-1 h-px bg-background-overlay" />
-            <span className="text-xs text-foreground-subtle">OR</span>
+            <span className="text-xs text-foreground-subtle uppercase">{t("auth.orContinueWith")}</span>
             <div className="flex-1 h-px bg-background-overlay" />
           </div>
 
@@ -250,14 +248,14 @@ export default function SignUpPage() {
                 fill="#EA4335"
               />
             </svg>
-            Sign up with Google
+            {t("auth.continueWithGoogle")}
           </button>
         </div>
 
         <p className="mt-6 text-center text-sm text-foreground-subtle">
-          Already have an account?{" "}
+          {t("auth.haveAccount")}{" "}
           <Link href="/login" className="text-[#c9a84c] hover:underline">
-            Sign In
+            {t("auth.signIn")}
           </Link>
         </p>
       </div>

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "@/styles/globals.css";
 import SessionProvider from "@/components/providers/SessionProvider";
 import ThemeProvider from "@/components/providers/ThemeProvider";
+import I18nProvider from "@/components/providers/I18nProvider";
 import { ToastProvider } from "@/components/ui/Toast";
 import CookieConsent from "@/components/legal/CookieConsent";
 
@@ -69,6 +70,8 @@ export default function RootLayout({
                 try {
                   var theme = localStorage.getItem('theme') || 'dark';
                   document.documentElement.className = theme;
+                  var lang = localStorage.getItem('uiLanguage') || 'en';
+                  document.documentElement.lang = lang;
                 } catch(e) {}
               })();
             `,
@@ -77,12 +80,14 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen bg-background font-sans text-foreground antialiased">
         <SessionProvider>
-          <ThemeProvider>
-            <ToastProvider>
-              {children}
-              <CookieConsent />
-            </ToastProvider>
-          </ThemeProvider>
+          <I18nProvider>
+            <ThemeProvider>
+              <ToastProvider>
+                {children}
+                <CookieConsent />
+              </ToastProvider>
+            </ThemeProvider>
+          </I18nProvider>
         </SessionProvider>
       </body>
     </html>

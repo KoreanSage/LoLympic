@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/Toast";
+import { useTranslation } from "@/i18n";
 import Avatar from "@/components/ui/Avatar";
 import Badge from "@/components/ui/Badge";
 import Tabs from "@/components/ui/Tabs";
@@ -115,6 +116,7 @@ export default function PostDetail({
   const { data: session } = useSession();
   const router = useRouter();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const hasOverlaySegments = segments.some(
     (s) => s.boxX != null && s.boxY != null && s.boxWidth != null && s.boxHeight != null
   );
@@ -182,15 +184,15 @@ export default function PostDetail({
     try {
       const res = await fetch(`/api/posts/${id}`, { method: "DELETE" });
       if (res.ok) {
-        toast("Post deleted successfully", "success");
+        toast(t("feed.deletePost"), "success");
         onDelete?.();
         router.push("/");
       } else {
         const data = await res.json().catch(() => null);
-        toast(data?.error || "Failed to delete post", "error");
+        toast(data?.error || t("common.error"), "error");
       }
     } catch {
-      toast("Failed to delete post", "error");
+      toast(t("common.error"), "error");
     } finally {
       setIsDeleting(false);
       setShowDeleteConfirm(false);
@@ -199,7 +201,7 @@ export default function PostDetail({
 
   const handleReport = async () => {
     if (!reportReason) {
-      toast("Please select a reason", "error");
+      toast(t("comment.reportReason"), "error");
       return;
     }
     setIsReporting(true);
@@ -215,25 +217,25 @@ export default function PostDetail({
         }),
       });
       if (res.ok) {
-        toast("Report submitted. Thank you.", "success");
+        toast(t("comment.reportSubmitted"), "success");
         setShowReportModal(false);
         setReportReason("");
         setReportDetails("");
       } else {
         const data = await res.json().catch(() => null);
-        toast(data?.error || "Failed to submit report", "error");
+        toast(data?.error || t("comment.failedReport"), "error");
       }
     } catch {
-      toast("Failed to submit report", "error");
+      toast(t("comment.failedReport"), "error");
     } finally {
       setIsReporting(false);
     }
   };
 
   const tabs = [
-    { id: "culture", label: "Culture Note", count: cultureNotes.length },
-    { id: "suggestions", label: "Discussion", count: suggestions.length },
-    { id: "comments", label: "Comments", count: commentCount },
+    { id: "culture", label: t("post.cultureNote"), count: cultureNotes.length },
+    { id: "suggestions", label: t("post.discussion"), count: suggestions.length },
+    { id: "comments", label: t("post.comments"), count: commentCount },
   ];
 
   return (
@@ -288,7 +290,7 @@ export default function PostDetail({
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                   </svg>
-                  Delete Post
+                  {t("post.deletePost")}
                 </button>
               )}
               <button
@@ -301,7 +303,7 @@ export default function PostDetail({
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2z" />
                 </svg>
-                Report
+                {t("post.reportPost")}
               </button>
             </div>
           )}
@@ -312,23 +314,23 @@ export default function PostDetail({
       {showDeleteConfirm && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/60 backdrop-blur-sm" onClick={() => setShowDeleteConfirm(false)}>
           <div className="bg-background-elevated border border-border rounded-xl p-6 max-w-sm w-full mx-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold text-foreground mb-2">Delete Post</h3>
+            <h3 className="text-lg font-semibold text-foreground mb-2">{t("feed.deletePost")}</h3>
             <p className="text-sm text-foreground-muted mb-6">
-              Are you sure you want to delete this post? This action cannot be undone.
+              {t("feed.deleteConfirm")}
             </p>
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
                 className="px-4 py-2 rounded-lg text-sm text-foreground-muted hover:text-foreground hover:bg-background-overlay transition-colors"
               >
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 onClick={handleDeletePost}
                 disabled={isDeleting}
                 className="px-4 py-2 rounded-lg text-sm font-medium bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors disabled:opacity-50"
               >
-                {isDeleting ? "Deleting..." : "Delete"}
+                {isDeleting ? t("feed.deleting") : t("common.delete")}
               </button>
             </div>
           </div>
@@ -339,32 +341,32 @@ export default function PostDetail({
       {showReportModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/60 backdrop-blur-sm" onClick={() => { setShowReportModal(false); setReportReason(""); setReportDetails(""); }}>
           <div className="bg-background-elevated border border-border rounded-xl p-6 max-w-sm w-full mx-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold text-foreground mb-4">Report Post</h3>
+            <h3 className="text-lg font-semibold text-foreground mb-4">{t("post.reportPost")}</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-xs text-foreground-muted mb-1.5">Reason</label>
+                <label className="block text-xs text-foreground-muted mb-1.5">{t("comment.reportReason")}</label>
                 <select
                   value={reportReason}
                   onChange={(e) => setReportReason(e.target.value)}
                   className="w-full bg-background-surface border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-border-active transition-colors"
                 >
-                  <option value="">Select a reason...</option>
-                  <option value="SPAM">Spam</option>
-                  <option value="HARASSMENT">Harassment</option>
-                  <option value="HATE_SPEECH">Hate Speech</option>
-                  <option value="VIOLENCE">Violence</option>
-                  <option value="SEXUAL_CONTENT">Sexual Content</option>
-                  <option value="MISINFORMATION">Misinformation</option>
-                  <option value="COPYRIGHT">Copyright</option>
-                  <option value="OTHER">Other</option>
+                  <option value="">{t("comment.reportReason")}</option>
+                  <option value="SPAM">{t("comment.spam")}</option>
+                  <option value="HARASSMENT">{t("comment.harassment")}</option>
+                  <option value="HATE_SPEECH">{t("comment.hateSpeech")}</option>
+                  <option value="VIOLENCE">{t("comment.violence")}</option>
+                  <option value="SEXUAL_CONTENT">{t("comment.sexualContent")}</option>
+                  <option value="MISINFORMATION">{t("comment.misinformation")}</option>
+                  <option value="COPYRIGHT">{t("comment.copyrightReport")}</option>
+                  <option value="OTHER">{t("comment.other")}</option>
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-foreground-muted mb-1.5">Details (optional)</label>
+                <label className="block text-xs text-foreground-muted mb-1.5">{t("comment.reportDetails")}</label>
                 <textarea
                   value={reportDetails}
                   onChange={(e) => setReportDetails(e.target.value)}
-                  placeholder="Provide additional details..."
+                  placeholder={t("comment.reportDetails")}
                   className="w-full bg-background-surface border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder-foreground-subtle resize-none focus:outline-none focus:border-border-active transition-colors"
                   rows={3}
                 />
@@ -379,14 +381,14 @@ export default function PostDetail({
                 }}
                 className="px-4 py-2 rounded-lg text-sm text-foreground-muted hover:text-foreground hover:bg-background-overlay transition-colors"
               >
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 onClick={handleReport}
                 disabled={isReporting || !reportReason}
                 className="px-4 py-2 rounded-lg text-sm font-medium bg-[#c9a84c] text-black hover:bg-[#b8963f] transition-colors disabled:opacity-50"
               >
-                {isReporting ? "Submitting..." : "Submit Report"}
+                {isReporting ? t("common.loading") : t("comment.reportSubmit")}
               </button>
             </div>
           </div>
@@ -424,7 +426,7 @@ export default function PostDetail({
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7" />
             </svg>
-            {showCompare ? "Single View" : "Compare"}
+            {showCompare ? t("post.original") : t("post.translated")}
           </button>
         </div>
 
@@ -500,7 +502,7 @@ export default function PostDetail({
           onClick={() => setActiveTab("comments")}
         />
         <ActionButton
-          label="Share"
+          label={t("post.sharePost")}
           icon="share"
           onClick={async () => {
             const url = window.location.href;
@@ -508,7 +510,7 @@ export default function PostDetail({
               try { await navigator.share({ title, url }); } catch {}
             } else {
               await navigator.clipboard.writeText(url);
-              toast("Link copied to clipboard!", "success");
+              toast(t("feed.linkCopied"), "success");
             }
           }}
         />
@@ -524,11 +526,11 @@ export default function PostDetail({
               if (saved) {
                 const filtered = bookmarks.filter((bid) => bid !== id);
                 localStorage.setItem("lolympic_bookmarks", JSON.stringify(filtered));
-                toast("Bookmark removed", "success");
+                toast(t("feed.bookmarkRemoved"), "success");
               } else {
                 if (!bookmarks.includes(id)) bookmarks.push(id);
                 localStorage.setItem("lolympic_bookmarks", JSON.stringify(bookmarks));
-                toast("Bookmarked!", "success");
+                toast(t("feed.bookmarked"), "success");
               }
             } catch {}
             setSaved(!saved);
@@ -553,7 +555,7 @@ export default function PostDetail({
               ))
             ) : (
               <p className="text-sm text-foreground-subtle text-center py-8">
-                No culture notes yet
+                {t("post.cultureNote")}
               </p>
             )}
           </div>

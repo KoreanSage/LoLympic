@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
+import { useTranslation } from "@/i18n";
 import Link from "next/link";
 import MainLayout from "@/components/layout/MainLayout";
 import Avatar from "@/components/ui/Avatar";
@@ -57,6 +58,7 @@ export default function SearchPageWrapper() {
 }
 
 function SearchPage() {
+  const { t } = useTranslation();
   const searchParams = useSearchParams();
   const query = searchParams.get("q") || "";
   const [activeTab, setActiveTab] = useState<"posts" | "users">("posts");
@@ -95,11 +97,11 @@ function SearchPage() {
         {/* Header */}
         <div>
           <h1 className="text-2xl font-bold text-foreground mb-1">
-            Search Results
+            {t("search.title")}
           </h1>
           {query && (
             <p className="text-sm text-foreground-subtle">
-              Results for &quot;{query}&quot;
+              {t("search.results", { query })}
             </p>
           )}
         </div>
@@ -135,12 +137,12 @@ function SearchPage() {
           </div>
         ) : !query ? (
           <p className="text-sm text-foreground-subtle text-center py-12">
-            Enter a search term to find memes and users
+            {t("search.placeholder")}
           </p>
         ) : activeTab === "posts" ? (
           posts.length === 0 ? (
             <p className="text-sm text-foreground-subtle text-center py-12">
-              No memes found for &quot;{query}&quot;
+              {t("search.noResults", { query })}
             </p>
           ) : (
             <div className="space-y-3">
@@ -186,7 +188,7 @@ function SearchPage() {
           )
         ) : users.length === 0 ? (
           <p className="text-sm text-foreground-subtle text-center py-12">
-            No users found for &quot;{query}&quot;
+            {t("search.noResults", { query })}
           </p>
         ) : (
           <div className="space-y-3">

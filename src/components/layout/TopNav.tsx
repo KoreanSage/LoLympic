@@ -7,6 +7,7 @@ import { useSession, signOut } from "next-auth/react";
 import SeasonBar from "@/components/competition/SeasonBar";
 import Avatar from "@/components/ui/Avatar";
 import { useToast } from "@/components/ui/Toast";
+import { useTranslation } from "@/i18n";
 
 interface NotificationData {
   id: string;
@@ -42,36 +43,36 @@ function formatTimeAgo(dateStr: string): string {
   return `${Math.floor(days / 30)}mo`;
 }
 
-function notifText(n: NotificationData): string {
+function notifText(n: NotificationData, t: (key: any, params?: any) => string): string {
   const actor = n.actor?.displayName || n.actor?.username || "Someone";
   switch (n.type) {
     case "REACTION":
-      return `${actor} reacted to your post`;
+      return t("notif.reaction", { actor });
     case "COMMENT":
-      return `${actor} commented on your post`;
+      return t("notif.comment", { actor });
     case "REPLY":
-      return `${actor} replied to your comment`;
+      return t("notif.reply", { actor });
     case "SUGGESTION":
-      return `${actor} suggested a translation`;
+      return t("notif.suggestion", { actor });
     case "SUGGESTION_APPROVED":
-      return `Your translation suggestion was approved`;
+      return t("notif.suggestionApproved");
     case "FOLLOW":
-      return `${actor} started following you`;
+      return t("notif.follow", { actor });
     case "MEDAL_AWARDED":
-      return `You earned a medal!`;
+      return t("notif.medal");
     case "SEASON_START":
-      return `A new season has started!`;
+      return t("notif.seasonStart");
     case "SEASON_END":
-      return `The season has ended`;
+      return t("notif.seasonEnd");
     case "SYSTEM": {
       const meta = n.metadata as Record<string, unknown> | null;
       if (meta?.subtype === "MONTHLY_WINNER") {
-        return `🏆 ${meta.monthName} Meme of the Month has been selected!`;
+        return t("notif.monthlyWinner", { month: String(meta.monthName || "") });
       }
-      return `System announcement`;
+      return t("notif.system");
     }
     default:
-      return `New notification`;
+      return t("notif.new_notification");
   }
 }
 
@@ -93,6 +94,7 @@ function notifIcon(type: string): string {
 
 export default function TopNav() {
   const { data: session, status } = useSession();
+  const { t } = useTranslation();
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showNotifications, setShowNotifications] = useState(false);
@@ -264,11 +266,11 @@ export default function TopNav() {
           </Link>
 
           <div className="hidden md:flex items-center gap-1">
-            <NavLink href="/" label="Explore" />
-            <NavLink href="/leaderboard" label="Leaderboard" />
-            <NavLink href="/seasons" label="Season" />
-            <NavLink href="/upload" label="Upload" />
-            {isAdmin && <NavLink href="/admin" label="Admin" />}
+            <NavLink href="/" label={t("nav.explore")} />
+            <NavLink href="/leaderboard" label={t("nav.leaderboard")} />
+            <NavLink href="/seasons" label={t("nav.season")} />
+            <NavLink href="/upload" label={t("nav.upload")} />
+            {isAdmin && <NavLink href="/admin" label={t("nav.admin")} />}
           </div>
         </div>
 
@@ -298,7 +300,7 @@ export default function TopNav() {
                 ref={searchRef}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search memes..."
+                placeholder={t("nav.searchMemes")}
                 className="w-48 px-3 py-1.5 rounded-lg bg-background-elevated border border-border-active text-sm text-foreground placeholder-foreground-subtle focus:outline-none focus:border-[#c9a84c]/50"
                 onBlur={() => {
                   if (!searchQuery) setShowSearch(false);
@@ -319,7 +321,7 @@ export default function TopNav() {
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
-              <span className="hidden sm:inline">Search</span>
+              <span className="hidden sm:inline">{t("nav.search")}</span>
             </button>
           )}
 
@@ -329,7 +331,7 @@ export default function TopNav() {
               href="/messages"
               onClick={() => setDmUnreadCount(0)}
               className="relative p-2 rounded-lg text-foreground-subtle hover:text-foreground-muted hover:bg-background-elevated transition-colors"
-              title="Messages"
+              title={t("nav.messages")}
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
@@ -359,10 +361,10 @@ export default function TopNav() {
               {showNotifications && (
                 <div className="absolute right-0 top-full mt-2 w-80 bg-background-surface border border-border rounded-xl shadow-2xl overflow-hidden z-50">
                   <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-                    <h3 className="text-sm font-semibold text-foreground">Notifications</h3>
+                    <h3 className="text-sm font-semibold text-foreground">{t("notif.title")}</h3>
                     {unreadCount > 0 && (
                       <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#c9a84c]/10 text-[#c9a84c]">
-                        {unreadCount} new
+                        {t("notif.new", { count: unreadCount })}
                       </span>
                     )}
                   </div>
@@ -373,7 +375,7 @@ export default function TopNav() {
                       </div>
                     ) : notifications.length === 0 ? (
                       <div className="px-4 py-8 text-center">
-                        <p className="text-sm text-foreground-subtle">No notifications yet</p>
+                        <p className="text-sm text-foreground-subtle">{t("notif.empty")}</p>
                       </div>
                     ) : (
                       notifications.map((n) => (
@@ -391,7 +393,7 @@ export default function TopNav() {
                           <div className="flex items-start gap-3">
                             <span className="text-base mt-0.5">{notifIcon(n.type)}</span>
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm text-foreground-muted">{notifText(n)}</p>
+                              <p className="text-sm text-foreground-muted">{notifText(n, t)}</p>
                               <p className="text-xs text-foreground-subtle mt-0.5">{formatTimeAgo(n.createdAt)}</p>
                             </div>
                             {!n.isRead && (
@@ -408,7 +410,7 @@ export default function TopNav() {
                         onClick={handleMarkAllRead}
                         className="text-xs text-[#c9a84c] hover:text-[#d4b85c] transition-colors"
                       >
-                        Mark all as read
+                        {t("notif.markAllRead")}
                       </button>
                     </div>
                   )}
@@ -436,7 +438,7 @@ export default function TopNav() {
               <Link
                 href="/settings"
                 className="hidden sm:flex p-2 rounded-lg text-foreground-subtle hover:text-foreground-muted hover:bg-background-elevated transition-colors"
-                title="Settings"
+                title={t("nav.settings")}
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -447,7 +449,7 @@ export default function TopNav() {
                 onClick={() => signOut({ callbackUrl: "/" })}
                 className="hidden sm:inline-flex px-3 py-1.5 rounded-lg text-sm font-medium text-foreground-muted hover:text-foreground hover:bg-background-elevated transition-colors"
               >
-                Logout
+                {t("nav.logout")}
               </button>
             </div>
           ) : (
@@ -455,7 +457,7 @@ export default function TopNav() {
               href="/login"
               className="px-4 py-1.5 rounded-lg text-sm font-medium bg-[#c9a84c] text-black hover:bg-[#b8963f] transition-colors"
             >
-              Login
+              {t("nav.login")}
             </Link>
           )}
         </div>
@@ -469,20 +471,20 @@ export default function TopNav() {
         }`}
       >
         <div className="border-t border-border bg-background/95 backdrop-blur-xl px-4 py-3 space-y-1">
-          <MobileNavLink href="/" label="Explore" active={pathname === "/"} />
-          <MobileNavLink href="/leaderboard" label="Leaderboard" active={pathname === "/leaderboard"} />
-          <MobileNavLink href="/seasons" label="Season" active={pathname?.startsWith("/seasons")} />
-          <MobileNavLink href="/upload" label="Upload" active={pathname === "/upload"} />
-          <MobileNavLink href="/bookmarks" label="Bookmarks" active={pathname === "/bookmarks"} />
+          <MobileNavLink href="/" label={t("nav.explore")} active={pathname === "/"} />
+          <MobileNavLink href="/leaderboard" label={t("nav.leaderboard")} active={pathname === "/leaderboard"} />
+          <MobileNavLink href="/seasons" label={t("nav.season")} active={pathname?.startsWith("/seasons")} />
+          <MobileNavLink href="/upload" label={t("nav.upload")} active={pathname === "/upload"} />
+          <MobileNavLink href="/bookmarks" label={t("nav.bookmarks")} active={pathname === "/bookmarks"} />
           {session?.user && (
             <>
-              <MobileNavLink href="/messages" label="Messages" active={pathname?.startsWith("/messages")} />
-              <MobileNavLink href="/settings" label="Settings" active={pathname === "/settings"} />
+              <MobileNavLink href="/messages" label={t("nav.messages")} active={pathname?.startsWith("/messages")} />
+              <MobileNavLink href="/settings" label={t("nav.settings")} active={pathname === "/settings"} />
               <button
                 onClick={() => signOut({ callbackUrl: "/" })}
                 className="block w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
               >
-                Logout
+                {t("nav.logout")}
               </button>
             </>
           )}

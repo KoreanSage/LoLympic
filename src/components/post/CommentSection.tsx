@@ -6,6 +6,7 @@ import Link from "next/link";
 import Avatar from "@/components/ui/Avatar";
 import Button from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
+import { useTranslation } from "@/i18n";
 
 interface CommentAuthor {
   username: string;
@@ -76,6 +77,7 @@ function MentionDropdown({
   visible: boolean;
   position: { top: number; left: number };
 }) {
+  const { t } = useTranslation();
   const [users, setUsers] = useState<MentionUser[]>([]);
   const [loading, setLoading] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -110,10 +112,10 @@ function MentionDropdown({
       style={{ top: position.top, left: position.left }}
     >
       {loading && users.length === 0 && (
-        <div className="px-3 py-2 text-xs text-foreground-subtle">Searching...</div>
+        <div className="px-3 py-2 text-xs text-foreground-subtle">{t("mention.searching")}</div>
       )}
       {!loading && users.length === 0 && query.length > 0 && (
-        <div className="px-3 py-2 text-xs text-foreground-subtle">No users found</div>
+        <div className="px-3 py-2 text-xs text-foreground-subtle">{t("mention.noUsers")}</div>
       )}
       {users.map((user, idx) => (
         <button
@@ -220,6 +222,7 @@ export default function CommentSection({
 }: CommentSectionProps) {
   const { data: session } = useSession();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [comments, setComments] = useState<Comment[]>(initialComments);
   const [newComment, setNewComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -293,7 +296,7 @@ export default function CommentSection({
         setComments((prev) => [comment, ...prev]);
         setNewComment("");
       } else {
-        toast("Failed to post comment", "error");
+        toast(t("comment.failedPost"), "error");
       }
     } catch {
       toast("Failed to post comment", "error");
@@ -318,9 +321,9 @@ export default function CommentSection({
               replies: c.replies?.filter((r) => r.id !== commentId),
             }))
         );
-        toast("Comment deleted", "success");
+        toast(t("comment.deleted"), "success");
       } else {
-        toast("Failed to delete comment", "error");
+        toast(t("comment.failedDelete"), "error");
       }
     } catch {
       toast("Failed to delete comment", "error");
@@ -338,9 +341,9 @@ export default function CommentSection({
         setComments((prev) =>
           prev.map((c) => (c.id === commentId ? { ...c, body: newBody } : c))
         );
-        toast("Comment updated", "success");
+        toast(t("comment.updated"), "success");
       } else {
-        toast("Failed to update comment", "error");
+        toast(t("comment.failedUpdate"), "error");
       }
     } catch {
       toast("Failed to update comment", "error");
@@ -360,9 +363,9 @@ export default function CommentSection({
         }),
       });
       if (res.ok) {
-        toast("Report submitted. Thank you.", "success");
+        toast(t("comment.reportSubmitted"), "success");
       } else {
-        toast("Failed to submit report", "error");
+        toast(t("comment.failedReport"), "error");
       }
     } catch {
       toast("Failed to submit report", "error");
@@ -383,7 +386,7 @@ export default function CommentSection({
               setNewComment(e.target.value);
               mainMention.handleInputChange(e.target.value, e.target.selectionStart);
             }}
-            placeholder="Add a comment... Use @ to mention someone"
+            placeholder={t("comment.add")}
             className="w-full bg-background-surface border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder-foreground-subtle resize-none focus:outline-none focus:border-border-active transition-colors"
             rows={2}
             onKeyDown={(e) => {
@@ -417,14 +420,14 @@ export default function CommentSection({
               onClick={handleSubmit}
               disabled={!newComment.trim() || isSubmitting}
             >
-              {isSubmitting ? "Posting..." : "Comment"}
+              {isSubmitting ? t("comment.posting") : t("comment.post")}
             </Button>
           </div>
         </div>
       </div>
       ) : (
         <p className="text-sm text-foreground-subtle text-center py-2">
-          Log in to leave a comment.
+          {t("comment.loginToComment")}
         </p>
       )}
 
@@ -471,7 +474,7 @@ export default function CommentSection({
                       )
                     );
                   } else {
-                    toast("Failed to post reply", "error");
+                    toast(t("comment.failedReply"), "error");
                   }
                 } catch {
                   toast("Failed to post reply", "error");
@@ -482,7 +485,7 @@ export default function CommentSection({
         </div>
       ) : (
         <p className="text-sm text-foreground-subtle text-center py-8">
-          No comments yet. Start the conversation!
+          {t("comment.empty")}
         </p>
       )}
     </div>
@@ -509,6 +512,7 @@ function CommentItem({
   onReport?: (commentId: string, reason: string, details?: string) => void;
 }) {
   const { data: session } = useSession();
+  const { t } = useTranslation();
   const [showReplyBox, setShowReplyBox] = useState(false);
   const [replyText, setReplyText] = useState("");
   const replyTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -619,7 +623,7 @@ function CommentItem({
                 {comment.author.displayName || comment.author.username}
               </span>
               <span className="text-[10px] text-foreground-subtle">{timeAgo}</span>
-              {isOwn && <span className="text-[10px] text-[#c9a84c]">you</span>}
+              {isOwn && <span className="text-[10px] text-[#c9a84c]">{t("comment.you")}</span>}
             </div>
 
             {/* Body or edit mode */}
@@ -640,7 +644,7 @@ function CommentItem({
                 />
                 <div className="flex gap-2">
                   <Button size="sm" variant="primary" onClick={handleSaveEdit} disabled={!editText.trim()}>
-                    Save
+                    {t("comment.save")}
                   </Button>
                   <Button
                     size="sm"
@@ -650,7 +654,7 @@ function CommentItem({
                       setEditText(comment.body);
                     }}
                   >
-                    Cancel
+                    {t("comment.cancel")}
                   </Button>
                 </div>
               </div>
@@ -691,7 +695,7 @@ function CommentItem({
                         ? "text-[#c9a84c]"
                         : "text-foreground-subtle hover:text-foreground-muted"
                     }`}
-                    title={translatedText ? "Hide translation" : "Translate"}
+                    title={translatedText ? t("comment.original") : t("comment.translate")}
                   >
                     {isTranslating ? (
                       <div className="w-3 h-3 border border-foreground-subtle border-t-[#c9a84c] rounded-full animate-spin" />
@@ -700,7 +704,7 @@ function CommentItem({
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
                       </svg>
                     )}
-                    {translatedText ? "Original" : "Translate"}
+                    {translatedText ? t("comment.original") : t("comment.translate")}
                   </button>
                 )}
                 {depth === 0 && (
@@ -708,7 +712,7 @@ function CommentItem({
                     onClick={() => setShowReplyBox(!showReplyBox)}
                     className="text-xs text-foreground-subtle hover:text-foreground-muted transition-colors"
                   >
-                    Reply
+                    {t("comment.reply")}
                   </button>
                 )}
                 {/* Edit (own comments only) */}
@@ -719,7 +723,7 @@ function CommentItem({
                       setIsEditing(true);
                     }}
                     className="text-xs text-foreground-subtle hover:text-foreground-muted transition-colors flex items-center gap-1"
-                    title="Edit"
+                    title={t("comment.edit")}
                   >
                     <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -731,7 +735,7 @@ function CommentItem({
                   <button
                     onClick={() => setShowDeleteConfirm(true)}
                     className="text-xs text-foreground-subtle hover:text-red-400 transition-colors flex items-center gap-1"
-                    title="Delete"
+                    title={t("comment.delete")}
                   >
                     <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -743,7 +747,7 @@ function CommentItem({
                   <button
                     onClick={() => setShowReportModal(true)}
                     className="text-xs text-foreground-subtle hover:text-foreground-muted transition-colors flex items-center gap-1"
-                    title="Report"
+                    title={t("comment.report")}
                   >
                     <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2z" />
@@ -756,7 +760,7 @@ function CommentItem({
             {/* Delete confirm inline */}
             {showDeleteConfirm && (
               <div className="mt-2 flex items-center gap-2 bg-background-surface border border-border rounded-lg px-3 py-2">
-                <span className="text-xs text-foreground-muted flex-1">Delete this comment?</span>
+                <span className="text-xs text-foreground-muted flex-1">{t("comment.deleteConfirm")}</span>
                 <button
                   onClick={() => {
                     onDelete?.(comment.id);
@@ -764,13 +768,13 @@ function CommentItem({
                   }}
                   className="text-xs text-red-400 hover:text-red-300 font-medium"
                 >
-                  Delete
+                  {t("comment.delete")}
                 </button>
                 <button
                   onClick={() => setShowDeleteConfirm(false)}
                   className="text-xs text-foreground-subtle hover:text-foreground-muted"
                 >
-                  Cancel
+                  {t("comment.cancel")}
                 </button>
               </div>
             )}
@@ -778,26 +782,26 @@ function CommentItem({
             {/* Report modal inline */}
             {showReportModal && (
               <div className="mt-2 bg-background-surface border border-border rounded-lg p-3 space-y-2">
-                <p className="text-xs font-medium text-foreground-muted">Report Comment</p>
+                <p className="text-xs font-medium text-foreground-muted">{t("comment.reportTitle")}</p>
                 <select
                   value={reportReason}
                   onChange={(e) => setReportReason(e.target.value)}
                   className="w-full bg-background-elevated border border-border rounded-lg px-2 py-1.5 text-xs text-foreground focus:outline-none focus:border-border-active"
                 >
-                  <option value="">Select a reason...</option>
-                  <option value="Spam">Spam</option>
-                  <option value="Harassment">Harassment</option>
-                  <option value="Hate Speech">Hate Speech</option>
-                  <option value="Violence">Violence</option>
-                  <option value="Sexual Content">Sexual Content</option>
-                  <option value="Misinformation">Misinformation</option>
-                  <option value="Copyright">Copyright</option>
-                  <option value="Other">Other</option>
+                  <option value="">{t("comment.reportReason")}</option>
+                  <option value="Spam">{t("comment.spam")}</option>
+                  <option value="Harassment">{t("comment.harassment")}</option>
+                  <option value="Hate Speech">{t("comment.hateSpeech")}</option>
+                  <option value="Violence">{t("comment.violence")}</option>
+                  <option value="Sexual Content">{t("comment.sexualContent")}</option>
+                  <option value="Misinformation">{t("comment.misinformation")}</option>
+                  <option value="Copyright">{t("comment.copyrightReport")}</option>
+                  <option value="Other">{t("comment.other")}</option>
                 </select>
                 <textarea
                   value={reportDetails}
                   onChange={(e) => setReportDetails(e.target.value)}
-                  placeholder="Details (optional)..."
+                  placeholder={t("comment.reportDetails")}
                   className="w-full bg-background-elevated border border-border rounded-lg px-2 py-1.5 text-xs text-foreground placeholder-foreground-subtle resize-none focus:outline-none focus:border-border-active"
                   rows={2}
                 />
@@ -810,14 +814,14 @@ function CommentItem({
                     }}
                     className="text-xs text-foreground-subtle hover:text-foreground-muted px-2 py-1"
                   >
-                    Cancel
+                    {t("comment.cancel")}
                   </button>
                   <button
                     onClick={handleSubmitReport}
                     disabled={!reportReason}
                     className="text-xs text-[#c9a84c] hover:text-[#d4b85c] font-medium px-2 py-1 disabled:opacity-50"
                   >
-                    Submit
+                    {t("comment.reportSubmit")}
                   </button>
                 </div>
               </div>
@@ -834,7 +838,7 @@ function CommentItem({
                       setReplyText(e.target.value);
                       replyMention.handleInputChange(e.target.value, e.target.selectionStart);
                     }}
-                    placeholder="Write a reply... Use @ to mention"
+                    placeholder={t("comment.replyPlaceholder")}
                     className="flex-1 bg-background-surface border border-border rounded-lg px-3 py-1.5 text-xs text-foreground placeholder-foreground-subtle resize-none focus:outline-none focus:border-border-active"
                     rows={1}
                     onKeyDown={(e) => {
@@ -862,7 +866,7 @@ function CommentItem({
                     onClick={handleReply}
                     disabled={!replyText.trim()}
                   >
-                    Reply
+                    {t("comment.reply")}
                   </Button>
                 </div>
                 <MentionDropdown
