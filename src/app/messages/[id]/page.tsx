@@ -6,6 +6,7 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import MainLayout from "@/components/layout/MainLayout";
 import Avatar from "@/components/ui/Avatar";
+import { useTranslation } from "@/i18n";
 import type { MessageData } from "@/types/messages";
 
 function formatTime(dateStr: string): string {
@@ -25,6 +26,7 @@ function formatDate(dateStr: string): string {
 
 export default function ChatPage() {
   const { data: session, status } = useSession();
+  const { t } = useTranslation();
   const router = useRouter();
   const params = useParams();
   const conversationId = params.id as string;
@@ -375,7 +377,7 @@ export default function ChatPage() {
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Type a message..."
+              placeholder={t("messages.typePlaceholder")}
               rows={1}
               className="flex-1 bg-background-elevated border border-border-hover rounded-xl px-3 py-2.5 text-sm text-foreground placeholder-foreground-subtle focus:outline-none focus:border-[#c9a84c]/50 transition-colors resize-none max-h-32"
               style={{ minHeight: "40px" }}

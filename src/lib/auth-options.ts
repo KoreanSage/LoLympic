@@ -145,6 +145,7 @@ export const authOptions: NextAuthOptions = {
           token.avatarUrl = dbUser.avatarUrl;
           token.countryId = dbUser.countryId;
           token.preferredLanguage = dbUser.preferredLanguage;
+          token.uiLanguage = dbUser.uiLanguage;
           token.role = dbUser.role;
           token.needsSetup = false;
         }
@@ -163,6 +164,7 @@ export const authOptions: NextAuthOptions = {
             token.avatarUrl = dbUser.avatarUrl;
             token.countryId = dbUser.countryId;
             token.preferredLanguage = dbUser.preferredLanguage;
+            token.uiLanguage = dbUser.uiLanguage;
             token.role = dbUser.role;
             // Check if profile looks auto-generated (email prefix as username)
             const emailPrefix = (user.email || "").split("@")[0].replace(/[^a-zA-Z0-9_]/g, "_");
@@ -175,6 +177,7 @@ export const authOptions: NextAuthOptions = {
           token.avatarUrl = (user as any).image;
           token.countryId = (user as any).countryId;
           token.preferredLanguage = (user as any).preferredLanguage;
+          token.uiLanguage = (user as any).uiLanguage;
           token.role = (user as any).role;
         }
       }
@@ -189,6 +192,7 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).avatarUrl = token.avatarUrl;
         (session.user as any).countryId = token.countryId;
         (session.user as any).preferredLanguage = token.preferredLanguage;
+        (session.user as any).uiLanguage = token.uiLanguage;
         (session.user as any).role = token.role;
         (session.user as any).needsSetup = token.needsSetup ?? false;
       }

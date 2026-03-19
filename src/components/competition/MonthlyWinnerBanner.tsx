@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslation } from "@/i18n";
 import Link from "next/link";
 
 interface WinnerInfo {
@@ -25,6 +26,7 @@ const MONTH_NAMES = [
 ];
 
 export default function MonthlyWinnerBanner() {
+  const { t } = useTranslation();
   const [winner, setWinner] = useState<WinnerInfo | null>(null);
   const [dismissed, setDismissed] = useState(false);
 
@@ -90,7 +92,7 @@ export default function MonthlyWinnerBanner() {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <span className="text-xs font-bold text-[#c9a84c]">
-              🏆 {MONTH_NAMES[winner.month - 1]} Meme of the Month
+              {t("season.memeOfTheMonth", { month: MONTH_NAMES[winner.month - 1] })}
             </span>
           </div>
           <Link
@@ -110,7 +112,7 @@ export default function MonthlyWinnerBanner() {
           href="/seasons"
           className="text-xs text-[#c9a84c] hover:underline flex-shrink-0 hidden sm:block"
         >
-          View all →
+          {t("season.viewAll")}
         </Link>
       </div>
     </div>

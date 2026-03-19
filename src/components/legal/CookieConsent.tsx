@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useTranslation } from "@/i18n";
 
 export default function CookieConsent() {
   const [visible, setVisible] = useState(false);
+  const { t } = useTranslation();
 
   useEffect(() => {
     const consent = localStorage.getItem("cookie_consent");
@@ -29,8 +31,7 @@ export default function CookieConsent() {
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
             <div className="flex-1 min-w-0">
               <p className="text-sm text-foreground-muted">
-                We use cookies for authentication and to improve your experience.
-                By continuing, you agree to our{" "}
+                {t("cookie.message")}{" "}
                 <Link
                   href="/terms#cookies"
                   className="text-[#c9a84c] hover:underline"
@@ -52,13 +53,13 @@ export default function CookieConsent() {
                 onClick={() => handleAccept("necessary")}
                 className="px-3 py-1.5 rounded-lg text-xs font-medium text-foreground-muted border border-border-active hover:bg-background-elevated transition-colors"
               >
-                Necessary Only
+                {t("cookie.decline")}
               </button>
               <button
                 onClick={() => handleAccept("all")}
                 className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#c9a84c] text-black hover:bg-[#d4b85c] transition-colors"
               >
-                Accept All
+                {t("cookie.accept")}
               </button>
             </div>
           </div>

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Button from "@/components/ui/Button";
+import { useTranslation } from "@/i18n";
 
 const COUNTRIES = [
   { id: "KR", name: "South Korea", flag: "\u{1F1F0}\u{1F1F7}", local: "\uB300\uD55C\uBBFC\uAD6D" },
@@ -16,6 +17,7 @@ const COUNTRIES = [
 export default function WelcomePage() {
   const { data: session, status, update: updateSession } = useSession();
   const router = useRouter();
+  const { t } = useTranslation();
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState(
     (session?.user as any)?.displayName || session?.user?.name || ""
@@ -87,9 +89,9 @@ export default function WelcomePage() {
             <span className="text-[#c9a84c]">LoL</span>
             <span className="text-foreground">ympic</span>
           </h1>
-          <p className="text-lg text-foreground-muted">Welcome! Set up your profile</p>
+          <p className="text-lg text-foreground-muted">{t("welcome.subtitle")}</p>
           <p className="text-sm text-foreground-subtle mt-1">
-            Choose a username and represent your country
+            {t("settings.selectCountry")}
           </p>
         </div>
 
@@ -135,7 +137,7 @@ export default function WelcomePage() {
           {/* Display Name */}
           <div>
             <label className="block text-sm font-medium text-foreground-muted mb-1.5">
-              Display Name
+              {t("settings.displayName")}
             </label>
             <input
               value={displayName}
@@ -149,7 +151,7 @@ export default function WelcomePage() {
           {/* Country */}
           <div>
             <label className="block text-sm font-medium text-foreground-muted mb-1.5">
-              Country <span className="text-red-400">*</span>
+              {t("settings.country")} <span className="text-red-400">*</span>
             </label>
             <div className="grid grid-cols-1 gap-2">
               {COUNTRIES.map((c) => (
@@ -187,7 +189,7 @@ export default function WelcomePage() {
             disabled={saving || !username.trim() || !countryId}
             className="w-full"
           >
-            {saving ? "Saving..." : "Start Memeing! \u{1F680}"}
+            {saving ? t("settings.saving") : t("common.save")}
           </Button>
         </form>
       </div>

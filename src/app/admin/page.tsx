@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { useTranslation } from "@/i18n";
 
 interface Stats {
   users: number;
@@ -26,6 +27,7 @@ interface UserRow {
 export default function AdminDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { t } = useTranslation();
   const [stats, setStats] = useState<Stats | null>(null);
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -129,9 +131,9 @@ export default function AdminDashboard() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl font-bold">
-              <span className="text-[#c9a84c]">LoL</span>ympic Admin
+              {t("admin.title")}
             </h1>
-            <p className="text-sm text-foreground-subtle mt-1">Dashboard</p>
+            <p className="text-sm text-foreground-subtle mt-1">{t("admin.dashboard")}</p>
           </div>
           <a
             href="/"
@@ -156,23 +158,23 @@ export default function AdminDashboard() {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <StatCard label="Users" value={stats?.users ?? 0} />
-          <StatCard label="Posts" value={stats?.posts ?? 0} />
-          <StatCard label="Translations" value={stats?.translations ?? 0} />
+          <StatCard label={t("admin.users")} value={stats?.users ?? 0} />
+          <StatCard label={t("admin.posts")} value={stats?.posts ?? 0} />
+          <StatCard label={t("admin.translations")} value={stats?.translations ?? 0} />
           <StatCard
-            label="Monthly Winners"
+            label={t("admin.monthlyWinners")}
             value={stats?.monthlyWinners ?? 0}
           />
         </div>
 
         {/* Season Management */}
         <div className="bg-background-surface border border-border rounded-xl p-6 mb-8">
-          <h2 className="text-lg font-semibold mb-4">Season Management</h2>
+          <h2 className="text-lg font-semibold mb-4">{t("admin.seasonManagement")}</h2>
           <div className="flex items-center gap-4 flex-wrap">
             <div className="text-sm text-foreground-muted">
-              Active Season:{" "}
+              {t("admin.activeSeason")}:{" "}
               <span className="text-foreground font-medium">
-                {stats?.activeSeason?.name || "None"}
+                {stats?.activeSeason?.name || t("admin.noActiveSeason")}
               </span>
               {stats?.activeSeason && (
                 <span className="ml-2 px-2 py-0.5 rounded-full text-xs bg-green-500/20 text-green-400">
@@ -184,19 +186,19 @@ export default function AdminDashboard() {
               onClick={() => handleCreateSeason(true)}
               className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-500 transition-colors"
             >
-              🧪 Create Beta Season
+              {t("admin.createBetaSeason")}
             </button>
             <button
               onClick={() => handleCreateSeason(false)}
               className="px-4 py-2 rounded-lg bg-[#c9a84c] text-black text-sm font-medium hover:bg-[#d4b85e] transition-colors"
             >
-              Create Season {new Date().getFullYear()}
+              {t("admin.createSeason", { year: String(new Date().getFullYear()) })}
             </button>
             <button
               onClick={handleSelectMonthlyWinner}
               className="px-4 py-2 rounded-lg bg-background-elevated border border-border text-sm font-medium hover:border-[#c9a84c]/50 transition-colors"
             >
-              Select Monthly Winner (Last Month)
+              {t("admin.selectMonthlyWinner")}
             </button>
           </div>
         </div>
@@ -204,7 +206,7 @@ export default function AdminDashboard() {
         {/* Users Table */}
         <div className="bg-background-surface border border-border rounded-xl p-6">
           <h2 className="text-lg font-semibold mb-4">
-            Users ({users.length})
+            {t("admin.users")} ({users.length})
           </h2>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

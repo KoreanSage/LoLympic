@@ -1,14 +1,19 @@
-import Link from "next/link";
+"use client";
 
-const LEGAL_LINKS = [
-  { label: "Terms of Service", href: "/terms" },
-  { label: "Privacy Policy", href: "/terms#privacy" },
-  { label: "Cookie Policy", href: "/terms#cookies" },
-  { label: "Community Rules", href: "/rules" },
-  { label: "Copyright / DMCA", href: "/terms#copyright" },
-];
+import Link from "next/link";
+import { useTranslation } from "@/i18n";
 
 export default function Footer() {
+  const { t } = useTranslation();
+
+  const LEGAL_LINKS = [
+    { label: t("footer.terms"), href: "/terms" },
+    { label: t("footer.privacy"), href: "/terms#privacy" },
+    { label: t("footer.cookies"), href: "/terms#cookies" },
+    { label: t("footer.rules"), href: "/rules" },
+    { label: t("footer.copyright"), href: "/terms#copyright" },
+  ];
+
   return (
     <footer className="border-t border-border mt-12 py-6">
       <div className="max-w-[1280px] mx-auto px-4">
@@ -24,7 +29,7 @@ export default function Footer() {
           ))}
         </nav>
         <p className="text-center text-[10px] text-foreground-subtle">
-          &copy; {new Date().getFullYear()} LoLympic. All rights reserved.
+          {t("footer.allRights", { year: new Date().getFullYear() })}
         </p>
       </div>
     </footer>

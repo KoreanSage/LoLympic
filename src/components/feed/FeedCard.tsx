@@ -11,6 +11,7 @@ import MemeRenderer from "@/components/translation/MemeRenderer";
 import TranslationToggle from "@/components/translation/TranslationToggle";
 import { TranslationSegmentData } from "@/types/components";
 import { useToast } from "@/components/ui/Toast";
+import { useTranslation } from "@/i18n";
 
 interface TopComment {
   id: string;
@@ -89,6 +90,7 @@ export default function FeedCard({
   const { toast } = useToast();
   const router = useRouter();
   const { data: session } = useSession();
+  const { t } = useTranslation();
 
   // Auto-enable translation overlay when segments with bounding boxes exist or pre-rendered image available
   const hasOverlaySegments = useMemo(
@@ -202,7 +204,7 @@ export default function FeedCard({
       }
     } else {
       await navigator.clipboard.writeText(url);
-      toast("Link copied to clipboard!", "success");
+      toast(t("feed.linkCopied"), "success");
     }
   };
 
@@ -215,7 +217,7 @@ export default function FeedCard({
     }
     saveBookmarks(bookmarks);
     setBookmarked(!bookmarked);
-    toast(bookmarked ? "Bookmark removed" : "Bookmarked!", "success");
+    toast(bookmarked ? t("feed.bookmarkRemoved") : t("feed.bookmarked"), "success");
   };
 
   return (
@@ -273,7 +275,7 @@ export default function FeedCard({
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                   </svg>
-                  Delete Post
+                  {t("feed.deletePost")}
                 </button>
               </div>
             )}
@@ -285,21 +287,21 @@ export default function FeedCard({
       {showDeleteConfirm && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50" onClick={() => setShowDeleteConfirm(false)}>
           <div className="bg-background-surface border border-border rounded-xl p-5 mx-4 max-w-sm w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-base font-semibold text-foreground mb-2">Delete Post</h3>
-            <p className="text-sm text-foreground-muted mb-4">Are you sure you want to delete this post? This action cannot be undone.</p>
+            <h3 className="text-base font-semibold text-foreground mb-2">{t("feed.deletePost")}</h3>
+            <p className="text-sm text-foreground-muted mb-4">{t("feed.deleteConfirm")}</p>
             <div className="flex items-center gap-2 justify-end">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
                 className="px-3 py-1.5 rounded-lg text-sm font-medium text-foreground-muted border border-border hover:bg-background-elevated transition-colors"
               >
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 onClick={handleDelete}
                 disabled={deletePending}
                 className="px-3 py-1.5 rounded-lg text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition-colors disabled:opacity-50"
               >
-                {deletePending ? "Deleting..." : "Delete"}
+                {deletePending ? t("feed.deleting") : t("common.delete")}
               </button>
             </div>
           </div>
@@ -352,7 +354,7 @@ export default function FeedCard({
             <svg className="w-3.5 h-3.5 text-[#c9a84c]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
             </svg>
-            <span className="text-[10px] font-medium text-[#c9a84c]">AI Translation</span>
+            <span className="text-[10px] font-medium text-[#c9a84c]">{t("feed.aiTranslation")}</span>
           </div>
           <div className="space-y-1.5">
             {segments.map((seg, i) => (
@@ -395,7 +397,7 @@ export default function FeedCard({
             ))}
             {commentCount > 3 && (
               <span className="text-[11px] text-foreground-subtle hover:text-foreground-muted transition-colors">
-                View all {commentCount} comments
+                {t("feed.viewAllComments", { count: commentCount })}
               </span>
             )}
           </div>

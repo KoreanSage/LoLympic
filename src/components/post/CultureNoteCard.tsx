@@ -2,6 +2,7 @@
 
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
+import { useTranslation } from "@/i18n";
 
 interface CultureNoteCardProps {
   id: string;
@@ -21,6 +22,7 @@ export default function CultureNoteCard({
   status,
   className = "",
 }: CultureNoteCardProps) {
+  const { t } = useTranslation();
   const creatorBadgeVariant =
     creatorType === "AI" ? "info" : creatorType === "ADMIN" ? "gold" : "default";
 
@@ -50,7 +52,7 @@ export default function CultureNoteCard({
       {/* Summary */}
       <div>
         <h4 className="text-xs uppercase tracking-wider text-foreground-subtle mb-1">
-          Summary
+          {t("cultureNote.title")}
         </h4>
         <p className="text-sm text-foreground-muted leading-relaxed">{summary}</p>
       </div>
@@ -58,7 +60,7 @@ export default function CultureNoteCard({
       {/* Explanation */}
       <div>
         <h4 className="text-xs uppercase tracking-wider text-foreground-subtle mb-1">
-          Cultural Context
+          {t("cultureNote.aiGenerated")}
         </h4>
         <p className="text-sm text-foreground-muted leading-relaxed">{explanation}</p>
       </div>

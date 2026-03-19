@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
+import { useTranslation } from "@/i18n";
 import MainLayout from "@/components/layout/MainLayout";
 import FeedCard from "@/components/feed/FeedCard";
 import Link from "next/link";
@@ -39,6 +40,7 @@ function getBookmarkIds(): string[] {
 }
 
 export default function BookmarksPage() {
+  const { t } = useTranslation();
   const { status } = useSession();
   const [posts, setPosts] = useState<BookmarkedPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -106,7 +108,7 @@ export default function BookmarksPage() {
     <MainLayout showSidebar={false}>
       <div className="py-6 space-y-6 max-w-2xl mx-auto">
         <div>
-          <h1 className="text-2xl font-bold text-foreground mb-1">Bookmarks</h1>
+          <h1 className="text-2xl font-bold text-foreground mb-1">{t("bookmarks.title")}</h1>
           <p className="text-sm text-foreground-subtle">Your saved memes</p>
         </div>
 
@@ -129,7 +131,7 @@ export default function BookmarksPage() {
                 d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
               />
             </svg>
-            <p className="text-foreground-subtle text-sm">No bookmarks yet</p>
+            <p className="text-foreground-subtle text-sm">{t("bookmarks.empty")}</p>
             <Link
               href="/"
               className="px-4 py-2 rounded-lg text-sm font-medium bg-[#c9a84c] text-black hover:bg-[#b8963f] transition-colors"

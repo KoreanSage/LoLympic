@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslation } from "@/i18n";
 import Link from "next/link";
 
 interface SeasonData {
@@ -29,6 +30,7 @@ interface LeadingCountry {
 }
 
 export default function SeasonBar({ className = "" }: { className?: string }) {
+  const { t } = useTranslation();
   const [data, setData] = useState<SeasonData | null>(null);
   const [leading, setLeading] = useState<LeadingCountry | null>(null);
   const [timeLeft, setTimeLeft] = useState("");
@@ -68,7 +70,7 @@ export default function SeasonBar({ className = "" }: { className?: string }) {
       const total = end - start;
 
       if (remaining <= 0) {
-        setTimeLeft("Ended");
+        setTimeLeft(t("season.ended"));
         setProgress(100);
         return;
       }
@@ -113,7 +115,7 @@ export default function SeasonBar({ className = "" }: { className?: string }) {
           <div className="max-w-[1280px] mx-auto flex items-center justify-center gap-2 text-xs">
             <span className="text-lg">{champion.country.flagEmoji}</span>
             <span className="text-[#c9a84c] font-bold">
-              {new Date(champion.endAt).getFullYear()} Champion — {champion.country.nameEn}
+              {t("season.champion", { year: new Date(champion.endAt).getFullYear(), country: champion.country.nameEn })}
             </span>
             <span className="text-lg">{champion.country.flagEmoji}</span>
           </div>
@@ -127,30 +129,30 @@ export default function SeasonBar({ className = "" }: { className?: string }) {
             {!season ? (
               // No active season
               <>
-                <span className="text-[#c9a84c] font-semibold">Open Season</span>
+                <span className="text-[#c9a84c] font-semibold">{t("season.openSeason")}</span>
                 <span className="text-foreground-subtle">&middot;</span>
-                <span className="text-foreground-muted">All-time rankings</span>
+                <span className="text-foreground-muted">{t("season.allTimeRankings")}</span>
               </>
             ) : season.status === "JUDGING" ? (
               // Voting phase
               <>
-                <span className="text-[#c9a84c] font-semibold">Season {season.number}</span>
+                <span className="text-[#c9a84c] font-semibold">{t("season.title")} {season.number}</span>
                 <span className="text-foreground-subtle">&middot;</span>
                 <Link
                   href="/seasons/vote"
                   className="text-[#c9a84c] hover:underline font-medium"
                 >
-                  Final Vote Open — Cast your vote!
+                  {t("season.voteOpen")}
                 </Link>
               </>
             ) : (
               // Active season
               <>
                 <Link href="/seasons" className="text-[#c9a84c] font-semibold hover:underline">
-                  Season {season.number}
+                  {t("season.title")} {season.number}
                 </Link>
                 <span className="text-foreground-subtle">&middot;</span>
-                <span className="text-foreground-muted">{timeLeft} left</span>
+                <span className="text-foreground-muted">{t("season.left", { time: timeLeft })}</span>
               </>
             )}
 
@@ -158,7 +160,7 @@ export default function SeasonBar({ className = "" }: { className?: string }) {
               <>
                 <span className="text-foreground-subtle">&middot;</span>
                 <span className="text-foreground-muted">
-                  Leading: {leading.flag} {leading.name}
+                  {t("season.leading", { flag: leading.flag, name: leading.name })}
                 </span>
               </>
             )}
