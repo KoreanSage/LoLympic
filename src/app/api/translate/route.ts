@@ -510,36 +510,53 @@ export async function POST(request: NextRequest) {
           },
         });
 
-        const content = await withRetry(async () => {
-          const result = await model.generateContent([
-            `Translate this meme from ${sourceLanguage} to ${targetLang}. Analyze the image, detect all text regions, and provide transcendent translations.`,
-            {
-              inlineData: {
-                data: imageBase64,
-                mimeType,
-              },
-            },
-          ]);
-          const text = result.response.text();
-          if (!text) throw new Error("Empty response from AI");
-          return text;
-        }, 1, 2000); // 1 retry, 2s delay
+        // Retry the full translate + parse cycle (up to 3 attempts)
+        let parsed: AITranslationResult | null = null;
+        let lastParseError = "";
 
-        let parsed: AITranslationResult;
-        try {
-          const cleaned = stripMarkdownFences(content);
-          parsed = JSON.parse(cleaned) as AITranslationResult;
-        } catch {
-          console.error(`Failed to parse Gemini response for ${targetLang}:`, content.substring(0, 500));
-          results[targetLang] = { error: "Failed to parse AI response" };
-          continue;
+        for (let attempt = 0; attempt < 3; attempt++) {
+          try {
+            if (attempt > 0) {
+              await new Promise((r) => setTimeout(r, 2000 * attempt));
+              console.log(`Retry attempt ${attempt + 1} for ${targetLang}`);
+            }
+
+            const result = await model.generateContent([
+              `Translate this meme from ${sourceLanguage} to ${targetLang}. Analyze the image, detect all text regions, and provide transcendent translations. Respond ONLY with valid JSON, no markdown fences.`,
+              {
+                inlineData: {
+                  data: imageBase64,
+                  mimeType,
+                },
+              },
+            ]);
+            const text = result.response.text();
+            if (!text) {
+              lastParseError = "Empty response from AI";
+              continue;
+            }
+
+            const cleaned = stripMarkdownFences(text);
+            parsed = JSON.parse(cleaned) as AITranslationResult;
+
+            // Validate parsed result has segments
+            if (!Array.isArray(parsed.segments) || parsed.segments.length === 0) {
+              lastParseError = "No segments in response";
+              parsed = null;
+              continue;
+            }
+
+            break; // Success
+          } catch (err) {
+            lastParseError = err instanceof Error ? err.message : String(err);
+            console.warn(`Translate attempt ${attempt + 1} failed for ${targetLang}:`, lastParseError);
+            parsed = null;
+          }
         }
 
-        // Ensure segments is an array
-        if (!Array.isArray(parsed.segments) || parsed.segments.length === 0) {
-          // If no segments found, create a minimal result with empty segments
-          console.warn(`No segments found for ${targetLang}, creating empty translation`);
-          results[targetLang] = { error: "No translatable text detected in image" };
+        if (!parsed) {
+          console.error(`All translation attempts failed for ${targetLang}: ${lastParseError}`);
+          results[targetLang] = { error: `Translation failed: ${lastParseError}` };
           continue;
         }
 
