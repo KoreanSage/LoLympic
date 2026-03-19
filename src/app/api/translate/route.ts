@@ -605,27 +605,34 @@ export async function POST(request: NextRequest) {
             include: { segments: true },
           });
 
-          // Create CultureNote
+          // Create CultureNote — only once per post (use source language as key)
           if (parsed.cultureNote) {
-            const latestNote = await tx.cultureNote.findFirst({
-              where: { postId, language: targetLang as LanguageCode },
-              orderBy: { version: "desc" },
+            const existingNote = await tx.cultureNote.findFirst({
+              where: { postId, language: sourceLanguage as LanguageCode },
             });
-            const noteVersion = (latestNote?.version ?? 0) + 1;
 
-            await tx.cultureNote.create({
-              data: {
-                postId,
-                language: targetLang as LanguageCode,
-                summary: parsed.cultureNote.summary || "",
-                explanation: parsed.cultureNote.explanation || "",
-                translationNote: parsed.cultureNote.translationNote ?? null,
-                creatorType: "AI",
-                status: "PUBLISHED",
-                confidence: parsed.confidence ?? null,
-                version: noteVersion,
-              },
-            });
+            // Skip if culture note already exists for this post
+            if (!existingNote) {
+              const latestNote = await tx.cultureNote.findFirst({
+                where: { postId },
+                orderBy: { version: "desc" },
+              });
+              const noteVersion = (latestNote?.version ?? 0) + 1;
+
+              await tx.cultureNote.create({
+                data: {
+                  postId,
+                  language: sourceLanguage as LanguageCode,
+                  summary: parsed.cultureNote.summary || "",
+                  explanation: parsed.cultureNote.explanation || "",
+                  translationNote: parsed.cultureNote.translationNote ?? null,
+                  creatorType: "AI",
+                  status: "PUBLISHED",
+                  confidence: parsed.confidence ?? null,
+                  version: noteVersion,
+                },
+              });
+            }
           }
 
           // Update post translation count
