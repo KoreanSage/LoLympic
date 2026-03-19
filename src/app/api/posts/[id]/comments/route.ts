@@ -37,6 +37,7 @@ export async function GET(
       username: true,
       displayName: true,
       avatarUrl: true,
+      isChampion: true,
       country: {
         select: { flagEmoji: true },
       },
@@ -184,6 +185,7 @@ export async function POST(
       username: true,
       displayName: true,
       avatarUrl: true,
+      isChampion: true,
       country: {
         select: { flagEmoji: true },
       },
@@ -331,6 +333,7 @@ export async function PATCH(
             username: true,
             displayName: true,
             avatarUrl: true,
+            isChampion: true,
             country: {
               select: { flagEmoji: true },
             },

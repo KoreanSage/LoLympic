@@ -18,6 +18,7 @@ export async function GET(
         avatarUrl: true,
         bio: true,
         countryId: true,
+        isChampion: true,
         createdAt: true,
         country: {
           select: {

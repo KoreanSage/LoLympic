@@ -11,6 +11,7 @@ interface CommentAuthor {
   displayName?: string | null;
   avatarUrl?: string | null;
   countryFlag?: string;
+  isChampion?: boolean;
 }
 
 interface Comment {
@@ -56,6 +57,7 @@ export default function CommentSection({
       displayName: c.author?.displayName,
       avatarUrl: c.author?.avatarUrl,
       countryFlag: c.author?.country?.flagEmoji,
+      isChampion: c.author?.isChampion ?? false,
     },
     replies: c.replies?.map(mapComment),
   });
@@ -399,6 +401,7 @@ function CommentItem({
             alt={comment.author.username}
             size="sm"
             countryFlag={comment.author.countryFlag}
+            isChampion={comment.author.isChampion}
           />
           <div className="flex-1 min-w-0">
             {/* Author line */}

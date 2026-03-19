@@ -130,9 +130,10 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const year = body.year || new Date().getFullYear();
-    const name = body.name || `Season ${year}`;
+    const isBeta = body.isBeta === true;
+    const name = body.name || (isBeta ? `Beta Season ${year}` : `Season ${year}`);
 
-    // Check if season already exists for this year
+    // Check if season already exists with same name
     const existing = await prisma.season.findFirst({
       where: { name },
     });
@@ -140,17 +141,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Season already exists", existing }, { status: 409 });
     }
 
-    // Get next season number
+    // Get next season number (beta uses 0)
     const lastSeason = await prisma.season.findFirst({ orderBy: { number: "desc" } });
-    const nextNumber = (lastSeason?.number ?? 0) + 1;
+    const nextNumber = isBeta ? 0 : (lastSeason?.number ?? 0) + 1;
+
+    // Beta: starts now, ends April 30
+    // Regular: starts May 1, ends Dec 31
+    const now = new Date();
+    const startAt = isBeta ? now : new Date(year, 4, 1); // May 1
+    const endAt = isBeta ? new Date(year, 3, 30, 23, 59, 59) : new Date(year, 11, 31, 23, 59, 59); // Apr 30 or Dec 31
 
     const season = await prisma.season.create({
       data: {
         name,
         number: nextNumber,
         status: "ACTIVE",
-        startAt: new Date(year, 0, 1),
-        endAt: new Date(year, 11, 31, 23, 59, 59),
+        startAt,
+        endAt,
       },
     });
 

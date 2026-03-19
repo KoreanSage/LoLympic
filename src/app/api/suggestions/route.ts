@@ -52,6 +52,7 @@ export async function GET(request: NextRequest) {
               displayName: true,
               avatarUrl: true,
               countryId: true,
+              isChampion: true,
             },
           },
         },

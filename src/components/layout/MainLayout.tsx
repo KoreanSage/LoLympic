@@ -18,7 +18,7 @@ export default function MainLayout({
       <TopNav />
 
       {/* Main content area — offset for fixed nav + season bar */}
-      <div className="max-w-[1280px] mx-auto px-4 pt-[7.5rem] flex-1 w-full">
+      <div className="max-w-[1280px] mx-auto px-4 pt-24 flex-1 w-full">
         {showSidebar ? (
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6">
             <main className="min-w-0">{children}</main>

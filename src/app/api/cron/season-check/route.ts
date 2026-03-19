@@ -50,6 +50,8 @@ export async function GET(request: NextRequest) {
         },
       });
 
+      const isBeta = season.number === 0;
+
       await prisma.$transaction(async (tx) => {
         // Mark season completed
         await tx.season.update({
@@ -61,8 +63,8 @@ export async function GET(request: NextRequest) {
           },
         });
 
-        // Give champion badge to the grand winner
-        if (topWinner?.author?.id) {
+        // Give champion badge only for regular seasons (not beta)
+        if (!isBeta && topWinner?.author?.id) {
           await tx.user.update({
             where: { id: topWinner.author.id },
             data: {

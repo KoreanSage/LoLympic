@@ -229,10 +229,28 @@ export default function TopNav() {
   const userRole = (session?.user as any)?.role;
   const isAdmin = userRole === "ADMIN" || userRole === "SUPER_ADMIN";
 
+  // Hide season bar on scroll
+  const [hideSeasonBar, setHideSeasonBar] = useState(false);
+  useEffect(() => {
+    let lastY = 0;
+    const onScroll = () => {
+      const y = window.scrollY;
+      setHideSeasonBar(y > 40);
+      lastY = y;
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/85 backdrop-blur-xl border-b border-border">
-      {/* Season bar */}
-      <SeasonBar />
+      {/* Season bar — hides on scroll */}
+      <div
+        className="transition-all duration-300 overflow-hidden"
+        style={{ maxHeight: hideSeasonBar ? 0 : 60, opacity: hideSeasonBar ? 0 : 1 }}
+      >
+        <SeasonBar />
+      </div>
 
       {/* Main nav */}
       <nav className="max-w-[1280px] mx-auto px-4 h-14 flex items-center justify-between">

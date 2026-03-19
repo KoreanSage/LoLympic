@@ -62,12 +62,16 @@ export default function AdminDashboard() {
     setLoading(false);
   };
 
-  const handleCreateSeason = async () => {
+  const handleCreateSeason = async (isBeta = false) => {
     const year = new Date().getFullYear();
     const res = await fetch("/api/seasons", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ year, name: `Season ${year}` }),
+      body: JSON.stringify({
+        year,
+        isBeta,
+        name: isBeta ? `Beta Season ${year}` : `Season ${year}`,
+      }),
     });
     const data = await res.json();
     if (res.ok) {
@@ -177,10 +181,16 @@ export default function AdminDashboard() {
               )}
             </div>
             <button
-              onClick={handleCreateSeason}
+              onClick={() => handleCreateSeason(true)}
+              className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-500 transition-colors"
+            >
+              🧪 Create Beta Season
+            </button>
+            <button
+              onClick={() => handleCreateSeason(false)}
               className="px-4 py-2 rounded-lg bg-[#c9a84c] text-black text-sm font-medium hover:bg-[#d4b85e] transition-colors"
             >
-              Create {new Date().getFullYear()} Season
+              Create Season {new Date().getFullYear()}
             </button>
             <button
               onClick={handleSelectMonthlyWinner}

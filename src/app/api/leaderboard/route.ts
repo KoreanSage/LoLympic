@@ -109,6 +109,7 @@ async function handleSeasonLeaderboard(
               profileTitle: true,
               profileBorder: true,
               countryId: true,
+              isChampion: true,
             },
           },
           country: {
@@ -160,6 +161,7 @@ async function handleSeasonLeaderboard(
                   username: true,
                   displayName: true,
                   avatarUrl: true,
+                  isChampion: true,
                 },
               },
             },
@@ -306,6 +308,7 @@ async function handleRealtimeLeaderboard(type: string, limit: number) {
           profileTitle: true,
           profileBorder: true,
           countryId: true,
+          isChampion: true,
           country: {
             select: { id: true, nameEn: true, flagEmoji: true },
           },
