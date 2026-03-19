@@ -106,6 +106,25 @@ export async function GET(request: NextRequest) {
                 },
               }
             : false,
+          comments: {
+            where: { parentId: null, status: "VISIBLE" },
+            orderBy: { likeCount: "desc" },
+            take: 3,
+            select: {
+              id: true,
+              body: true,
+              likeCount: true,
+              author: {
+                select: {
+                  username: true,
+                  displayName: true,
+                  avatarUrl: true,
+                  isChampion: true,
+                  country: { select: { flagEmoji: true } },
+                },
+              },
+            },
+          },
           _count: {
             select: {
               translationPayloads: true,

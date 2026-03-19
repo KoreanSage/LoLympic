@@ -12,6 +12,19 @@ import TranslationToggle from "@/components/translation/TranslationToggle";
 import { TranslationSegmentData } from "@/types/components";
 import { useToast } from "@/components/ui/Toast";
 
+interface TopComment {
+  id: string;
+  body: string;
+  likeCount: number;
+  author: {
+    username: string;
+    displayName?: string | null;
+    avatarUrl?: string | null;
+    isChampion?: boolean;
+    countryFlag?: string;
+  };
+}
+
 interface FeedCardProps {
   id: string;
   title: string;
@@ -36,6 +49,7 @@ interface FeedCardProps {
   createdAt: string;
   seasonBadge?: string;
   tags?: string[];
+  topComments?: TopComment[];
   onDelete?: (id: string) => void;
 }
 
@@ -69,6 +83,7 @@ export default function FeedCard({
   createdAt,
   seasonBadge,
   tags,
+  topComments,
   onDelete,
 }: FeedCardProps) {
   const { toast } = useToast();
@@ -359,6 +374,32 @@ export default function FeedCard({
             </span>
           ))}
         </div>
+      )}
+
+      {/* Top comments preview */}
+      {topComments && topComments.length > 0 && (
+        <Link href={`/post/${id}`} className="block px-4 pb-2">
+          <div className="space-y-1.5">
+            {topComments.map((c) => (
+              <div key={c.id} className="flex items-start gap-2">
+                <span className="text-xs font-medium text-foreground-muted shrink-0">
+                  {c.author.countryFlag && (
+                    <span className="mr-0.5">{c.author.countryFlag}</span>
+                  )}
+                  {c.author.displayName || c.author.username}
+                </span>
+                <span className="text-xs text-foreground-subtle line-clamp-1 min-w-0">
+                  {c.body}
+                </span>
+              </div>
+            ))}
+            {commentCount > 3 && (
+              <span className="text-[11px] text-foreground-subtle hover:text-foreground-muted transition-colors">
+                View all {commentCount} comments
+              </span>
+            )}
+          </div>
+        </Link>
       )}
 
       {/* Action row */}

@@ -5,6 +5,19 @@ import FeedCard from "./FeedCard";
 import { CardSkeleton } from "@/components/ui/Skeleton";
 import { TranslationSegmentData } from "@/types/components";
 
+interface TopComment {
+  id: string;
+  body: string;
+  likeCount: number;
+  author: {
+    username: string;
+    displayName?: string | null;
+    avatarUrl?: string | null;
+    isChampion?: boolean;
+    countryFlag?: string;
+  };
+}
+
 interface FeedPost {
   id: string;
   title: string;
@@ -29,6 +42,7 @@ interface FeedPost {
   createdAt: string;
   seasonBadge?: string;
   tags?: string[];
+  topComments?: TopComment[];
 }
 
 interface FeedListProps {
@@ -88,6 +102,18 @@ function mapApiPost(post: any): FeedPost {
     shareCount: post.shareCount ?? 0,
     createdAt: post.createdAt,
     tags: post.tags || [],
+    topComments: (post.comments || []).map((c: any) => ({
+      id: c.id,
+      body: c.body,
+      likeCount: c.likeCount ?? 0,
+      author: {
+        username: c.author?.username || "unknown",
+        displayName: c.author?.displayName,
+        avatarUrl: c.author?.avatarUrl,
+        isChampion: c.author?.isChampion || false,
+        countryFlag: c.author?.country?.flagEmoji,
+      },
+    })),
   };
 }
 
