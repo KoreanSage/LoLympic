@@ -349,6 +349,15 @@ const en = {
   // ── Post Detail Page ─────────────────────────────────────────────────────
   "postDetail.notFound": "Post not found",
   "profile.notFound": "User not found",
+
+  // ── Battle ──────────────────────────────────────────────────────────────────
+  "battle.title": "Meme Battle",
+  "battle.tapToVote": "Tap the funnier meme!",
+  "battle.winner": "Winner!",
+  "battle.bonusPoints": "+5 bonus",
+  "battle.stop": "Stop",
+  "battle.noChallengers": "No more challengers!",
+  "battle.hotBattle": "Hot Battle Memes",
 } as const;
 
 export type TranslationKeys = keyof typeof en;

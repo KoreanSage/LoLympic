@@ -351,6 +351,15 @@ const ar: Record<TranslationKeys, string> = {
   // ── Post Detail Page ─────────────────────────────────────────────────────
   "postDetail.notFound": "البوست مش موجود",
   "profile.notFound": "المستخدم مش موجود",
+
+  // ── Battle ──────────────────────────────────────────────────────────────────
+  "battle.title": "معركة الميمز",
+  "battle.tapToVote": "اضغط على الميم الأضحك!",
+  "battle.winner": "فاز!",
+  "battle.bonusPoints": "+5 بونص",
+  "battle.stop": "وقف",
+  "battle.noChallengers": "مفيش منافسين تاني!",
+  "battle.hotBattle": "ميمز المعارك الحامية",
 } as const;
 
 export default ar;

@@ -347,6 +347,15 @@ const es: Record<TranslationKeys, string> = {
   "hallOfFame.firstChampion": "El primer campeón será coronado al final de la temporada actual.",
   "postDetail.notFound": "Publicación no encontrada",
   "profile.notFound": "Usuario no encontrado",
+
+  // ── Battle ──────────────────────────────────────────────────────────────────
+  "battle.title": "Batalla de Memes",
+  "battle.tapToVote": "Toca el meme más gracioso!",
+  "battle.winner": "Ganador!",
+  "battle.bonusPoints": "+5 bonus",
+  "battle.stop": "Parar",
+  "battle.noChallengers": "No hay más retadores!",
+  "battle.hotBattle": "Memes Batalla Calientes",
 };
 
 export default es;

@@ -347,6 +347,15 @@ const ja: Record<TranslationKeys, string> = {
   "hallOfFame.firstChampion": "最初のチャンピオンは現在のシーズン終了時に選出されます。",
   "postDetail.notFound": "投稿が見つかりません",
   "profile.notFound": "ユーザーが見つかりません",
+
+  // ── Battle ──────────────────────────────────────────────────────────────────
+  "battle.title": "ミームバトル",
+  "battle.tapToVote": "面白い方をタップ！",
+  "battle.winner": "勝利！",
+  "battle.bonusPoints": "+5 ボーナス",
+  "battle.stop": "やめる",
+  "battle.noChallengers": "挑戦者がいません！",
+  "battle.hotBattle": "ホットバトルミーム",
 };
 
 export default ja;

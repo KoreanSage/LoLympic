@@ -260,6 +260,7 @@ model User {
   commentLikes         CommentLike[]
   monthlyWinners       MonthlyWinner[]
   finalVotes           FinalVote[]
+  battles              Battle[]
 
   @@index([countryId])
   @@index([username])
@@ -311,6 +312,10 @@ model Post {
   viewCount        Int @default(0)
   translationCount Int @default(0)
 
+  // Battle stats
+  battleWins   Int @default(0)
+  battleLosses Int @default(0)
+
   // Cached ranking score (computed by ranking jobs)
   rankingScore Float @default(0)
 
@@ -333,6 +338,8 @@ model Post {
   reports             Report[]
   notifications       Notification[]
   monthlyWinner       MonthlyWinner?
+  battlesAsLeft       Battle[]           @relation("BattleLeft")
+  battlesAsRight      Battle[]           @relation("BattleRight")
 
   @@index([authorId])
   @@index([countryId])
@@ -871,6 +878,27 @@ model FinalVote {
 
   @@unique([seasonId, userId]) // One vote per user per season
   @@index([monthlyWinnerId])
+}
+
+// ============================================================================
+// BATTLE MODELS
+// ============================================================================
+
+model Battle {
+  id           String   @id @default(cuid())
+  leftPostId   String
+  rightPostId  String
+  voterId      String
+  chosenPostId String
+
+  createdAt    DateTime @default(now())
+
+  leftPost     Post     @relation("BattleLeft", fields: [leftPostId], references: [id], onDelete: Cascade)
+  rightPost    Post     @relation("BattleRight", fields: [rightPostId], references: [id], onDelete: Cascade)
+  voter        User     @relation(fields: [voterId], references: [id], onDelete: Cascade)
+
+  @@index([voterId, createdAt(sort: Desc)])
+  @@index([chosenPostId])
 }
 
 // ============================================================================
