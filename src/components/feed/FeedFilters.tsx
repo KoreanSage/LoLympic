@@ -43,11 +43,12 @@ const LANGUAGE_OPTIONS: FilterOption[] = [
 
 const CATEGORY_OPTIONS: FilterOption[] = [
   { value: "", label: "All Categories" },
-  { value: "reaction", label: "Reaction" },
-  { value: "comic", label: "Comic" },
-  { value: "screenshot", label: "Screenshot" },
-  { value: "classic", label: "Classic" },
-  { value: "anime", label: "Anime" },
+  { value: "daily", label: "☕ Daily" },
+  { value: "sports", label: "⚽ Sports" },
+  { value: "politics", label: "🏛️ Politics" },
+  { value: "anime", label: "🎌 Anime" },
+  { value: "gaming", label: "🎮 Gaming" },
+  { value: "entertainment", label: "🎬 Entertainment" },
 ];
 
 export default function FeedFilters({

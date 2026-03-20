@@ -121,8 +121,8 @@ export const authOptions: NextAuthOptions = {
             });
           }
 
-          // Update avatar
-          if (user.image && user.image !== existingUser.avatarUrl) {
+          // Only set avatar if user has none (don't overwrite custom avatars)
+          if (user.image && !existingUser.avatarUrl) {
             await prisma.user.update({
               where: { id: existingUser.id },
               data: { avatarUrl: user.image },

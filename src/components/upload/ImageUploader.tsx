@@ -3,7 +3,8 @@
 import { useCallback, useState, useRef } from "react";
 
 interface ImageUploaderProps {
-  onImageSelected: (file: File, previewUrl: string) => void;
+  onImagesSelected: (files: File[], previewUrls: string[]) => void;
+  maxFiles?: number;
   maxSizeMB?: number;
   acceptedTypes?: string[];
   className?: string;
@@ -13,7 +14,8 @@ const DEFAULT_ACCEPTED = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const DEFAULT_MAX_SIZE_MB = 10;
 
 export default function ImageUploader({
-  onImageSelected,
+  onImagesSelected,
+  maxFiles = 10,
   maxSizeMB = DEFAULT_MAX_SIZE_MB,
   acceptedTypes = DEFAULT_ACCEPTED,
   className = "",
@@ -23,40 +25,43 @@ export default function ImageUploader({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const validateAndSelect = useCallback(
-    (file: File) => {
+    (fileList: FileList | File[]) => {
       setError(null);
+      const files = Array.from(fileList).slice(0, maxFiles);
 
-      if (!acceptedTypes.includes(file.type)) {
-        setError("Invalid file type. Please upload JPEG, PNG, WebP, or GIF.");
-        return;
+      if (files.length === 0) return;
+
+      for (const file of files) {
+        if (!acceptedTypes.includes(file.type)) {
+          setError("Invalid file type. Please upload JPEG, PNG, WebP, or GIF.");
+          return;
+        }
+        if (file.size > maxSizeMB * 1024 * 1024) {
+          setError(`File too large. Maximum size is ${maxSizeMB}MB.`);
+          return;
+        }
       }
 
-      if (file.size > maxSizeMB * 1024 * 1024) {
-        setError(`File too large. Maximum size is ${maxSizeMB}MB.`);
-        return;
-      }
-
-      const previewUrl = URL.createObjectURL(file);
-      onImageSelected(file, previewUrl);
+      const previewUrls = files.map((f) => URL.createObjectURL(f));
+      onImagesSelected(files, previewUrls);
     },
-    [acceptedTypes, maxSizeMB, onImageSelected]
+    [acceptedTypes, maxSizeMB, maxFiles, onImagesSelected]
   );
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
       setIsDragging(false);
-
-      const file = e.dataTransfer.files[0];
-      if (file) validateAndSelect(file);
+      if (e.dataTransfer.files.length > 0) validateAndSelect(e.dataTransfer.files);
     },
     [validateAndSelect]
   );
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (file) validateAndSelect(file);
+      if (e.target.files && e.target.files.length > 0) validateAndSelect(e.target.files);
+      // Reset so selecting same files again triggers change
+      if (inputRef.current) inputRef.current.value = "";
     },
     [validateAndSelect]
   );
@@ -105,10 +110,10 @@ export default function ImageUploader({
         </div>
         <div className="text-center">
           <p className="text-sm text-foreground-muted">
-            {isDragging ? "Drop your image here" : "Drag & drop or click to upload"}
+            {isDragging ? "Drop your images here" : "Drag & drop or click to upload"}
           </p>
           <p className="text-xs text-foreground-subtle mt-1">
-            JPEG, PNG, WebP, or GIF up to {maxSizeMB}MB
+            Up to {maxFiles} images · JPEG, PNG, WebP, or GIF · max {maxSizeMB}MB each
           </p>
         </div>
       </button>
@@ -121,6 +126,7 @@ export default function ImageUploader({
         ref={inputRef}
         type="file"
         accept={acceptedTypes.join(",")}
+        multiple
         onChange={handleChange}
         className="hidden"
       />

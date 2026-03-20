@@ -42,10 +42,11 @@ export async function GET(request: NextRequest) {
     if (category) where.category = category;
 
     // Build orderBy
-    let orderBy: Prisma.PostOrderByWithRelationInput;
+    let orderBy: Prisma.PostOrderByWithRelationInput | Prisma.PostOrderByWithRelationInput[];
     switch (sort) {
       case "trending":
-        orderBy = { rankingScore: "desc" };
+        // Primary: rankingScore, fallback: reactionCount for posts with score 0
+        orderBy = [{ rankingScore: "desc" }, { reactionCount: "desc" }, { createdAt: "desc" }];
         break;
       case "top":
         orderBy = { reactionCount: "desc" };
@@ -223,9 +224,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (images && (!Array.isArray(images) || images.length > 5)) {
+    if (images && (!Array.isArray(images) || images.length > 10)) {
       return NextResponse.json(
-        { error: "Maximum 5 images allowed" },
+        { error: "Maximum 10 images allowed" },
         { status: 400 }
       );
     }

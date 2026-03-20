@@ -1,7 +1,16 @@
 "use client";
 
+import { useSession } from "next-auth/react";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
+
+const CARD_LABELS: Record<string, { summary: string; culturalContext: string; translationNote: string }> = {
+  ko: { summary: "요약", culturalContext: "문화적 맥락", translationNote: "번역 노트" },
+  en: { summary: "Summary", culturalContext: "Cultural Context", translationNote: "Translation Note" },
+  ja: { summary: "概要", culturalContext: "文化的背景", translationNote: "翻訳ノート" },
+  zh: { summary: "摘要", culturalContext: "文化背景", translationNote: "翻译说明" },
+  es: { summary: "Resumen", culturalContext: "Contexto cultural", translationNote: "Nota de traducción" },
+};
 
 interface CultureNoteCardProps {
   id: string;
@@ -21,6 +30,9 @@ export default function CultureNoteCard({
   status,
   className = "",
 }: CultureNoteCardProps) {
+  const { data: session } = useSession();
+  const preferredLang = (session?.user as any)?.preferredLanguage || "en";
+  const labels = CARD_LABELS[preferredLang] || CARD_LABELS.en;
   const creatorBadgeVariant =
     creatorType === "AI" ? "info" : creatorType === "ADMIN" ? "gold" : "default";
 
@@ -50,7 +62,7 @@ export default function CultureNoteCard({
       {/* Summary */}
       <div>
         <h4 className="text-xs uppercase tracking-wider text-foreground-subtle mb-1">
-          Summary
+          {labels.summary}
         </h4>
         <p className="text-sm text-foreground-muted leading-relaxed">{summary}</p>
       </div>
@@ -58,7 +70,7 @@ export default function CultureNoteCard({
       {/* Explanation */}
       <div>
         <h4 className="text-xs uppercase tracking-wider text-foreground-subtle mb-1">
-          Cultural Context
+          {labels.culturalContext}
         </h4>
         <p className="text-sm text-foreground-muted leading-relaxed">{explanation}</p>
       </div>
@@ -67,7 +79,7 @@ export default function CultureNoteCard({
       {translationNote && (
         <div className="border-t border-border pt-3">
           <h4 className="text-xs uppercase tracking-wider text-foreground-subtle mb-1">
-            Translation Note
+            {labels.translationNote}
           </h4>
           <p className="text-sm text-foreground-muted leading-relaxed italic">
             {translationNote}

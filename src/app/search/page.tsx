@@ -62,19 +62,23 @@ function SearchPage() {
   const [activeTab, setActiveTab] = useState<"posts" | "users">("posts");
   const [posts, setPosts] = useState<PostResult[]>([]);
   const [users, setUsers] = useState<UserResult[]>([]);
+  const [postCount, setPostCount] = useState(0);
+  const [userCount, setUserCount] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  const doSearch = useCallback(async (q: string, type: string) => {
+  const doSearch = useCallback(async (q: string) => {
     if (!q.trim()) return;
     setLoading(true);
     try {
       const res = await fetch(
-        `/api/search?q=${encodeURIComponent(q)}&type=${type}&limit=20`
+        `/api/search?q=${encodeURIComponent(q)}&type=all&limit=30`
       );
       if (res.ok) {
         const data = await res.json();
-        if (type === "posts") setPosts(data.results || []);
-        else setUsers(data.results || []);
+        setPosts(data.posts || []);
+        setUsers(data.users || []);
+        setPostCount(data.postCount ?? 0);
+        setUserCount(data.userCount ?? 0);
       }
     } catch {
       // ignore
@@ -84,10 +88,8 @@ function SearchPage() {
   }, []);
 
   useEffect(() => {
-    if (query) {
-      doSearch(query, activeTab);
-    }
-  }, [query, activeTab, doSearch]);
+    if (query) doSearch(query);
+  }, [query, doSearch]);
 
   return (
     <MainLayout showSidebar={false}>
@@ -114,7 +116,7 @@ function SearchPage() {
                 : "text-foreground-subtle border-transparent hover:text-foreground-muted"
             }`}
           >
-            Memes
+            Memes {postCount > 0 && <span className="ml-1 text-xs opacity-70">({postCount})</span>}
           </button>
           <button
             onClick={() => setActiveTab("users")}
@@ -124,7 +126,7 @@ function SearchPage() {
                 : "text-foreground-subtle border-transparent hover:text-foreground-muted"
             }`}
           >
-            Users
+            Users {userCount > 0 && <span className="ml-1 text-xs opacity-70">({userCount})</span>}
           </button>
         </div>
 

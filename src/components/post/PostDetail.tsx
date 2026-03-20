@@ -10,10 +10,22 @@ import Tabs from "@/components/ui/Tabs";
 import MemeRenderer from "@/components/translation/MemeRenderer";
 import TranslationToggle from "@/components/translation/TranslationToggle";
 import CompareMode from "@/components/translation/CompareMode";
+import ImageCarousel from "@/components/ui/ImageCarousel";
 import CultureNoteCard from "./CultureNoteCard";
 import SuggestionPanel from "./SuggestionPanel";
 import CommentSection from "./CommentSection";
 import { TranslationSegmentData } from "@/types/components";
+
+// ---------------------------------------------------------------------------
+// i18n labels per language
+// ---------------------------------------------------------------------------
+const UI_LABELS: Record<string, { cultureNote: string; suggestions: string; comments: string; noCultureNotes: string }> = {
+  ko: { cultureNote: "문화 노트", suggestions: "번역 제안", comments: "댓글", noCultureNotes: "아직 문화 노트가 없습니다" },
+  en: { cultureNote: "Culture Note", suggestions: "Translation Suggestions", comments: "Comments", noCultureNotes: "No culture notes yet" },
+  ja: { cultureNote: "文化ノート", suggestions: "翻訳提案", comments: "コメント", noCultureNotes: "文化ノートはまだありません" },
+  zh: { cultureNote: "文化笔记", suggestions: "翻译建议", comments: "评论", noCultureNotes: "暂无文化笔记" },
+  es: { cultureNote: "Nota cultural", suggestions: "Sugerencias de traducción", comments: "Comentarios", noCultureNotes: "Aún no hay notas culturales" },
+};
 
 interface PostDetailProps {
   id: string;
@@ -40,6 +52,11 @@ interface PostDetailProps {
   viewCount: number;
   createdAt: string;
   tags?: string[];
+  images?: Array<{
+    originalUrl: string;
+    cleanUrl?: string | null;
+    mimeType?: string | null;
+  }>;
   onDelete?: () => void;
   cultureNotes?: Array<{
     id: string;
@@ -107,6 +124,7 @@ export default function PostDetail({
   viewCount,
   createdAt,
   tags,
+  images,
   onDelete,
   cultureNotes = [],
   suggestions = [],
@@ -230,10 +248,13 @@ export default function PostDetail({
     }
   };
 
+  const preferredLang = (session?.user as any)?.preferredLanguage || "en";
+  const labels = UI_LABELS[preferredLang] || UI_LABELS.en;
+
   const tabs = [
-    { id: "culture", label: "Culture Note", count: cultureNotes.length },
-    { id: "suggestions", label: "Discussion", count: suggestions.length },
-    { id: "comments", label: "Comments", count: commentCount },
+    { id: "culture", label: labels.cultureNote, count: cultureNotes.length },
+    { id: "suggestions", label: labels.suggestions, count: suggestions.length },
+    { id: "comments", label: labels.comments, count: commentCount },
   ];
 
   return (
@@ -428,8 +449,32 @@ export default function PostDetail({
           </button>
         </div>
 
-        {/* Image */}
-        {isGif ? (
+        {/* Image(s) */}
+        {images && images.length > 1 ? (
+          <div className="rounded-xl overflow-hidden border border-border">
+            <ImageCarousel>
+              {images.map((img, i) => {
+                const imgIsGif = img.mimeType === "image/gif";
+                return imgIsGif ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img key={i} src={img.originalUrl} alt={title} className="w-full" />
+                ) : i === 0 ? (
+                  <MemeRenderer
+                    key={i}
+                    imageUrl={img.originalUrl}
+                    cleanImageUrl={img.cleanUrl || undefined}
+                    translatedImageUrl={translatedImageUrl}
+                    segments={segments}
+                    showTranslation={showTranslation}
+                  />
+                ) : (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img key={i} src={img.originalUrl} alt={title} className="w-full" />
+                );
+              })}
+            </ImageCarousel>
+          </div>
+        ) : isGif ? (
           <div className="rounded-xl overflow-hidden border border-border">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={imageUrl} alt={title} className="w-full" />
@@ -451,7 +496,7 @@ export default function PostDetail({
 
       {/* Body */}
       {body && (
-        <p className="text-sm text-foreground-muted leading-relaxed">{body}</p>
+        <p className="text-[22px] text-foreground-muted leading-relaxed whitespace-pre-wrap">{body}</p>
       )}
 
       {/* Stats */}
@@ -553,7 +598,7 @@ export default function PostDetail({
               ))
             ) : (
               <p className="text-sm text-foreground-subtle text-center py-8">
-                No culture notes yet
+                {labels.noCultureNotes}
               </p>
             )}
           </div>
