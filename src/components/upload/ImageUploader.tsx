@@ -115,6 +115,9 @@ export default function ImageUploader({
           <p className="text-xs text-foreground-subtle mt-1">
             Up to {maxFiles} images · JPEG, PNG, WebP, or GIF · max {maxSizeMB}MB each
           </p>
+          <p className="text-[11px] text-foreground-subtle mt-1.5 opacity-60">
+            Tip: Hold ⌘(Cmd) to select multiple files at once
+          </p>
         </div>
       </button>
 

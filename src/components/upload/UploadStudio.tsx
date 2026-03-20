@@ -348,10 +348,11 @@ export default function UploadStudio() {
 
                 {/* Add more button */}
                 {imageFiles.length < MAX_IMAGES && (
-                  <label className="shrink-0 w-16 h-16 rounded-lg border-2 border-dashed border-border-hover hover:border-border-active bg-background-surface hover:bg-background-elevated flex items-center justify-center cursor-pointer transition-colors">
-                    <svg className="w-5 h-5 text-foreground-subtle" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <label className="shrink-0 w-16 h-16 rounded-lg border-2 border-dashed border-[#c9a84c]/40 hover:border-[#c9a84c] bg-[#c9a84c]/5 hover:bg-[#c9a84c]/10 flex flex-col items-center justify-center cursor-pointer transition-colors gap-0.5">
+                    <svg className="w-5 h-5 text-[#c9a84c]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                     </svg>
+                    <span className="text-[9px] text-[#c9a84c] font-medium">Add</span>
                     <input
                       type="file"
                       accept="image/jpeg,image/png,image/webp,image/gif"
