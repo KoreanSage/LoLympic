@@ -29,7 +29,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Season must be in JUDGING status to finalize" }, { status: 400 });
     }
 
-    // Count votes per monthly winner
+    // =====================================================================
+    // 1. MEME OF THE YEAR — Tournament (user votes on 12 monthly winners)
+    // =====================================================================
     const voteCounts = await prisma.finalVote.groupBy({
       by: ["monthlyWinnerId"],
       where: { seasonId },
@@ -41,7 +43,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No votes have been cast" }, { status: 400 });
     }
 
-    // Winner is the monthly winner with most votes
+    // Winner meme = monthly winner with most votes
     const winningMWId = voteCounts[0].monthlyWinnerId;
     const winningMW = await prisma.monthlyWinner.findUnique({
       where: { id: winningMWId },
@@ -55,20 +57,65 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Winning entry not found" }, { status: 500 });
     }
 
-    // Update season with champion info
+    // =====================================================================
+    // 2. COUNTRY OF THE YEAR — Total reactions received during the season
+    // =====================================================================
+    const seasonStart = season.startAt;
+    const seasonEnd = season.endAt;
+
+    // Count all reactions received during the season, grouped by post's country
+    const countryReactions = await prisma.postReaction.groupBy({
+      by: ["postId"],
+      where: {
+        createdAt: { gte: seasonStart, lte: seasonEnd },
+        post: {
+          status: "PUBLISHED",
+          visibility: "PUBLIC",
+          countryId: { not: null },
+        },
+      },
+      _count: { id: true },
+    });
+
+    // Map postId → countryId
+    const postIds = countryReactions.map((r) => r.postId);
+    const posts = await prisma.post.findMany({
+      where: { id: { in: postIds } },
+      select: { id: true, countryId: true },
+    });
+    const postCountryMap = new Map(posts.map((p) => [p.id, p.countryId]));
+
+    // Aggregate by country
+    const countryScores = new Map<string, number>();
+    for (const r of countryReactions) {
+      const cid = postCountryMap.get(r.postId);
+      if (!cid) continue;
+      countryScores.set(cid, (countryScores.get(cid) || 0) + r._count.id);
+    }
+
+    // Find #1 country and sort
+    const sortedCountries = Array.from(countryScores.entries())
+      .sort((a, b) => b[1] - a[1]);
+
+    const championCountryId = sortedCountries.length > 0 ? sortedCountries[0][0] : null;
+    const maxScore = sortedCountries.length > 0 ? sortedCountries[0][1] : 0;
+
+    // =====================================================================
+    // 3. SAVE RESULTS
+    // =====================================================================
     await prisma.$transaction(async (tx) => {
-      // 1. Update season status to COMPLETED
+      // Update season status
       await tx.season.update({
         where: { id: seasonId },
         data: {
           status: "COMPLETED",
           championPostId: winningMW.postId,
           championUserId: winningMW.authorId,
-          championCountryId: winningMW.countryId,
+          championCountryId: championCountryId, // Country by total 🔥, not meme winner's country
         },
       });
 
-      // 2. Mark winner user as champion (permanent gold border)
+      // Mark meme winner as champion
       await tx.user.update({
         where: { id: winningMW.authorId },
         data: {
@@ -77,21 +124,20 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      // 3. Create medals
-      // Champion meme medal
+      // Medal: Meme of the Year (tournament winner)
       await tx.medal.create({
         data: {
           seasonId,
           type: "GOLD",
           scope: "MEME",
-          label: `${season.name} — Champion Meme`,
+          label: `${season.name} — Meme of the Year`,
           userId: winningMW.authorId,
           countryId: winningMW.countryId,
           postId: winningMW.postId,
         },
       });
 
-      // Champion creator medal
+      // Medal: Meme Creator
       await tx.medal.create({
         data: {
           seasonId,
@@ -102,15 +148,17 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      // Champion country medal
-      if (winningMW.countryId) {
+      // Medals: Country rankings (Gold/Silver/Bronze by total 🔥)
+      const medalTypes = ["GOLD", "SILVER", "BRONZE"] as const;
+      for (let i = 0; i < Math.min(3, sortedCountries.length); i++) {
+        const [countryId, score] = sortedCountries[i];
         await tx.medal.create({
           data: {
             seasonId,
-            type: "GOLD",
+            type: medalTypes[i],
             scope: "COUNTRY",
-            label: `${season.name} — Champion Country`,
-            countryId: winningMW.countryId,
+            label: `${season.name} — #${i + 1} Country (🔥 ${score})`,
+            countryId,
           },
         });
       }
@@ -118,11 +166,19 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      champion: {
+      memeChampion: {
         post: winningMW.post,
         author: winningMW.author,
-        countryId: winningMW.countryId,
         voteCount: voteCounts[0]._count.id,
+      },
+      countryChampion: {
+        countryId: championCountryId,
+        totalReactions: maxScore,
+        rankings: sortedCountries.slice(0, 5).map(([cid, score], i) => ({
+          rank: i + 1,
+          countryId: cid,
+          score,
+        })),
       },
     });
   } catch (error) {
