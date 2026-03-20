@@ -102,17 +102,35 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Monthly winner already selected for this month", existing }, { status: 409 });
     }
 
-    // Find the post with the most reactions in the target month
+    // Find the post that RECEIVED the most reactions during the target month
+    // (regardless of when the post was created)
     const monthStart = new Date(targetYear, targetMonth - 1, 1);
     const monthEnd = new Date(targetYear, targetMonth, 1);
 
-    const topPost = await prisma.post.findFirst({
+    // Count reactions received within this month, grouped by post
+    const topReactions = await prisma.postReaction.groupBy({
+      by: ["postId"],
       where: {
-        status: "PUBLISHED",
-        visibility: "PUBLIC",
         createdAt: { gte: monthStart, lt: monthEnd },
+        post: {
+          status: "PUBLISHED",
+          visibility: "PUBLIC",
+        },
       },
-      orderBy: { reactionCount: "desc" },
+      _count: { id: true },
+      orderBy: { _count: { id: "desc" } },
+      take: 1,
+    });
+
+    if (topReactions.length === 0) {
+      return NextResponse.json({ error: "No reactions found for this month" }, { status: 404 });
+    }
+
+    const topPostId = topReactions[0].postId;
+    const monthlyFireCount = topReactions[0]._count.id;
+
+    const topPost = await prisma.post.findUnique({
+      where: { id: topPostId },
       select: {
         id: true,
         authorId: true,
@@ -123,7 +141,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!topPost) {
-      return NextResponse.json({ error: "No eligible posts found for this month" }, { status: 404 });
+      return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
 
     const winner = await prisma.monthlyWinner.create({
@@ -134,7 +152,7 @@ export async function POST(request: NextRequest) {
         postId: topPost.id,
         authorId: topPost.authorId,
         countryId: topPost.countryId,
-        likeCount: topPost.reactionCount,
+        likeCount: monthlyFireCount, // Reactions received THIS month only
       },
       include: {
         post: { select: { id: true, title: true } },
