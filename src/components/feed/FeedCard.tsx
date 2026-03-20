@@ -9,6 +9,7 @@ import Badge from "@/components/ui/Badge";
 import Card from "@/components/ui/Card";
 import MemeRenderer from "@/components/translation/MemeRenderer";
 import TranslationToggle from "@/components/translation/TranslationToggle";
+import ImageCarousel from "@/components/ui/ImageCarousel";
 import { TranslationSegmentData } from "@/types/components";
 import { useToast } from "@/components/ui/Toast";
 import { useTranslation } from "@/i18n";
@@ -24,6 +25,12 @@ interface TopComment {
     isChampion?: boolean;
     countryFlag?: string;
   };
+}
+
+interface FeedImage {
+  originalUrl: string;
+  cleanUrl?: string | null;
+  mimeType?: string | null;
 }
 
 interface FeedCardProps {
@@ -51,6 +58,7 @@ interface FeedCardProps {
   seasonBadge?: string;
   tags?: string[];
   topComments?: TopComment[];
+  images?: FeedImage[];
   onDelete?: (id: string) => void;
 }
 
@@ -85,6 +93,7 @@ export default function FeedCard({
   seasonBadge,
   tags,
   topComments,
+  images,
   onDelete,
 }: FeedCardProps) {
   const { toast } = useToast();
@@ -311,17 +320,39 @@ export default function FeedCard({
       {/* Title */}
       {title && (
         <Link href={`/post/${id}`}>
-          <h3 className="px-4 pb-2 text-sm font-medium text-foreground-muted hover:text-foreground transition-colors line-clamp-2">
+          <h3 className="px-4 pb-2 text-[22px] font-medium text-foreground-muted hover:text-foreground transition-colors line-clamp-2">
             {title}
           </h3>
         </Link>
       )}
 
-      {/* Meme image */}
+      {/* Meme image(s) */}
       <Link href={`/post/${id}`} className="block">
         <div className="px-4 pb-2">
           <div className="rounded-lg overflow-hidden border border-border">
-            {isGif ? (
+            {images && images.length > 1 ? (
+              <ImageCarousel>
+                {images.map((img, i) => {
+                  const imgIsGif = img.mimeType === "image/gif";
+                  return imgIsGif ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img key={i} src={img.originalUrl} alt={title} className="w-full" />
+                  ) : i === 0 ? (
+                    <MemeRenderer
+                      key={i}
+                      imageUrl={img.originalUrl}
+                      cleanImageUrl={img.cleanUrl || undefined}
+                      translatedImageUrl={translatedImageUrl}
+                      segments={segments}
+                      showTranslation={showTranslation}
+                    />
+                  ) : (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img key={i} src={img.originalUrl} alt={title} className="w-full" />
+                  );
+                })}
+              </ImageCarousel>
+            ) : isGif ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={imageUrl} alt={title} className="w-full" />
             ) : (

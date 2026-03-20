@@ -19,6 +19,12 @@ interface TopComment {
   };
 }
 
+interface FeedImage {
+  originalUrl: string;
+  cleanUrl?: string | null;
+  mimeType?: string | null;
+}
+
 interface FeedPost {
   id: string;
   title: string;
@@ -44,6 +50,7 @@ interface FeedPost {
   seasonBadge?: string;
   tags?: string[];
   topComments?: TopComment[];
+  images?: FeedImage[];
 }
 
 interface FeedListProps {
@@ -103,6 +110,11 @@ function mapApiPost(post: any): FeedPost {
     shareCount: post.shareCount ?? 0,
     createdAt: post.createdAt,
     tags: post.tags || [],
+    images: (post.images || []).map((img: any) => ({
+      originalUrl: img.originalUrl,
+      cleanUrl: img.cleanUrl || null,
+      mimeType: img.mimeType || null,
+    })),
     topComments: (post.comments || []).map((c: any) => ({
       id: c.id,
       body: c.body,

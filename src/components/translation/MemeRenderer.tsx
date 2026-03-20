@@ -16,8 +16,15 @@ function detectLanguageFromText(text: string): string | null {
   if (/[\u3131-\uD79D]/.test(text)) return "ko";
   if (/[\u3040-\u309F\u30A0-\u30FF]/.test(text)) return "ja";
   if (/[\u4E00-\u9FFF]/.test(text)) return "zh";
+  if (/[\u0900-\u097F]/.test(text)) return "hi";
+  if (/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]/.test(text)) return "ar";
   if (/[a-zA-Z]/.test(text)) return "en";
   return null;
+}
+
+/** Check if text is RTL (Arabic/Hebrew) */
+function isRTL(text: string): boolean {
+  return /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\u0590-\u05FF]/.test(text);
 }
 
 function resolveFont(segment: TranslationSegmentData): string {
@@ -319,15 +326,24 @@ export default function MemeRenderer({
       // Vertical centering
       const startY = by + (bh - totalTextHeight) / 2 + fontSize;
 
-      // Horizontal alignment
+      // Horizontal alignment (flip for RTL text like Arabic)
+      const rtl = isRTL(seg.translatedText);
       const align = (seg.textAlign || "CENTER").toUpperCase();
-      if (align === "LEFT") ctx.textAlign = "left";
-      else if (align === "RIGHT") ctx.textAlign = "right";
-      else ctx.textAlign = "center";
+      if (rtl) {
+        ctx.direction = "rtl";
+        if (align === "LEFT") ctx.textAlign = "right";
+        else if (align === "RIGHT") ctx.textAlign = "left";
+        else ctx.textAlign = "center";
+      } else {
+        ctx.direction = "ltr";
+        if (align === "LEFT") ctx.textAlign = "left";
+        else if (align === "RIGHT") ctx.textAlign = "right";
+        else ctx.textAlign = "center";
+      }
 
       let anchorX = bx + bw / 2;
-      if (align === "LEFT") anchorX = bx + padding;
-      else if (align === "RIGHT") anchorX = bx + bw - padding;
+      if (align === "LEFT") anchorX = rtl ? bx + bw - padding : bx + padding;
+      else if (align === "RIGHT") anchorX = rtl ? bx + padding : bx + bw - padding;
 
       ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}, sans-serif`;
       ctx.textBaseline = "alphabetic";

@@ -12,6 +12,8 @@ const localeLoaders: Record<string, () => Promise<{ default: TranslationDict }>>
   ja: () => import("@/i18n/locales/ja"),
   zh: () => import("@/i18n/locales/zh"),
   es: () => import("@/i18n/locales/es"),
+  hi: () => import("@/i18n/locales/hi"),
+  ar: () => import("@/i18n/locales/ar"),
 };
 
 export default function I18nProvider({ children }: { children: React.ReactNode }) {
@@ -21,7 +23,7 @@ export default function I18nProvider({ children }: { children: React.ReactNode }
   const [locale, setLocaleState] = useState<Locale>(() => {
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem("uiLanguage") as Locale | null;
-      if (stored && ["en", "ko", "ja", "zh", "es"].includes(stored)) return stored;
+      if (stored && ["en", "ko", "ja", "zh", "es", "hi", "ar"].includes(stored)) return stored;
     }
     return "en";
   });
@@ -31,7 +33,7 @@ export default function I18nProvider({ children }: { children: React.ReactNode }
   // Sync with session's uiLanguage when available
   useEffect(() => {
     const sessionLang = (session?.user as any)?.uiLanguage as Locale | undefined;
-    if (sessionLang && ["en", "ko", "ja", "zh", "es"].includes(sessionLang) && sessionLang !== locale) {
+    if (sessionLang && ["en", "ko", "ja", "zh", "es", "hi", "ar"].includes(sessionLang) && sessionLang !== locale) {
       setLocaleState(sessionLang);
       localStorage.setItem("uiLanguage", sessionLang);
     }
@@ -51,9 +53,10 @@ export default function I18nProvider({ children }: { children: React.ReactNode }
     }
   }, [locale]);
 
-  // Update html lang attribute
+  // Update html lang and dir attributes
   useEffect(() => {
     document.documentElement.lang = locale;
+    document.documentElement.dir = locale === "ar" ? "rtl" : "ltr";
   }, [locale]);
 
   const setLocale = useCallback((newLocale: Locale) => {

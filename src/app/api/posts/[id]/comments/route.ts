@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { updateRankingScore } from "@/lib/ranking";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -218,6 +219,9 @@ export async function POST(
           ]
         : []),
     ]);
+
+    // Update ranking score (fire and forget)
+    updateRankingScore(postId).catch(() => {});
 
     // Create notification (fire and forget)
     const notifiedUserIds = new Set<string>();

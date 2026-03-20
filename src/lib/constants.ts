@@ -38,6 +38,8 @@ export const SUPPORTED_LANGUAGES: LanguageCode[] = [
   LanguageCode.ja,
   LanguageCode.zh,
   LanguageCode.es,
+  LanguageCode.hi,
+  LanguageCode.ar,
 ];
 
 /** Font families optimized per language for meme text rendering */
@@ -47,6 +49,8 @@ export const LANGUAGE_FONT_MAP: Record<LanguageCode, string> = {
   [LanguageCode.zh]: "Noto Sans SC",
   [LanguageCode.en]: "Impact",
   [LanguageCode.es]: "Arial",
+  [LanguageCode.hi]: "Noto Sans Devanagari",
+  [LanguageCode.ar]: "Noto Sans Arabic",
 };
 
 // ============================================================================

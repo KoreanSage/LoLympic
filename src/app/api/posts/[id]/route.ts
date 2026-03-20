@@ -13,6 +13,7 @@ export async function GET(
 ) {
   try {
     const { id } = await context.params;
+    const lang = request.nextUrl.searchParams.get("lang");
 
     const post = await prisma.post.findUnique({
       where: { id },
@@ -49,7 +50,10 @@ export async function GET(
           },
         },
         cultureNotes: {
-          where: { status: { in: ["PUBLISHED", "APPROVED"] } },
+          where: {
+            status: { in: ["PUBLISHED", "APPROVED"] },
+            ...(lang ? { language: lang as any } : {}),
+          },
           orderBy: { version: "desc" },
         },
         _count: {

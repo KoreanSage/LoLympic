@@ -1,5 +1,6 @@
 "use client";
 
+import { useSession } from "next-auth/react";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import { useTranslation } from "@/i18n";
@@ -22,7 +23,10 @@ export default function CultureNoteCard({
   status,
   className = "",
 }: CultureNoteCardProps) {
+  const { data: session } = useSession();
   const { t } = useTranslation();
+  const preferredLang = (session?.user as any)?.preferredLanguage || "en";
+  const textDir = preferredLang === "ar" ? "rtl" as const : "ltr" as const;
   const creatorBadgeVariant =
     creatorType === "AI" ? "info" : creatorType === "ADMIN" ? "gold" : "default";
 
@@ -36,7 +40,7 @@ export default function CultureNoteCard({
       : "warning";
 
   return (
-    <Card className={`space-y-3 ${className}`}>
+    <Card className={`space-y-3 ${className}`} dir={textDir}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -69,7 +73,7 @@ export default function CultureNoteCard({
       {translationNote && (
         <div className="border-t border-border pt-3">
           <h4 className="text-xs uppercase tracking-wider text-foreground-subtle mb-1">
-            Translation Note
+            {t("cultureNote.title")}
           </h4>
           <p className="text-sm text-foreground-muted leading-relaxed italic">
             {translationNote}

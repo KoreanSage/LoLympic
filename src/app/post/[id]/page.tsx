@@ -2,17 +2,21 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import MainLayout from "@/components/layout/MainLayout";
 import PostDetail from "@/components/post/PostDetail";
 import { useTranslation } from "@/i18n";
 
 export default function PostPage() {
   const params = useParams();
+  const { data: session } = useSession();
   const id = params.id as string;
   const { t } = useTranslation();
   const [post, setPost] = useState<any>(null);
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  const preferredLang = (session?.user as any)?.preferredLanguage || "en";
 
   useEffect(() => {
     if (!id) return;
@@ -21,7 +25,7 @@ export default function PostPage() {
     setLoading(true);
     setError(false);
 
-    fetch(`/api/posts/${id}`)
+    fetch(`/api/posts/${id}?lang=${preferredLang}`)
       .then((res) => {
         if (!res.ok) throw new Error("Not found");
         return res.json();
@@ -40,7 +44,7 @@ export default function PostPage() {
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, preferredLang]);
 
   if (loading) {
     return (
@@ -127,6 +131,11 @@ export default function PostPage() {
         viewCount={post.viewCount ?? 0}
         createdAt={post.createdAt}
         tags={post.tags || []}
+        images={(post.images || []).map((img: any) => ({
+          originalUrl: img.originalUrl,
+          cleanUrl: img.cleanUrl || null,
+          mimeType: img.mimeType || null,
+        }))}
         cultureNotes={cultureNotes}
         suggestions={[]}
         comments={[]}

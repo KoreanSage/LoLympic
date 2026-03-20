@@ -6,6 +6,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GoogleGenAI } from "@google/genai";
 import { LanguageCode } from "@prisma/client";
 import crypto from "crypto";
+import { updateRankingScore } from "@/lib/ranking";
 
 // Vercel Hobby: max 60s, Pro: up to 300s
 export const maxDuration = 60;
@@ -24,6 +25,8 @@ const LANGUAGE_INSTRUCTIONS: Record<string, string> = {
   zh: "Chinese (中文): Compact and efficient. Chinese internet humor uses 网络用语, four-character idioms twisted for comedy, and phonetic puns. Keep character count low. Maximize impact per character.",
   en: "English: Sarcastic and exaggerated. English memes lean into irony, self-deprecation, and absurdist escalation. Use internet-native phrasing (all caps for emphasis, deliberate misspellings for tone). Match the energy.",
   es: "Spanish (Español): Expressive and colloquial. Spanish memes use regional slang, diminutives for comedic effect, and exaggerated emotion. Capture the warmth and dramatic flair. Consider Latin American vs. Iberian variations.",
+  hi: "Hindi (हिन्दी): Bollywood-influenced humor with dramatic flair. Hindi memes use Hinglish (Hindi-English mix), filmi dialogues, and cultural references. Use colloquial Delhi/Mumbai street Hindi for authenticity. Embrace the dramatic and emotional style.",
+  ar: "Arabic (العربية): Rich and expressive. Arabic memes blend Modern Standard Arabic with dialect (Egyptian/Gulf). Use internet-native Arabic expressions, cultural references, and wordplay. Keep it casual and relatable. Use Egyptian dialect when unsure.",
 };
 
 // ---------------------------------------------------------------------------
@@ -82,6 +85,10 @@ First determine the meme type, then translate ALL relevant text for that type.
 4. Translate with cultural adaptation
 5. Match the original styling (size, weight, color, position)
 
+## IMPORTANT: Language for cultureNote
+Write ALL cultureNote fields (summary, explanation, translationNote) in the TARGET language (${targetLanguage}).
+Do NOT write them in English unless the target language IS English.
+
 ## Response Format (JSON only, no markdown fences)
 {
   "memeType": "A|B|C",
@@ -104,9 +111,9 @@ First determine the meme type, then translate ALL relevant text for that type.
     }
   ],
   "cultureNote": {
-    "summary": "One-line cultural context",
-    "explanation": "Detailed explanation of cultural references, humor mechanics, and why certain choices were made",
-    "translationNote": "Specific notes about translation decisions — what was adapted and why"
+    "summary": "One-line cultural context (in target language)",
+    "explanation": "Detailed explanation of cultural references, humor mechanics, and why certain choices were made (in target language)",
+    "translationNote": "Specific notes about translation decisions — what was adapted and why (in target language)"
   },
   "confidence": 0.85
 }`;
@@ -168,7 +175,7 @@ function toTextAlign(align?: string): "LEFT" | "CENTER" | "RIGHT" {
 }
 
 function isValidLanguageCode(code: string): code is LanguageCode {
-  return ["ko", "en", "ja", "zh", "es"].includes(code);
+  return ["ko", "en", "ja", "zh", "es", "hi", "ar"].includes(code);
 }
 
 function extractMimeType(filePathOrUrl: string): string {
@@ -605,13 +612,13 @@ export async function POST(request: NextRequest) {
             include: { segments: true },
           });
 
-          // Create CultureNote — only once per post (use source language as key)
+          // Create CultureNote per target language
           if (parsed.cultureNote) {
             const existingNote = await tx.cultureNote.findFirst({
-              where: { postId, language: sourceLanguage as LanguageCode },
+              where: { postId, language: targetLang as LanguageCode },
             });
 
-            // Skip if culture note already exists for this post
+            // Skip if culture note already exists for this language
             if (!existingNote) {
               const latestNote = await tx.cultureNote.findFirst({
                 where: { postId },
@@ -622,7 +629,7 @@ export async function POST(request: NextRequest) {
               await tx.cultureNote.create({
                 data: {
                   postId,
-                  language: sourceLanguage as LanguageCode,
+                  language: targetLang as LanguageCode,
                   summary: parsed.cultureNote.summary || "",
                   explanation: parsed.cultureNote.explanation || "",
                   translationNote: parsed.cultureNote.translationNote ?? null,
@@ -661,6 +668,9 @@ export async function POST(request: NextRequest) {
 
     // NOTE: Clean image generation is skipped here to avoid timeout.
     // It can be triggered separately via /api/translate/generate-image.
+
+    // Update ranking score after translations complete
+    updateRankingScore(postId).catch(() => {});
 
     return NextResponse.json({
       postId,

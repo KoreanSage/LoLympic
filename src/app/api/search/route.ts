@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 
 // ---------------------------------------------------------------------------
-// GET /api/search?q=keyword&type=posts|users&limit=20
+// GET /api/search?q=keyword&type=posts|users|all&limit=20
 // ---------------------------------------------------------------------------
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const query = searchParams.get("q")?.trim();
-    const type = searchParams.get("type") || "posts";
+    const type = searchParams.get("type") || "all";
     const limit = Math.min(
       50,
       Math.max(1, parseInt(searchParams.get("limit") || "20", 10))
@@ -21,25 +22,80 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (type !== "posts" && type !== "users") {
+    if (!["posts", "users", "all"].includes(type)) {
       return NextResponse.json(
-        { error: "type must be 'posts' or 'users'" },
+        { error: "type must be 'posts', 'users', or 'all'" },
         { status: 400 }
       );
     }
 
-    if (type === "posts") {
+    // Split query into individual words for multi-word matching
+    const words = query
+      .split(/\s+/)
+      .filter((w) => w.length > 0)
+      .slice(0, 10); // max 10 search terms
+
+    const results: { posts?: any[]; users?: any[] } = {};
+
+    // -----------------------------------------------------------------------
+    // Post search
+    // -----------------------------------------------------------------------
+    if (type === "posts" || type === "all") {
+      // Build OR conditions: each word matches title, body, or tags
+      const wordConditions: Prisma.PostWhereInput[] = words.map((word) => ({
+        OR: [
+          { title: { contains: word, mode: "insensitive" as const } },
+          { body: { contains: word, mode: "insensitive" as const } },
+          { tags: { has: word } },
+        ],
+      }));
+
+      // Also search in translation segments (translated text)
+      const segmentMatches = await prisma.translationSegment.findMany({
+        where: {
+          OR: words.flatMap((word) => [
+            { translatedText: { contains: word, mode: "insensitive" as const } },
+            { sourceText: { contains: word, mode: "insensitive" as const } },
+          ]),
+        },
+        select: {
+          translationPayloadId: true,
+        },
+        take: 100,
+      });
+
+      // Look up postIds from the matching payloads
+      const payloadIds = Array.from(
+        new Set(segmentMatches.map((s) => s.translationPayloadId))
+      );
+      const payloads = payloadIds.length > 0
+        ? await prisma.translationPayload.findMany({
+            where: { id: { in: payloadIds } },
+            select: { postId: true },
+          })
+        : [];
+      const translationPostIds = Array.from(
+        new Set(payloads.map((p) => p.postId))
+      );
+
+      // Combine: posts matching words directly OR having matching translations
       const posts = await prisma.post.findMany({
         where: {
           status: "PUBLISHED",
           visibility: "PUBLIC",
           OR: [
+            // All words match somewhere in the post (AND logic for multi-word)
+            { AND: wordConditions },
+            // Or any word matches in the full query as a phrase
             { title: { contains: query, mode: "insensitive" } },
             { body: { contains: query, mode: "insensitive" } },
-            { tags: { has: query } },
+            // Or post has matching translation segments
+            ...(translationPostIds.length > 0
+              ? [{ id: { in: translationPostIds } }]
+              : []),
           ],
         },
-        orderBy: { createdAt: "desc" },
+        orderBy: [{ reactionCount: "desc" }, { createdAt: "desc" }],
         take: limit,
         select: {
           id: true,
@@ -79,53 +135,64 @@ export async function GET(request: NextRequest) {
         },
       });
 
-      return NextResponse.json({
-        type: "posts",
-        query,
-        results: posts,
-        count: posts.length,
-      });
+      results.posts = posts;
     }
 
-    // type === "users"
-    const users = await prisma.user.findMany({
-      where: {
+    // -----------------------------------------------------------------------
+    // User search
+    // -----------------------------------------------------------------------
+    if (type === "users" || type === "all") {
+      // Each word matches username, displayName, or bio
+      const wordConditions: Prisma.UserWhereInput[] = words.map((word) => ({
         OR: [
-          { username: { contains: query, mode: "insensitive" } },
-          { displayName: { contains: query, mode: "insensitive" } },
+          { username: { contains: word, mode: "insensitive" as const } },
+          { displayName: { contains: word, mode: "insensitive" as const } },
+          { bio: { contains: word, mode: "insensitive" as const } },
         ],
-      },
-      orderBy: { createdAt: "desc" },
-      take: limit,
-      select: {
-        id: true,
-        username: true,
-        displayName: true,
-        avatarUrl: true,
-        bio: true,
-        profileTitle: true,
-        profileBorder: true,
-        country: {
-          select: {
-            id: true,
-            nameEn: true,
-            flagEmoji: true,
+      }));
+
+      const users = await prisma.user.findMany({
+        where: {
+          OR: [
+            { AND: wordConditions },
+            { username: { contains: query, mode: "insensitive" } },
+            { displayName: { contains: query, mode: "insensitive" } },
+          ],
+        },
+        orderBy: { createdAt: "desc" },
+        take: limit,
+        select: {
+          id: true,
+          username: true,
+          displayName: true,
+          avatarUrl: true,
+          bio: true,
+          profileTitle: true,
+          profileBorder: true,
+          country: {
+            select: {
+              id: true,
+              nameEn: true,
+              flagEmoji: true,
+            },
+          },
+          _count: {
+            select: {
+              followers: true,
+              posts: true,
+            },
           },
         },
-        _count: {
-          select: {
-            followers: true,
-            posts: true,
-          },
-        },
-      },
-    });
+      });
+
+      results.users = users;
+    }
 
     return NextResponse.json({
-      type: "users",
       query,
-      results: users,
-      count: users.length,
+      ...results,
+      postCount: results.posts?.length ?? 0,
+      userCount: results.users?.length ?? 0,
     });
   } catch (error) {
     console.error("Error searching:", error);

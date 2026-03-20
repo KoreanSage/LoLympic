@@ -7,7 +7,7 @@ import type { TranslationKeys } from "./locales/en";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-export type Locale = "en" | "ko" | "ja" | "zh" | "es";
+export type Locale = "en" | "ko" | "ja" | "zh" | "es" | "hi" | "ar";
 
 export type TranslationDict = Record<TranslationKeys, string>;
 

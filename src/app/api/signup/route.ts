@@ -78,10 +78,14 @@ export async function POST(req: Request) {
             ? "ko"
             : countryId === "JP"
             ? "ja"
-            : countryId === "CN"
+            : countryId === "CN" || countryId === "TW" || countryId === "HK"
             ? "zh"
-            : countryId === "MX"
+            : countryId === "MX" || countryId === "ES" || countryId === "AR" || countryId === "CO" || countryId === "CL"
             ? "es"
+            : countryId === "IN"
+            ? "hi"
+            : countryId === "SA" || countryId === "EG" || countryId === "AE"
+            ? "ar"
             : "en",
       },
       select: {
