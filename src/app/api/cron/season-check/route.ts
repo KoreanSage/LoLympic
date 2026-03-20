@@ -39,31 +39,64 @@ export async function GET(request: NextRequest) {
     });
 
     for (const season of expiredJudging) {
-      // Find the monthly winner with the most final votes
+      // MEME CHAMPION: monthly winner with the most final votes (tournament)
       const topWinner = await prisma.monthlyWinner.findFirst({
         where: { seasonId: season.id },
         orderBy: { finalVotes: { _count: "desc" } },
         include: {
           author: { select: { id: true } },
-          country: { select: { id: true } },
           _count: { select: { finalVotes: true } },
         },
       });
 
+      // COUNTRY CHAMPION: total reactions received during the season
+      const countryReactions = await prisma.postReaction.groupBy({
+        by: ["postId"],
+        where: {
+          createdAt: { gte: season.startAt, lte: season.endAt },
+          post: { status: "PUBLISHED", visibility: "PUBLIC", countryId: { not: null } },
+        },
+        _count: { id: true },
+      });
+
+      const postIds = countryReactions.map((r) => r.postId);
+      const postsForCountry = postIds.length > 0
+        ? await prisma.post.findMany({
+            where: { id: { in: postIds } },
+            select: { id: true, countryId: true },
+          })
+        : [];
+      const postCountryMap = new Map(postsForCountry.map((p) => [p.id, p.countryId]));
+
+      let championCountryId: string | null = null;
+      let maxCountryScore = 0;
+      const countryScores = new Map<string, number>();
+      for (const r of countryReactions) {
+        const cid = postCountryMap.get(r.postId);
+        if (!cid) continue;
+        const newScore = (countryScores.get(cid) || 0) + r._count.id;
+        countryScores.set(cid, newScore);
+        if (newScore > maxCountryScore) {
+          maxCountryScore = newScore;
+          championCountryId = cid;
+        }
+      }
+
       const isBeta = season.number === 0;
 
       await prisma.$transaction(async (tx) => {
-        // Mark season completed
         await tx.season.update({
           where: { id: season.id },
           data: {
             status: "COMPLETED",
-            ...(topWinner?.country?.id && { championCountryId: topWinner.country.id }),
-            ...(topWinner?.author?.id && { championUserId: topWinner.author.id }),
+            championCountryId, // By total 🔥
+            ...(topWinner?.author?.id && {
+              championUserId: topWinner.author.id,
+              championPostId: topWinner.postId,
+            }),
           },
         });
 
-        // Give champion badge only for regular seasons (not beta)
         if (!isBeta && topWinner?.author?.id) {
           await tx.user.update({
             where: { id: topWinner.author.id },
@@ -76,7 +109,7 @@ export async function GET(request: NextRequest) {
         }
       });
 
-      actions.push(`Season ${season.name} → COMPLETED (winner: ${topWinner?.country?.id || "none"})`);
+      actions.push(`Season ${season.name} → COMPLETED (meme: ${topWinner?.author?.id || "none"}, country: ${championCountryId || "none"})`);
     }
 
     // 3. Auto-create next season if no ACTIVE season exists
