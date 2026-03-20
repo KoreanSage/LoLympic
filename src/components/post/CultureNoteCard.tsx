@@ -10,6 +10,8 @@ const CARD_LABELS: Record<string, { summary: string; culturalContext: string; tr
   ja: { summary: "概要", culturalContext: "文化的背景", translationNote: "翻訳ノート" },
   zh: { summary: "摘要", culturalContext: "文化背景", translationNote: "翻译说明" },
   es: { summary: "Resumen", culturalContext: "Contexto cultural", translationNote: "Nota de traducción" },
+  hi: { summary: "सारांश", culturalContext: "सांस्कृतिक संदर्भ", translationNote: "अनुवाद नोट" },
+  ar: { summary: "ملخص", culturalContext: "السياق الثقافي", translationNote: "ملاحظة الترجمة" },
 };
 
 interface CultureNoteCardProps {
@@ -33,6 +35,7 @@ export default function CultureNoteCard({
   const { data: session } = useSession();
   const preferredLang = (session?.user as any)?.preferredLanguage || "en";
   const labels = CARD_LABELS[preferredLang] || CARD_LABELS.en;
+  const textDir = preferredLang === "ar" ? "rtl" as const : "ltr" as const;
   const creatorBadgeVariant =
     creatorType === "AI" ? "info" : creatorType === "ADMIN" ? "gold" : "default";
 
@@ -46,7 +49,7 @@ export default function CultureNoteCard({
       : "warning";
 
   return (
-    <Card className={`space-y-3 ${className}`}>
+    <Card className={`space-y-3 ${className}`} dir={textDir}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">

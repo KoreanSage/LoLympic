@@ -25,20 +25,35 @@ const SORT_OPTIONS: FilterOption[] = [
 
 const COUNTRY_OPTIONS: FilterOption[] = [
   { value: "", label: "All Countries" },
-  { value: "US", label: "\u{1F1FA}\u{1F1F8} USA" },
   { value: "KR", label: "\u{1F1F0}\u{1F1F7} Korea" },
+  { value: "US", label: "\u{1F1FA}\u{1F1F8} USA" },
+  { value: "GB", label: "\u{1F1EC}\u{1F1E7} UK" },
+  { value: "AU", label: "\u{1F1E6}\u{1F1FA} Australia" },
+  { value: "CA", label: "\u{1F1E8}\u{1F1E6} Canada" },
   { value: "JP", label: "\u{1F1EF}\u{1F1F5} Japan" },
   { value: "CN", label: "\u{1F1E8}\u{1F1F3} China" },
+  { value: "TW", label: "\u{1F1F9}\u{1F1FC} Taiwan" },
+  { value: "HK", label: "\u{1F1ED}\u{1F1F0} Hong Kong" },
   { value: "MX", label: "\u{1F1F2}\u{1F1FD} Mexico" },
+  { value: "ES", label: "\u{1F1EA}\u{1F1F8} Spain" },
+  { value: "AR", label: "\u{1F1E6}\u{1F1F7} Argentina" },
+  { value: "CO", label: "\u{1F1E8}\u{1F1F4} Colombia" },
+  { value: "CL", label: "\u{1F1E8}\u{1F1F1} Chile" },
+  { value: "IN", label: "\u{1F1EE}\u{1F1F3} India" },
+  { value: "SA", label: "\u{1F1F8}\u{1F1E6} Saudi" },
+  { value: "EG", label: "\u{1F1EA}\u{1F1EC} Egypt" },
+  { value: "AE", label: "\u{1F1E6}\u{1F1EA} UAE" },
 ];
 
 const LANGUAGE_OPTIONS: FilterOption[] = [
   { value: "", label: "All Languages" },
-  { value: "en", label: "English" },
   { value: "ko", label: "\uD55C\uAD6D\uC5B4" },
+  { value: "en", label: "English" },
   { value: "ja", label: "\u65E5\u672C\u8A9E" },
   { value: "zh", label: "\u4E2D\u6587" },
   { value: "es", label: "Espa\u00F1ol" },
+  { value: "hi", label: "\u0939\u093f\u0928\u094d\u0926\u0940" },
+  { value: "ar", label: "\u0627\u0644\u0639\u0631\u0628\u064a\u0629" },
 ];
 
 const CATEGORY_OPTIONS: FilterOption[] = [

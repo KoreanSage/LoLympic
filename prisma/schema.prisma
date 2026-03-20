@@ -30,6 +30,8 @@ enum LanguageCode {
   ja
   zh
   es
+  hi
+  ar
 }
 
 enum PostStatus {

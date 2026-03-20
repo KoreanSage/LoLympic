@@ -231,7 +231,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!["ko", "en", "ja", "zh", "es"].includes(sourceLanguage)) {
+    if (!["ko", "en", "ja", "zh", "es", "hi", "ar"].includes(sourceLanguage)) {
       return NextResponse.json(
         { error: `Invalid sourceLanguage: ${sourceLanguage}` },
         { status: 400 }

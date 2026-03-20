@@ -20,6 +20,8 @@ export enum LanguageCode {
   ja = "ja",
   zh = "zh",
   es = "es",
+  hi = "hi",
+  ar = "ar",
 }
 
 export enum PostStatus {
@@ -258,6 +260,20 @@ export const LANGUAGE_CONFIG_MAP: Record<LanguageCode, LanguageConfig> = {
     nameNative: "Espa\u00f1ol",
     fontHint: "Arial",
     direction: "ltr",
+  },
+  [LanguageCode.hi]: {
+    code: LanguageCode.hi,
+    nameEn: "Hindi",
+    nameNative: "\u0939\u093f\u0928\u094d\u0926\u0940",
+    fontHint: "Noto Sans Devanagari",
+    direction: "ltr",
+  },
+  [LanguageCode.ar]: {
+    code: LanguageCode.ar,
+    nameEn: "Arabic",
+    nameNative: "\u0627\u0644\u0639\u0631\u0628\u064a\u0629",
+    fontHint: "Noto Sans Arabic",
+    direction: "rtl",
   },
 };
 

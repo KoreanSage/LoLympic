@@ -98,7 +98,7 @@ export async function PATCH(request: NextRequest) {
       data.avatarUrl = avatarUrl || null;
     }
 
-    const validLangs = ["ko", "en", "ja", "zh", "es"];
+    const validLangs = ["ko", "en", "ja", "zh", "es", "hi", "ar"];
     if (preferredLanguage !== undefined && validLangs.includes(preferredLanguage)) {
       data.preferredLanguage = preferredLanguage;
     }

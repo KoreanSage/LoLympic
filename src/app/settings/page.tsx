@@ -16,14 +16,29 @@ const LANGUAGES = [
   { code: "ja", label: "\u65E5\u672C\u8A9E" },
   { code: "zh", label: "\u4E2D\u6587" },
   { code: "es", label: "Espa\u00F1ol" },
+  { code: "hi", label: "\u0939\u093f\u0928\u094d\u0926\u0940" },
+  { code: "ar", label: "\u0627\u0644\u0639\u0631\u0628\u064a\u0629" },
 ];
 
 const COUNTRIES = [
   { code: "KR", label: "South Korea", flag: "\u{1F1F0}\u{1F1F7}" },
   { code: "US", label: "United States", flag: "\u{1F1FA}\u{1F1F8}" },
+  { code: "GB", label: "United Kingdom", flag: "\u{1F1EC}\u{1F1E7}" },
+  { code: "AU", label: "Australia", flag: "\u{1F1E6}\u{1F1FA}" },
+  { code: "CA", label: "Canada", flag: "\u{1F1E8}\u{1F1E6}" },
   { code: "JP", label: "Japan", flag: "\u{1F1EF}\u{1F1F5}" },
   { code: "CN", label: "China", flag: "\u{1F1E8}\u{1F1F3}" },
+  { code: "TW", label: "Taiwan", flag: "\u{1F1F9}\u{1F1FC}" },
+  { code: "HK", label: "Hong Kong", flag: "\u{1F1ED}\u{1F1F0}" },
   { code: "MX", label: "Mexico", flag: "\u{1F1F2}\u{1F1FD}" },
+  { code: "ES", label: "Spain", flag: "\u{1F1EA}\u{1F1F8}" },
+  { code: "AR", label: "Argentina", flag: "\u{1F1E6}\u{1F1F7}" },
+  { code: "CO", label: "Colombia", flag: "\u{1F1E8}\u{1F1F4}" },
+  { code: "CL", label: "Chile", flag: "\u{1F1E8}\u{1F1F1}" },
+  { code: "IN", label: "India", flag: "\u{1F1EE}\u{1F1F3}" },
+  { code: "SA", label: "Saudi Arabia", flag: "\u{1F1F8}\u{1F1E6}" },
+  { code: "EG", label: "Egypt", flag: "\u{1F1EA}\u{1F1EC}" },
+  { code: "AE", label: "UAE", flag: "\u{1F1E6}\u{1F1EA}" },
 ];
 
 type SettingsTab = "profile" | "account" | "notifications" | "language" | "about";

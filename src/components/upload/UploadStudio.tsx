@@ -12,6 +12,8 @@ const ALL_LANGUAGES = [
   { code: "ja", label: "日本語", flag: "\u{1F1EF}\u{1F1F5}" },
   { code: "zh", label: "中文", flag: "\u{1F1E8}\u{1F1F3}" },
   { code: "es", label: "Español", flag: "\u{1F1F2}\u{1F1FD}" },
+  { code: "hi", label: "हिन्दी", flag: "\u{1F1EE}\u{1F1F3}" },
+  { code: "ar", label: "العربية", flag: "\u{1F1F8}\u{1F1E6}" },
 ];
 
 const MAX_IMAGES = 10;

@@ -25,6 +25,8 @@ const UI_LABELS: Record<string, { cultureNote: string; suggestions: string; comm
   ja: { cultureNote: "文化ノート", suggestions: "翻訳提案", comments: "コメント", noCultureNotes: "文化ノートはまだありません" },
   zh: { cultureNote: "文化笔记", suggestions: "翻译建议", comments: "评论", noCultureNotes: "暂无文化笔记" },
   es: { cultureNote: "Nota cultural", suggestions: "Sugerencias de traducción", comments: "Comentarios", noCultureNotes: "Aún no hay notas culturales" },
+  hi: { cultureNote: "सांस्कृतिक नोट", suggestions: "अनुवाद सुझाव", comments: "टिप्पणियाँ", noCultureNotes: "अभी तक कोई सांस्कृतिक नोट नहीं" },
+  ar: { cultureNote: "ملاحظة ثقافية", suggestions: "اقتراحات الترجمة", comments: "التعليقات", noCultureNotes: "لا توجد ملاحظات ثقافية بعد" },
 };
 
 interface PostDetailProps {
