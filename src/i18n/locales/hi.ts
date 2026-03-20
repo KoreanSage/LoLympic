@@ -225,7 +225,7 @@ const hi: Record<TranslationKeys, string> = {
 
   // ── Upload ─────────────────────────────────────────────────────────────────
   "upload.title": "Meme Share करें",
-  "upload.subtitle": "Meme upload करो, हम इसे 5 languages में translate कर देंगे",
+  "upload.subtitle": "Meme upload करो, हम इसे 7 languages में translate कर देंगे",
   "upload.dragDrop": "अपना meme यहाँ drag & drop करें",
   "upload.orBrowse": "या click करके browse करें",
   "upload.maxSize": "Max 10MB · JPG, PNG, GIF, WebP",

@@ -225,7 +225,7 @@ const ar: Record<TranslationKeys, string> = {
 
   // ── Upload ─────────────────────────────────────────────────────────────────
   "upload.title": "شارك ميم",
-  "upload.subtitle": "ارفع ميم وهنترجمه لـ 5 لغات تلقائياً",
+  "upload.subtitle": "ارفع ميم وهنترجمه لـ 7 لغات تلقائياً",
   "upload.dragDrop": "اسحب وسيب الميم هنا",
   "upload.orBrowse": "أو اضغط عشان تختار",
   "upload.maxSize": "أقصى حجم 10MB · JPG, PNG, GIF, WebP",

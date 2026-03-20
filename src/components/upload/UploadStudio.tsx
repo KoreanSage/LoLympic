@@ -399,7 +399,7 @@ export default function UploadStudio() {
               <p className="text-xs text-foreground-subtle">
                 {hasGif && imageFiles.length === 1
                   ? "GIF files will be posted without translation."
-                  : "We'll auto-translate to all 6 languages after you publish."}
+                  : "We'll auto-translate to all 7 languages after you publish."}
               </p>
             </div>
 

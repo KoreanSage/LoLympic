@@ -225,7 +225,7 @@ const es: Record<TranslationKeys, string> = {
 
   // ── Upload ─────────────────────────────────────────────────────────────────
   "upload.title": "Compartir un meme",
-  "upload.subtitle": "Sube un meme y lo traduciremos a 5 idiomas automáticamente",
+  "upload.subtitle": "Sube un meme y lo traduciremos a 7 idiomas automáticamente",
   "upload.dragDrop": "Arrastra y suelta tu meme aquí",
   "upload.orBrowse": "o haz clic para buscar",
   "upload.maxSize": "Máx. 10MB · JPG, PNG, GIF, WebP",

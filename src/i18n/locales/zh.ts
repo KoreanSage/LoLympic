@@ -225,7 +225,7 @@ const zh: Record<TranslationKeys, string> = {
 
   // ── Upload ─────────────────────────────────────────────────────────────────
   "upload.title": "分享表情包",
-  "upload.subtitle": "上传一个表情包，我们将自动翻译成5种语言",
+  "upload.subtitle": "上传一个表情包，我们将自动翻译成7种语言",
   "upload.dragDrop": "将表情包拖放到这里",
   "upload.orBrowse": "或点击浏览",
   "upload.maxSize": "最大 10MB · JPG、PNG、GIF、WebP",

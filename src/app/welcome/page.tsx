@@ -101,7 +101,7 @@ export default function WelcomePage() {
             🏆 Global Meme Olympics
           </p>
           <p className="text-xs text-foreground-muted">
-            Upload memes, get them translated to 5 languages by AI, and compete
+            Upload memes, get them translated to 7 languages by AI, and compete
             for your country! The most liked meme each month wins, and at
             year&apos;s end, the champion gets eternal glory.
           </p>
