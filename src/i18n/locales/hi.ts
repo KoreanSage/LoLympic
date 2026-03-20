@@ -351,6 +351,15 @@ const hi: Record<TranslationKeys, string> = {
   // ── Post Detail Page ─────────────────────────────────────────────────────
   "postDetail.notFound": "Post नहीं मिली",
   "profile.notFound": "User नहीं मिला",
+
+  // ── Battle ──────────────────────────────────────────────────────────────────
+  "battle.title": "Meme Battle",
+  "battle.tapToVote": "Zyada funny meme pe tap करो!",
+  "battle.winner": "Winner!",
+  "battle.bonusPoints": "+5 bonus",
+  "battle.stop": "Band करो",
+  "battle.noChallengers": "Aur challengers nahi hain!",
+  "battle.hotBattle": "Hot Battle Memes",
 } as const;
 
 export default hi;

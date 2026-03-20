@@ -347,6 +347,15 @@ const zh: Record<TranslationKeys, string> = {
   "hallOfFame.firstChampion": "第一位冠军将在本赛季结束时加冕。",
   "postDetail.notFound": "帖子未找到",
   "profile.notFound": "用户未找到",
+
+  // ── Battle ──────────────────────────────────────────────────────────────────
+  "battle.title": "表情包大战",
+  "battle.tapToVote": "点击更好笑的那个！",
+  "battle.winner": "胜利！",
+  "battle.bonusPoints": "+5 奖励",
+  "battle.stop": "停止",
+  "battle.noChallengers": "没有更多挑战者了！",
+  "battle.hotBattle": "热门对战表情包",
 };
 
 export default zh;

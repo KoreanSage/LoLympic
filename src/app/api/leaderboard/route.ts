@@ -33,6 +33,11 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Battle leaderboard is always realtime (not season-dependent)
+    if (type === "battle") {
+      return handleBattleLeaderboard(limit);
+    }
+
     // If we have a season, use season stats
     if (resolvedSeasonId) {
       return handleSeasonLeaderboard(type, resolvedSeasonId, limit);
@@ -47,6 +52,59 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+// ---------------------------------------------------------------------------
+// Battle leaderboard (always realtime)
+// ---------------------------------------------------------------------------
+async function handleBattleLeaderboard(limit: number) {
+  const posts = await prisma.post.findMany({
+    where: {
+      status: "PUBLISHED",
+      visibility: "PUBLIC",
+      battleWins: { gt: 0 },
+    },
+    orderBy: [{ battleWins: "desc" }, { reactionCount: "desc" }],
+    take: limit,
+    select: {
+      id: true,
+      title: true,
+      reactionCount: true,
+      battleWins: true,
+      battleLosses: true,
+      images: {
+        orderBy: { orderIndex: "asc" },
+        take: 1,
+        select: { originalUrl: true },
+      },
+      author: {
+        select: {
+          username: true,
+          displayName: true,
+          avatarUrl: true,
+        },
+      },
+      country: {
+        select: { id: true, flagEmoji: true, nameEn: true },
+      },
+    },
+  });
+
+  return NextResponse.json({
+    type: "battle",
+    source: "realtime",
+    seasonId: null,
+    entries: posts.map((p) => ({
+      id: p.id,
+      title: p.title,
+      imageUrl: p.images[0]?.originalUrl || "",
+      reactionCount: p.reactionCount,
+      battleWins: p.battleWins,
+      battleLosses: p.battleLosses,
+      author: p.author,
+      country: p.country,
+    })),
+  });
 }
 
 // ---------------------------------------------------------------------------

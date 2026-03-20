@@ -109,19 +109,32 @@ export default function LeaderboardPage() {
   const [memes, setMemes] = useState<ReturnType<typeof mapMemes>>([]);
   const [empty, setEmpty] = useState(false);
   const [isRealtime, setIsRealtime] = useState(false);
+  const [battleMemes, setBattleMemes] = useState<
+    Array<{
+      id: string;
+      title: string;
+      imageUrl: string;
+      battleWins: number;
+      battleLosses: number;
+      author: { username: string; displayName: string | null };
+      country: { flagEmoji: string } | null;
+    }>
+  >([]);
 
   useEffect(() => {
     async function fetchAll() {
       try {
-        const [countryRes, creatorRes, memeRes] = await Promise.all([
+        const [countryRes, creatorRes, memeRes, battleRes] = await Promise.all([
           fetch("/api/leaderboard?type=country"),
           fetch("/api/leaderboard?type=creator"),
           fetch("/api/leaderboard?type=meme"),
+          fetch("/api/leaderboard?type=battle&limit=5"),
         ]);
 
         const countryData: ApiLeaderboardResponse = await countryRes.json();
         const creatorData: ApiLeaderboardResponse = await creatorRes.json();
         const memeData: ApiLeaderboardResponse = await memeRes.json();
+        const battleData = await battleRes.json().catch(() => ({ entries: [] }));
 
         // Check if data is from realtime fallback
         if ((countryData as any).source === "realtime") {
@@ -141,6 +154,9 @@ export default function LeaderboardPage() {
         setCountries(mappedCountries);
         setCreators(mappedCreators);
         setMemes(mappedMemes);
+        if (battleData.entries?.length > 0) {
+          setBattleMemes(battleData.entries);
+        }
 
         if (
           mappedCountries.length === 0 &&
@@ -190,11 +206,48 @@ export default function LeaderboardPage() {
             <p className="text-sm text-foreground-subtle">No activity yet — post a meme to get on the board!</p>
           </div>
         ) : (
+          <>
+          {battleMemes.length > 0 && (
+            <div className="mb-6">
+              <h2 className="text-sm font-bold text-[#c9a84c] mb-3 flex items-center gap-2">
+                <span>⚔️</span> {t("battle.hotBattle")}
+              </h2>
+              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                {battleMemes.map((meme: any, i: number) => (
+                  <div
+                    key={meme.id}
+                    className="flex-shrink-0 w-32 rounded-xl overflow-hidden border border-border bg-background-surface"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={meme.imageUrl}
+                      alt={meme.title}
+                      className="w-full aspect-square object-cover"
+                    />
+                    <div className="p-2">
+                      <div className="flex items-center gap-1 mb-0.5">
+                        {meme.country && (
+                          <span className="text-xs">{meme.country.flagEmoji}</span>
+                        )}
+                        <span className="text-[10px] text-foreground-muted truncate">
+                          {meme.author?.displayName || meme.author?.username}
+                        </span>
+                      </div>
+                      <div className="text-[10px] text-[#c9a84c] font-medium">
+                        ⚔️ {meme.battleWins}W / {meme.battleLosses}L
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           <LeaderboardTable
             countries={countries}
             creators={creators}
             memes={memes}
           />
+          </>
         )}
       </div>
     </MainLayout>

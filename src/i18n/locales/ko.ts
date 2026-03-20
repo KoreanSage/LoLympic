@@ -347,6 +347,15 @@ const ko: Record<TranslationKeys, string> = {
   "hallOfFame.firstChampion": "첫 번째 챔피언은 현재 시즌이 끝날 때 선정됩니다.",
   "postDetail.notFound": "게시물을 찾을 수 없습니다",
   "profile.notFound": "사용자를 찾을 수 없습니다",
+
+  // ── Battle ──────────────────────────────────────────────────────────────────
+  "battle.title": "밈 배틀",
+  "battle.tapToVote": "더 웃긴 밈을 골라주세요!",
+  "battle.winner": "승리!",
+  "battle.bonusPoints": "+5 보너스",
+  "battle.stop": "그만하기",
+  "battle.noChallengers": "더 이상 도전자가 없어요!",
+  "battle.hotBattle": "핫 배틀 밈",
 };
 
 export default ko;

@@ -1,7 +1,9 @@
 "use client";
 
+import React from "react";
 import { useEffect, useRef, useState, useCallback } from "react";
 import FeedCard from "./FeedCard";
+import BattleCard from "@/components/battle/BattleCard";
 import { CardSkeleton } from "@/components/ui/Skeleton";
 import { TranslationSegmentData } from "@/types/components";
 import { useTranslation } from "@/i18n";
@@ -139,6 +141,8 @@ export default function FeedList({
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
+  const [battleDismissed, setBattleDismissed] = useState(false);
+  const BATTLE_INTERVAL = 5; // Insert battle card every 5 posts
   const sentinelRef = useRef<HTMLDivElement>(null);
   const pageRef = useRef(1);
   const fetchingRef = useRef(false);
@@ -225,12 +229,16 @@ export default function FeedList({
 
   return (
     <div className="space-y-4">
-      {posts.map((post) => (
-        <FeedCard
-          key={post.id}
-          {...post}
-          onDelete={(deletedId) => setPosts((prev) => prev.filter((p) => p.id !== deletedId))}
-        />
+      {posts.map((post, index) => (
+        <React.Fragment key={post.id}>
+          <FeedCard
+            {...post}
+            onDelete={(deletedId) => setPosts((prev) => prev.filter((p) => p.id !== deletedId))}
+          />
+          {!battleDismissed && (index + 1) % BATTLE_INTERVAL === 0 && (
+            <BattleCard onDismiss={() => setBattleDismissed(true)} />
+          )}
+        </React.Fragment>
       ))}
 
       {/* Loading skeletons */}
