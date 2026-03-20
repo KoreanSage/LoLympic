@@ -261,9 +261,44 @@ async function handleSeasonLeaderboard(
 // Realtime leaderboard (no season — aggregate from posts/users directly)
 // ---------------------------------------------------------------------------
 async function handleRealtimeLeaderboard(type: string, limit: number) {
+  // Current month boundaries for "this month's" rankings
+  const now = new Date();
+  const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
   switch (type) {
     case "country": {
-      // Group posts by country, sum engagement
+      // Count reactions RECEIVED this month, grouped by post's country
+      const countryReactions = await prisma.postReaction.groupBy({
+        by: ["postId"],
+        where: {
+          createdAt: { gte: thisMonthStart, lt: nextMonthStart },
+          post: {
+            status: "PUBLISHED",
+            visibility: "PUBLIC",
+            countryId: { not: null },
+          },
+        },
+        _count: { id: true },
+      });
+
+      // Fetch posts to get countryId mapping
+      const postIds = countryReactions.map((r) => r.postId);
+      const posts = await prisma.post.findMany({
+        where: { id: { in: postIds } },
+        select: { id: true, countryId: true },
+      });
+      const postCountryMap = new Map(posts.map((p) => [p.id, p.countryId]));
+
+      // Aggregate by country
+      const countryScoreMap = new Map<string, number>();
+      for (const r of countryReactions) {
+        const countryId = postCountryMap.get(r.postId);
+        if (!countryId) continue;
+        countryScoreMap.set(countryId, (countryScoreMap.get(countryId) || 0) + r._count.id);
+      }
+
+      // Also get post counts per country (all time for context)
       const countryStats = await prisma.post.groupBy({
         by: ["countryId"],
         where: {
@@ -308,29 +343,33 @@ async function handleRealtimeLeaderboard(type: string, limit: number) {
         creatorCounts.map((c) => [c.countryId, c._count.authorId])
       );
 
-      const entries = countryStats
-        .map((stat, index) => {
-          const country = countryMap.get(stat.countryId!);
+      // Build entries using monthly reaction scores
+      const allCountryIds = Array.from(new Set([
+        ...countryStats.map((s) => s.countryId).filter((id): id is string => id !== null),
+        ...Array.from(countryScoreMap.keys()),
+      ]));
+
+      const entries = allCountryIds
+        .map((cid) => {
+          const country = countryMap.get(cid);
           if (!country) return null;
-          const reactions = stat._sum.reactionCount ?? 0;
-          const comments = stat._sum.commentCount ?? 0;
-          const shares = stat._sum.shareCount ?? 0;
-          const score = reactions + comments * 2 + shares * 3;
+          const stat = countryStats.find((s) => s.countryId === cid);
+          const monthlyScore = countryScoreMap.get(cid) || 0;
           return {
-            rank: index + 1,
+            rank: 0,
             country,
-            medal: index < 3 ? (["GOLD", "SILVER", "BRONZE"] as const)[index] : null,
-            score,
-            totalPosts: stat._count.id,
-            totalCreators: creatorCountMap.get(stat.countryId!) ?? 0,
-            totalReactions: reactions,
-            totalShares: shares,
+            medal: null as "GOLD" | "SILVER" | "BRONZE" | null,
+            score: monthlyScore, // This month's reactions received
+            totalPosts: stat?._count.id ?? 0,
+            totalCreators: creatorCountMap.get(cid) ?? 0,
+            totalReactions: monthlyScore,
+            totalShares: stat?._sum.shareCount ?? 0,
             totalTranslationViews: 0,
           };
         })
         .filter(Boolean)
-        // Re-sort by computed score
         .sort((a, b) => b!.score - a!.score)
+        .slice(0, limit)
         .map((entry, index) => ({ ...entry!, rank: index + 1, medal: index < 3 ? (["GOLD", "SILVER", "BRONZE"] as const)[index] : null }));
 
       return NextResponse.json({
