@@ -3,16 +3,7 @@
 import { useSession } from "next-auth/react";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
-
-const CARD_LABELS: Record<string, { summary: string; culturalContext: string; translationNote: string }> = {
-  ko: { summary: "요약", culturalContext: "문화적 맥락", translationNote: "번역 노트" },
-  en: { summary: "Summary", culturalContext: "Cultural Context", translationNote: "Translation Note" },
-  ja: { summary: "概要", culturalContext: "文化的背景", translationNote: "翻訳ノート" },
-  zh: { summary: "摘要", culturalContext: "文化背景", translationNote: "翻译说明" },
-  es: { summary: "Resumen", culturalContext: "Contexto cultural", translationNote: "Nota de traducción" },
-  hi: { summary: "सारांश", culturalContext: "सांस्कृतिक संदर्भ", translationNote: "अनुवाद नोट" },
-  ar: { summary: "ملخص", culturalContext: "السياق الثقافي", translationNote: "ملاحظة الترجمة" },
-};
+import { useTranslation } from "@/i18n";
 
 interface CultureNoteCardProps {
   id: string;
@@ -33,8 +24,8 @@ export default function CultureNoteCard({
   className = "",
 }: CultureNoteCardProps) {
   const { data: session } = useSession();
+  const { t } = useTranslation();
   const preferredLang = (session?.user as any)?.preferredLanguage || "en";
-  const labels = CARD_LABELS[preferredLang] || CARD_LABELS.en;
   const textDir = preferredLang === "ar" ? "rtl" as const : "ltr" as const;
   const creatorBadgeVariant =
     creatorType === "AI" ? "info" : creatorType === "ADMIN" ? "gold" : "default";
@@ -65,7 +56,7 @@ export default function CultureNoteCard({
       {/* Summary */}
       <div>
         <h4 className="text-xs uppercase tracking-wider text-foreground-subtle mb-1">
-          {labels.summary}
+          {t("cultureNote.title")}
         </h4>
         <p className="text-sm text-foreground-muted leading-relaxed">{summary}</p>
       </div>
@@ -73,7 +64,7 @@ export default function CultureNoteCard({
       {/* Explanation */}
       <div>
         <h4 className="text-xs uppercase tracking-wider text-foreground-subtle mb-1">
-          {labels.culturalContext}
+          {t("cultureNote.aiGenerated")}
         </h4>
         <p className="text-sm text-foreground-muted leading-relaxed">{explanation}</p>
       </div>
@@ -82,7 +73,7 @@ export default function CultureNoteCard({
       {translationNote && (
         <div className="border-t border-border pt-3">
           <h4 className="text-xs uppercase tracking-wider text-foreground-subtle mb-1">
-            {labels.translationNote}
+            {t("cultureNote.title")}
           </h4>
           <p className="text-sm text-foreground-muted leading-relaxed italic">
             {translationNote}

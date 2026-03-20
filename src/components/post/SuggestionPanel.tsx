@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import Avatar from "@/components/ui/Avatar";
 import { useToast } from "@/components/ui/Toast";
+import { useTranslation } from "@/i18n";
 
 interface Suggestion {
   id: string;
@@ -49,6 +50,7 @@ export default function SuggestionPanel({
 }: SuggestionPanelProps) {
   const { data: session } = useSession();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [suggestions, setSuggestions] = useState<Suggestion[]>(initialSuggestions);
   const [body, setBody] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -138,7 +140,7 @@ export default function SuggestionPanel({
             onKeyDown={(e) => {
               if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) handleSubmit();
             }}
-            placeholder="Share your thoughts on this translation..."
+            placeholder={t("discussion.placeholder")}
             className="flex-1 bg-background-elevated border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder-foreground-subtle resize-none focus:outline-none focus:border-[#c9a84c]/50 transition-colors"
             rows={2}
           />
@@ -147,7 +149,7 @@ export default function SuggestionPanel({
             disabled={isSubmitting || !body.trim()}
             className="self-end px-4 py-2 rounded-lg bg-[#c9a84c] text-black text-sm font-medium hover:bg-[#d4b85e] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
-            {isSubmitting ? "..." : "Post"}
+            {isSubmitting ? t("discussion.posting") : t("discussion.post")}
           </button>
         </div>
       )}
@@ -155,7 +157,7 @@ export default function SuggestionPanel({
       {/* List */}
       {sorted.length === 0 ? (
         <p className="text-sm text-foreground-subtle text-center py-8">
-          No discussion yet. Be the first to share your thoughts!
+          {t("discussion.empty")}
         </p>
       ) : (
         sorted.map((s) => (
@@ -176,6 +178,7 @@ function DiscussionItem({
   const [translatedText, setTranslatedText] = useState<string | null>(null);
   const [isTranslating, setIsTranslating] = useState(false);
   const { data: session } = useSession();
+  const { t } = useTranslation();
   const preferredLang = (session?.user as any)?.preferredLanguage || "en";
 
   const handleTranslate = async () => {
@@ -283,7 +286,7 @@ function DiscussionItem({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
             </svg>
           )}
-          {translatedText ? "Original" : "Translate"}
+          {translatedText ? t("discussion.original") : t("discussion.translate")}
         </button>
       </div>
     </div>

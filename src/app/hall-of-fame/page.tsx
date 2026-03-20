@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Avatar from "@/components/ui/Avatar";
+import { useTranslation } from "@/i18n";
 
 interface ChampionData {
   season: {
@@ -34,6 +35,7 @@ interface ChampionData {
 export default function HallOfFamePage() {
   const [champions, setChampions] = useState<ChampionData[]>([]);
   const [loading, setLoading] = useState(true);
+  const { t } = useTranslation();
 
   useEffect(() => {
     fetch("/api/seasons?all=true")
@@ -117,19 +119,19 @@ export default function HallOfFamePage() {
       {/* Header */}
       <div className="text-center mb-10">
         <h1 className="text-3xl font-bold text-foreground mb-2">
-          <span className="text-[#c9a84c]">Hall</span> of Fame
+          <span className="text-[#c9a84c]">{t("hallOfFame.title").split(" ")[0]}</span> {t("hallOfFame.title").split(" ").slice(1).join(" ")}
         </h1>
         <p className="text-sm text-foreground-subtle">
-          The greatest memes and their creators, immortalized forever.
+          {t("hallOfFame.subtitle")}
         </p>
       </div>
 
       {champions.length === 0 ? (
         <div className="text-center py-16">
           <p className="text-5xl mb-4">🏛️</p>
-          <p className="text-foreground-muted">No champions yet.</p>
+          <p className="text-foreground-muted">{t("hallOfFame.noChampions")}</p>
           <p className="text-sm text-foreground-subtle mt-1">
-            The first champion will be crowned at the end of the current season.
+            {t("hallOfFame.firstChampion")}
           </p>
         </div>
       ) : (

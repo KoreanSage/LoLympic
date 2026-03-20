@@ -9,6 +9,7 @@ import Avatar from "@/components/ui/Avatar";
 import Card from "@/components/ui/Card";
 import Tabs from "@/components/ui/Tabs";
 import { useToast } from "@/components/ui/Toast";
+import { useTranslation } from "@/i18n";
 
 interface UserProfile {
   id: string;
@@ -43,6 +44,7 @@ export default function UserProfilePage() {
   const { data: session } = useSession();
   const router = useRouter();
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -144,14 +146,14 @@ export default function UserProfilePage() {
     return (
       <MainLayout showSidebar={false}>
         <div className="flex flex-col items-center justify-center py-20 gap-3">
-          <p className="text-foreground-subtle text-sm">User not found</p>
+          <p className="text-foreground-subtle text-sm">{t("profile.notFound")}</p>
         </div>
       </MainLayout>
     );
   }
 
   const tabs = [
-    { id: "posts", label: "Posts", count: profile.postCount },
+    { id: "posts", label: t("profile.posts"), count: profile.postCount },
   ];
 
   return (
@@ -183,7 +185,7 @@ export default function UserProfilePage() {
               )}
               <div className="flex items-center justify-center sm:justify-start gap-4 text-xs text-foreground-subtle mb-3">
                 <span suppressHydrationWarning>
-                  Joined {new Date(profile.createdAt).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
+                  {t("profile.joined", { date: new Date(profile.createdAt).toLocaleDateString("en-US", { month: "short", year: "numeric" }) })}
                 </span>
               </div>
 
@@ -199,7 +201,7 @@ export default function UserProfilePage() {
                         : "bg-[#c9a84c] text-black hover:bg-[#b8963f]"
                     }`}
                   >
-                    {following ? "Following" : "Follow"}
+                    {following ? t("profile.following") : t("profile.follow")}
                   </button>
                   <button
                     onClick={async () => {
@@ -221,7 +223,7 @@ export default function UserProfilePage() {
                     }}
                     className="px-4 py-1.5 rounded-lg text-sm font-medium bg-background-overlay text-foreground-muted hover:text-foreground border border-border-active transition-colors"
                   >
-                    Message
+                    {t("profile.message")}
                   </button>
                 </div>
               )}
@@ -230,7 +232,7 @@ export default function UserProfilePage() {
                   href="/settings"
                   className="inline-block px-4 py-1.5 rounded-lg text-sm font-medium bg-background-overlay text-foreground-muted hover:text-foreground border border-border-active transition-colors"
                 >
-                  Edit Profile
+                  {t("profile.editProfile")}
                 </Link>
               )}
             </div>
@@ -241,15 +243,15 @@ export default function UserProfilePage() {
         <div className="grid grid-cols-3 gap-3">
           <Card className="text-center">
             <div className="text-2xl font-bold text-foreground">{profile.postCount}</div>
-            <div className="text-xs text-foreground-subtle">Posts</div>
+            <div className="text-xs text-foreground-subtle">{t("profile.posts")}</div>
           </Card>
           <Card className="text-center">
             <div className="text-2xl font-bold text-foreground">{followerCount}</div>
-            <div className="text-xs text-foreground-subtle">Followers</div>
+            <div className="text-xs text-foreground-subtle">{t("profile.followers")}</div>
           </Card>
           <Card className="text-center">
             <div className="text-2xl font-bold text-foreground">{profile.followingCount}</div>
-            <div className="text-xs text-foreground-subtle">Following</div>
+            <div className="text-xs text-foreground-subtle">{t("profile.following")}</div>
           </Card>
         </div>
 
@@ -307,7 +309,7 @@ export default function UserProfilePage() {
                 </div>
               ) : (
                 <div className="text-center py-12">
-                  <p className="text-sm text-foreground-subtle">No posts yet</p>
+                  <p className="text-sm text-foreground-subtle">{t("profile.noPosts")}</p>
                 </div>
               )}
             </div>

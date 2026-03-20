@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslation } from "@/i18n";
 import MainLayout from "@/components/layout/MainLayout";
 import LeaderboardTable from "@/components/competition/LeaderboardTable";
 import SeasonBar from "@/components/competition/SeasonBar";
@@ -99,6 +100,7 @@ function mapMemes(entries: ApiMemeEntry[]) {
 // ---------------------------------------------------------------------------
 
 export default function LeaderboardPage() {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [countries, setCountries] = useState<ReturnType<typeof mapCountries>>(
     []
@@ -163,7 +165,7 @@ export default function LeaderboardPage() {
       <div className="py-6 space-y-6">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-foreground mb-1">
-            🏆 Leaderboard
+            {t("leaderboard.title")}
           </h1>
           <p className="text-sm text-foreground-subtle">
             {isRealtime ? "All-time rankings based on community activity" : "Global rankings for the current season"}

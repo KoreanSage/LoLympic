@@ -4,8 +4,10 @@ import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useTranslation } from "@/i18n";
 
 export default function LoginPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -26,7 +28,7 @@ export default function LoginPage() {
     setLoading(false);
 
     if (result?.error) {
-      setError("Invalid email or password");
+      setError(t("auth.invalidCredentials"));
     } else {
       router.push("/");
       router.refresh();
@@ -51,7 +53,7 @@ export default function LoginPage() {
 
         {/* Login Form */}
         <div className="bg-background-surface border border-border rounded-xl p-6">
-          <h2 className="text-lg font-semibold text-foreground mb-6">Sign In</h2>
+          <h2 className="text-lg font-semibold text-foreground mb-6">{t("auth.signIn")}</h2>
 
           {error && (
             <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
@@ -62,7 +64,7 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-foreground-muted mb-1.5">
-                Email
+                {t("auth.email")}
               </label>
               <input
                 type="email"
@@ -76,7 +78,7 @@ export default function LoginPage() {
 
             <div>
               <label className="block text-sm font-medium text-foreground-muted mb-1.5">
-                Password
+                {t("auth.password")}
               </label>
               <input
                 type="password"
@@ -93,14 +95,14 @@ export default function LoginPage() {
               disabled={loading}
               className="w-full py-2.5 bg-[#c9a84c] hover:bg-[#d4b65e] text-black font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? "Signing in..." : "Sign In"}
+              {loading ? t("auth.signingIn") : t("auth.signIn")}
             </button>
           </form>
 
           {/* Divider */}
           <div className="flex items-center gap-3 my-5">
             <div className="flex-1 h-px bg-background-overlay" />
-            <span className="text-xs text-foreground-subtle">OR</span>
+            <span className="text-xs text-foreground-subtle uppercase">{t("auth.orContinueWith")}</span>
             <div className="flex-1 h-px bg-background-overlay" />
           </div>
 
@@ -128,15 +130,15 @@ export default function LoginPage() {
                 fill="#EA4335"
               />
             </svg>
-            Sign in with Google
+            {t("auth.continueWithGoogle")}
           </button>
         </div>
 
         {/* Footer */}
         <p className="mt-6 text-center text-sm text-foreground-subtle">
-          Don&apos;t have an account?{" "}
+          {t("auth.noAccount")}{" "}
           <Link href="/signup" className="text-[#c9a84c] hover:underline">
-            Sign Up
+            {t("auth.signUp")}
           </Link>
         </p>
       </div>

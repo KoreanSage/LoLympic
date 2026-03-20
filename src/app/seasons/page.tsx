@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslation } from "@/i18n";
 import Link from "next/link";
 import Avatar from "@/components/ui/Avatar";
 
@@ -38,6 +39,7 @@ const MONTH_NAMES = [
 ];
 
 export default function SeasonsPage() {
+  const { t } = useTranslation();
   const [winners, setWinners] = useState<MonthlyWinnerData[]>([]);
   const [season, setSeason] = useState<SeasonInfo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -73,21 +75,21 @@ export default function SeasonsPage() {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-foreground mb-2">
-          {season ? season.name : "Season Dashboard"}
+          {season ? season.name : t("season.dashboard")}
         </h1>
         <p className="text-sm text-foreground-subtle">
           {season?.status === "JUDGING"
-            ? "Final voting is open! Vote for your favorite meme of the year."
+            ? t("season.judgingDescription")
             : season?.status === "ACTIVE"
-              ? "Monthly winners are selected based on the most liked meme each month."
-              : "View past monthly winners and season results."}
+              ? t("season.activeDescription")
+              : t("season.pastDescription")}
         </p>
         {season?.status === "JUDGING" && (
           <Link
             href="/seasons/vote"
             className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-[#c9a84c] hover:bg-[#d4b65e] text-black font-semibold rounded-lg transition-colors text-sm"
           >
-            Vote Now
+            {t("season.voteNow")}
           </Link>
         )}
       </div>
@@ -96,9 +98,9 @@ export default function SeasonsPage() {
       {winners.length === 0 ? (
         <div className="text-center py-16">
           <p className="text-4xl mb-4">🏆</p>
-          <p className="text-foreground-muted">No monthly winners yet.</p>
+          <p className="text-foreground-muted">{t("season.noWinners")}</p>
           <p className="text-sm text-foreground-subtle mt-1">
-            Winners are selected at the start of each month.
+            {t("season.winnersDescription")}
           </p>
         </div>
       ) : (

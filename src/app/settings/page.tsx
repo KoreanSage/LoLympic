@@ -8,6 +8,7 @@ import Avatar from "@/components/ui/Avatar";
 import Button from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { useTheme } from "@/components/providers/ThemeProvider";
+import { useTranslation } from "@/i18n";
 import Link from "next/link";
 
 const LANGUAGES = [
@@ -43,19 +44,30 @@ const COUNTRIES = [
 
 type SettingsTab = "profile" | "account" | "notifications" | "language" | "about";
 
-const TABS: { id: SettingsTab; label: string; icon: string }[] = [
-  { id: "profile", label: "Profile", icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" },
-  { id: "account", label: "Account", icon: "M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" },
-  { id: "notifications", label: "Notifications", icon: "M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" },
-  { id: "language", label: "Language", icon: "M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" },
-  { id: "about", label: "About", icon: "M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" },
-];
+const TAB_ICONS: Record<SettingsTab, string> = {
+  profile: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z",
+  account: "M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z",
+  notifications: "M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9",
+  language: "M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129",
+  about: "M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
+};
+
+const TAB_IDS: SettingsTab[] = ["profile", "account", "notifications", "language", "about"];
+
+const TAB_LABEL_KEYS: Record<SettingsTab, string> = {
+  profile: "settings.profile",
+  account: "settings.account",
+  notifications: "settings.notifications",
+  language: "settings.language",
+  about: "settings.about",
+};
 
 export default function SettingsPage() {
   const { data: session, status, update: updateSession } = useSession();
   const router = useRouter();
   const { toast } = useToast();
   const { theme, toggleTheme } = useTheme();
+  const { t, setLocale } = useTranslation();
   const [activeTab, setActiveTab] = useState<SettingsTab>("profile");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -161,12 +173,14 @@ export default function SettingsPage() {
       } else if (activeTab === "language") {
         payload.uiLanguage = uiLanguage;
         payload.preferredLanguage = preferredLang;
+        // Update the i18n locale so the UI re-renders in the new language
+        setLocale(uiLanguage as any);
       } else if (activeTab === "notifications") {
         // Notification preferences are stored locally for now
         localStorage.setItem("lolympic_notif_prefs", JSON.stringify({
           notifReactions, notifComments, notifFollows, notifSuggestions, notifSeason, emailDigest,
         }));
-        toast("Notification preferences saved!", "success");
+        toast(t("settings.saved"), "success");
         setSaving(false);
         return;
       }
@@ -182,9 +196,9 @@ export default function SettingsPage() {
       }
       // Refresh session to pick up updated avatarUrl/displayName
       await updateSession();
-      toast("Changes saved!", "success");
+      toast(t("settings.saved"), "success");
     } catch (err: any) {
-      toast(err.message || "Failed to save", "error");
+      toast(err.message || t("settings.saveFailed"), "error");
     } finally {
       setSaving(false);
     }
@@ -193,25 +207,25 @@ export default function SettingsPage() {
   return (
     <MainLayout showSidebar={false}>
       <div className="max-w-4xl mx-auto py-6">
-        <h1 className="text-2xl font-bold text-foreground mb-6">Settings</h1>
+        <h1 className="text-2xl font-bold text-foreground mb-6">{t("settings.title")}</h1>
 
         <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-6">
           {/* Sidebar tabs */}
           <nav className="space-y-1">
-            {TABS.map((tab) => (
+            {TAB_IDS.map((tabId) => (
               <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                key={tabId}
+                onClick={() => setActiveTab(tabId)}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  activeTab === tab.id
+                  activeTab === tabId
                     ? "bg-[#c9a84c]/10 text-[#c9a84c]"
                     : "text-foreground-muted hover:text-foreground hover:bg-background-elevated"
                 }`}
               >
                 <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={tab.icon} />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={TAB_ICONS[tabId]} />
                 </svg>
-                {tab.label}
+                {t(TAB_LABEL_KEYS[tabId] as any)}
               </button>
             ))}
           </nav>
@@ -221,7 +235,7 @@ export default function SettingsPage() {
             {/* Profile */}
             {activeTab === "profile" && (
               <div className="bg-background-surface border border-border rounded-xl p-6 space-y-5">
-                <h2 className="text-lg font-semibold text-foreground">Profile Settings</h2>
+                <h2 className="text-lg font-semibold text-foreground">{t("settings.profileSettings")}</h2>
 
                 {profileLoading ? (
                   <div className="flex items-center justify-center py-8">
@@ -260,13 +274,13 @@ export default function SettingsPage() {
                         />
                       </div>
                       <div>
-                        <p className="text-sm text-foreground">Profile Photo</p>
-                        <p className="text-xs text-foreground-subtle">Click to change. Max 5MB.</p>
+                        <p className="text-sm text-foreground">{t("settings.profilePhoto")}</p>
+                        <p className="text-xs text-foreground-subtle">{t("settings.changePhoto")}. Max 5MB.</p>
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-foreground-muted mb-1.5">Display Name</label>
+                      <label className="block text-xs font-medium text-foreground-muted mb-1.5">{t("settings.displayName")}</label>
                       <input
                         value={displayName}
                         onChange={(e) => setDisplayName(e.target.value)}
@@ -276,7 +290,7 @@ export default function SettingsPage() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-foreground-muted mb-1.5">Bio</label>
+                      <label className="block text-xs font-medium text-foreground-muted mb-1.5">{t("settings.bio")}</label>
                       <textarea
                         value={bio}
                         onChange={(e) => setBio(e.target.value)}
@@ -289,7 +303,7 @@ export default function SettingsPage() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-foreground-muted mb-1.5">Country / Team</label>
+                      <label className="block text-xs font-medium text-foreground-muted mb-1.5">{t("settings.country")}</label>
                       <select
                         value={country}
                         onChange={(e) => setCountry(e.target.value)}
@@ -305,7 +319,7 @@ export default function SettingsPage() {
 
                     <div className="flex items-center justify-between pt-2">
                       <Button onClick={handleSave} loading={saving}>
-                        Save Changes
+                        {saving ? t("settings.saving") : t("settings.saveChanges")}
                       </Button>
                     </div>
                   </>
@@ -318,10 +332,10 @@ export default function SettingsPage() {
               <div className="space-y-4">
                 {/* Theme / Appearance */}
                 <div className="bg-background-surface border border-border rounded-xl p-6 space-y-4">
-                  <h2 className="text-lg font-semibold text-foreground">Appearance</h2>
+                  <h2 className="text-lg font-semibold text-foreground">{t("settings.appearance")}</h2>
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-foreground">Dark Mode</p>
+                      <p className="text-sm text-foreground">{t("settings.darkMode")}</p>
                       <p className="text-xs text-foreground-subtle">
                         {theme === "dark" ? "Dark theme is active" : "Light theme is active"}
                       </p>
@@ -342,18 +356,18 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="bg-background-surface border border-border rounded-xl p-6 space-y-4">
-                  <h2 className="text-lg font-semibold text-foreground">Account Info</h2>
+                  <h2 className="text-lg font-semibold text-foreground">{t("settings.accountInfo")}</h2>
                   <div className="space-y-3">
                     <div className="flex justify-between items-center py-2 border-b border-border">
-                      <span className="text-sm text-foreground-muted">Email</span>
+                      <span className="text-sm text-foreground-muted">{t("settings.email")}</span>
                       <span className="text-sm text-foreground">{(session.user as any).email || "\u2014"}</span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-b border-border">
-                      <span className="text-sm text-foreground-muted">Username</span>
+                      <span className="text-sm text-foreground-muted">{t("settings.username")}</span>
                       <span className="text-sm text-foreground">@{(session.user as any).username || "\u2014"}</span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-b border-border">
-                      <span className="text-sm text-foreground-muted">Role</span>
+                      <span className="text-sm text-foreground-muted">{t("settings.role")}</span>
                       <span className="text-xs px-2 py-0.5 rounded-full bg-[#c9a84c]/10 text-[#c9a84c]">
                         {(session.user as any).role || "USER"}
                       </span>
@@ -366,7 +380,7 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="bg-background-surface border border-border rounded-xl p-6 space-y-4">
-                  <h2 className="text-lg font-semibold text-foreground">Password</h2>
+                  <h2 className="text-lg font-semibold text-foreground">{t("settings.password")}</h2>
                   <p className="text-sm text-foreground-subtle">Change your password to keep your account secure.</p>
                   <div className="space-y-3 opacity-50">
                     <input
@@ -404,23 +418,23 @@ export default function SettingsPage() {
             {/* Notifications */}
             {activeTab === "notifications" && (
               <div className="bg-background-surface border border-border rounded-xl p-6 space-y-5">
-                <h2 className="text-lg font-semibold text-foreground">Notification Preferences</h2>
+                <h2 className="text-lg font-semibold text-foreground">{t("settings.notifPrefs")}</h2>
                 <p className="text-sm text-foreground-subtle">Choose what notifications you want to receive.</p>
 
                 <div className="space-y-4">
-                  <ToggleRow label="Reactions on my posts" description="When someone reacts to your meme" checked={notifReactions} onChange={setNotifReactions} />
-                  <ToggleRow label="Comments on my posts" description="When someone comments on your meme" checked={notifComments} onChange={setNotifComments} />
-                  <ToggleRow label="New followers" description="When someone follows you" checked={notifFollows} onChange={setNotifFollows} />
-                  <ToggleRow label="Translation suggestions" description="When someone suggests a better translation" checked={notifSuggestions} onChange={setNotifSuggestions} />
-                  <ToggleRow label="Season updates" description="Season start, end, and medal announcements" checked={notifSeason} onChange={setNotifSeason} />
+                  <ToggleRow label={t("settings.notifReactions")} description="When someone reacts to your meme" checked={notifReactions} onChange={setNotifReactions} />
+                  <ToggleRow label={t("settings.notifComments")} description="When someone comments on your meme" checked={notifComments} onChange={setNotifComments} />
+                  <ToggleRow label={t("settings.notifFollowers")} description="When someone follows you" checked={notifFollows} onChange={setNotifFollows} />
+                  <ToggleRow label={t("settings.notifSuggestions")} description="When someone suggests a better translation" checked={notifSuggestions} onChange={setNotifSuggestions} />
+                  <ToggleRow label={t("settings.notifSeason")} description="Season start, end, and medal announcements" checked={notifSeason} onChange={setNotifSeason} />
 
                   <div className="border-t border-border pt-4">
-                    <ToggleRow label="Email digest" description="Weekly summary of activity sent to your email" checked={emailDigest} onChange={setEmailDigest} />
+                    <ToggleRow label={t("settings.notifEmail")} description="Weekly summary of activity sent to your email" checked={emailDigest} onChange={setEmailDigest} />
                   </div>
                 </div>
 
                 <Button onClick={handleSave} loading={saving}>
-                  Save Preferences
+                  {t("settings.savePrefs")}
                 </Button>
               </div>
             )}
@@ -428,10 +442,10 @@ export default function SettingsPage() {
             {/* Language */}
             {activeTab === "language" && (
               <div className="bg-background-surface border border-border rounded-xl p-6 space-y-5">
-                <h2 className="text-lg font-semibold text-foreground">Language & Translation</h2>
+                <h2 className="text-lg font-semibold text-foreground">{t("settings.langTranslation")}</h2>
 
                 <div>
-                  <label className="block text-xs font-medium text-foreground-muted mb-1.5">Interface Language</label>
+                  <label className="block text-xs font-medium text-foreground-muted mb-1.5">{t("settings.interfaceLang")}</label>
                   <select
                     value={uiLanguage}
                     onChange={(e) => setUiLanguage(e.target.value)}
@@ -441,11 +455,11 @@ export default function SettingsPage() {
                       <option key={l.code} value={l.code}>{l.label}</option>
                     ))}
                   </select>
-                  <p className="text-[10px] text-foreground-subtle mt-1">The language of buttons, menus, and UI elements</p>
+                  <p className="text-[10px] text-foreground-subtle mt-1">{t("settings.interfaceLangDesc")}</p>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-foreground-muted mb-1.5">Preferred Translation Language</label>
+                  <label className="block text-xs font-medium text-foreground-muted mb-1.5">{t("settings.preferredLang")}</label>
                   <select
                     value={preferredLang}
                     onChange={(e) => setPreferredLang(e.target.value)}
@@ -455,18 +469,18 @@ export default function SettingsPage() {
                       <option key={l.code} value={l.code}>{l.label}</option>
                     ))}
                   </select>
-                  <p className="text-[10px] text-foreground-subtle mt-1">Translations shown first when viewing memes</p>
+                  <p className="text-[10px] text-foreground-subtle mt-1">{t("settings.preferredLangDesc")}</p>
                 </div>
 
                 <ToggleRow
-                  label="Auto-show translations"
-                  description="Automatically show translated text on meme images"
+                  label={t("settings.autoTranslation")}
+                  description={t("settings.autoTranslationDesc")}
                   checked={autoTranslate}
                   onChange={setAutoTranslate}
                 />
 
                 <Button onClick={handleSave} loading={saving}>
-                  Save Preferences
+                  {t("settings.savePrefs")}
                 </Button>
               </div>
             )}
@@ -483,13 +497,12 @@ export default function SettingsPage() {
                     <span className="text-xs px-2 py-0.5 rounded-full bg-background-elevated text-foreground-subtle">v0.1.0 Beta</span>
                   </div>
                   <p className="text-sm text-foreground-muted leading-relaxed">
-                    LoLympic is the world&apos;s first AI-powered global meme translation platform with Olympic-style country competition.
-                    Upload memes, get them auto-translated into 5 languages, and compete for your country!
+                    {t("settings.aboutDesc")}
                   </p>
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div className="bg-background-elevated rounded-lg p-3">
                       <span className="text-foreground-subtle">Languages</span>
-                      <p className="text-foreground font-medium">5 supported</p>
+                      <p className="text-foreground font-medium">7 supported</p>
                     </div>
                     <div className="bg-background-elevated rounded-lg p-3">
                       <span className="text-foreground-subtle">Countries</span>

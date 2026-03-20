@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import FeedCard from "./FeedCard";
 import { CardSkeleton } from "@/components/ui/Skeleton";
 import { TranslationSegmentData } from "@/types/components";
+import { useTranslation } from "@/i18n";
 
 interface TopComment {
   id: string;
@@ -131,8 +132,10 @@ function mapApiPost(post: any): FeedPost {
 
 export default function FeedList({
   translateTo = "",
-  emptyMessage = "No posts yet. Be the first to share a meme!",
+  emptyMessage,
 }: FeedListProps) {
+  const { t } = useTranslation();
+  const resolvedEmptyMessage = emptyMessage || t("feed.empty");
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
@@ -215,7 +218,7 @@ export default function FeedList({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
         </div>
-        <p className="text-sm text-foreground-subtle">{emptyMessage}</p>
+        <p className="text-sm text-foreground-subtle">{resolvedEmptyMessage}</p>
       </div>
     );
   }
@@ -244,7 +247,7 @@ export default function FeedList({
       {/* End of feed */}
       {!hasMore && posts.length > 0 && (
         <p className="text-center text-xs text-foreground-subtle py-8">
-          You&apos;ve reached the end
+          {t("feed.endOfFeed")}
         </p>
       )}
     </div>

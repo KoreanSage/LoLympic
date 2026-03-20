@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
+import { useTranslation } from "@/i18n";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -118,6 +119,7 @@ function ScoreBar({ score, maxScore }: { score: number; maxScore: number }) {
 // ---------------------------------------------------------------------------
 
 export default function Sidebar() {
+  const { t } = useTranslation();
   const [rankings, setRankings] = useState<CountryRanking[]>([]);
   const [creators, setCreators] = useState<TopCreator[]>([]);
   const [hotMemes, setHotMemes] = useState<HotMeme[]>([]);
@@ -235,20 +237,20 @@ export default function Sidebar() {
       <Card>
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-            <span>🏆</span> Country Rankings
+            <span>🏆</span> {t("sidebar.countryRankings")}
           </h3>
           <Link
             href="/leaderboard"
             className="text-[10px] text-[#c9a84c] hover:text-[#d4b85c] transition-colors"
           >
-            View all →
+            {t("sidebar.viewAll")}
           </Link>
         </div>
         {loadingRankings ? (
           <RankingSkeleton rows={5} />
         ) : rankings.length === 0 ? (
           <div className="text-center py-4">
-            <p className="text-xs text-foreground-subtle">Post memes to represent your country!</p>
+            <p className="text-xs text-foreground-subtle">{t("sidebar.emptyCountry")}</p>
           </div>
         ) : (
           <div className="space-y-1.5">
@@ -279,13 +281,13 @@ export default function Sidebar() {
       {/* Hot Memes */}
       <Card>
         <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-1.5">
-          <span>🔥</span> Hot Memes
+          <span>🔥</span> {t("sidebar.hotMemes")}
         </h3>
         {loadingMemes ? (
           <MemesSkeleton />
         ) : hotMemes.length === 0 ? (
           <div className="text-center py-4">
-            <p className="text-xs text-foreground-subtle">Upload the first meme!</p>
+            <p className="text-xs text-foreground-subtle">{t("sidebar.emptyMemes")}</p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -323,13 +325,13 @@ export default function Sidebar() {
       {/* Top Creators */}
       <Card>
         <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-1.5">
-          <span>⭐</span> Top Creators
+          <span>⭐</span> {t("sidebar.topCreators")}
         </h3>
         {loadingCreators ? (
           <RankingSkeleton rows={5} />
         ) : creators.length === 0 ? (
           <div className="text-center py-4">
-            <p className="text-xs text-foreground-subtle">Be the first creator!</p>
+            <p className="text-xs text-foreground-subtle">{t("sidebar.emptyCreators")}</p>
           </div>
         ) : (
           <div className="space-y-1.5">
@@ -371,7 +373,7 @@ export default function Sidebar() {
         <div className="mt-2 pt-2 border-t border-border">
           <ScoreBar score={maxCreatorScore > 0 ? maxCreatorScore * 0.7 : 0} maxScore={maxCreatorScore} />
           <p className="text-[10px] text-foreground-subtle text-center mt-1.5">
-            Post & translate to climb ranks!
+            {t("sidebar.climbRanks")}
           </p>
         </div>
       </Card>
@@ -380,7 +382,7 @@ export default function Sidebar() {
       {!loadingTags && trendingTags.length > 0 && (
         <Card>
           <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-1.5">
-            <span>📈</span> Trending
+            <span>📈</span> {t("sidebar.trending")}
           </h3>
           <div className="flex flex-wrap gap-1.5">
             {trendingTags.map((tag) => (

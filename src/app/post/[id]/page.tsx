@@ -5,11 +5,13 @@ import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import MainLayout from "@/components/layout/MainLayout";
 import PostDetail from "@/components/post/PostDetail";
+import { useTranslation } from "@/i18n";
 
 export default function PostPage() {
   const params = useParams();
   const { data: session } = useSession();
   const id = params.id as string;
+  const { t } = useTranslation();
   const [post, setPost] = useState<any>(null);
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -58,7 +60,7 @@ export default function PostPage() {
     return (
       <MainLayout showSidebar={false}>
         <div className="flex flex-col items-center justify-center py-20 gap-3">
-          <p className="text-foreground-subtle text-sm">Post not found</p>
+          <p className="text-foreground-subtle text-sm">{t("postDetail.notFound")}</p>
         </div>
       </MainLayout>
     );
