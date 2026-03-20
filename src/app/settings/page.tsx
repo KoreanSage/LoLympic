@@ -12,13 +12,13 @@ import { useTranslation } from "@/i18n";
 import Link from "next/link";
 
 const LANGUAGES = [
-  { code: "ko", label: "\uD55C\uAD6D\uC5B4" },
-  { code: "en", label: "English" },
-  { code: "ja", label: "\u65E5\u672C\u8A9E" },
-  { code: "zh", label: "\u4E2D\u6587" },
-  { code: "es", label: "Espa\u00F1ol" },
-  { code: "hi", label: "\u0939\u093f\u0928\u094d\u0926\u0940" },
-  { code: "ar", label: "\u0627\u0644\u0639\u0631\u0628\u064a\u0629" },
+  { code: "ko", label: "한국어", icon: "한" },
+  { code: "en", label: "English", icon: "A" },
+  { code: "ja", label: "日本語", icon: "あ" },
+  { code: "zh", label: "中文", icon: "字" },
+  { code: "es", label: "Español", icon: "Ñ" },
+  { code: "hi", label: "हिन्दी", icon: "अ" },
+  { code: "ar", label: "العربية", icon: "ع" },
 ];
 
 const COUNTRIES = [
@@ -452,7 +452,7 @@ export default function SettingsPage() {
                     className="w-full bg-background-elevated border border-border-hover rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-[#c9a84c]/50 transition-colors"
                   >
                     {LANGUAGES.map((l) => (
-                      <option key={l.code} value={l.code}>{l.label}</option>
+                      <option key={l.code} value={l.code}>{l.icon} {l.label}</option>
                     ))}
                   </select>
                   <p className="text-[10px] text-foreground-subtle mt-1">{t("settings.interfaceLangDesc")}</p>
@@ -466,7 +466,7 @@ export default function SettingsPage() {
                     className="w-full bg-background-elevated border border-border-hover rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-[#c9a84c]/50 transition-colors"
                   >
                     {LANGUAGES.map((l) => (
-                      <option key={l.code} value={l.code}>{l.label}</option>
+                      <option key={l.code} value={l.code}>{l.icon} {l.label}</option>
                     ))}
                   </select>
                   <p className="text-[10px] text-foreground-subtle mt-1">{t("settings.preferredLangDesc")}</p>

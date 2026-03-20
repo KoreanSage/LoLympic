@@ -58,13 +58,13 @@ export default function FeedFilters({
 
   const LANGUAGE_OPTIONS: FilterOption[] = [
     { value: "", label: t("filter.allLanguages") },
-    { value: "ko", label: t("filter.korean") },
-    { value: "en", label: t("filter.english") },
-    { value: "ja", label: t("filter.japanese") },
-    { value: "zh", label: t("filter.chinese") },
-    { value: "es", label: t("filter.spanish") },
-    { value: "hi", label: "\u0939\u093f\u0928\u094d\u0926\u0940" },
-    { value: "ar", label: "\u0627\u0644\u0639\u0631\u0628\u064a\u0629" },
+    { value: "ko", label: "한 " + t("filter.korean") },
+    { value: "en", label: "A " + t("filter.english") },
+    { value: "ja", label: "あ " + t("filter.japanese") },
+    { value: "zh", label: "字 " + t("filter.chinese") },
+    { value: "es", label: "Ñ " + t("filter.spanish") },
+    { value: "hi", label: "अ हिन्दी" },
+    { value: "ar", label: "ع العربية" },
   ];
 
   const CATEGORY_OPTIONS: FilterOption[] = [
