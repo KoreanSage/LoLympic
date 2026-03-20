@@ -7,13 +7,13 @@ import ImageCarousel from "@/components/ui/ImageCarousel";
 import Button from "@/components/ui/Button";
 
 const ALL_LANGUAGES = [
-  { code: "ko", label: "한국어", flag: "\u{1F1F0}\u{1F1F7}" },
-  { code: "en", label: "English", flag: "\u{1F1FA}\u{1F1F8}" },
-  { code: "ja", label: "日本語", flag: "\u{1F1EF}\u{1F1F5}" },
-  { code: "zh", label: "中文", flag: "\u{1F1E8}\u{1F1F3}" },
-  { code: "es", label: "Español", flag: "\u{1F1F2}\u{1F1FD}" },
-  { code: "hi", label: "हिन्दी", flag: "\u{1F1EE}\u{1F1F3}" },
-  { code: "ar", label: "العربية", flag: "\u{1F1F8}\u{1F1E6}" },
+  { code: "ko", label: "한국어", icon: "한" },
+  { code: "en", label: "English", icon: "A" },
+  { code: "ja", label: "日本語", icon: "あ" },
+  { code: "zh", label: "中文", icon: "字" },
+  { code: "es", label: "Español", icon: "Ñ" },
+  { code: "hi", label: "हिन्दी", icon: "अ" },
+  { code: "ar", label: "العربية", icon: "ع" },
 ];
 
 const MAX_IMAGES = 10;
@@ -260,7 +260,7 @@ export default function UploadStudio() {
                   key={lang.code}
                   className="flex items-center gap-3 px-4 py-3 rounded-xl bg-background-elevated border border-border"
                 >
-                  <span className="text-lg">{lang.flag}</span>
+                  <span className="text-lg font-bold text-[#c9a84c]">{lang.icon}</span>
                   <span className="flex-1 text-sm font-medium text-foreground-muted">{lang.label}</span>
                   {status === "pending" && <span className="text-xs text-foreground-subtle">Waiting...</span>}
                   {status === "translating" && (
@@ -399,7 +399,7 @@ export default function UploadStudio() {
               <p className="text-xs text-foreground-subtle">
                 {hasGif && imageFiles.length === 1
                   ? "GIF files will be posted without translation."
-                  : "We'll auto-translate to all 5 languages after you publish."}
+                  : "We'll auto-translate to all 6 languages after you publish."}
               </p>
             </div>
 
@@ -429,7 +429,7 @@ export default function UploadStudio() {
               >
                 {ALL_LANGUAGES.map((lang) => (
                   <option key={lang.code} value={lang.code}>
-                    {lang.flag} {lang.label}
+                    {lang.icon} {lang.label}
                   </option>
                 ))}
               </select>
@@ -534,7 +534,7 @@ export default function UploadStudio() {
                 <div className="flex flex-wrap gap-2">
                   {ALL_LANGUAGES.filter((l) => l.code !== sourceLanguage).map((lang) => (
                     <span key={lang.code} className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-background-overlay text-xs text-foreground-muted">
-                      {lang.flag} {lang.label}
+                      {lang.icon} {lang.label}
                     </span>
                   ))}
                 </div>
