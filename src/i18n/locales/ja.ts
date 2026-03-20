@@ -225,7 +225,7 @@ const ja: Record<TranslationKeys, string> = {
 
   // ── Upload ─────────────────────────────────────────────────────────────────
   "upload.title": "ミームをシェア",
-  "upload.subtitle": "ミームをアップロードすると、5言語に自動翻訳されます",
+  "upload.subtitle": "ミームをアップロードすると、7言語に自動翻訳されます",
   "upload.dragDrop": "ここにミームをドラッグ＆ドロップ",
   "upload.orBrowse": "またはクリックして選択",
   "upload.maxSize": "最大10MB · JPG, PNG, GIF, WebP",

@@ -223,7 +223,7 @@ const en = {
 
   // ── Upload ─────────────────────────────────────────────────────────────────
   "upload.title": "Share a Meme",
-  "upload.subtitle": "Upload a meme and we'll translate it to 5 languages automatically",
+  "upload.subtitle": "Upload a meme and we'll translate it to 7 languages automatically",
   "upload.dragDrop": "Drag & drop your meme here",
   "upload.orBrowse": "or click to browse",
   "upload.maxSize": "Max 10MB · JPG, PNG, GIF, WebP",

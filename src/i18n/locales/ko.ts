@@ -225,7 +225,7 @@ const ko: Record<TranslationKeys, string> = {
 
   // ── Upload ─────────────────────────────────────────────────────────────────
   "upload.title": "밈 공유하기",
-  "upload.subtitle": "밈을 업로드하면 자동으로 5개 언어로 번역됩니다",
+  "upload.subtitle": "밈을 업로드하면 자동으로 7개 언어로 번역됩니다",
   "upload.dragDrop": "여기에 밈을 드래그 앤 드롭하세요",
   "upload.orBrowse": "또는 클릭하여 파일 선택",
   "upload.maxSize": "최대 10MB · JPG, PNG, GIF, WebP",
