@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import MainLayout from "@/components/layout/MainLayout";
@@ -16,6 +16,8 @@ export default function PostPage() {
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
   const [freshLang, setFreshLang] = useState<string | null>(null);
+  const [clientTranslatedTitle, setClientTranslatedTitle] = useState<string | null>(null);
+  const titleBackfillAttempted = useRef(false);
 
   // Get the user's ACTUAL preferredLanguage: localStorage (instant) > DB > session JWT
   useEffect(() => {
@@ -44,6 +46,8 @@ export default function PostPage() {
     let cancelled = false;
     setLoading(true);
     setError(false);
+    setClientTranslatedTitle(null);
+    titleBackfillAttempted.current = false;
 
     fetch(`/api/posts/${id}?lang=${preferredLang}`)
       .then((res) => {
@@ -65,6 +69,35 @@ export default function PostPage() {
       cancelled = true;
     };
   }, [id, preferredLang]);
+
+  // Client-side title translation: if payload has segments but no translatedTitle,
+  // call a lightweight endpoint to translate it
+  useEffect(() => {
+    if (!post || titleBackfillAttempted.current) return;
+    const payload = post.translationPayloads?.[0];
+    if (!payload?.segments?.length || payload.translatedTitle) return;
+    if (!post.title || post.sourceLanguage === preferredLang) return;
+
+    titleBackfillAttempted.current = true;
+
+    fetch("/api/translate/title", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: post.title,
+        body: post.body || null,
+        targetLanguage: preferredLang,
+        payloadId: payload.id,
+      }),
+    })
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data?.translatedTitle) {
+          setClientTranslatedTitle(data.translatedTitle);
+        }
+      })
+      .catch(() => {});
+  }, [post, preferredLang]);
 
   if (loading) {
     return (
@@ -89,6 +122,8 @@ export default function PostPage() {
   // Map API response to PostDetail props
   const image = post.images?.[0];
   const payload = post.translationPayloads?.[0];
+  const translatedTitle = clientTranslatedTitle || payload?.translatedTitle || null;
+
   const segments = (payload?.segments ?? []).map((s: any) => ({
     id: s.id ?? "",
     imageIndex: s.imageIndex ?? 0,
@@ -128,8 +163,8 @@ export default function PostPage() {
     <MainLayout showSidebar={false}>
       <PostDetail
         id={post.id}
-        title={payload?.translatedTitle || post.title}
-        originalTitle={payload?.translatedTitle ? post.title : undefined}
+        title={translatedTitle || post.title}
+        originalTitle={translatedTitle ? post.title : undefined}
         body={payload?.translatedBody || post.body}
         originalBody={payload?.translatedBody ? post.body : undefined}
         author={{
