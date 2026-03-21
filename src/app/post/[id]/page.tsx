@@ -17,6 +17,7 @@ export default function PostPage() {
   const [loading, setLoading] = useState(true);
   const [freshLang, setFreshLang] = useState<string | null>(null);
   const [clientTranslatedTitle, setClientTranslatedTitle] = useState<string | null>(null);
+  const [clientTranslatedBody, setClientTranslatedBody] = useState<string | null>(null);
   const titleBackfillAttempted = useRef(false);
 
   // Get the user's ACTUAL preferredLanguage: localStorage (instant) > DB > session JWT
@@ -47,6 +48,7 @@ export default function PostPage() {
     setLoading(true);
     setError(false);
     setClientTranslatedTitle(null);
+    setClientTranslatedBody(null);
     titleBackfillAttempted.current = false;
 
     fetch(`/api/posts/${id}?lang=${preferredLang}`)
@@ -70,12 +72,16 @@ export default function PostPage() {
     };
   }, [id, preferredLang]);
 
-  // Client-side title translation: if payload has segments but no translatedTitle,
+  // Client-side title/body translation: if payload has segments but no translatedTitle,
   // call a lightweight endpoint to translate it
   useEffect(() => {
     if (!post || titleBackfillAttempted.current) return;
     const payload = post.translationPayloads?.[0];
-    if (!payload?.segments?.length || payload.translatedTitle) return;
+    // Need at least segments to know this is a translated post
+    if (!payload?.segments?.length) return;
+    // Skip if title is already translated
+    if (payload.translatedTitle) return;
+    // Skip if no title to translate, or same language
     if (!post.title || post.sourceLanguage === preferredLang) return;
 
     titleBackfillAttempted.current = true;
@@ -90,13 +96,21 @@ export default function PostPage() {
         payloadId: payload.id,
       }),
     })
-      .then((r) => r.ok ? r.json() : null)
+      .then((r) => {
+        if (!r.ok) throw new Error(`${r.status}`);
+        return r.json();
+      })
       .then((data) => {
         if (data?.translatedTitle) {
           setClientTranslatedTitle(data.translatedTitle);
         }
+        if (data?.translatedBody) {
+          setClientTranslatedBody(data.translatedBody);
+        }
       })
-      .catch(() => {});
+      .catch((err) => {
+        console.warn("Client-side title translation failed:", err);
+      });
   }, [post, preferredLang]);
 
   if (loading) {
@@ -123,6 +137,7 @@ export default function PostPage() {
   const image = post.images?.[0];
   const payload = post.translationPayloads?.[0];
   const translatedTitle = clientTranslatedTitle || payload?.translatedTitle || null;
+  const translatedBody = clientTranslatedBody || payload?.translatedBody || null;
 
   const segments = (payload?.segments ?? []).map((s: any) => ({
     id: s.id ?? "",
@@ -165,8 +180,8 @@ export default function PostPage() {
         id={post.id}
         title={translatedTitle || post.title}
         originalTitle={translatedTitle ? post.title : undefined}
-        body={payload?.translatedBody || post.body}
-        originalBody={payload?.translatedBody ? post.body : undefined}
+        body={translatedBody || post.body}
+        originalBody={translatedBody ? post.body : undefined}
         author={{
           username: post.author?.username || "unknown",
           displayName: post.author?.displayName,

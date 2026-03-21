@@ -282,8 +282,7 @@ export default function MemeRenderer({
 
       ctx.save();
 
-      // Cover original text with background fill before drawing translation
-      // Sample the dominant background color from the bounding box area
+      // Sample background color for contrast detection
       const imgData = ctx.getImageData(
         Math.max(0, Math.floor(bx * dpr)),
         Math.max(0, Math.floor(by * dpr)),
@@ -292,12 +291,35 @@ export default function MemeRenderer({
       );
       const r = imgData.data[0], g = imgData.data[1], b = imgData.data[2];
       const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-      const sampledBg = seg.backgroundColor || `rgb(${r},${g},${b})`;
-      ctx.fillStyle = sampledBg;
-      // Add slight padding to cover any text bleeding outside the bounding box
-      const padX = bw * 0.02;
-      const padY = bh * 0.05;
-      ctx.fillRect(bx - padX, by - padY, bw + padX * 2, bh + padY * 2);
+
+      // Cover original text with a clean semi-transparent backdrop
+      // This provides much better readability than raw background sampling
+      const padX = bw * 0.06;
+      const padY = bh * 0.08;
+      const bgX = bx - padX;
+      const bgY = by - padY;
+      const bgW = bw + padX * 2;
+      const bgH = bh + padY * 2;
+      const borderRadius = Math.min(bgH * 0.15, 8);
+
+      // Draw rounded rect backdrop
+      ctx.beginPath();
+      ctx.moveTo(bgX + borderRadius, bgY);
+      ctx.lineTo(bgX + bgW - borderRadius, bgY);
+      ctx.quadraticCurveTo(bgX + bgW, bgY, bgX + bgW, bgY + borderRadius);
+      ctx.lineTo(bgX + bgW, bgY + bgH - borderRadius);
+      ctx.quadraticCurveTo(bgX + bgW, bgY + bgH, bgX + bgW - borderRadius, bgY + bgH);
+      ctx.lineTo(bgX + borderRadius, bgY + bgH);
+      ctx.quadraticCurveTo(bgX, bgY + bgH, bgX, bgY + bgH - borderRadius);
+      ctx.lineTo(bgX, bgY + borderRadius);
+      ctx.quadraticCurveTo(bgX, bgY, bgX + borderRadius, bgY);
+      ctx.closePath();
+
+      // Use a solid-ish backdrop matching the dominant background
+      ctx.fillStyle = seg.backgroundColor || (brightness > 128
+        ? `rgba(${Math.min(255, r + 30)},${Math.min(255, g + 30)},${Math.min(255, b + 30)},0.92)`
+        : `rgba(${Math.max(0, r - 20)},${Math.max(0, g - 20)},${Math.max(0, b - 20)},0.92)`);
+      ctx.fill();
 
       // Handle rotation
       if (seg.rotation) {
@@ -348,38 +370,24 @@ export default function MemeRenderer({
       ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}, sans-serif`;
       ctx.textBaseline = "alphabetic";
 
-      // Apply shadow — only for dark backgrounds (meme-style overlay text)
-      if (seg.shadowColor) {
-        ctx.shadowColor = seg.shadowColor;
-        ctx.shadowOffsetX = (seg.shadowOffsetX || 0) * Math.min(scaleX, scaleY);
-        ctx.shadowOffsetY = (seg.shadowOffsetY || 0) * Math.min(scaleX, scaleY);
-        ctx.shadowBlur = (seg.shadowBlur || 0) * Math.min(scaleX, scaleY);
-      } else if (brightness <= 128) {
-        // Dark background: add shadow for readability
-        ctx.shadowColor = "rgba(0,0,0,0.8)";
-        ctx.shadowOffsetX = 0;
-        ctx.shadowOffsetY = 1;
-        ctx.shadowBlur = 4;
-      }
-
       // Auto-detect text color based on background brightness
       const autoColor = brightness > 128 ? "#000000" : "#FFFFFF";
       const fillColor = seg.color || autoColor;
+      const contrastStroke = brightness > 128 ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.4)";
 
       for (let i = 0; i < lines.length; i++) {
         const ly = startY + i * lineHeight;
 
-        // Stroke for readability — only on dark backgrounds or when explicitly set
+        // Always add a subtle stroke for crisp text on backdrop
         if (seg.strokeColor || seg.strokeWidth) {
-          ctx.strokeStyle = seg.strokeColor || "#000000";
-          ctx.lineWidth =
-            (seg.strokeWidth || 2) * Math.min(scaleX, scaleY);
+          ctx.strokeStyle = seg.strokeColor || contrastStroke;
+          ctx.lineWidth = (seg.strokeWidth || 2) * Math.min(scaleX, scaleY);
           ctx.lineJoin = "round";
           ctx.strokeText(lines[i], anchorX, ly);
-        } else if (brightness <= 128) {
-          // Dark background: add stroke outline for readability
-          ctx.strokeStyle = "#000000";
-          ctx.lineWidth = Math.max(2, fontSize * 0.08);
+        } else {
+          // Subtle stroke for text edge definition
+          ctx.strokeStyle = contrastStroke;
+          ctx.lineWidth = Math.max(1, fontSize * 0.04);
           ctx.lineJoin = "round";
           ctx.strokeText(lines[i], anchorX, ly);
         }
