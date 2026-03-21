@@ -651,8 +651,8 @@ export async function POST(request: NextRequest) {
                 summary: allCultureNotes.map((n, i) => `[${i + 1}] ${n.summary}`).join("\n"),
                 explanation: allCultureNotes.map((n, i) => `[${i + 1}] ${n.explanation}`).join("\n\n"),
                 translationNote: allCultureNotes
-                  .filter((n) => n.translationNote)
-                  .map((n, i) => `[${i + 1}] ${n.translationNote}`)
+                  .map((n, i) => n.translationNote ? `[${i + 1}] ${n.translationNote}` : null)
+                  .filter(Boolean)
                   .join("\n") || undefined,
               }
           : null;

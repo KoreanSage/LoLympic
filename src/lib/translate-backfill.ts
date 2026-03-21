@@ -1,6 +1,8 @@
 import prisma from "@/lib/prisma";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
+const VALID_LANGUAGES = ["ko", "en", "ja", "zh", "es", "hi", "ar"];
+
 const LANGUAGE_NAMES: Record<string, string> = {
   ko: "Korean (한국어)",
   en: "English",
@@ -25,6 +27,8 @@ export async function backfillMissingTitleTranslations(
   posts: any[],
   targetLang: string
 ) {
+  if (!VALID_LANGUAGES.includes(targetLang)) return;
+
   const toBackfill: Array<{ payloadId: string; title: string; sourceLanguage: string }> = [];
 
   for (const post of posts) {
@@ -78,6 +82,8 @@ export async function backfillSinglePostTitle(
   post: any,
   targetLang: string
 ): Promise<{ translatedTitle: string; translatedBody?: string } | null> {
+  if (!VALID_LANGUAGES.includes(targetLang)) return null;
+
   const payloads = post.translationPayloads;
   if (!payloads || payloads.length === 0) return null;
   const payload = payloads[0];

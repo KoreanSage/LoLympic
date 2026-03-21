@@ -14,7 +14,9 @@ export async function GET(
 ) {
   try {
     const { id } = await context.params;
-    const lang = request.nextUrl.searchParams.get("lang");
+    const VALID_LANGS = ["ko", "en", "ja", "zh", "es", "hi", "ar"];
+    const rawLang = request.nextUrl.searchParams.get("lang");
+    const lang = rawLang && VALID_LANGS.includes(rawLang) ? rawLang : null;
 
     const post = await prisma.post.findUnique({
       where: { id },

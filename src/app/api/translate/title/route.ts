@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getSessionUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+
+const VALID_LANGUAGES = ["ko", "en", "ja", "zh", "es", "hi", "ar"];
 
 const LANGUAGE_NAMES: Record<string, string> = {
   ko: "Korean (한국어)",
@@ -24,12 +27,26 @@ function getGenAI() {
 // ---------------------------------------------------------------------------
 export async function POST(request: NextRequest) {
   try {
+    // Authentication required
+    const user = await getSessionUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await request.json();
     const { title, body: postBody, targetLanguage, payloadId } = body;
 
     if (!title || !targetLanguage || !payloadId) {
       return NextResponse.json(
         { error: "Missing required fields: title, targetLanguage, payloadId" },
+        { status: 400 }
+      );
+    }
+
+    // Validate language code
+    if (!VALID_LANGUAGES.includes(targetLanguage)) {
+      return NextResponse.json(
+        { error: `Invalid target language: ${targetLanguage}` },
         { status: 400 }
       );
     }
@@ -44,7 +61,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Payload not found" }, { status: 404 });
     }
 
-    // If already translated, return existing
+    // If already translated (race condition guard), return existing
     if (payload.translatedTitle) {
       return NextResponse.json({
         translatedTitle: payload.translatedTitle,
@@ -62,12 +79,12 @@ export async function POST(request: NextRequest) {
     const titleResult = await model.generateContent(
       `Translate the following meme title to ${targetName}. Output ONLY the translated text, nothing else. Keep the humor and tone.\n\n${title}`
     );
-    const translatedTitle = titleResult.response.text().trim();
+    const translatedTitle = titleResult.response.text()?.trim();
 
     if (!translatedTitle) {
       return NextResponse.json(
-        { error: "Translation failed" },
-        { status: 500 }
+        { error: "Translation returned empty result" },
+        { status: 502 }
       );
     }
 
@@ -78,13 +95,26 @@ export async function POST(request: NextRequest) {
         const bodyResult = await model.generateContent(
           `Translate the following meme description to ${targetName}. Output ONLY the translated text, nothing else. Keep the humor and tone.\n\n${postBody}`
         );
-        translatedBody = bodyResult.response.text().trim();
+        translatedBody = bodyResult.response.text()?.trim() || undefined;
       } catch {
         // Body translation is optional, don't fail the whole request
       }
     }
 
-    // Save to DB
+    // Save to DB (re-check to avoid race condition overwrite)
+    const freshPayload = await prisma.translationPayload.findUnique({
+      where: { id: payloadId },
+      select: { translatedTitle: true, translatedBody: true },
+    });
+
+    if (freshPayload?.translatedTitle) {
+      // Another request already filled it — return that instead
+      return NextResponse.json({
+        translatedTitle: freshPayload.translatedTitle,
+        translatedBody: freshPayload.translatedBody,
+      });
+    }
+
     await prisma.translationPayload.update({
       where: { id: payloadId },
       data: {
