@@ -444,18 +444,18 @@ export async function POST(request: NextRequest) {
       postId,
       sourceLanguage,
       targetLanguages,
-      imageUrl,
+      imageUrl, // Legacy: single image (still supported)
     }: {
       postId: string;
       sourceLanguage: string;
       targetLanguages: string[];
-      imageUrl: string;
+      imageUrl?: string;
     } = body;
 
     // Validation
-    if (!postId || !sourceLanguage || !targetLanguages?.length || !imageUrl) {
+    if (!postId || !sourceLanguage || !targetLanguages?.length) {
       return NextResponse.json(
-        { error: "Missing required fields: postId, sourceLanguage, targetLanguages, imageUrl" },
+        { error: "Missing required fields: postId, sourceLanguage, targetLanguages" },
         { status: 400 }
       );
     }
@@ -476,25 +476,48 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Verify post exists
-    const post = await prisma.post.findUnique({ where: { id: postId } });
+    // Verify post exists and get all images
+    const post = await prisma.post.findUnique({
+      where: { id: postId },
+      select: {
+        id: true,
+        title: true,
+        body: true,
+        sourceLanguage: true,
+        images: {
+          orderBy: { orderIndex: "asc" },
+          select: { originalUrl: true, mimeType: true },
+        },
+      },
+    });
     if (!post) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
 
-    // Read image as base64 (supports both Blob URLs and local files)
-    let imageBase64: string;
-    let mimeType: string;
-    try {
-      const imageData = await readImageAsBase64(imageUrl);
-      imageBase64 = imageData.base64;
-      mimeType = imageData.mimeType;
-    } catch (err) {
-      console.error("Failed to read image:", err);
+    // Build list of images to translate
+    const imageUrls = post.images.length > 0
+      ? post.images.map((img) => img.originalUrl)
+      : imageUrl
+        ? [imageUrl]
+        : [];
+
+    if (imageUrls.length === 0) {
       return NextResponse.json(
-        { error: "Could not read uploaded image file" },
+        { error: "No images found for this post" },
         { status: 400 }
       );
+    }
+
+    // Read all images as base64
+    const imageDataList: Array<{ base64: string; mimeType: string }> = [];
+    for (const url of imageUrls) {
+      try {
+        const imageData = await readImageAsBase64(url);
+        imageDataList.push(imageData);
+      } catch (err) {
+        console.error(`Failed to read image ${url}:`, err);
+        imageDataList.push({ base64: "", mimeType: "image/jpeg" }); // placeholder for failed reads
+      }
     }
 
     // Process each target language
@@ -506,7 +529,6 @@ export async function POST(request: NextRequest) {
       const systemPrompt = buildTranslationSystemPrompt(sourceLanguage, targetLang);
 
       try {
-        // Call Gemini with vision — WITH RETRY (up to 2 retries)
         const model = genAI.getGenerativeModel({
           model: "gemini-2.5-flash",
           systemInstruction: systemPrompt,
@@ -517,57 +539,107 @@ export async function POST(request: NextRequest) {
           },
         });
 
-        // Retry the full translate + parse cycle (up to 3 attempts)
-        let parsed: AITranslationResult | null = null;
-        let lastParseError = "";
+        // Translate ALL images and collect segments with imageIndex
+        const allSegments: Array<TranslationSegmentResponse & { imageIndex: number }> = [];
+        let firstParsed: AITranslationResult | null = null;
 
-        for (let attempt = 0; attempt < 3; attempt++) {
-          try {
-            if (attempt > 0) {
-              await new Promise((r) => setTimeout(r, 2000 * attempt));
-              console.log(`Retry attempt ${attempt + 1} for ${targetLang}`);
-            }
+        for (let imgIdx = 0; imgIdx < imageDataList.length; imgIdx++) {
+          const imgData = imageDataList[imgIdx];
+          if (!imgData.base64) continue; // skip failed image reads
 
-            const result = await model.generateContent([
-              `Translate this meme from ${sourceLanguage} to ${targetLang}. Analyze the image, detect all text regions, and provide transcendent translations. Respond ONLY with valid JSON, no markdown fences.`,
-              {
-                inlineData: {
-                  data: imageBase64,
-                  mimeType,
+          let parsed: AITranslationResult | null = null;
+          let lastParseError = "";
+
+          for (let attempt = 0; attempt < 3; attempt++) {
+            try {
+              if (attempt > 0) {
+                await new Promise((r) => setTimeout(r, 2000 * attempt));
+                console.log(`Retry attempt ${attempt + 1} for ${targetLang} image ${imgIdx}`);
+              }
+
+              const result = await model.generateContent([
+                `Translate this meme from ${sourceLanguage} to ${targetLang}. Analyze the image, detect all text regions, and provide transcendent translations. Respond ONLY with valid JSON, no markdown fences.`,
+                {
+                  inlineData: {
+                    data: imgData.base64,
+                    mimeType: imgData.mimeType,
+                  },
                 },
-              },
-            ]);
-            const text = result.response.text();
-            if (!text) {
-              lastParseError = "Empty response from AI";
-              continue;
-            }
+              ]);
+              const text = result.response.text();
+              if (!text) {
+                lastParseError = "Empty response from AI";
+                continue;
+              }
 
-            const cleaned = stripMarkdownFences(text);
-            parsed = JSON.parse(cleaned) as AITranslationResult;
+              const cleaned = stripMarkdownFences(text);
+              parsed = JSON.parse(cleaned) as AITranslationResult;
 
-            // Validate parsed result has segments
-            if (!Array.isArray(parsed.segments) || parsed.segments.length === 0) {
-              lastParseError = "No segments in response";
+              if (!Array.isArray(parsed.segments) || parsed.segments.length === 0) {
+                lastParseError = "No segments in response";
+                parsed = null;
+                continue;
+              }
+
+              break; // Success
+            } catch (err) {
+              lastParseError = err instanceof Error ? err.message : String(err);
+              console.warn(`Translate attempt ${attempt + 1} failed for ${targetLang} image ${imgIdx}:`, lastParseError);
               parsed = null;
-              continue;
             }
+          }
 
-            break; // Success
-          } catch (err) {
-            lastParseError = err instanceof Error ? err.message : String(err);
-            console.warn(`Translate attempt ${attempt + 1} failed for ${targetLang}:`, lastParseError);
-            parsed = null;
+          if (parsed) {
+            if (!firstParsed) firstParsed = parsed;
+            for (const seg of parsed.segments) {
+              allSegments.push({ ...seg, imageIndex: imgIdx });
+            }
+          } else {
+            console.warn(`Translation failed for ${targetLang} image ${imgIdx}: ${lastParseError}`);
           }
         }
 
-        if (!parsed) {
-          console.error(`All translation attempts failed for ${targetLang}: ${lastParseError}`);
-          results[targetLang] = { error: `Translation failed: ${lastParseError}` };
+        if (allSegments.length === 0 || !firstParsed) {
+          console.error(`All translation attempts failed for ${targetLang}`);
+          results[targetLang] = { error: `Translation failed for all images` };
           continue;
         }
 
+        // Translate title & body text
+        let translatedTitle: string | null = null;
+        let translatedBody: string | null = null;
+        const targetName = LANGUAGE_INSTRUCTIONS[targetLang]?.split(":")[0] || targetLang;
+        if (post.title && sourceLanguage !== targetLang) {
+          try {
+            const titleModel = genAI.getGenerativeModel({
+              model: "gemini-2.0-flash-lite",
+              generationConfig: { temperature: 0.3, maxOutputTokens: 512 },
+            });
+            const titleResult = await titleModel.generateContent(
+              `Translate the following meme title to ${targetName}. Output ONLY the translated text, nothing else. Keep the humor and tone.\n\n${post.title}`
+            );
+            translatedTitle = titleResult.response.text().trim();
+          } catch (e) {
+            console.warn("Title translation failed:", e);
+          }
+        }
+        if (post.body && sourceLanguage !== targetLang) {
+          try {
+            const bodyModel = genAI.getGenerativeModel({
+              model: "gemini-2.0-flash-lite",
+              generationConfig: { temperature: 0.3, maxOutputTokens: 1024 },
+            });
+            const bodyResult = await bodyModel.generateContent(
+              `Translate the following meme description to ${targetName}. Output ONLY the translated text, nothing else. Keep the humor and tone.\n\n${post.body}`
+            );
+            translatedBody = bodyResult.response.text().trim();
+          } catch (e) {
+            console.warn("Body translation failed:", e);
+          }
+        }
+
         // Store TranslationPayload + segments in a transaction
+        const parsed = firstParsed; // for culture note and confidence
         const payload = await prisma.$transaction(async (tx) => {
           const latestPayload = await tx.translationPayload.findFirst({
             where: {
@@ -586,11 +658,14 @@ export async function POST(request: NextRequest) {
               version: nextVersion,
               status: "COMPLETED",
               confidence: parsed.confidence ?? null,
+              translatedTitle,
+              translatedBody,
               creatorType: "AI",
               creatorId: null,
               segments: {
-                create: parsed.segments.map((seg, index) => ({
+                create: allSegments.map((seg, index) => ({
                   orderIndex: index,
+                  imageIndex: seg.imageIndex,
                   sourceText: seg.sourceText,
                   translatedText: seg.translatedText,
                   semanticRole: toSemanticRole(seg.semanticRole),

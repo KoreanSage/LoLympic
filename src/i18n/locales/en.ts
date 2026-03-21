@@ -139,6 +139,9 @@ const en = {
   "post.deletePost": "Delete Post",
   "post.translated": "Translated",
   "post.original": "Original",
+  "post.views": "views",
+  "post.shares": "shares",
+  "feed.save": "Save",
 
   // ── Discussion / Suggestion ────────────────────────────────────────────────
   "discussion.placeholder": "Share your thoughts...",
@@ -267,6 +270,16 @@ const en = {
   "season.winnersDescription": "Winners are selected at the start of each month.",
   "season.viewAll": "View all →",
   "season.voteNow": "Vote Now",
+  "season.howItWorks": "How It Works",
+  "season.step1": "Post your best memes every month and compete for likes",
+  "season.step2": "The most liked meme each month becomes the Monthly Winner 🏆",
+  "season.step3": "At year's end, all 12 monthly winners enter the Grand Tournament",
+  "season.step4": "The final champion earns the 👑 Champion title and eternal glory!",
+  "season.seasonPeriod": "Season Period",
+  "season.monthlyWinners": "Monthly Winners",
+  "season.currentProgress": "Current Progress",
+  "season.monthsCompleted": "{count} of 12 months completed",
+  "season.monthsRemaining": "{count} months remaining",
 
   // ── Common ─────────────────────────────────────────────────────────────────
   "common.loading": "Loading...",

@@ -31,12 +31,34 @@ interface SeasonInfo {
   id: string;
   name: string;
   status: string;
+  description: string | null;
+  startAt: string;
+  endAt: string;
+  number: number;
 }
 
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
 ];
+
+function formatDate(dateStr: string) {
+  const d = new Date(dateStr);
+  return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+}
+
+function getTimeRemaining(endAt: string) {
+  const now = new Date();
+  const end = new Date(endAt);
+  const diffMs = end.getTime() - now.getTime();
+  if (diffMs <= 0) return null;
+  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  if (days > 30) {
+    const months = Math.floor(days / 30);
+    return `${months}mo ${days % 30}d`;
+  }
+  return `${days}d`;
+}
 
 export default function SeasonsPage() {
   const { t } = useTranslation();
@@ -55,11 +77,14 @@ export default function SeasonsPage() {
       .catch(() => setLoading(false));
   }, []);
 
+  const currentMonth = new Date().getMonth() + 1; // 1-12
+
   if (loading) {
     return (
       <div className="max-w-4xl mx-auto py-8 px-4">
         <div className="animate-pulse space-y-4">
           <div className="h-8 bg-background-elevated rounded w-64" />
+          <div className="h-40 bg-background-elevated rounded-xl" />
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {[...Array(6)].map((_, i) => (
               <div key={i} className="h-64 bg-background-elevated rounded-xl" />
@@ -73,7 +98,7 @@ export default function SeasonsPage() {
   return (
     <div className="max-w-4xl mx-auto py-8 px-4">
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-6">
         <h1 className="text-2xl font-bold text-foreground mb-2">
           {season ? season.name : t("season.dashboard")}
         </h1>
@@ -94,7 +119,114 @@ export default function SeasonsPage() {
         )}
       </div>
 
+      {/* Season Info Card — shown during ACTIVE or JUDGING */}
+      {season && (season.status === "ACTIVE" || season.status === "JUDGING") && (
+        <div className="mb-8 bg-gradient-to-br from-[#c9a84c]/10 to-[#c9a84c]/5 border border-[#c9a84c]/20 rounded-2xl overflow-hidden">
+          {/* Top bar with season period */}
+          <div className="px-5 py-4 flex flex-wrap items-center justify-between gap-3 border-b border-[#c9a84c]/10">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-[#c9a84c]/20 flex items-center justify-center text-lg">
+                🏟️
+              </div>
+              <div>
+                <p className="text-xs text-foreground-subtle font-medium uppercase tracking-wide">
+                  {t("season.seasonPeriod")}
+                </p>
+                <p className="text-sm text-foreground font-semibold">
+                  {formatDate(season.startAt)} — {formatDate(season.endAt)}
+                </p>
+              </div>
+            </div>
+            {season.status === "ACTIVE" && (
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
+                </span>
+                <span className="text-xs font-semibold text-green-500 uppercase">LIVE</span>
+                {getTimeRemaining(season.endAt) && (
+                  <span className="text-xs text-foreground-subtle ml-1">
+                    ({t("season.left", { time: getTimeRemaining(season.endAt)! })})
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Description */}
+          {season.description && (
+            <div className="px-5 py-4 border-b border-[#c9a84c]/10">
+              <p className="text-sm text-foreground-muted leading-relaxed">
+                {season.description}
+              </p>
+            </div>
+          )}
+
+          {/* How It Works steps */}
+          <div className="px-5 py-4">
+            <h3 className="text-sm font-semibold text-foreground mb-3">
+              {t("season.howItWorks")}
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {[
+                { icon: "📝", text: t("season.step1") },
+                { icon: "🏆", text: t("season.step2") },
+                { icon: "⚔️", text: t("season.step3") },
+                { icon: "👑", text: t("season.step4") },
+              ].map((step, i) => (
+                <div
+                  key={i}
+                  className="flex items-start gap-2.5 bg-background-surface/50 rounded-lg p-3"
+                >
+                  <span className="text-base mt-0.5 shrink-0">{step.icon}</span>
+                  <p className="text-xs text-foreground-muted leading-relaxed">{step.text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Progress bar */}
+          <div className="px-5 py-4 bg-background-surface/30">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-medium text-foreground-subtle">
+                {t("season.currentProgress")}
+              </p>
+              <p className="text-xs text-foreground-muted">
+                {t("season.monthsCompleted", { count: String(winners.length) })}
+              </p>
+            </div>
+            <div className="flex gap-1">
+              {Array.from({ length: 12 }, (_, i) => {
+                const month = i + 1;
+                const isWinner = winners.some((w) => w.month === month);
+                const isCurrent = month === currentMonth;
+                return (
+                  <div
+                    key={month}
+                    className={`h-2 flex-1 rounded-full transition-colors ${
+                      isWinner
+                        ? "bg-[#c9a84c]"
+                        : isCurrent
+                          ? "bg-[#c9a84c]/40 animate-pulse"
+                          : "bg-foreground/10"
+                    }`}
+                    title={MONTH_NAMES[i]}
+                  />
+                );
+              })}
+            </div>
+            <div className="flex justify-between mt-1.5">
+              <span className="text-[10px] text-foreground-subtle">Jan</span>
+              <span className="text-[10px] text-foreground-subtle">Dec</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Monthly Winners Grid */}
+      <h2 className="text-lg font-semibold text-foreground mb-4">
+        {t("season.monthlyWinners")}
+      </h2>
       {winners.length === 0 ? (
         <div className="text-center py-16">
           <p className="text-4xl mb-4">🏆</p>
@@ -128,7 +260,7 @@ export default function SeasonsPage() {
                 </div>
                 {/* Like count */}
                 <div className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-sm px-2 py-1 rounded-lg flex items-center gap-1">
-                  <span className="text-xs">🔥</span>
+                  <span className="text-xs">⬆️</span>
                   <span className="text-xs text-white font-medium">{winner.likeCount}</span>
                 </div>
               </div>

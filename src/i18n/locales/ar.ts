@@ -141,6 +141,9 @@ const ar: Record<TranslationKeys, string> = {
   "post.deletePost": "امسح البوست",
   "post.translated": "مترجم",
   "post.original": "الأصلي",
+  "post.views": "مشاهدات",
+  "post.shares": "مشاركات",
+  "feed.save": "حفظ",
 
   // ── Discussion / Suggestion ────────────────────────────────────────────────
   "discussion.placeholder": "شاركنا رأيك...",
@@ -269,6 +272,16 @@ const ar: Record<TranslationKeys, string> = {
   "season.winnersDescription": "بيتم اختيار الفائزين أول كل شهر.",
   "season.viewAll": "شوف الكل →",
   "season.voteNow": "صوّت دلوقتي",
+  "season.howItWorks": "إزاي بتشتغل",
+  "season.step1": "انشر أحسن ميمز عندك كل شهر ونافس على اللايكات",
+  "season.step2": "الميم اللي ياخد أكتر لايكات كل شهر بيبقى الفائز الشهري 🏆",
+  "season.step3": "آخر السنة، الـ 12 فائز شهري بيدخلوا البطولة الكبرى",
+  "season.step4": "البطل النهائي بياخد لقب 👑 البطل ومجد أبدي!",
+  "season.seasonPeriod": "فترة الموسم",
+  "season.monthlyWinners": "الفائزين الشهريين",
+  "season.currentProgress": "التقدم الحالي",
+  "season.monthsCompleted": "{count} من 12 شهر اكتملوا",
+  "season.monthsRemaining": "{count} شهر متبقي",
 
   // ── Common ─────────────────────────────────────────────────────────────────
   "common.loading": "بيحمّل...",

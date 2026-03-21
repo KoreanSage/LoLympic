@@ -141,6 +141,9 @@ const es: Record<TranslationKeys, string> = {
   "post.deletePost": "Eliminar publicación",
   "post.translated": "Traducido",
   "post.original": "Original",
+  "post.views": "vistas",
+  "post.shares": "compartidos",
+  "feed.save": "Guardar",
 
   // ── Discussion / Suggestion ────────────────────────────────────────────────
   "discussion.placeholder": "Comparte tu opinión...",
@@ -269,6 +272,16 @@ const es: Record<TranslationKeys, string> = {
   "season.winnersDescription": "Los ganadores se seleccionan a principios de cada mes.",
   "season.viewAll": "Ver todo →",
   "season.voteNow": "Votar ahora",
+  "season.howItWorks": "Como funciona",
+  "season.step1": "Publica tus mejores memes cada mes y compite por los likes",
+  "season.step2": "El meme con mas likes cada mes se convierte en el Ganador Mensual 🏆",
+  "season.step3": "A fin de ano, los 12 ganadores mensuales entran al Gran Torneo",
+  "season.step4": "El campeon final obtiene el titulo de 👑 Campeon y gloria eterna!",
+  "season.seasonPeriod": "Periodo de temporada",
+  "season.monthlyWinners": "Ganadores mensuales",
+  "season.currentProgress": "Progreso actual",
+  "season.monthsCompleted": "{count} de 12 meses completados",
+  "season.monthsRemaining": "{count} meses restantes",
 
   // ── Common ─────────────────────────────────────────────────────────────────
   "common.loading": "Cargando...",

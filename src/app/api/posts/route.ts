@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { LanguageCode, PostStatus, Prisma } from "@prisma/client";
+import { backfillMissingTitleTranslations } from "@/lib/translate-backfill";
 
 // ---------------------------------------------------------------------------
 // GET /api/posts — List posts with pagination, filters, sorting
@@ -100,7 +101,11 @@ export async function GET(request: NextRequest) {
                 where: { targetLanguage: translateTo, status: "COMPLETED" },
                 orderBy: { version: "desc" as const },
                 take: 1,
-                include: {
+                select: {
+                  id: true,
+                  translatedImageUrl: true,
+                  translatedTitle: true,
+                  translatedBody: true,
                   segments: {
                     orderBy: { orderIndex: "asc" as const },
                   },
@@ -137,6 +142,11 @@ export async function GET(request: NextRequest) {
       }),
       prisma.post.count({ where }),
     ]);
+
+    // Fire-and-forget: backfill missing translatedTitle for posts with translation payloads
+    if (translateTo) {
+      backfillMissingTitleTranslations(posts, translateTo).catch(() => {});
+    }
 
     return NextResponse.json({
       posts,

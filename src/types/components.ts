@@ -4,6 +4,7 @@
 
 export interface TranslationSegmentData {
   id: string;
+  imageIndex?: number;
   sourceText: string;
   translatedText: string;
   semanticRole: string;

@@ -141,6 +141,9 @@ const ko: Record<TranslationKeys, string> = {
   "post.deletePost": "게시물 삭제",
   "post.translated": "번역됨",
   "post.original": "원문",
+  "post.views": "조회",
+  "post.shares": "공유",
+  "feed.save": "저장",
 
   // ── Discussion / Suggestion ────────────────────────────────────────────────
   "discussion.placeholder": "의견을 남겨보세요...",
@@ -269,6 +272,16 @@ const ko: Record<TranslationKeys, string> = {
   "season.winnersDescription": "우승자는 매월 초에 선정됩니다.",
   "season.viewAll": "모두 보기 →",
   "season.voteNow": "투표하기",
+  "season.howItWorks": "참여 방법",
+  "season.step1": "매달 최고의 밈을 올리고 좋아요를 겨루세요",
+  "season.step2": "매월 가장 많은 좋아요를 받은 밈이 이달의 우승자가 됩니다 🏆",
+  "season.step3": "연말에 12명의 월간 우승자가 그랜드 토너먼트에 참가합니다",
+  "season.step4": "최종 챔피언은 👑 챔피언 칭호와 영원한 영광을 얻습니다!",
+  "season.seasonPeriod": "시즌 기간",
+  "season.monthlyWinners": "월간 우승자",
+  "season.currentProgress": "현재 진행 상황",
+  "season.monthsCompleted": "12개월 중 {count}개월 완료",
+  "season.monthsRemaining": "{count}개월 남음",
 
   // ── Common ─────────────────────────────────────────────────────────────────
   "common.loading": "로딩 중...",

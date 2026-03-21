@@ -38,12 +38,17 @@ export async function GET(request: NextRequest) {
       return handleBattleLeaderboard(limit);
     }
 
-    // If we have a season, use season stats
+    // If we have a season, try season stats first — fallback to realtime if empty
     if (resolvedSeasonId) {
-      return handleSeasonLeaderboard(type, resolvedSeasonId, limit);
+      const result = await handleSeasonLeaderboard(type, resolvedSeasonId, limit);
+      const body = await result.json();
+      if (body.entries && body.entries.length > 0) {
+        return NextResponse.json(body);
+      }
+      // Season stats empty — fall through to realtime
     }
 
-    // No season: fallback to realtime stats from actual posts/users
+    // No season or empty season stats: fallback to realtime
     return handleRealtimeLeaderboard(type, limit);
   } catch (error) {
     console.error("Error fetching leaderboard:", error);

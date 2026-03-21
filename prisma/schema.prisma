@@ -387,6 +387,8 @@ model TranslationPayload {
   status           TranslationPayloadStatus @default(PENDING)
   confidence       Float?                   // AI confidence score 0.0–1.0
   translatedImageUrl String?                // Pre-rendered image with translated text burned in
+  translatedTitle  String?                  // Translated post title
+  translatedBody   String?                  // Translated post body
   creatorType      CreatorType              @default(AI)
   creatorId        String?                  // User who created (null if AI)
   approvedFromId   String?                  // Suggestion that replaced this payload
@@ -409,6 +411,7 @@ model TranslationSegment {
   id                  String       @id @default(cuid())
   translationPayloadId String
   orderIndex          Int
+  imageIndex          Int          @default(0) // Which image in the post (0-based)
 
   // Text content
   sourceText          String

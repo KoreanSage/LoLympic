@@ -36,6 +36,9 @@ interface FeedImage {
 interface FeedCardProps {
   id: string;
   title: string;
+  translatedTitle?: string;
+  translatedBody?: string;
+  sourceLanguage?: string;
   author: {
     username: string;
     displayName?: string | null;
@@ -79,6 +82,9 @@ function saveBookmarks(ids: Set<string>) {
 export default function FeedCard({
   id,
   title,
+  translatedTitle,
+  translatedBody,
+  sourceLanguage,
   author,
   country,
   imageUrl,
@@ -115,10 +121,7 @@ export default function FeedCard({
     setShowTranslation(hasTranslation);
   }, [hasTranslation]);
 
-  const [reacted, setReacted] = useState(false);
-  const [localReactionCount, setLocalReactionCount] = useState(reactionCount);
   const [bookmarked, setBookmarked] = useState(false);
-  const [reactPending, setReactPending] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletePending, setDeletePending] = useState(false);
@@ -128,20 +131,6 @@ export default function FeedCard({
   const menuRef = useRef<HTMLDivElement>(null);
 
   const isOwnPost = (session?.user as any)?.username === author.username;
-
-  // Load user's existing reaction state
-  useEffect(() => {
-    if (!session) return;
-    fetch(`/api/posts/${id}/reactions`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (data) {
-          setLocalReactionCount(data.total ?? reactionCount);
-          if (data.userReactions?.length > 0) setReacted(true);
-        }
-      })
-      .catch(() => {});
-  }, [id, session, reactionCount]);
 
   // Load vote state
   useEffect(() => {
@@ -190,30 +179,6 @@ export default function FeedCard({
   }, [id]);
 
   const timeAgo = formatTimeAgo(createdAt);
-
-  const handleReact = useCallback(async () => {
-    if (reactPending) return;
-    const wasReacted = reacted;
-    // Optimistic update
-    setReacted(!wasReacted);
-    setLocalReactionCount((prev) => (wasReacted ? prev - 1 : prev + 1));
-    setReactPending(true);
-
-    try {
-      const res = await fetch(`/api/posts/${id}/reactions`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "FIRE" }),
-      });
-      if (!res.ok) throw new Error();
-    } catch {
-      // Revert on failure
-      setReacted(wasReacted);
-      setLocalReactionCount((prev) => (wasReacted ? prev + 1 : prev - 1));
-    } finally {
-      setReactPending(false);
-    }
-  }, [id, reacted, reactPending]);
 
   const handleVote = useCallback(async (newValue: number) => {
     if (votePending) return;
@@ -364,8 +329,13 @@ export default function FeedCard({
       {title && (
         <Link href={`/post/${id}`}>
           <h3 className="px-4 pb-2 text-[22px] font-medium text-foreground-muted hover:text-foreground transition-colors line-clamp-2">
-            {title}
+            {translatedTitle || title}
           </h3>
+          {translatedTitle && (
+            <p className="px-4 pb-2 text-xs text-foreground-subtle line-clamp-1">
+              {title}
+            </p>
+          )}
         </Link>
       )}
 
@@ -377,21 +347,19 @@ export default function FeedCard({
               <ImageCarousel>
                 {images.map((img, i) => {
                   const imgIsGif = img.mimeType === "image/gif";
+                  const imgSegments = segments.filter((s: any) => (s.imageIndex ?? 0) === i);
                   return imgIsGif ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img key={i} src={img.originalUrl} alt={title} className="w-full" />
-                  ) : i === 0 ? (
+                  ) : (
                     <MemeRenderer
                       key={i}
                       imageUrl={img.originalUrl}
                       cleanImageUrl={img.cleanUrl || undefined}
-                      translatedImageUrl={translatedImageUrl}
-                      segments={segments}
+                      translatedImageUrl={i === 0 ? translatedImageUrl : undefined}
+                      segments={imgSegments}
                       showTranslation={showTranslation}
                     />
-                  ) : (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img key={i} src={img.originalUrl} alt={title} className="w-full" />
                   );
                 })}
               </ImageCarousel>
@@ -517,18 +485,6 @@ export default function FeedCard({
 
         <div className="w-px h-4 bg-border mx-1" />
 
-        {/* Existing action buttons */}
-        <ActionButton
-          icon={
-            <svg className="w-4 h-4" fill={reacted ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z" />
-            </svg>
-          }
-          count={localReactionCount}
-          active={reacted}
-          onClick={handleReact}
-        />
         <ActionButton
           icon={
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

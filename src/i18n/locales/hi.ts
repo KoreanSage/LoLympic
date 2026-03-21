@@ -141,6 +141,9 @@ const hi: Record<TranslationKeys, string> = {
   "post.deletePost": "Post Delete करें",
   "post.translated": "Translated",
   "post.original": "Original",
+  "post.views": "व्यूज़",
+  "post.shares": "शेयर",
+  "feed.save": "सेव करें",
 
   // ── Discussion / Suggestion ────────────────────────────────────────────────
   "discussion.placeholder": "अपने विचार share करें...",
@@ -269,6 +272,16 @@ const hi: Record<TranslationKeys, string> = {
   "season.winnersDescription": "Winners हर महीने की शुरुआत में चुने जाते हैं।",
   "season.viewAll": "सब देखें →",
   "season.voteNow": "Vote करें",
+  "season.howItWorks": "यह कैसे काम करता है",
+  "season.step1": "हर महीने अपने बेहतरीन मीम्स पोस्ट करें और लाइक्स के लिए मुकाबला करें",
+  "season.step2": "हर महीने सबसे ज़्यादा लाइक पाने वाला मीम मासिक विजेता बनता है 🏆",
+  "season.step3": "साल के अंत में सभी 12 मासिक विजेता ग्रैंड टूर्नामेंट में भाग लेते हैं",
+  "season.step4": "अंतिम चैंपियन को 👑 चैंपियन का खिताब और अमर गौरव मिलता है!",
+  "season.seasonPeriod": "सीज़न अवधि",
+  "season.monthlyWinners": "मासिक विजेता",
+  "season.currentProgress": "वर्तमान प्रगति",
+  "season.monthsCompleted": "12 में से {count} महीने पूरे हुए",
+  "season.monthsRemaining": "{count} महीने बाकी",
 
   // ── Common ─────────────────────────────────────────────────────────────────
   "common.loading": "Loading...",

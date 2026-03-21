@@ -55,7 +55,18 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({ winners, season: { id: season.id, name: season.name, status: season.status } });
+    return NextResponse.json({
+      winners,
+      season: {
+        id: season.id,
+        name: season.name,
+        status: season.status,
+        description: season.description,
+        startAt: season.startAt,
+        endAt: season.endAt,
+        number: season.number,
+      },
+    });
   } catch (error) {
     console.error("Error fetching monthly winners:", error);
     return NextResponse.json({ error: "Failed to fetch monthly winners" }, { status: 500 });

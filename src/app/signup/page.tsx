@@ -7,11 +7,24 @@ import Link from "next/link";
 import { useTranslation } from "@/i18n";
 
 const COUNTRIES = [
-  { id: "KR", flag: "\u{1F1F0}\u{1F1F7}", name: "Korea" },
-  { id: "US", flag: "\u{1F1FA}\u{1F1F8}", name: "USA" },
+  { id: "KR", flag: "\u{1F1F0}\u{1F1F7}", name: "South Korea" },
+  { id: "US", flag: "\u{1F1FA}\u{1F1F8}", name: "United States" },
+  { id: "GB", flag: "\u{1F1EC}\u{1F1E7}", name: "United Kingdom" },
+  { id: "AU", flag: "\u{1F1E6}\u{1F1FA}", name: "Australia" },
+  { id: "CA", flag: "\u{1F1E8}\u{1F1E6}", name: "Canada" },
   { id: "JP", flag: "\u{1F1EF}\u{1F1F5}", name: "Japan" },
   { id: "CN", flag: "\u{1F1E8}\u{1F1F3}", name: "China" },
+  { id: "TW", flag: "\u{1F1F9}\u{1F1FC}", name: "Taiwan" },
+  { id: "HK", flag: "\u{1F1ED}\u{1F1F0}", name: "Hong Kong" },
   { id: "MX", flag: "\u{1F1F2}\u{1F1FD}", name: "Mexico" },
+  { id: "ES", flag: "\u{1F1EA}\u{1F1F8}", name: "Spain" },
+  { id: "AR", flag: "\u{1F1E6}\u{1F1F7}", name: "Argentina" },
+  { id: "CO", flag: "\u{1F1E8}\u{1F1F4}", name: "Colombia" },
+  { id: "CL", flag: "\u{1F1E8}\u{1F1F1}", name: "Chile" },
+  { id: "IN", flag: "\u{1F1EE}\u{1F1F3}", name: "India" },
+  { id: "SA", flag: "\u{1F1F8}\u{1F1E6}", name: "Saudi Arabia" },
+  { id: "EG", flag: "\u{1F1EA}\u{1F1EC}", name: "Egypt" },
+  { id: "AE", flag: "\u{1F1E6}\u{1F1EA}", name: "UAE" },
 ];
 
 export default function SignUpPage() {

@@ -141,6 +141,9 @@ const ja: Record<TranslationKeys, string> = {
   "post.deletePost": "投稿を削除",
   "post.translated": "翻訳済み",
   "post.original": "原文",
+  "post.views": "閲覧",
+  "post.shares": "共有",
+  "feed.save": "保存",
 
   // ── Discussion / Suggestion ────────────────────────────────────────────────
   "discussion.placeholder": "あなたの意見をシェア...",
@@ -269,6 +272,16 @@ const ja: Record<TranslationKeys, string> = {
   "season.winnersDescription": "優勝者は毎月初めに選出されます。",
   "season.viewAll": "すべて表示 →",
   "season.voteNow": "投票する",
+  "season.howItWorks": "仕組み",
+  "season.step1": "毎月最高のミームを投稿して「いいね」を競いましょう",
+  "season.step2": "毎月最も「いいね」を集めたミームが月間チャンピオンに選ばれます 🏆",
+  "season.step3": "年末に12人の月間チャンピオンがグランドトーナメントに出場します",
+  "season.step4": "最終チャンピオンは 👑 チャンピオンの称号と永遠の栄光を手にします！",
+  "season.seasonPeriod": "シーズン期間",
+  "season.monthlyWinners": "月間チャンピオン",
+  "season.currentProgress": "現在の進捗",
+  "season.monthsCompleted": "12ヶ月中 {count}ヶ月完了",
+  "season.monthsRemaining": "残り {count}ヶ月",
 
   // ── Common ─────────────────────────────────────────────────────────────────
   "common.loading": "読み込み中...",

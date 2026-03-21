@@ -71,6 +71,7 @@ export default function PostPage() {
   const payload = post.translationPayloads?.[0];
   const segments = (payload?.segments ?? []).map((s: any) => ({
     id: s.id ?? "",
+    imageIndex: s.imageIndex ?? 0,
     sourceText: s.sourceText ?? "",
     translatedText: s.translatedText ?? "",
     semanticRole: s.semanticRole ?? "",
@@ -107,8 +108,10 @@ export default function PostPage() {
     <MainLayout showSidebar={false}>
       <PostDetail
         id={post.id}
-        title={post.title}
-        body={post.body}
+        title={payload?.translatedTitle || post.title}
+        originalTitle={payload?.translatedTitle ? post.title : undefined}
+        body={payload?.translatedBody || post.body}
+        originalBody={payload?.translatedBody ? post.body : undefined}
         author={{
           username: post.author?.username || "unknown",
           displayName: post.author?.displayName,

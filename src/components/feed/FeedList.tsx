@@ -30,6 +30,9 @@ interface FeedImage {
 interface FeedPost {
   id: string;
   title: string;
+  translatedTitle?: string;
+  translatedBody?: string;
+  sourceLanguage?: string;
   author: {
     username: string;
     displayName?: string | null;
@@ -66,6 +69,7 @@ function mapApiPost(post: any): FeedPost {
   const segments: TranslationSegmentData[] = (payload?.segments ?? []).map(
     (s: any) => ({
       id: s.id ?? "",
+      imageIndex: s.imageIndex ?? 0,
       sourceText: s.sourceText ?? "",
       translatedText: s.translatedText ?? "",
       semanticRole: s.semanticRole ?? "",
@@ -93,6 +97,9 @@ function mapApiPost(post: any): FeedPost {
   return {
     id: post.id,
     title: post.title,
+    translatedTitle: payload?.translatedTitle || undefined,
+    translatedBody: payload?.translatedBody || undefined,
+    sourceLanguage: post.sourceLanguage || undefined,
     author: {
       username: post.author?.username || "unknown",
       displayName: post.author?.displayName,

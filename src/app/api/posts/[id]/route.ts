@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { backfillSinglePostTitle } from "@/lib/translate-backfill";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -43,8 +44,12 @@ export async function GET(
           orderBy: { orderIndex: "asc" },
         },
         translationPayloads: {
-          where: { status: { in: ["COMPLETED", "APPROVED"] } },
+          where: {
+            status: { in: ["COMPLETED", "APPROVED"] },
+            ...(lang ? { targetLanguage: lang as any } : {}),
+          },
           orderBy: { version: "desc" },
+          ...(lang ? { take: 1 } : {}),
           include: {
             segments: { orderBy: { orderIndex: "asc" } },
           },
@@ -110,6 +115,11 @@ export async function GET(
         data: { viewCount: { increment: 1 } },
       })
       .catch(() => {});
+
+    // Backfill missing translatedTitle (fire and forget)
+    if (lang) {
+      backfillSinglePostTitle(post, lang).catch(() => {});
+    }
 
     return NextResponse.json({
       ...post,

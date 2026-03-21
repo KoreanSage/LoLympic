@@ -4,6 +4,7 @@ import { useState } from "react";
 import Tabs from "@/components/ui/Tabs";
 import Avatar from "@/components/ui/Avatar";
 import MedalBadge from "./MedalBadge";
+import { useTranslation } from "@/i18n";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -61,10 +62,12 @@ export default function LeaderboardTable({
 }: LeaderboardTableProps) {
   const [activeTab, setActiveTab] = useState("countries");
 
+  const { t } = useTranslation();
+
   const tabs = [
-    { id: "countries", label: "Countries", count: countries.length },
-    { id: "creators", label: "Creators", count: creators.length },
-    { id: "memes", label: "Memes", count: memes.length },
+    { id: "countries", label: t("leaderboard.countries"), count: countries.length },
+    { id: "creators", label: t("leaderboard.creators"), count: creators.length },
+    { id: "memes", label: t("leaderboard.memes"), count: memes.length },
   ];
 
   return (
@@ -91,6 +94,7 @@ export default function LeaderboardTable({
 // ---------------------------------------------------------------------------
 
 function CountryTable({ entries }: { entries: CountryEntry[] }) {
+  const { t } = useTranslation();
   if (entries.length === 0) return <EmptyState />;
 
   return (
@@ -116,10 +120,10 @@ function CountryTable({ entries }: { entries: CountryEntry[] }) {
             {entry.name}
           </span>
           <span className="text-xs text-foreground-subtle">
-            {entry.totalPosts} posts
+            {entry.totalPosts} {t("leaderboard.posts")}
           </span>
           <span className="text-xs text-foreground-subtle">
-            {entry.totalCreators} creators
+            {entry.totalCreators} {t("leaderboard.creators")}
           </span>
           <span className="text-sm font-mono text-[#c9a84c]">
             {entry.totalScore.toLocaleString()}
@@ -131,6 +135,7 @@ function CountryTable({ entries }: { entries: CountryEntry[] }) {
 }
 
 function CreatorTable({ entries }: { entries: CreatorEntry[] }) {
+  const { t } = useTranslation();
   if (entries.length === 0) return <EmptyState />;
 
   return (
@@ -164,7 +169,7 @@ function CreatorTable({ entries }: { entries: CreatorEntry[] }) {
             <span className="text-xs text-foreground-subtle">@{entry.username}</span>
           </div>
           <span className="text-xs text-foreground-subtle">
-            {entry.totalPosts} posts
+            {entry.totalPosts} {t("leaderboard.posts")}
           </span>
           <span className="text-sm font-mono text-[#c9a84c]">
             {entry.totalScore.toLocaleString()}
@@ -176,6 +181,7 @@ function CreatorTable({ entries }: { entries: CreatorEntry[] }) {
 }
 
 function MemeTable({ entries }: { entries: MemeEntry[] }) {
+  const { t } = useTranslation();
   if (entries.length === 0) return <EmptyState />;
 
   return (
@@ -208,11 +214,11 @@ function MemeTable({ entries }: { entries: MemeEntry[] }) {
               {entry.title}
             </span>
             <span className="text-xs text-foreground-subtle">
-              by @{entry.authorUsername}
+              @{entry.authorUsername}
             </span>
           </div>
           <span className="text-xs text-foreground-subtle">
-            {entry.reactionCount} reactions
+            {entry.reactionCount} ⬆️
           </span>
           <span className="text-sm font-mono text-[#c9a84c]">
             {entry.totalScore.toLocaleString()}
@@ -224,9 +230,10 @@ function MemeTable({ entries }: { entries: MemeEntry[] }) {
 }
 
 function EmptyState() {
+  const { t } = useTranslation();
   return (
     <p className="text-sm text-foreground-subtle text-center py-12">
-      No entries yet for this season.
+      {t("leaderboard.noActivity")}
     </p>
   );
 }

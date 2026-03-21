@@ -141,6 +141,9 @@ const zh: Record<TranslationKeys, string> = {
   "post.deletePost": "删除帖子",
   "post.translated": "已翻译",
   "post.original": "原文",
+  "post.views": "浏览",
+  "post.shares": "分享",
+  "feed.save": "收藏",
 
   // ── Discussion / Suggestion ────────────────────────────────────────────────
   "discussion.placeholder": "分享你的想法...",
@@ -269,6 +272,16 @@ const zh: Record<TranslationKeys, string> = {
   "season.winnersDescription": "冠军在每月初评选。",
   "season.viewAll": "查看全部 →",
   "season.voteNow": "立即投票",
+  "season.howItWorks": "玩法介绍",
+  "season.step1": "每月发布你最好的梗图，争夺点赞数",
+  "season.step2": "每月获得最多点赞的梗图将成为月度冠军 🏆",
+  "season.step3": "年末，12位月度冠军将参加年度大赛",
+  "season.step4": "最终冠军将获得 👑 冠军称号和永恒的荣耀！",
+  "season.seasonPeriod": "赛季时间",
+  "season.monthlyWinners": "月度冠军",
+  "season.currentProgress": "当前进度",
+  "season.monthsCompleted": "12个月中已完成 {count} 个月",
+  "season.monthsRemaining": "还剩 {count} 个月",
 
   // ── Common ─────────────────────────────────────────────────────────────────
   "common.loading": "加载中...",

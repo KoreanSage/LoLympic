@@ -33,7 +33,9 @@ const UI_LABELS: Record<string, { cultureNote: string; suggestions: string; comm
 interface PostDetailProps {
   id: string;
   title: string;
+  originalTitle?: string;
   body?: string | null;
+  originalBody?: string | null;
   author: {
     username: string;
     displayName?: string | null;
@@ -113,7 +115,9 @@ interface PostDetailProps {
 export default function PostDetail({
   id,
   title,
+  originalTitle,
   body,
+  originalBody,
   author,
   country,
   imageUrl,
@@ -145,10 +149,10 @@ export default function PostDetail({
   const [showTranslation, setShowTranslation] = useState(hasTranslation);
   const [activeTab, setActiveTab] = useState("culture");
   const [showCompare, setShowCompare] = useState(false);
-  const [reacted, setReacted] = useState(false);
-  const [localReactionCount, setLocalReactionCount] = useState(reactionCount);
   const [saved, setSaved] = useState(false);
-  const [reactPending, setReactPending] = useState(false);
+  const [voteScore, setVoteScore] = useState(0);
+  const [userVote, setUserVote] = useState(0);
+  const [votePending, setVotePending] = useState(false);
 
   // Load user's existing reaction and bookmark state on mount
   useEffect(() => {
@@ -159,19 +163,17 @@ export default function PostDetail({
       setSaved(bookmarks.includes(id));
     } catch {}
 
-    // Load user's reaction state from API
-    fetch(`/api/posts/${id}/reactions`)
+    // Load user's vote state from API
+    fetch(`/api/posts/${id}/vote`)
       .then((r) => r.ok ? r.json() : null)
       .then((data) => {
         if (data) {
-          setLocalReactionCount(data.total ?? reactionCount);
-          if (data.userReactions && data.userReactions.length > 0) {
-            setReacted(true);
-          }
+          setVoteScore(data.voteScore ?? 0);
+          setUserVote(data.userVote ?? 0);
         }
       })
       .catch(() => {});
-  }, [id, reactionCount]);
+  }, [id]);
 
   // More options menu state
   const [showMoreMenu, setShowMoreMenu] = useState(false);
@@ -420,6 +422,9 @@ export default function PostDetail({
 
       {/* Title */}
       <h1 className="text-xl font-bold text-foreground">{title}</h1>
+      {originalTitle && (
+        <p className="text-sm text-foreground-subtle -mt-1">{originalTitle}</p>
+      )}
 
       {/* Tags */}
       {tags && tags.length > 0 && (
@@ -459,21 +464,19 @@ export default function PostDetail({
             <ImageCarousel>
               {images.map((img, i) => {
                 const imgIsGif = img.mimeType === "image/gif";
+                const imgSegments = segments.filter((s: any) => (s.imageIndex ?? 0) === i);
                 return imgIsGif ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img key={i} src={img.originalUrl} alt={title} className="w-full" />
-                ) : i === 0 ? (
+                ) : (
                   <MemeRenderer
                     key={i}
                     imageUrl={img.originalUrl}
                     cleanImageUrl={img.cleanUrl || undefined}
-                    translatedImageUrl={translatedImageUrl}
-                    segments={segments}
+                    translatedImageUrl={i === 0 ? translatedImageUrl : undefined}
+                    segments={imgSegments}
                     showTranslation={showTranslation}
                   />
-                ) : (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img key={i} src={img.originalUrl} alt={title} className="w-full" />
                 );
               })}
             </ImageCarousel>
@@ -500,51 +503,79 @@ export default function PostDetail({
 
       {/* Body */}
       {body && (
-        <p className="text-[22px] text-foreground-muted leading-relaxed whitespace-pre-wrap">{body}</p>
+        <div>
+          <p className="text-[22px] text-foreground-muted leading-relaxed whitespace-pre-wrap">{body}</p>
+          {originalBody && (
+            <p className="text-sm text-foreground-subtle mt-1 whitespace-pre-wrap">{originalBody}</p>
+          )}
+        </div>
       )}
 
       {/* Stats */}
       <div className="flex items-center gap-6 text-xs text-foreground-subtle">
-        <span>{viewCount.toLocaleString()} views</span>
-        <span>{reactionCount.toLocaleString()} reactions</span>
-        <span>{commentCount.toLocaleString()} comments</span>
-        <span>{shareCount.toLocaleString()} shares</span>
+        <span>{viewCount.toLocaleString()} {t("post.views")}</span>
+        <span>{commentCount.toLocaleString()} {t("post.comments")}</span>
+        <span>{shareCount.toLocaleString()} {t("post.shares")}</span>
       </div>
 
       {/* Action bar */}
       <div className="flex items-center gap-2 py-2 border-y border-border">
+        {/* Upvote / Score / Downvote */}
+        <div className="flex items-center gap-1">
+          <button
+            onClick={async () => {
+              if (votePending) return;
+              const newVal = userVote === 1 ? 0 : 1;
+              const diff = newVal - userVote;
+              setVoteScore((p) => p + diff);
+              setUserVote(newVal);
+              setVotePending(true);
+              try {
+                const res = await fetch(`/api/posts/${id}/vote`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ value: newVal }),
+                });
+                if (res.ok) { const d = await res.json(); setVoteScore(d.voteScore); }
+              } catch { setVoteScore((p) => p - diff); setUserVote(userVote); }
+              finally { setVotePending(false); }
+            }}
+            className={`p-2 rounded-lg transition-all ${userVote === 1 ? "text-[#c9a84c] bg-[#c9a84c]/10" : "text-foreground-subtle hover:text-foreground-muted hover:bg-background-elevated"}`}
+          >
+            <svg className="w-5 h-5" fill={userVote === 1 ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+            </svg>
+          </button>
+          <span className={`text-sm font-bold min-w-[24px] text-center ${voteScore > 0 ? "text-[#c9a84c]" : voteScore < 0 ? "text-blue-400" : "text-foreground-subtle"}`}>
+            {voteScore}
+          </span>
+          <button
+            onClick={async () => {
+              if (votePending) return;
+              const newVal = userVote === -1 ? 0 : -1;
+              const diff = newVal - userVote;
+              setVoteScore((p) => p + diff);
+              setUserVote(newVal);
+              setVotePending(true);
+              try {
+                const res = await fetch(`/api/posts/${id}/vote`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ value: newVal }),
+                });
+                if (res.ok) { const d = await res.json(); setVoteScore(d.voteScore); }
+              } catch { setVoteScore((p) => p - diff); setUserVote(userVote); }
+              finally { setVotePending(false); }
+            }}
+            className={`p-2 rounded-lg transition-all ${userVote === -1 ? "text-blue-400 bg-blue-400/10" : "text-foreground-subtle hover:text-foreground-muted hover:bg-background-elevated"}`}
+          >
+            <svg className="w-5 h-5" fill={userVote === -1 ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+        </div>
         <ActionButton
-          label="React"
-          icon="fire"
-          active={reacted}
-          count={localReactionCount}
-          onClick={async () => {
-            if (reactPending) return;
-            const wasReacted = reacted;
-            // Optimistic update
-            setReacted(!wasReacted);
-            setLocalReactionCount((prev) => (wasReacted ? prev - 1 : prev + 1));
-            setReactPending(true);
-            try {
-              const res = await fetch(`/api/posts/${id}/reactions`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ type: "FIRE" }),
-              });
-              if (!res.ok) throw new Error();
-              const data = await res.json();
-              setLocalReactionCount((prev) => data.total ?? prev);
-            } catch {
-              // Revert on failure
-              setReacted(wasReacted);
-              setLocalReactionCount((prev) => (wasReacted ? prev + 1 : prev - 1));
-            } finally {
-              setReactPending(false);
-            }
-          }}
-        />
-        <ActionButton
-          label="Comment"
+          label={t("post.comments")}
           icon="comment"
           onClick={() => setActiveTab("comments")}
         />
@@ -563,7 +594,7 @@ export default function PostDetail({
         />
         <div className="flex-1" />
         <ActionButton
-          label="Save"
+          label={t("feed.save") || "Save"}
           icon="save"
           active={saved}
           onClick={() => {
