@@ -15,6 +15,7 @@ const es: Record<TranslationKeys, string> = {
   "nav.messages": "Mensajes",
   "nav.bookmarks": "Guardados",
   "nav.menu": "Menú",
+  "nav.dashboard": "Panel",
 
   // ── Notifications ──────────────────────────────────────────────────────────
   "notif.title": "Notificaciones",
@@ -356,6 +357,53 @@ const es: Record<TranslationKeys, string> = {
   "battle.stop": "Parar",
   "battle.noChallengers": "No hay más retadores!",
   "battle.hotBattle": "Memes Batalla Calientes",
+
+  // ── Winner Popup ──────────────────────────────────────────────────────────
+  "winner.champion": "Campeón",
+  "winner.monthlyWinner": "Ganador del Mes",
+  "winner.memeOfTheYear": "Meme del Año",
+  "winner.countryOfTheYear": "País del Año",
+  "winner.viewResults": "Ver Resultados",
+  "winner.viewPost": "Ver",
+  "winner.dismiss": "Cerrar",
+  "vote.upvote": "Votar",
+  "vote.downvote": "Negativos",
+  "vote.score": "Puntos",
+
+  // ── Tournament ─────────────────────────────────────────────────────────────
+  "tournament.title": "Torneo de Fin de Año",
+  "tournament.subtitle": "12 ganadores mensuales se enfrentan. ¡Vota por el Meme del Año!",
+  "tournament.memeOfTheYear": "Meme del Año",
+  "tournament.quarterfinals": "Cuartos de Final",
+  "tournament.semifinals": "Semifinales",
+  "tournament.final": "Final",
+  "tournament.live": "EN VIVO",
+  "tournament.waitingFor": "Esperando resultados de {round}...",
+  "tournament.voteToSee": "Vota para ver los resultados",
+  "tournament.totalVotes": "{count} votos",
+
+  // ── Leaderboard Dashboard ─────────────────────────────────────────────────
+  "leaderboard.countryCompetition": "Competencia entre Países",
+  "leaderboard.totalReactions": "Reacciones Totales",
+  "leaderboard.countriesActive": "Países Activos",
+  "leaderboard.scoreDistribution": "Distribución de Puntos",
+  "leaderboard.allTimeRankings": "Rankings de toda la actividad de la comunidad",
+  "leaderboard.seasonRankings": "Rankings globales de la temporada actual",
+  "leaderboard.realtimeNotice": "Rankings en tiempo real — ¡Rankings por temporada próximamente!",
+  "leaderboard.noActivity": "Sin actividad todavía — ¡Publica un meme para aparecer!",
+
+  // ── Dashboard ───────────────────────────────────────────────────────────────
+  "dashboard.title": "Competencia de Países",
+  "dashboard.subtitle": "Rankings globales en tiempo real",
+  "dashboard.totalPosts": "Total de Memes",
+  "dashboard.totalReactions": "Total de Reacciones",
+  "dashboard.activeCountries": "Países Activos",
+  "dashboard.topMeme": "Mejor Meme del Mes",
+  "dashboard.countryRankings": "Rankings por País",
+  "dashboard.monthlyTrend": "Ganadores Mensuales",
+  "dashboard.noData": "Aún no hay datos",
+  "dashboard.viewLeaderboard": "Ver Clasificación Completa",
+  "dashboard.viewTournament": "Ver Torneo",
 };
 
 export default es;

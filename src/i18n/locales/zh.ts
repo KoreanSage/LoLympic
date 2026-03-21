@@ -15,6 +15,7 @@ const zh: Record<TranslationKeys, string> = {
   "nav.messages": "消息",
   "nav.bookmarks": "收藏",
   "nav.menu": "菜单",
+  "nav.dashboard": "数据看板",
 
   // ── Notifications ──────────────────────────────────────────────────────────
   "notif.title": "通知",
@@ -356,6 +357,53 @@ const zh: Record<TranslationKeys, string> = {
   "battle.stop": "停止",
   "battle.noChallengers": "没有更多挑战者了！",
   "battle.hotBattle": "热门对战表情包",
+
+  // ── Winner Popup ──────────────────────────────────────────────────────────
+  "winner.champion": "冠军",
+  "winner.monthlyWinner": "月度冠军",
+  "winner.memeOfTheYear": "年度最佳表情包",
+  "winner.countryOfTheYear": "年度最佳国家",
+  "winner.viewResults": "查看结果",
+  "winner.viewPost": "查看",
+  "winner.dismiss": "关闭",
+  "vote.upvote": "赞",
+  "vote.downvote": "踩",
+  "vote.score": "分数",
+
+  // ── Tournament ─────────────────────────────────────────────────────────────
+  "tournament.title": "年终锦标赛",
+  "tournament.subtitle": "12位月冠军对决，投票选出年度最佳meme！",
+  "tournament.memeOfTheYear": "年度最佳Meme",
+  "tournament.quarterfinals": "四分之一决赛",
+  "tournament.semifinals": "半决赛",
+  "tournament.final": "决赛",
+  "tournament.live": "直播中",
+  "tournament.waitingFor": "等待{round}结果...",
+  "tournament.voteToSee": "投票后查看结果",
+  "tournament.totalVotes": "{count}票",
+
+  // ── Leaderboard Dashboard ─────────────────────────────────────────────────
+  "leaderboard.countryCompetition": "国家对抗赛",
+  "leaderboard.totalReactions": "总反应数",
+  "leaderboard.countriesActive": "活跃国家",
+  "leaderboard.scoreDistribution": "分数分布",
+  "leaderboard.allTimeRankings": "基于社区活动的全时间排名",
+  "leaderboard.seasonRankings": "当前赛季全球排名",
+  "leaderboard.realtimeNotice": "全时间实时排名 — 赛季排名即将推出！",
+  "leaderboard.noActivity": "还没有活动 — 发一个meme来上榜吧！",
+
+  // ── Dashboard ───────────────────────────────────────────────────────────────
+  "dashboard.title": "国家竞赛",
+  "dashboard.subtitle": "实时全球排名",
+  "dashboard.totalPosts": "总表情包数",
+  "dashboard.totalReactions": "总反应数",
+  "dashboard.activeCountries": "参赛国家",
+  "dashboard.topMeme": "本月最佳表情包",
+  "dashboard.countryRankings": "国家排名",
+  "dashboard.monthlyTrend": "月度冠军",
+  "dashboard.noData": "暂无数据",
+  "dashboard.viewLeaderboard": "查看完整排行榜",
+  "dashboard.viewTournament": "查看锦标赛",
 };
 
 export default zh;

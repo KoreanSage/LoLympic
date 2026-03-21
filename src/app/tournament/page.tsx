@@ -29,9 +29,10 @@ interface Match {
   isCompleted: boolean;
 }
 
-const ROUND_NAMES = ["", "Quarterfinals", "Semifinals", "Final"];
 const ROUND_EMOJI = ["", "8\uFE0F\u20E3", "4\uFE0F\u20E3", "\uD83C\uDFC6"];
 const ROUND_DATES = ["", "Dec 29", "Dec 30", "Dec 31"];
+
+const ROUND_KEYS = ["", "tournament.quarterfinals", "tournament.semifinals", "tournament.final"] as const;
 
 export default function TournamentPage() {
   const { t } = useTranslation();
@@ -85,7 +86,7 @@ export default function TournamentPage() {
   // Group matches by round
   const rounds = [1, 2, 3].map((round) => ({
     round,
-    name: ROUND_NAMES[round],
+    name: t(ROUND_KEYS[round] as any),
     emoji: ROUND_EMOJI[round],
     date: ROUND_DATES[round],
     matches: matches.filter((m) => m.round === round),
@@ -119,9 +120,9 @@ export default function TournamentPage() {
       <MainLayout showSidebar={false}>
         <div className="max-w-4xl mx-auto py-16 px-4 text-center">
           <p className="text-5xl mb-4">🏆</p>
-          <h1 className="text-2xl font-bold text-foreground mb-2">Year-End Tournament</h1>
+          <h1 className="text-2xl font-bold text-foreground mb-2">🏆 {t("tournament.title")}</h1>
           <p className="text-sm text-foreground-subtle">
-            The tournament will begin on December 29th with the top monthly winners.
+            {t("tournament.subtitle")}
           </p>
         </div>
       </MainLayout>
@@ -134,10 +135,10 @@ export default function TournamentPage() {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-foreground mb-2">
-            🏆 {seasonName} — Year-End Tournament
+            🏆 {seasonName} — {t("tournament.title")}
           </h1>
           <p className="text-sm text-foreground-subtle">
-            12 monthly winners battle it out. Vote for the Meme of the Year!
+            {t("tournament.subtitle")}
           </p>
         </div>
 
@@ -145,7 +146,7 @@ export default function TournamentPage() {
         {champion && (
           <div className="mb-8 p-6 bg-gradient-to-r from-[#c9a84c]/20 via-[#FFD700]/10 to-[#c9a84c]/20 border border-[#c9a84c]/30 rounded-2xl text-center">
             <div className="text-4xl mb-2">👑</div>
-            <h2 className="text-lg font-bold text-[#c9a84c] mb-3">Meme of the Year</h2>
+            <h2 className="text-lg font-bold text-[#c9a84c] mb-3">{t("tournament.memeOfTheYear")}</h2>
             <div className="w-48 mx-auto rounded-xl overflow-hidden border-2 border-[#c9a84c] mb-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={champion.imageUrl} alt={champion.title} className="w-full aspect-square object-cover" />
@@ -173,7 +174,7 @@ export default function TournamentPage() {
                   </h2>
                   <div className="border border-border border-dashed rounded-xl p-8 text-center">
                     <p className="text-sm text-foreground-subtle">
-                      Waiting for {ROUND_NAMES[round - 1]} results...
+                      {t("tournament.waitingFor", { round: t(ROUND_KEYS[round - 1] as any) })}
                     </p>
                   </div>
                 </div>
@@ -187,7 +188,7 @@ export default function TournamentPage() {
                   <span className="text-xs font-normal text-foreground-subtle">({date})</span>
                   {roundMatches.some((m) => m.isActive) && (
                     <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">
-                      LIVE
+                      {t("tournament.live")}
                     </span>
                   )}
                 </h2>

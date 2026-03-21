@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { broadcastNotification } from "@/lib/notifications";
 
 /**
  * GET /api/cron/tournament-advance
@@ -126,6 +127,17 @@ export async function GET(request: NextRequest) {
           },
         });
         actions.push(`Tournament champion: post ${championPost.id}`);
+
+        // Broadcast notification about the yearly champion
+        broadcastNotification({
+          type: "SYSTEM",
+          postId: championPost.id,
+          metadata: {
+            subtype: "yearly_champion",
+            seasonId: season.id,
+            year: now.getFullYear(),
+          },
+        }).catch(() => {}); // fire-and-forget
       }
     }
 

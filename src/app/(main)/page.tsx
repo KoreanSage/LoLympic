@@ -5,6 +5,7 @@ import MainLayout from "@/components/layout/MainLayout";
 import FeedFilters from "@/components/feed/FeedFilters";
 import FeedList from "@/components/feed/FeedList";
 import MonthlyWinnerBanner from "@/components/competition/MonthlyWinnerBanner";
+import WinnerPopup from "@/components/competition/WinnerPopup";
 
 export default function HomePage() {
   const { data: session } = useSession();
@@ -12,6 +13,7 @@ export default function HomePage() {
 
   return (
     <MainLayout>
+      <WinnerPopup />
       <div className="space-y-0">
         <MonthlyWinnerBanner />
         <FeedFilters />

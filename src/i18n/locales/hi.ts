@@ -15,6 +15,7 @@ const hi: Record<TranslationKeys, string> = {
   "nav.messages": "Messages",
   "nav.bookmarks": "Bookmarks",
   "nav.menu": "Menu",
+  "nav.dashboard": "Dashboard",
 
   // ── Notifications ──────────────────────────────────────────────────────────
   "notif.title": "Notifications",
@@ -360,6 +361,53 @@ const hi: Record<TranslationKeys, string> = {
   "battle.stop": "Band करो",
   "battle.noChallengers": "Aur challengers nahi hain!",
   "battle.hotBattle": "Hot Battle Memes",
+
+  // ── Winner Popup ──────────────────────────────────────────────────────────
+  "winner.champion": "Champion",
+  "winner.monthlyWinner": "Mahine ka Winner",
+  "winner.memeOfTheYear": "Saal ka Best Meme",
+  "winner.countryOfTheYear": "Saal ka Best Desh",
+  "winner.viewResults": "Results dekho",
+  "winner.viewPost": "Dekho",
+  "winner.dismiss": "Band karo",
+  "vote.upvote": "Upvote",
+  "vote.downvote": "Downvote",
+  "vote.score": "Score",
+
+  // ── Tournament ─────────────────────────────────────────────────────────────
+  "tournament.title": "साल के अंत का टूर्नामेंट",
+  "tournament.subtitle": "12 मासिक विजेता आमने-सामने। साल के सर्वश्रेष्ठ मीम के लिए वोट करें!",
+  "tournament.memeOfTheYear": "साल का मीम",
+  "tournament.quarterfinals": "क्वार्टर फाइनल",
+  "tournament.semifinals": "सेमी फाइनल",
+  "tournament.final": "फाइनल",
+  "tournament.live": "लाइव",
+  "tournament.waitingFor": "{round} के नतीजों का इंतज़ार...",
+  "tournament.voteToSee": "नतीजे देखने के लिए वोट करें",
+  "tournament.totalVotes": "{count} वोट",
+
+  // ── Leaderboard Dashboard ─────────────────────────────────────────────────
+  "leaderboard.countryCompetition": "देशों की प्रतियोगिता",
+  "leaderboard.totalReactions": "कुल प्रतिक्रियाएं",
+  "leaderboard.countriesActive": "सक्रिय देश",
+  "leaderboard.scoreDistribution": "स्कोर वितरण",
+  "leaderboard.allTimeRankings": "सभी समय की सामुदायिक गतिविधि पर आधारित रैंकिंग",
+  "leaderboard.seasonRankings": "वर्तमान सीज़न की वैश्विक रैंकिंग",
+  "leaderboard.realtimeNotice": "सभी समय की लाइव रैंकिंग — सीज़न रैंकिंग जल्द आ रही है!",
+  "leaderboard.noActivity": "अभी कोई गतिविधि नहीं — बोर्ड पर आने के लिए मीम पोस्ट करें!",
+
+  // ── Dashboard ───────────────────────────────────────────────────────────────
+  "dashboard.title": "Country Competition",
+  "dashboard.subtitle": "Real-time global rankings",
+  "dashboard.totalPosts": "कुल Memes",
+  "dashboard.totalReactions": "कुल Reactions",
+  "dashboard.activeCountries": "Active Countries",
+  "dashboard.topMeme": "इस महीने का Top Meme",
+  "dashboard.countryRankings": "Country Rankings",
+  "dashboard.monthlyTrend": "Monthly Winners",
+  "dashboard.noData": "अभी तक कोई data नहीं",
+  "dashboard.viewLeaderboard": "पूरा Leaderboard देखें",
+  "dashboard.viewTournament": "Tournament देखें",
 } as const;
 
 export default hi;

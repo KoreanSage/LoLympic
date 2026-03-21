@@ -268,6 +268,7 @@ export default function TopNav() {
           <div className="hidden md:flex items-center gap-1">
             <NavLink href="/" label={t("nav.explore")} />
             <NavLink href="/leaderboard" label={t("nav.leaderboard")} />
+            <NavLink href="/dashboard" label={t("nav.dashboard")} />
             <NavLink href="/seasons" label={t("nav.season")} />
             <NavLink href="/upload" label={t("nav.upload")} />
             {isAdmin && <NavLink href="/admin" label={t("nav.admin")} />}
@@ -473,6 +474,7 @@ export default function TopNav() {
         <div className="border-t border-border bg-background/95 backdrop-blur-xl px-4 py-3 space-y-1">
           <MobileNavLink href="/" label={t("nav.explore")} active={pathname === "/"} />
           <MobileNavLink href="/leaderboard" label={t("nav.leaderboard")} active={pathname === "/leaderboard"} />
+          <MobileNavLink href="/dashboard" label={t("nav.dashboard")} active={pathname === "/dashboard"} />
           <MobileNavLink href="/seasons" label={t("nav.season")} active={pathname?.startsWith("/seasons")} />
           <MobileNavLink href="/upload" label={t("nav.upload")} active={pathname === "/upload"} />
           <MobileNavLink href="/bookmarks" label={t("nav.bookmarks")} active={pathname === "/bookmarks"} />

@@ -13,6 +13,7 @@ const en = {
   "nav.messages": "Messages",
   "nav.bookmarks": "Bookmarks",
   "nav.menu": "Menu",
+  "nav.dashboard": "Dashboard",
 
   // ── Notifications ──────────────────────────────────────────────────────────
   "notif.title": "Notifications",
@@ -358,6 +359,53 @@ const en = {
   "battle.stop": "Stop",
   "battle.noChallengers": "No more challengers!",
   "battle.hotBattle": "Hot Battle Memes",
+
+  // ── Winner Popup ──────────────────────────────────────────────────────────
+  "winner.champion": "Champion",
+  "winner.monthlyWinner": "Winner",
+  "winner.memeOfTheYear": "Meme of the Year",
+  "winner.countryOfTheYear": "Country of the Year",
+  "winner.viewResults": "View Results",
+  "winner.viewPost": "View",
+  "winner.dismiss": "Dismiss",
+  "vote.upvote": "Upvote",
+  "vote.downvote": "Downvote",
+  "vote.score": "Score",
+
+  // ── Dashboard ───────────────────────────────────────────────────────────────
+  // ── Tournament ─────────────────────────────────────────────────────────────
+  "tournament.title": "Year-End Tournament",
+  "tournament.subtitle": "12 monthly winners battle it out. Vote for the Meme of the Year!",
+  "tournament.memeOfTheYear": "Meme of the Year",
+  "tournament.quarterfinals": "Quarterfinals",
+  "tournament.semifinals": "Semifinals",
+  "tournament.final": "Final",
+  "tournament.live": "LIVE",
+  "tournament.waitingFor": "Waiting for {round} results...",
+  "tournament.voteToSee": "Vote to see results",
+  "tournament.totalVotes": "{count} votes",
+
+  // ── Leaderboard Dashboard ─────────────────────────────────────────────────
+  "leaderboard.countryCompetition": "Country Competition",
+  "leaderboard.totalReactions": "Total Reactions",
+  "leaderboard.countriesActive": "Countries Active",
+  "leaderboard.scoreDistribution": "Score Distribution",
+  "leaderboard.allTimeRankings": "All-time rankings based on community activity",
+  "leaderboard.seasonRankings": "Global rankings for the current season",
+  "leaderboard.realtimeNotice": "Live rankings from all-time activity — season rankings coming soon!",
+  "leaderboard.noActivity": "No activity yet — post a meme to get on the board!",
+
+  "dashboard.title": "Country Competition",
+  "dashboard.subtitle": "Real-time global rankings",
+  "dashboard.totalPosts": "Total Memes",
+  "dashboard.totalReactions": "Total Reactions",
+  "dashboard.activeCountries": "Active Countries",
+  "dashboard.topMeme": "Top Meme This Month",
+  "dashboard.countryRankings": "Country Rankings",
+  "dashboard.monthlyTrend": "Monthly Winners",
+  "dashboard.noData": "No data yet",
+  "dashboard.viewLeaderboard": "View Full Leaderboard",
+  "dashboard.viewTournament": "View Tournament",
 } as const;
 
 export type TranslationKeys = keyof typeof en;

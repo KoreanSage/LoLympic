@@ -15,6 +15,7 @@ const ar: Record<TranslationKeys, string> = {
   "nav.messages": "الرسائل",
   "nav.bookmarks": "المحفوظات",
   "nav.menu": "القائمة",
+  "nav.dashboard": "لوحة البيانات",
 
   // ── Notifications ──────────────────────────────────────────────────────────
   "notif.title": "الإشعارات",
@@ -360,6 +361,53 @@ const ar: Record<TranslationKeys, string> = {
   "battle.stop": "وقف",
   "battle.noChallengers": "مفيش منافسين تاني!",
   "battle.hotBattle": "ميمز المعارك الحامية",
+
+  // ── Winner Popup ──────────────────────────────────────────────────────────
+  "winner.champion": "البطل",
+  "winner.monthlyWinner": "فائز الشهر",
+  "winner.memeOfTheYear": "ميم السنة",
+  "winner.countryOfTheYear": "بلد السنة",
+  "winner.viewResults": "شوف النتايج",
+  "winner.viewPost": "شوف",
+  "winner.dismiss": "إغلاق",
+  "vote.upvote": "تأييد",
+  "vote.downvote": "رفض",
+  "vote.score": "النقاط",
+
+  // ── Tournament ─────────────────────────────────────────────────────────────
+  "tournament.title": "بطولة نهاية العام",
+  "tournament.subtitle": "12 فائزًا شهريًا يتنافسون. صوّت لميم العام!",
+  "tournament.memeOfTheYear": "ميم العام",
+  "tournament.quarterfinals": "ربع النهائي",
+  "tournament.semifinals": "نصف النهائي",
+  "tournament.final": "النهائي",
+  "tournament.live": "مباشر",
+  "tournament.waitingFor": "بانتظار نتائج {round}...",
+  "tournament.voteToSee": "صوّت لرؤية النتائج",
+  "tournament.totalVotes": "{count} أصوات",
+
+  // ── Leaderboard Dashboard ─────────────────────────────────────────────────
+  "leaderboard.countryCompetition": "مسابقة الدول",
+  "leaderboard.totalReactions": "إجمالي التفاعلات",
+  "leaderboard.countriesActive": "الدول النشطة",
+  "leaderboard.scoreDistribution": "توزيع النقاط",
+  "leaderboard.allTimeRankings": "تصنيفات بناءً على نشاط المجتمع",
+  "leaderboard.seasonRankings": "التصنيفات العالمية للموسم الحالي",
+  "leaderboard.realtimeNotice": "تصنيفات مباشرة — تصنيفات الموسم قريبًا!",
+  "leaderboard.noActivity": "لا يوجد نشاط بعد — انشر ميم للظهور في القائمة!",
+
+  // ── Dashboard ───────────────────────────────────────────────────────────────
+  "dashboard.title": "منافسة الدول",
+  "dashboard.subtitle": "ترتيب عالمي مباشر",
+  "dashboard.totalPosts": "إجمالي الميمز",
+  "dashboard.totalReactions": "إجمالي التفاعلات",
+  "dashboard.activeCountries": "الدول النشطة",
+  "dashboard.topMeme": "أفضل ميم الشهر",
+  "dashboard.countryRankings": "ترتيب الدول",
+  "dashboard.monthlyTrend": "فائزين الشهر",
+  "dashboard.noData": "مفيش بيانات لسه",
+  "dashboard.viewLeaderboard": "شوف الترتيب الكامل",
+  "dashboard.viewTournament": "شوف البطولة",
 } as const;
 
 export default ar;

@@ -262,6 +262,7 @@ model User {
   finalVotes           FinalVote[]
   battles              Battle[]
   tournamentVotes      TournamentVote[]
+  postVotes            PostVote[]
 
   @@index([countryId])
   @@index([username])
@@ -317,6 +318,9 @@ model Post {
   battleWins   Int @default(0)
   battleLosses Int @default(0)
 
+  // Vote score (upvotes - downvotes)
+  voteScore    Int @default(0)
+
   // Cached ranking score (computed by ranking jobs)
   rankingScore Float @default(0)
 
@@ -341,6 +345,7 @@ model Post {
   monthlyWinner       MonthlyWinner?
   battlesAsLeft       Battle[]           @relation("BattleLeft")
   battlesAsRight      Battle[]           @relation("BattleRight")
+  votes               PostVote[]
   tournamentAsPost1   TournamentMatch[]  @relation("TournamentPost1")
   tournamentAsPost2   TournamentMatch[]  @relation("TournamentPost2")
 
@@ -595,6 +600,22 @@ model PostReaction {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([postId, userId, type])
+  @@index([postId])
+}
+
+model PostVote {
+  id     String @id @default(cuid())
+  postId String
+  userId String
+  value  Int    // 1 = upvote, -1 = downvote
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
   @@index([postId])
 }
 

@@ -122,6 +122,9 @@ export default function FeedCard({
   const [menuOpen, setMenuOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletePending, setDeletePending] = useState(false);
+  const [voteScore, setVoteScore] = useState(0);
+  const [userVote, setUserVote] = useState(0);
+  const [votePending, setVotePending] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const isOwnPost = (session?.user as any)?.username === author.username;
@@ -139,6 +142,19 @@ export default function FeedCard({
       })
       .catch(() => {});
   }, [id, session, reactionCount]);
+
+  // Load vote state
+  useEffect(() => {
+    fetch(`/api/posts/${id}/vote`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data) {
+          setVoteScore(data.voteScore ?? 0);
+          setUserVote(data.userVote ?? 0);
+        }
+      })
+      .catch(() => {});
+  }, [id]);
 
   // Close menu on outside click
   useEffect(() => {
@@ -198,6 +214,33 @@ export default function FeedCard({
       setReactPending(false);
     }
   }, [id, reacted, reactPending]);
+
+  const handleVote = useCallback(async (newValue: number) => {
+    if (votePending) return;
+    const prevScore = voteScore;
+    const prevVote = userVote;
+    // Optimistic update
+    const diff = newValue - prevVote;
+    setVoteScore((prev) => prev + diff);
+    setUserVote(newValue);
+    setVotePending(true);
+
+    try {
+      const res = await fetch(`/api/posts/${id}/vote`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ value: newValue }),
+      });
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      setVoteScore(data.voteScore);
+    } catch {
+      setVoteScore(prevScore);
+      setUserVote(prevVote);
+    } finally {
+      setVotePending(false);
+    }
+  }, [id, voteScore, userVote, votePending]);
 
   const handleComment = () => {
     router.push(`/post/${id}`);
@@ -435,8 +478,46 @@ export default function FeedCard({
         </Link>
       )}
 
-      {/* Action row */}
+      {/* Vote + Action row */}
       <div className="flex items-center gap-1 px-3 py-2 border-t border-border">
+        {/* Reddit-style vote buttons */}
+        <div className="flex items-center gap-0.5">
+          <button
+            onClick={() => handleVote(userVote === 1 ? 0 : 1)}
+            disabled={votePending}
+            className={`p-1.5 rounded-lg transition-all duration-200 ${
+              userVote === 1
+                ? "text-[#c9a84c] bg-[#c9a84c]/10"
+                : "text-foreground-subtle hover:text-foreground-muted hover:bg-background-elevated"
+            }`}
+          >
+            <svg className="w-4 h-4" fill={userVote === 1 ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+            </svg>
+          </button>
+          <span className={`text-xs font-bold min-w-[20px] text-center ${
+            voteScore > 0 ? "text-[#c9a84c]" : voteScore < 0 ? "text-blue-400" : "text-foreground-subtle"
+          }`}>
+            {formatCount(voteScore)}
+          </span>
+          <button
+            onClick={() => handleVote(userVote === -1 ? 0 : -1)}
+            disabled={votePending}
+            className={`p-1.5 rounded-lg transition-all duration-200 ${
+              userVote === -1
+                ? "text-blue-400 bg-blue-400/10"
+                : "text-foreground-subtle hover:text-foreground-muted hover:bg-background-elevated"
+            }`}
+          >
+            <svg className="w-4 h-4" fill={userVote === -1 ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="w-px h-4 bg-border mx-1" />
+
+        {/* Existing action buttons */}
         <ActionButton
           icon={
             <svg className="w-4 h-4" fill={reacted ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor">

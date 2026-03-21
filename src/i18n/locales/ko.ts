@@ -15,6 +15,7 @@ const ko: Record<TranslationKeys, string> = {
   "nav.messages": "메시지",
   "nav.bookmarks": "북마크",
   "nav.menu": "메뉴",
+  "nav.dashboard": "대시보드",
 
   // ── Notifications ──────────────────────────────────────────────────────────
   "notif.title": "알림",
@@ -356,6 +357,53 @@ const ko: Record<TranslationKeys, string> = {
   "battle.stop": "그만하기",
   "battle.noChallengers": "더 이상 도전자가 없어요!",
   "battle.hotBattle": "핫 배틀 밈",
+
+  // ── Winner Popup ──────────────────────────────────────────────────────────
+  "winner.champion": "챔피언",
+  "winner.monthlyWinner": "우승자",
+  "winner.memeOfTheYear": "올해의 밈",
+  "winner.countryOfTheYear": "올해의 국가",
+  "winner.viewResults": "결과 보기",
+  "winner.viewPost": "보기",
+  "winner.dismiss": "닫기",
+  "vote.upvote": "추천",
+  "vote.downvote": "비추천",
+  "vote.score": "점수",
+
+  // ── Dashboard ───────────────────────────────────────────────────────────────
+  // ── Tournament ─────────────────────────────────────────────────────────────
+  "tournament.title": "연말 토너먼트",
+  "tournament.subtitle": "12명의 월간 우승자가 맞붙습니다. 올해의 밈에 투표하세요!",
+  "tournament.memeOfTheYear": "올해의 밈",
+  "tournament.quarterfinals": "8강",
+  "tournament.semifinals": "4강",
+  "tournament.final": "결승",
+  "tournament.live": "진행중",
+  "tournament.waitingFor": "{round} 결과 대기 중...",
+  "tournament.voteToSee": "투표하면 결과를 볼 수 있어요",
+  "tournament.totalVotes": "{count}표",
+
+  // ── Leaderboard Dashboard ─────────────────────────────────────────────────
+  "leaderboard.countryCompetition": "국가 대항전",
+  "leaderboard.totalReactions": "총 반응",
+  "leaderboard.countriesActive": "참여 국가",
+  "leaderboard.scoreDistribution": "점수 분포",
+  "leaderboard.allTimeRankings": "전체 기간 커뮤니티 활동 기준 순위",
+  "leaderboard.seasonRankings": "현재 시즌 글로벌 순위",
+  "leaderboard.realtimeNotice": "전체 기간 실시간 순위 — 시즌 순위 곧 공개!",
+  "leaderboard.noActivity": "아직 활동이 없어요 — 밈을 올려서 순위에 도전하세요!",
+
+  "dashboard.title": "국가 대항전",
+  "dashboard.subtitle": "실시간 글로벌 순위",
+  "dashboard.totalPosts": "총 밈 수",
+  "dashboard.totalReactions": "총 반응 수",
+  "dashboard.activeCountries": "참여 국가",
+  "dashboard.topMeme": "이달의 인기 밈",
+  "dashboard.countryRankings": "국가 순위",
+  "dashboard.monthlyTrend": "월간 우승자",
+  "dashboard.noData": "아직 데이터가 없습니다",
+  "dashboard.viewLeaderboard": "전체 리더보드 보기",
+  "dashboard.viewTournament": "토너먼트 보기",
 };
 
 export default ko;

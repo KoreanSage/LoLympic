@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { broadcastNotification } from "@/lib/notifications";
 
 /**
  * GET /api/seasons/monthly-winner
@@ -160,6 +161,25 @@ export async function POST(request: NextRequest) {
         country: { select: { id: true, nameEn: true, flagEmoji: true } },
       },
     });
+
+    // Broadcast notification to all users about the new monthly winner
+    const MONTH_NAMES = [
+      "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December",
+    ];
+    const monthName = MONTH_NAMES[targetMonth - 1] || `Month ${targetMonth}`;
+
+    broadcastNotification({
+      type: "SYSTEM",
+      postId: topPost.id,
+      metadata: {
+        subtype: "monthly_winner",
+        month: targetMonth,
+        year: targetYear,
+        monthName,
+        postTitle: topPost.title || "",
+      },
+    }).catch(() => {}); // fire-and-forget
 
     return NextResponse.json({ winner });
   } catch (error) {

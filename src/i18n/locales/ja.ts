@@ -15,6 +15,7 @@ const ja: Record<TranslationKeys, string> = {
   "nav.messages": "メッセージ",
   "nav.bookmarks": "ブックマーク",
   "nav.menu": "メニュー",
+  "nav.dashboard": "ダッシュボード",
 
   // ── Notifications ──────────────────────────────────────────────────────────
   "notif.title": "通知",
@@ -356,6 +357,53 @@ const ja: Record<TranslationKeys, string> = {
   "battle.stop": "やめる",
   "battle.noChallengers": "挑戦者がいません！",
   "battle.hotBattle": "ホットバトルミーム",
+
+  // ── Winner Popup ──────────────────────────────────────────────────────────
+  "winner.champion": "チャンピオン",
+  "winner.monthlyWinner": "月間優勝者",
+  "winner.memeOfTheYear": "年間ベストミーム",
+  "winner.countryOfTheYear": "年間ベスト国",
+  "winner.viewResults": "結果を見る",
+  "winner.viewPost": "見る",
+  "winner.dismiss": "閉じる",
+  "vote.upvote": "賛成",
+  "vote.downvote": "反対",
+  "vote.score": "スコア",
+
+  // ── Tournament ─────────────────────────────────────────────────────────────
+  "tournament.title": "年末トーナメント",
+  "tournament.subtitle": "12人の月間優勝者が対決。今年のミームに投票しよう！",
+  "tournament.memeOfTheYear": "今年のミーム",
+  "tournament.quarterfinals": "準々決勝",
+  "tournament.semifinals": "準決勝",
+  "tournament.final": "決勝",
+  "tournament.live": "ライブ",
+  "tournament.waitingFor": "{round}の結果待ち...",
+  "tournament.voteToSee": "投票すると結果が見れます",
+  "tournament.totalVotes": "{count}票",
+
+  // ── Leaderboard Dashboard ─────────────────────────────────────────────────
+  "leaderboard.countryCompetition": "国別対抗戦",
+  "leaderboard.totalReactions": "総リアクション",
+  "leaderboard.countriesActive": "参加国数",
+  "leaderboard.scoreDistribution": "スコア分布",
+  "leaderboard.allTimeRankings": "全期間のコミュニティ活動に基づくランキング",
+  "leaderboard.seasonRankings": "今シーズンのグローバルランキング",
+  "leaderboard.realtimeNotice": "全期間リアルタイムランキング — シーズンランキングは近日公開！",
+  "leaderboard.noActivity": "まだ活動がありません — ミームを投稿してランクインしよう！",
+
+  // ── Dashboard ───────────────────────────────────────────────────────────────
+  "dashboard.title": "国別コンペティション",
+  "dashboard.subtitle": "リアルタイムグローバルランキング",
+  "dashboard.totalPosts": "総ミーム数",
+  "dashboard.totalReactions": "総リアクション数",
+  "dashboard.activeCountries": "参加国",
+  "dashboard.topMeme": "今月のトップミーム",
+  "dashboard.countryRankings": "国別ランキング",
+  "dashboard.monthlyTrend": "月間優勝者",
+  "dashboard.noData": "データがまだありません",
+  "dashboard.viewLeaderboard": "ランキング全体を見る",
+  "dashboard.viewTournament": "トーナメントを見る",
 };
 
 export default ja;
