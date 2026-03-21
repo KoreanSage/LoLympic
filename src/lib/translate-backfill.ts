@@ -71,17 +71,18 @@ export async function backfillMissingTitleTranslations(
 }
 
 /**
- * Same but for a single post (used in post detail API)
+ * Same but for a single post (used in post detail API).
+ * Returns { translatedTitle, translatedBody } if backfilled, or null.
  */
 export async function backfillSinglePostTitle(
   post: any,
   targetLang: string
-) {
+): Promise<{ translatedTitle: string; translatedBody?: string } | null> {
   const payloads = post.translationPayloads;
-  if (!payloads || payloads.length === 0) return;
+  if (!payloads || payloads.length === 0) return null;
   const payload = payloads[0];
-  if (!payload.segments?.length || payload.translatedTitle || !post.title) return;
-  if (post.sourceLanguage === targetLang) return;
+  if (!payload.segments?.length || payload.translatedTitle || !post.title) return null;
+  if (post.sourceLanguage === targetLang) return null;
 
   try {
     const targetName = LANGUAGE_NAMES[targetLang] || targetLang;
@@ -94,6 +95,8 @@ export async function backfillSinglePostTitle(
       `Translate the following meme title to ${targetName}. Output ONLY the translated text, nothing else. Keep the humor and tone.\n\n${post.title}`
     );
     const translatedTitle = result.response.text().trim();
+    let translatedBody: string | undefined;
+
     if (translatedTitle) {
       await prisma.translationPayload.update({
         where: { id: payload.id },
@@ -104,7 +107,7 @@ export async function backfillSinglePostTitle(
         const bodyResult = await model.generateContent(
           `Translate the following meme description to ${targetName}. Output ONLY the translated text, nothing else. Keep the humor and tone.\n\n${post.body}`
         );
-        const translatedBody = bodyResult.response.text().trim();
+        translatedBody = bodyResult.response.text().trim();
         if (translatedBody) {
           await prisma.translationPayload.update({
             where: { id: payload.id },
@@ -112,8 +115,10 @@ export async function backfillSinglePostTitle(
           });
         }
       }
+      return { translatedTitle, translatedBody };
     }
   } catch (e) {
     console.warn("Backfill single post title failed:", e);
   }
+  return null;
 }

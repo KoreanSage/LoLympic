@@ -15,8 +15,28 @@ export default function PostPage() {
   const [post, setPost] = useState<any>(null);
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [freshLang, setFreshLang] = useState<string | null>(null);
 
-  const preferredLang = (session?.user as any)?.preferredLanguage || "en";
+  // Get the user's ACTUAL preferredLanguage: localStorage (instant) > DB > session JWT
+  useEffect(() => {
+    const stored = localStorage.getItem("lolympic_preferredLanguage");
+    if (stored) {
+      setFreshLang(stored);
+    }
+    if (!session?.user) return;
+    fetch("/api/users/me")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data?.preferredLanguage) {
+          setFreshLang(data.preferredLanguage);
+          localStorage.setItem("lolympic_preferredLanguage", data.preferredLanguage);
+        }
+      })
+      .catch(() => {});
+  }, [session?.user]);
+
+  // Use fresh value > session value > default
+  const preferredLang = freshLang || (session?.user as any)?.preferredLanguage || "en";
 
   useEffect(() => {
     if (!id) return;

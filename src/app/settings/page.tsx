@@ -194,8 +194,12 @@ export default function SettingsPage() {
         const data = await res.json();
         throw new Error(data.error || "Failed to save");
       }
-      // Refresh session to pick up updated avatarUrl/displayName
+      // Refresh session to pick up updated values
       await updateSession();
+      // Also store preferredLanguage in localStorage for immediate availability
+      if (activeTab === "language") {
+        localStorage.setItem("lolympic_preferredLanguage", preferredLang);
+      }
       toast(t("settings.saved"), "success");
     } catch (err: any) {
       toast(err.message || t("settings.saveFailed"), "error");

@@ -116,13 +116,27 @@ export async function GET(
       })
       .catch(() => {});
 
-    // Backfill missing translatedTitle (fire and forget)
-    if (lang) {
-      backfillSinglePostTitle(post, lang).catch(() => {});
+    // Backfill missing translatedTitle SYNCHRONOUSLY before responding
+    let patchedPost = post;
+    if (lang && post.translationPayloads?.[0]?.segments?.length > 0 && !post.translationPayloads[0].translatedTitle && post.title) {
+      try {
+        const result = await backfillSinglePostTitle(post, lang);
+        if (result) {
+          // Patch the response data with the backfilled title/body
+          patchedPost = {
+            ...post,
+            translationPayloads: post.translationPayloads.map((p: any, i: number) =>
+              i === 0 ? { ...p, translatedTitle: result.translatedTitle, translatedBody: result.translatedBody ?? p.translatedBody } : p
+            ),
+          };
+        }
+      } catch {
+        // Ignore backfill errors
+      }
     }
 
     return NextResponse.json({
-      ...post,
+      ...patchedPost,
       reactionCounts: reactionCountMap,
       userReactions,
     });
