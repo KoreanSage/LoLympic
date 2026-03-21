@@ -542,6 +542,7 @@ export async function POST(request: NextRequest) {
         // Translate ALL images and collect segments with imageIndex
         const allSegments: Array<TranslationSegmentResponse & { imageIndex: number }> = [];
         let firstParsed: AITranslationResult | null = null;
+        const allCultureNotes: CultureNoteResponse[] = [];
 
         for (let imgIdx = 0; imgIdx < imageDataList.length; imgIdx++) {
           const imgData = imageDataList[imgIdx];
@@ -558,7 +559,7 @@ export async function POST(request: NextRequest) {
               }
 
               const result = await model.generateContent([
-                `Translate this meme from ${sourceLanguage} to ${targetLang}. Analyze the image, detect all text regions, and provide transcendent translations. Respond ONLY with valid JSON, no markdown fences.`,
+                `Translate this meme from ${sourceLanguage} to ${targetLang}. Analyze the image, detect all text regions, and provide transcendent translations. Respond ONLY with valid JSON, no markdown fences.${imageDataList.length > 1 ? ` This is image ${imgIdx + 1} of ${imageDataList.length} in a multi-image post.` : ""}`,
                 {
                   inlineData: {
                     data: imgData.base64,
@@ -593,6 +594,10 @@ export async function POST(request: NextRequest) {
             if (!firstParsed) firstParsed = parsed;
             for (const seg of parsed.segments) {
               allSegments.push({ ...seg, imageIndex: imgIdx });
+            }
+            // Collect culture notes from ALL images
+            if (parsed.cultureNote) {
+              allCultureNotes.push(parsed.cultureNote);
             }
           } else {
             console.warn(`Translation failed for ${targetLang} image ${imgIdx}: ${lastParseError}`);
@@ -638,8 +643,22 @@ export async function POST(request: NextRequest) {
           }
         }
 
+        // Merge culture notes from all images into one combined note
+        const mergedCultureNote: CultureNoteResponse | null = allCultureNotes.length > 0
+          ? allCultureNotes.length === 1
+            ? allCultureNotes[0]
+            : {
+                summary: allCultureNotes.map((n, i) => `[${i + 1}] ${n.summary}`).join("\n"),
+                explanation: allCultureNotes.map((n, i) => `[${i + 1}] ${n.explanation}`).join("\n\n"),
+                translationNote: allCultureNotes
+                  .filter((n) => n.translationNote)
+                  .map((n, i) => `[${i + 1}] ${n.translationNote}`)
+                  .join("\n") || undefined,
+              }
+          : null;
+
         // Store TranslationPayload + segments in a transaction
-        const parsed = firstParsed; // for culture note and confidence
+        const confidence = firstParsed.confidence ?? null;
         const payload = await prisma.$transaction(async (tx) => {
           const latestPayload = await tx.translationPayload.findFirst({
             where: {
@@ -657,7 +676,7 @@ export async function POST(request: NextRequest) {
               targetLanguage: targetLang as LanguageCode,
               version: nextVersion,
               status: "COMPLETED",
-              confidence: parsed.confidence ?? null,
+              confidence,
               translatedTitle,
               translatedBody,
               creatorType: "AI",
@@ -687,8 +706,8 @@ export async function POST(request: NextRequest) {
             include: { segments: true },
           });
 
-          // Create CultureNote per target language
-          if (parsed.cultureNote) {
+          // Create CultureNote per target language (merged from all images)
+          if (mergedCultureNote) {
             const existingNote = await tx.cultureNote.findFirst({
               where: { postId, language: targetLang as LanguageCode },
             });
@@ -705,12 +724,12 @@ export async function POST(request: NextRequest) {
                 data: {
                   postId,
                   language: targetLang as LanguageCode,
-                  summary: parsed.cultureNote.summary || "",
-                  explanation: parsed.cultureNote.explanation || "",
-                  translationNote: parsed.cultureNote.translationNote ?? null,
+                  summary: mergedCultureNote.summary || "",
+                  explanation: mergedCultureNote.explanation || "",
+                  translationNote: mergedCultureNote.translationNote ?? null,
                   creatorType: "AI",
                   status: "PUBLISHED",
-                  confidence: parsed.confidence ?? null,
+                  confidence,
                   version: noteVersion,
                 },
               });

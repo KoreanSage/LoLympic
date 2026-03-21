@@ -75,6 +75,18 @@ export async function GET(
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
 
+    // Fallback: if no culture notes for requested language, fetch in any language
+    if (lang && post.cultureNotes.length === 0) {
+      const fallbackNotes = await prisma.cultureNote.findMany({
+        where: {
+          postId: id,
+          status: { in: ["PUBLISHED", "APPROVED"] },
+        },
+        orderBy: { version: "desc" },
+      });
+      (post as any).cultureNotes = fallbackNotes;
+    }
+
     if (post.status === "HIDDEN" || post.visibility === "PRIVATE") {
       const user = await getSessionUser();
       if (!user || (user.id !== post.authorId && user.role !== "ADMIN")) {
