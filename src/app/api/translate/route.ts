@@ -708,25 +708,21 @@ export async function POST(request: NextRequest) {
           },
         });
 
-        // Translate ALL images and collect segments with imageIndex
+        // Translate ALL images IN PARALLEL and collect segments with imageIndex
         const allSegments: Array<TranslationSegmentResponse & { imageIndex: number }> = [];
         let firstParsed: AITranslationResult | null = null;
         const allCultureNotes: CultureNoteResponse[] = [];
 
-        for (let imgIdx = 0; imgIdx < imageDataList.length; imgIdx++) {
-          const imgData = imageDataList[imgIdx];
-          if (!imgData.base64) continue; // skip failed image reads
-
-          let parsed: AITranslationResult | null = null;
-          let lastParseError = "";
-
-          for (let attempt = 0; attempt < 3; attempt++) {
+        // Helper: translate a single image with retry (max 2 attempts)
+        const translateSingleImage = async (
+          imgIdx: number,
+          imgData: { base64: string; mimeType: string },
+        ): Promise<{ parsed: AITranslationResult | null; imgIdx: number }> => {
+          for (let attempt = 0; attempt < 2; attempt++) {
             try {
               if (attempt > 0) {
-                await new Promise((r) => setTimeout(r, 2000 * attempt));
-                console.log(`Retry attempt ${attempt + 1} for ${targetLang} image ${imgIdx}`);
+                await new Promise((r) => setTimeout(r, 1500));
               }
-
               const result = await model.generateContent([
                 `Translate this meme from ${sourceLanguage} to ${targetLang}. Analyze the image, detect all text regions, and provide transcendent translations. Respond ONLY with valid JSON, no markdown fences.${imageDataList.length > 1 ? ` This is image ${imgIdx + 1} of ${imageDataList.length} in a multi-image post.` : ""}`,
                 {
@@ -737,39 +733,41 @@ export async function POST(request: NextRequest) {
                 },
               ]);
               const text = result.response.text();
-              if (!text) {
-                lastParseError = "Empty response from AI";
-                continue;
-              }
+              if (!text) continue;
 
               const cleaned = stripMarkdownFences(text);
-              parsed = JSON.parse(cleaned) as AITranslationResult;
+              const parsed = JSON.parse(cleaned) as AITranslationResult;
+              if (!Array.isArray(parsed.segments) || parsed.segments.length === 0) continue;
 
-              if (!Array.isArray(parsed.segments) || parsed.segments.length === 0) {
-                lastParseError = "No segments in response";
-                parsed = null;
-                continue;
-              }
-
-              break; // Success
+              return { parsed, imgIdx };
             } catch (err) {
-              lastParseError = err instanceof Error ? err.message : String(err);
-              console.warn(`Translate attempt ${attempt + 1} failed for ${targetLang} image ${imgIdx}:`, lastParseError);
-              parsed = null;
+              console.warn(`Translate attempt ${attempt + 1} failed for ${targetLang} image ${imgIdx}:`, err instanceof Error ? err.message : String(err));
             }
           }
+          return { parsed: null, imgIdx };
+        };
 
+        // Launch all image translations in parallel
+        const validImages = imageDataList
+          .map((imgData, idx) => ({ imgData, idx }))
+          .filter(({ imgData }) => !!imgData.base64);
+
+        const imageResults = await Promise.all(
+          validImages.map(({ imgData, idx }) => translateSingleImage(idx, imgData))
+        );
+
+        // Collect results (maintaining order)
+        for (const { parsed, imgIdx } of imageResults.sort((a, b) => a.imgIdx - b.imgIdx)) {
           if (parsed) {
             if (!firstParsed) firstParsed = parsed;
             for (const seg of parsed.segments) {
               allSegments.push({ ...seg, imageIndex: imgIdx });
             }
-            // Collect culture notes from ALL images
             if (parsed.cultureNote) {
               allCultureNotes.push(parsed.cultureNote);
             }
           } else {
-            console.warn(`Translation failed for ${targetLang} image ${imgIdx}: ${lastParseError}`);
+            console.warn(`Translation failed for ${targetLang} image ${imgIdx}`);
           }
         }
 
@@ -798,38 +796,34 @@ export async function POST(request: NextRequest) {
           isUppercase: undefined,
         }));
 
-        // Translate title & body text
-        let translatedTitle: string | null = null;
-        let translatedBody: string | null = null;
+        // Translate title & body text (in parallel)
         const targetName = LANGUAGE_INSTRUCTIONS[targetLang]?.split(":")[0] || targetLang;
-        if (post.title && sourceLanguage !== targetLang) {
-          try {
-            const titleModel = genAI.getGenerativeModel({
+        const textTranslations = await Promise.allSettled([
+          // Title translation
+          (post.title && sourceLanguage !== targetLang) ? (async () => {
+            const m = genAI.getGenerativeModel({
               model: "gemini-2.5-flash",
               generationConfig: { temperature: 0.3, maxOutputTokens: 512 },
             });
-            const titleResult = await titleModel.generateContent(
+            const r = await m.generateContent(
               `Translate the following meme title to ${targetName}. Output ONLY the translated text, nothing else. Keep the humor and tone.\n\n${post.title}`
             );
-            translatedTitle = titleResult.response.text().trim();
-          } catch (e) {
-            console.warn("Title translation failed:", e);
-          }
-        }
-        if (post.body && sourceLanguage !== targetLang) {
-          try {
-            const bodyModel = genAI.getGenerativeModel({
+            return r.response.text().trim();
+          })() : Promise.resolve(null),
+          // Body translation
+          (post.body && sourceLanguage !== targetLang) ? (async () => {
+            const m = genAI.getGenerativeModel({
               model: "gemini-2.5-flash",
               generationConfig: { temperature: 0.3, maxOutputTokens: 1024 },
             });
-            const bodyResult = await bodyModel.generateContent(
+            const r = await m.generateContent(
               `Translate the following meme description to ${targetName}. Output ONLY the translated text, nothing else. Keep the humor and tone.\n\n${post.body}`
             );
-            translatedBody = bodyResult.response.text().trim();
-          } catch (e) {
-            console.warn("Body translation failed:", e);
-          }
-        }
+            return r.response.text().trim();
+          })() : Promise.resolve(null),
+        ]);
+        const translatedTitle = textTranslations[0].status === "fulfilled" ? textTranslations[0].value : null;
+        const translatedBody = textTranslations[1].status === "fulfilled" ? textTranslations[1].value : null;
 
         // Merge culture notes from all images into one combined note
         const mergedCultureNote: CultureNoteResponse | null = allCultureNotes.length > 0
