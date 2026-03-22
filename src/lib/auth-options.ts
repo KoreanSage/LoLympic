@@ -74,7 +74,7 @@ export const authOptions: NextAuthOptions = {
               displayName: user.name || username,
               avatarUrl: user.image || null,
               emailVerified: new Date(),
-              countryId: "US",
+              countryId: null,
               preferredLanguage: "en",
             },
           });

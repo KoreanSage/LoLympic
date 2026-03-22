@@ -226,6 +226,18 @@ const es: Record<TranslationKeys, string> = {
   "auth.passwordPlaceholder6": "Mínimo 6 caracteres",
   "auth.reenterPassword": "Reingresa la contraseña",
   "auth.signUpSuccessLoginFailed": "Cuenta creada, pero el inicio de sesión automático falló. Por favor, inicia sesión.",
+  "auth.forgotPassword": "Olvidaste tu contrasenya?",
+  "auth.forgotPasswordDescription": "Ingresa tu email y generaremos un enlace de restablecimiento.",
+  "auth.resetLinkSent": "Si existe una cuenta con ese email, se ha generado un enlace de restablecimiento. Revisa los logs del servidor.",
+  "auth.backToSignIn": "Volver a Iniciar Sesion",
+  "auth.sending": "Enviando...",
+  "auth.sendResetLink": "Enviar enlace de restablecimiento",
+  "auth.rememberPassword": "Recuerdas tu contrasenya?",
+  "auth.resetPassword": "Restablecer Contrasenya",
+  "auth.enterNewPassword": "Ingresa tu nueva contrasenya.",
+  "auth.passwordResetSuccess": "Contrasenya restablecida! Redirigiendo al inicio de sesion...",
+  "auth.newPassword": "Nueva Contrasenya",
+  "auth.resetting": "Restableciendo...",
 
   // ── Upload ─────────────────────────────────────────────────────────────────
   "upload.title": "Compartir un meme",

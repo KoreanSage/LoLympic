@@ -46,63 +46,87 @@ export default function BookmarksPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const ids = getBookmarkIds();
-    if (ids.length === 0) {
-      setLoading(false);
-      return;
-    }
+    async function loadBookmarks() {
+      let ids: string[];
 
-    // Fetch each bookmarked post
-    Promise.allSettled(
-      ids.map((id) =>
-        fetch(`/api/posts/${id}`)
-          .then((r) => {
-            if (!r.ok) throw new Error();
-            return r.json();
-          })
-          .then((post) => {
-            const image = post.images?.[0];
-            const payload = post.translationPayloads?.[0];
-            return {
-              id: post.id,
-              title: post.title,
-              author: {
-                username: post.author?.username || "unknown",
-                displayName: post.author?.displayName,
-                avatarUrl: post.author?.avatarUrl,
-              },
-              country: post.country
-                ? { flagEmoji: post.country.flagEmoji, nameEn: post.country.nameEn }
-                : null,
-              imageUrl: image?.originalUrl || "",
-              cleanImageUrl: image?.cleanUrl || undefined,
-              translatedImageUrl: payload?.translatedImageUrl || undefined,
-              mimeType: image?.mimeType || undefined,
-              segments: (payload?.segments ?? []).map((s: any) => ({
-                sourceText: s.sourceText ?? "",
-                translatedText: s.translatedText ?? "",
-                boxX: s.boxX,
-                boxY: s.boxY,
-                boxWidth: s.boxWidth,
-                boxHeight: s.boxHeight,
-              })),
-              reactionCount: post._count?.reactions ?? post.reactionCount ?? 0,
-              commentCount: post._count?.comments ?? post.commentCount ?? 0,
-              shareCount: post.shareCount ?? 0,
-              createdAt: post.createdAt,
-              tags: post.tags || [],
-            } as BookmarkedPost;
-          })
-      )
-    ).then((results) => {
+      // When logged in, fetch bookmark IDs from the API; fall back to localStorage
+      if (status === "authenticated") {
+        try {
+          const res = await fetch("/api/bookmarks");
+          if (res.ok) {
+            const data = await res.json();
+            ids = data.postIds ?? [];
+          } else {
+            ids = getBookmarkIds();
+          }
+        } catch {
+          ids = getBookmarkIds();
+        }
+      } else {
+        ids = getBookmarkIds();
+      }
+
+      if (ids.length === 0) {
+        setLoading(false);
+        return;
+      }
+
+      // Fetch each bookmarked post
+      const results = await Promise.allSettled(
+        ids.map((id) =>
+          fetch(`/api/posts/${id}`)
+            .then((r) => {
+              if (!r.ok) throw new Error();
+              return r.json();
+            })
+            .then((post) => {
+              const image = post.images?.[0];
+              const payload = post.translationPayloads?.[0];
+              return {
+                id: post.id,
+                title: post.title,
+                author: {
+                  username: post.author?.username || "unknown",
+                  displayName: post.author?.displayName,
+                  avatarUrl: post.author?.avatarUrl,
+                },
+                country: post.country
+                  ? { flagEmoji: post.country.flagEmoji, nameEn: post.country.nameEn }
+                  : null,
+                imageUrl: image?.originalUrl || "",
+                cleanImageUrl: image?.cleanUrl || undefined,
+                translatedImageUrl: payload?.translatedImageUrl || undefined,
+                mimeType: image?.mimeType || undefined,
+                segments: (payload?.segments ?? []).map((s: any) => ({
+                  sourceText: s.sourceText ?? "",
+                  translatedText: s.translatedText ?? "",
+                  boxX: s.boxX,
+                  boxY: s.boxY,
+                  boxWidth: s.boxWidth,
+                  boxHeight: s.boxHeight,
+                })),
+                reactionCount: post._count?.reactions ?? post.reactionCount ?? 0,
+                commentCount: post._count?.comments ?? post.commentCount ?? 0,
+                shareCount: post.shareCount ?? 0,
+                createdAt: post.createdAt,
+                tags: post.tags || [],
+              } as BookmarkedPost;
+            })
+        )
+      );
+
       const successPosts = results
         .filter((r): r is PromiseFulfilledResult<BookmarkedPost> => r.status === "fulfilled")
         .map((r) => r.value)
         .filter((p) => p.imageUrl);
       setPosts(successPosts);
       setLoading(false);
-    });
-  }, []);
+    }
+
+    if (status !== "loading") {
+      loadBookmarks();
+    }
+  }, [status]);
 
   return (
     <MainLayout showSidebar={false}>

@@ -245,7 +245,7 @@ export default function UploadStudio() {
 
       // Retry failed languages (one at a time with delay)
       if (failedLangs.length > 0) {
-        console.log(`Retrying ${failedLangs.length} failed translations...`);
+        // Retry failed translations
         for (const lang of failedLangs) {
           setProgress((p) => {
             if (!p) return p;

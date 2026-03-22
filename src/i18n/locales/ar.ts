@@ -226,6 +226,18 @@ const ar: Record<TranslationKeys, string> = {
   "auth.passwordPlaceholder6": "6 حروف على الأقل",
   "auth.reenterPassword": "اكتب كلمة السر تاني",
   "auth.signUpSuccessLoginFailed": "الحساب اتعمل بس الدخول التلقائي فشل. سجّل دخول من فضلك.",
+  "auth.forgotPassword": "نسيت كلمة المرور؟",
+  "auth.forgotPasswordDescription": "ادخل ايميلك وهنعملك رابط إعادة تعيين.",
+  "auth.resetLinkSent": "لو في حساب بالايميل ده، رابط إعادة التعيين اتعمل. شوف لوجز السيرفر.",
+  "auth.backToSignIn": "رجوع لتسجيل الدخول",
+  "auth.sending": "جاري الإرسال...",
+  "auth.sendResetLink": "ابعت رابط إعادة التعيين",
+  "auth.rememberPassword": "فاكر كلمة المرور؟",
+  "auth.resetPassword": "إعادة تعيين كلمة المرور",
+  "auth.enterNewPassword": "ادخل كلمة المرور الجديدة.",
+  "auth.passwordResetSuccess": "كلمة المرور اتغيرت بنجاح! جاري التحويل لصفحة الدخول...",
+  "auth.newPassword": "كلمة مرور جديدة",
+  "auth.resetting": "جاري إعادة التعيين...",
 
   // ── Upload ─────────────────────────────────────────────────────────────────
   "upload.title": "شارك ميم",

@@ -4,7 +4,7 @@ import { GoogleGenAI } from "@google/genai";
 import crypto from "crypto";
 
 // Allow longer timeout for image generation (multiple images)
-export const maxDuration = 120;
+export const maxDuration = 60;
 
 const USE_BLOB = !!process.env.BLOB_READ_WRITE_TOKEN;
 const genAI2 = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });

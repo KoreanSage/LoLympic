@@ -226,6 +226,18 @@ const zh: Record<TranslationKeys, string> = {
   "auth.passwordPlaceholder6": "至少6个字符",
   "auth.reenterPassword": "再次输入密码",
   "auth.signUpSuccessLoginFailed": "账户已创建，但自动登录失败。请手动登录。",
+  "auth.forgotPassword": "忘记密码？",
+  "auth.forgotPasswordDescription": "输入您的邮箱，我们将生成重置链接。",
+  "auth.resetLinkSent": "如果该邮箱存在账户，重置链接已生成。请查看服务器日志。",
+  "auth.backToSignIn": "返回登录",
+  "auth.sending": "发送中...",
+  "auth.sendResetLink": "发送重置链接",
+  "auth.rememberPassword": "记住密码了？",
+  "auth.resetPassword": "重置密码",
+  "auth.enterNewPassword": "请输入新密码。",
+  "auth.passwordResetSuccess": "密码重置成功！正在跳转到登录页面...",
+  "auth.newPassword": "新密码",
+  "auth.resetting": "重置中...",
 
   // ── Upload ─────────────────────────────────────────────────────────────────
   "upload.title": "分享表情包",

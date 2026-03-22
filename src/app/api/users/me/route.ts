@@ -22,6 +22,8 @@ export async function GET() {
         preferredLanguage: true,
         uiLanguage: true,
         createdAt: true,
+        passwordHash: true,
+        emailVerified: true,
         country: {
           select: { id: true, nameEn: true, flagEmoji: true },
         },
@@ -32,7 +34,9 @@ export async function GET() {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    return NextResponse.json(user);
+    // Don't leak password hash - send a boolean instead
+    const { passwordHash, ...rest } = user;
+    return NextResponse.json({ ...rest, hasPassword: !!passwordHash });
   } catch (error) {
     console.error("Error fetching profile:", error);
     return NextResponse.json({ error: "Failed to fetch profile" }, { status: 500 });
