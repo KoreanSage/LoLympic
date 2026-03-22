@@ -214,8 +214,8 @@ export default function MemeRenderer({
     ctx.scale(dpr, dpr);
 
     // When showing translation and clean image is available, use it as base
-    const baseImage =
-      showTranslation && cleanImage && segments.length > 0 ? cleanImage : image;
+    const usingCleanBase = showTranslation && !!cleanImage && segments.length > 0;
+    const baseImage = usingCleanBase ? cleanImage! : image;
     ctx.drawImage(baseImage, 0, 0, displayW, displayH);
 
     if (!showTranslation || segments.length === 0) return;
@@ -303,34 +303,36 @@ export default function MemeRenderer({
       const b = Math.round(bSum / pixelCount);
       const brightness = (r * 299 + g * 587 + b * 114) / 1000;
 
-      // Cover original text with a clean semi-transparent backdrop
-      // This provides much better readability than raw background sampling
-      const padX = bw * 0.06;
-      const padY = bh * 0.08;
-      const bgX = bx - padX;
-      const bgY = by - padY;
-      const bgW = bw + padX * 2;
-      const bgH = bh + padY * 2;
-      const borderRadius = Math.min(bgH * 0.15, 8);
+      // When using clean image as base, NO backdrop needed (original text already removed)
+      // When using original image, use FULLY OPAQUE backdrop to completely hide original text
+      if (!usingCleanBase) {
+        const padX = bw * 0.08;
+        const padY = bh * 0.1;
+        const bgX = bx - padX;
+        const bgY = by - padY;
+        const bgW = bw + padX * 2;
+        const bgH = bh + padY * 2;
+        const borderRadius = Math.min(bgH * 0.15, 8);
 
-      // Draw rounded rect backdrop
-      ctx.beginPath();
-      ctx.moveTo(bgX + borderRadius, bgY);
-      ctx.lineTo(bgX + bgW - borderRadius, bgY);
-      ctx.quadraticCurveTo(bgX + bgW, bgY, bgX + bgW, bgY + borderRadius);
-      ctx.lineTo(bgX + bgW, bgY + bgH - borderRadius);
-      ctx.quadraticCurveTo(bgX + bgW, bgY + bgH, bgX + bgW - borderRadius, bgY + bgH);
-      ctx.lineTo(bgX + borderRadius, bgY + bgH);
-      ctx.quadraticCurveTo(bgX, bgY + bgH, bgX, bgY + bgH - borderRadius);
-      ctx.lineTo(bgX, bgY + borderRadius);
-      ctx.quadraticCurveTo(bgX, bgY, bgX + borderRadius, bgY);
-      ctx.closePath();
+        // Draw rounded rect backdrop
+        ctx.beginPath();
+        ctx.moveTo(bgX + borderRadius, bgY);
+        ctx.lineTo(bgX + bgW - borderRadius, bgY);
+        ctx.quadraticCurveTo(bgX + bgW, bgY, bgX + bgW, bgY + borderRadius);
+        ctx.lineTo(bgX + bgW, bgY + bgH - borderRadius);
+        ctx.quadraticCurveTo(bgX + bgW, bgY + bgH, bgX + bgW - borderRadius, bgY + bgH);
+        ctx.lineTo(bgX + borderRadius, bgY + bgH);
+        ctx.quadraticCurveTo(bgX, bgY + bgH, bgX, bgY + bgH - borderRadius);
+        ctx.lineTo(bgX, bgY + borderRadius);
+        ctx.quadraticCurveTo(bgX, bgY, bgX + borderRadius, bgY);
+        ctx.closePath();
 
-      // Use a solid-ish backdrop matching the dominant background
-      ctx.fillStyle = seg.backgroundColor || (brightness > 128
-        ? `rgba(${Math.min(255, r + 30)},${Math.min(255, g + 30)},${Math.min(255, b + 30)},0.92)`
-        : `rgba(${Math.max(0, r - 20)},${Math.max(0, g - 20)},${Math.max(0, b - 20)},0.92)`);
-      ctx.fill();
+        // FULLY OPAQUE backdrop — completely hides original text
+        ctx.fillStyle = seg.backgroundColor || (brightness > 128
+          ? `rgb(${Math.min(255, r + 30)},${Math.min(255, g + 30)},${Math.min(255, b + 30)})`
+          : `rgb(${Math.max(0, r - 20)},${Math.max(0, g - 20)},${Math.max(0, b - 20)})`);
+        ctx.fill();
+      }
 
       // Handle rotation
       if (seg.rotation) {
