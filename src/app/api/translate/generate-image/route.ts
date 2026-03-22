@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
         const { base64, mimeType } = await readImageAsBase64(img.originalUrl);
 
         const response = await genAI2.models.generateContent({
-          model: "gemini-2.5-flash-preview-05-20",
+          model: "gemini-2.5-flash-image",
           contents: [{
             role: "user",
             parts: [
