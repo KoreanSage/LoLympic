@@ -110,7 +110,7 @@ function fitFontSize(
   while (size >= minSize) {
     ctx.font = `${fontWeight} ${size}px ${fontFamily}, sans-serif`;
     lines = wrapText(ctx, text, maxWidth);
-    const lineHeight = size * 1.2;
+    const lineHeight = size * 1.25;
     const totalHeight = lines.length * lineHeight;
     if (totalHeight <= maxHeight) {
       const allFit = lines.every(
@@ -355,11 +355,11 @@ export default function MemeRenderer({
         startFontSize
       );
 
-      const lineHeight = fontSize * 1.2;
+      const lineHeight = fontSize * 1.25;
       const totalTextHeight = lines.length * lineHeight;
 
-      // Vertical centering
-      const startY = by + (bh - totalTextHeight) / 2 + fontSize;
+      // Vertical centering within bounding box
+      const startY = by + (bh - totalTextHeight) / 2;
 
       // Horizontal alignment (flip for RTL text like Arabic)
       const rtl = isRTL(seg.translatedText);
@@ -381,7 +381,7 @@ export default function MemeRenderer({
       else if (align === "RIGHT") anchorX = rtl ? bx + padding : bx + bw - padding;
 
       ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}, sans-serif`;
-      ctx.textBaseline = "alphabetic";
+      ctx.textBaseline = "top";
 
       // Auto-detect text color based on background brightness
       const autoColor = brightness > 128 ? "#000000" : "#FFFFFF";
