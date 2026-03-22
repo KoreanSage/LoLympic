@@ -456,6 +456,31 @@ Output only the modified image.`,
 }
 
 // ---------------------------------------------------------------------------
+// Generate translated image for a payload — wrapper that calls generateTranslatedImage
+// and updates the DB with the resulting URL
+// ---------------------------------------------------------------------------
+async function generateTranslatedImageForPayload(
+  payloadId: string,
+  imageBase64: string,
+  mimeType: string,
+  segments: Array<{ sourceText: string; translatedText: string }>,
+  targetLanguage: string
+): Promise<void> {
+  try {
+    const url = await generateTranslatedImage(imageBase64, mimeType, segments, targetLanguage);
+    if (url) {
+      await prisma.translationPayload.update({
+        where: { id: payloadId },
+        data: { translatedImageUrl: url },
+      });
+      console.log(`Translated image saved for payload ${payloadId}: ${url}`);
+    }
+  } catch (err) {
+    console.error(`Failed to generate/save translated image for payload ${payloadId}:`, err);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // POST /api/translate
 // ---------------------------------------------------------------------------
 export async function POST(request: NextRequest) {
@@ -557,7 +582,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Process each target language
-    const results: Record<string, unknown> = {};
+    const results: Record<string, { payloadId?: string; version?: number; segmentCount?: number; confidence?: number | null; error?: string }> = {};
+    const allSegmentsByLang: Record<string, Array<{ sourceText: string; translatedText: string }>> = {};
 
     for (const targetLang of targetLanguages) {
       if (targetLang === sourceLanguage) continue;
@@ -645,6 +671,12 @@ export async function POST(request: NextRequest) {
           results[targetLang] = { error: `Translation failed for all images` };
           continue;
         }
+
+        // Track segments for translated image generation later
+        allSegmentsByLang[targetLang] = allSegments.map((s) => ({
+          sourceText: s.sourceText,
+          translatedText: s.translatedText,
+        }));
 
         // Translate title & body text
         let translatedTitle: string | null = null;
@@ -803,6 +835,27 @@ export async function POST(request: NextRequest) {
     fireAndForget(
       generateCleanImagesForPost(postId, imageDataList, imageUrls)
     );
+
+    // Fire-and-forget: generate translated images for each language
+    // This produces pixel-perfect translated images (original layout with translated text)
+    for (const targetLang of targetLanguages) {
+      const langResult = results[targetLang];
+      const payloadId = langResult?.payloadId;
+      if (payloadId && imageDataList[0]?.base64) {
+        const langSegments = allSegmentsByLang[targetLang] || [];
+        if (langSegments.length > 0) {
+          fireAndForget(
+            generateTranslatedImageForPayload(
+              payloadId,
+              imageDataList[0].base64,
+              imageDataList[0].mimeType,
+              langSegments,
+              targetLang
+            )
+          );
+        }
+      }
+    }
 
     // Update ranking score after translations complete
     updateRankingScore(postId).catch(() => {});
