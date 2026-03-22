@@ -434,31 +434,49 @@ export default function PostDetail({
       )}
 
       {/* Meme viewer */}
-      <div className="space-y-3">
-        {/* Toggle + Compare toggle */}
-        <div className="flex items-center justify-between">
-          {(segments.length > 0 || translatedImageUrl) && (
-            <TranslationToggle
-              showTranslation={showTranslation}
-              onChange={setShowTranslation}
-            />
-          )}
-          <button
-            onClick={() => setShowCompare(!showCompare)}
-            className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-foreground-subtle hover:text-foreground-muted hover:bg-background-elevated border border-border transition-colors"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7" />
-            </svg>
-            {showCompare ? t("post.original") : t("post.translated")}
-          </button>
-        </div>
+      <div className="space-y-0">
+        {/* Translation bar above image */}
+        {(segments.length > 0 || translatedImageUrl) && (
+          <div className="flex items-center justify-between px-4 py-2.5 bg-background-surface border border-border rounded-t-xl">
+            <div className="flex items-center gap-2">
+              <TranslationToggle
+                showTranslation={showTranslation}
+                onChange={setShowTranslation}
+              />
+              <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${
+                showTranslation
+                  ? "bg-green-500/15 text-green-400"
+                  : "bg-background-elevated text-foreground-subtle"
+              }`}>
+                {showTranslation ? (
+                  <>
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Translated
+                  </>
+                ) : (
+                  "Original"
+                )}
+              </span>
+            </div>
+            <button
+              onClick={() => setShowCompare(!showCompare)}
+              className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-foreground-subtle hover:text-foreground-muted hover:bg-background-elevated border border-border transition-colors"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7" />
+              </svg>
+              {showCompare ? t("post.original") : t("post.translated")}
+            </button>
+          </div>
+        )}
 
         {/* Image(s) */}
         {isTypeB && segments.length > 0 ? (
           /* Type B: Screenshot/forum posts
              Priority: translatedImageUrl (pre-rendered) > ScreenshotRenderer (HTML fallback) > original */
-          <div className="rounded-xl overflow-hidden border border-border">
+          <div className={`overflow-hidden border border-border ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-xl border-t-0" : "rounded-xl"}`}>
             {showTranslation && translatedImageUrl ? (
               // Pre-rendered translated image (Clean Image + Sharp overlay)
               // eslint-disable-next-line @next/next/no-img-element
@@ -476,7 +494,7 @@ export default function PostDetail({
             )}
           </div>
         ) : images && images.length > 1 ? (
-          <div className="rounded-xl overflow-hidden border border-border">
+          <div className={`overflow-hidden border border-border ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-xl border-t-0" : "rounded-xl"}`}>
             <ImageCarousel>
               {images.map((img, i) => {
                 const imgIsGif = img.mimeType === "image/gif";
@@ -498,14 +516,14 @@ export default function PostDetail({
             </ImageCarousel>
           </div>
         ) : isGif ? (
-          <div className="rounded-xl overflow-hidden border border-border">
+          <div className={`overflow-hidden border border-border ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-xl border-t-0" : "rounded-xl"}`}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={imageUrl} alt={title} className="w-full" />
           </div>
         ) : showCompare ? (
           <CompareMode imageUrl={imageUrl} segments={segments} />
         ) : (
-          <div className="rounded-xl overflow-hidden border border-border">
+          <div className={`overflow-hidden border border-border ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-xl border-t-0" : "rounded-xl"}`}>
             <MemeRenderer
               imageUrl={imageUrl}
               cleanImageUrl={cleanImageUrl}
@@ -614,20 +632,29 @@ export default function PostDetail({
           icon="save"
           active={saved}
           onClick={() => {
+            const willSave = !saved;
+            // localStorage update
             try {
               const raw = localStorage.getItem("lolympic_bookmarks");
               const bookmarks: string[] = raw ? JSON.parse(raw) : [];
               if (saved) {
                 const filtered = bookmarks.filter((bid) => bid !== id);
                 localStorage.setItem("lolympic_bookmarks", JSON.stringify(filtered));
-                toast(t("feed.bookmarkRemoved"), "success");
               } else {
                 if (!bookmarks.includes(id)) bookmarks.push(id);
                 localStorage.setItem("lolympic_bookmarks", JSON.stringify(bookmarks));
-                toast(t("feed.bookmarked"), "success");
               }
             } catch {}
-            setSaved(!saved);
+            // DB sync when logged in
+            if (session?.user) {
+              fetch("/api/bookmarks", {
+                method: willSave ? "POST" : "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ postId: id }),
+              }).catch(() => {});
+            }
+            setSaved(willSave);
+            toast(saved ? t("feed.bookmarkRemoved") : t("feed.bookmarked"), "success");
           }}
         />
       </div>

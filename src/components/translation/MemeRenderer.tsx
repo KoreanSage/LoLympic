@@ -147,6 +147,7 @@ export default function MemeRenderer({
   const [displaySize, setDisplaySize] = useState({ w: 0, h: 0 });
   const [imageError, setImageError] = useState(false);
   const [translatedImageError, setTranslatedImageError] = useState(false);
+  const [canvasRenderError, setCanvasRenderError] = useState(false);
 
   // Prefer canvas rendering (clean image + text overlay) for accuracy
   // Only fall back to pre-rendered Gemini image if we have no clean image AND no segments
@@ -197,6 +198,7 @@ export default function MemeRenderer({
 
   // Render canvas
   const render = useCallback(() => {
+    try {
     const canvas = canvasRef.current;
     if (!canvas || !image || displaySize.w === 0) return;
 
@@ -432,6 +434,10 @@ export default function MemeRenderer({
 
       ctx.restore();
     }
+    } catch (err) {
+      console.error("MemeRenderer canvas error:", err);
+      setCanvasRenderError(true);
+    }
   }, [image, cleanImage, segments, displaySize, showTranslation]);
 
   useEffect(() => {
@@ -452,6 +458,25 @@ export default function MemeRenderer({
     observer.observe(containerRef.current);
     return () => observer.disconnect();
   }, [image, width, displaySize.w]);
+
+  // Canvas rendering failed — show original image with overlay notice
+  if (canvasRenderError && !usePreRendered) {
+    return (
+      <div ref={containerRef} className="relative w-full">
+        <img
+          src={imageUrl}
+          alt="Original meme"
+          className="w-full rounded-lg"
+          style={{ maxWidth: "100%" }}
+        />
+        {showTranslation && segments.length > 0 && (
+          <div className="absolute bottom-2 left-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded text-center">
+            Translation overlay unavailable
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div ref={containerRef} className="relative w-full">

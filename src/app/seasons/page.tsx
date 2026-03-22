@@ -42,6 +42,11 @@ const MONTH_NAMES = [
   "July", "August", "September", "October", "November", "December",
 ];
 
+const MONTH_ABBREV = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+
 function formatDate(dateStr: string) {
   const d = new Date(dateStr);
   return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
@@ -78,6 +83,7 @@ export default function SeasonsPage() {
   }, []);
 
   const currentMonth = new Date().getMonth() + 1; // 1-12
+  const winnerMonths = new Set(winners.map((w) => w.month));
 
   if (loading) {
     return (
@@ -109,17 +115,30 @@ export default function SeasonsPage() {
               ? t("season.activeDescription")
               : t("season.pastDescription")}
         </p>
-        {season?.status === "JUDGING" && (
-          <Link
-            href="/seasons/vote"
-            className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-[#c9a84c] hover:bg-[#d4b65e] text-black font-semibold rounded-lg transition-colors text-sm"
-          >
-            {t("season.voteNow")}
-          </Link>
-        )}
+        <div className="flex flex-wrap items-center gap-3 mt-4">
+          {season?.status === "JUDGING" && (
+            <Link
+              href="/seasons/vote"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[#c9a84c] hover:bg-[#d4b65e] text-black font-semibold rounded-lg transition-colors text-sm"
+            >
+              {t("season.voteNow")}
+            </Link>
+          )}
+          {season?.status === "ACTIVE" && (
+            <Link
+              href="/upload"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#c9a84c] hover:bg-[#d4b65e] text-black font-bold rounded-lg transition-all text-sm shadow-[0_0_16px_rgba(201,168,76,0.3)] hover:shadow-[0_0_24px_rgba(201,168,76,0.45)]"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+              Upload Your Meme
+            </Link>
+          )}
+        </div>
       </div>
 
-      {/* Season Info Card — shown during ACTIVE or JUDGING */}
+      {/* Season Info Card */}
       {season && (season.status === "ACTIVE" || season.status === "JUDGING") && (
         <div className="mb-8 bg-gradient-to-br from-[#c9a84c]/10 to-[#c9a84c]/5 border border-[#c9a84c]/20 rounded-2xl overflow-hidden">
           {/* Top bar with season period */}
@@ -162,7 +181,7 @@ export default function SeasonsPage() {
             </div>
           )}
 
-          {/* How It Works steps */}
+          {/* How It Works steps - with gold numbered circles */}
           <div className="px-5 py-4">
             <h3 className="text-sm font-semibold text-foreground mb-3">
               {t("season.howItWorks")}
@@ -176,18 +195,23 @@ export default function SeasonsPage() {
               ].map((step, i) => (
                 <div
                   key={i}
-                  className="flex items-start gap-2.5 bg-background-surface/50 rounded-lg p-3"
+                  className="flex items-start gap-3 bg-background-surface/50 rounded-lg p-3"
                 >
-                  <span className="text-base mt-0.5 shrink-0">{step.icon}</span>
-                  <p className="text-xs text-foreground-muted leading-relaxed">{step.text}</p>
+                  <div className="w-7 h-7 rounded-full bg-[#c9a84c] text-black flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
+                    {i + 1}
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-base mr-1.5">{step.icon}</span>
+                    <span className="text-xs text-foreground-muted leading-relaxed">{step.text}</span>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Progress bar */}
+          {/* Progress — milestone dots */}
           <div className="px-5 py-4 bg-background-surface/30">
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-3">
               <p className="text-xs font-medium text-foreground-subtle">
                 {t("season.currentProgress")}
               </p>
@@ -195,29 +219,45 @@ export default function SeasonsPage() {
                 {t("season.monthsCompleted", { count: String(winners.length) })}
               </p>
             </div>
-            <div className="flex gap-1">
-              {Array.from({ length: 12 }, (_, i) => {
-                const month = i + 1;
-                const isWinner = winners.some((w) => w.month === month);
-                const isCurrent = month === currentMonth;
-                return (
-                  <div
-                    key={month}
-                    className={`h-2 flex-1 rounded-full transition-colors ${
-                      isWinner
-                        ? "bg-[#c9a84c]"
-                        : isCurrent
-                          ? "bg-[#c9a84c]/40 animate-pulse"
-                          : "bg-foreground/10"
-                    }`}
-                    title={MONTH_NAMES[i]}
-                  />
-                );
-              })}
-            </div>
-            <div className="flex justify-between mt-1.5">
-              <span className="text-[10px] text-foreground-subtle">Jan</span>
-              <span className="text-[10px] text-foreground-subtle">Dec</span>
+            {/* Milestone dots with connecting line */}
+            <div className="relative">
+              {/* Background track */}
+              <div className="absolute top-3 left-0 right-0 h-0.5 bg-foreground/10 rounded-full" />
+              {/* Filled track */}
+              <div
+                className="absolute top-3 left-0 h-0.5 bg-[#c9a84c] rounded-full transition-all duration-1000"
+                style={{ width: `${(Math.max(0, currentMonth - 1) / 11) * 100}%` }}
+              />
+              <div className="flex justify-between relative">
+                {Array.from({ length: 12 }, (_, i) => {
+                  const month = i + 1;
+                  const isWinner = winnerMonths.has(month);
+                  const isCurrent = month === currentMonth;
+                  const isPast = month < currentMonth;
+                  return (
+                    <div key={month} className="flex flex-col items-center" title={MONTH_NAMES[i]}>
+                      <div
+                        className={`w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold transition-all ${
+                          isWinner
+                            ? "bg-[#c9a84c] text-black shadow-[0_0_8px_rgba(201,168,76,0.4)]"
+                            : isCurrent
+                              ? "bg-[#c9a84c]/30 text-[#c9a84c] border-2 border-[#c9a84c] animate-pulse"
+                              : isPast
+                                ? "bg-foreground/15 text-foreground-subtle"
+                                : "bg-foreground/5 text-foreground-subtle/50"
+                        }`}
+                      >
+                        {isWinner ? "✓" : MONTH_ABBREV[i].charAt(0)}
+                      </div>
+                      <span className={`text-[9px] mt-1 ${
+                        isCurrent ? "text-[#c9a84c] font-bold" : "text-foreground-subtle"
+                      }`}>
+                        {MONTH_ABBREV[i]}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
@@ -292,7 +332,7 @@ export default function SeasonsPage() {
             </Link>
           ))}
 
-          {/* Empty slots for remaining months */}
+          {/* Future month cards with "Coming Soon" and lock icon */}
           {Array.from({ length: 12 - winners.length }, (_, i) => {
             const month = winners.length > 0
               ? winners[winners.length - 1].month + i + 1
@@ -301,13 +341,18 @@ export default function SeasonsPage() {
             return (
               <div
                 key={`empty-${month}`}
-                className="bg-background-surface border border-border border-dashed rounded-xl flex flex-col items-center justify-center aspect-[4/3] opacity-40"
+                className="bg-background-surface border border-border border-dashed rounded-xl flex flex-col items-center justify-center aspect-[4/3] group"
               >
-                <span className="text-2xl mb-2">🏆</span>
-                <span className="text-xs text-foreground-subtle">
+                {/* Lock icon */}
+                <div className="w-10 h-10 rounded-full bg-foreground/5 flex items-center justify-center mb-2 group-hover:bg-foreground/10 transition-colors">
+                  <svg className="w-5 h-5 text-foreground-subtle/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                  </svg>
+                </div>
+                <span className="text-xs font-medium text-foreground-subtle">
                   {MONTH_NAMES[month - 1]}
                 </span>
-                <span className="text-[10px] text-foreground-subtle mt-1">TBD</span>
+                <span className="text-[10px] text-foreground-subtle/60 mt-0.5">Coming Soon</span>
               </div>
             );
           })}

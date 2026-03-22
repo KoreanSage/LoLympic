@@ -57,6 +57,36 @@ export default function SearchPageWrapper() {
   );
 }
 
+const RECENT_SEARCHES_KEY = "lolympic_recent_searches";
+const MAX_RECENT_SEARCHES = 5;
+
+function getRecentSearches(): string[] {
+  try {
+    const raw = localStorage.getItem(RECENT_SEARCHES_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function addRecentSearch(q: string) {
+  try {
+    const searches = getRecentSearches().filter((s) => s !== q);
+    searches.unshift(q);
+    localStorage.setItem(
+      RECENT_SEARCHES_KEY,
+      JSON.stringify(searches.slice(0, MAX_RECENT_SEARCHES))
+    );
+  } catch {}
+}
+
+function removeRecentSearch(q: string) {
+  try {
+    const searches = getRecentSearches().filter((s) => s !== q);
+    localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(searches));
+  } catch {}
+}
+
 function SearchPage() {
   const { t } = useTranslation();
   const searchParams = useSearchParams();
@@ -67,10 +97,19 @@ function SearchPage() {
   const [postCount, setPostCount] = useState(0);
   const [userCount, setUserCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+
+  // Load recent searches on mount
+  useEffect(() => {
+    setRecentSearches(getRecentSearches());
+  }, []);
 
   const doSearch = useCallback(async (q: string) => {
     if (!q.trim()) return;
     setLoading(true);
+    // Save to recent searches
+    addRecentSearch(q.trim());
+    setRecentSearches(getRecentSearches());
     try {
       const res = await fetch(
         `/api/search?q=${encodeURIComponent(q)}&type=all&limit=30`
@@ -138,14 +177,52 @@ function SearchPage() {
             <div className="w-8 h-8 border-2 border-[#c9a84c] border-t-transparent rounded-full animate-spin" />
           </div>
         ) : !query ? (
-          <p className="text-sm text-foreground-subtle text-center py-12">
-            {t("search.placeholder")}
-          </p>
+          <div className="py-12 space-y-6">
+            <div className="text-center">
+              <svg className="w-12 h-12 mx-auto text-foreground-subtle mb-3 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <p className="text-sm text-foreground-subtle">
+                {t("search.placeholder")}
+              </p>
+            </div>
+            {/* Recent searches */}
+            {recentSearches.length > 0 && (
+              <div className="max-w-sm mx-auto">
+                <h3 className="text-xs font-medium text-foreground-subtle mb-2 uppercase tracking-wider">Recent searches</h3>
+                <div className="space-y-1">
+                  {recentSearches.map((q) => (
+                    <div key={q} className="flex items-center gap-2 group">
+                      <Link
+                        href={`/search?q=${encodeURIComponent(q)}`}
+                        className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-foreground-muted hover:text-foreground hover:bg-background-elevated transition-colors"
+                      >
+                        <svg className="w-3.5 h-3.5 text-foreground-subtle shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="truncate">{q}</span>
+                      </Link>
+                      <button
+                        onClick={() => {
+                          removeRecentSearch(q);
+                          setRecentSearches(getRecentSearches());
+                        }}
+                        className="p-1 rounded text-foreground-subtle hover:text-foreground-muted opacity-0 group-hover:opacity-100 transition-opacity"
+                        aria-label="Remove"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         ) : activeTab === "posts" ? (
           posts.length === 0 ? (
-            <p className="text-sm text-foreground-subtle text-center py-12">
-              {t("search.noResults", { query })}
-            </p>
+            <NoResultsMessage query={query} />
           ) : (
             <div className="space-y-3">
               {posts.map((post) => (
@@ -189,9 +266,7 @@ function SearchPage() {
             </div>
           )
         ) : users.length === 0 ? (
-          <p className="text-sm text-foreground-subtle text-center py-12">
-            {t("search.noResults", { query })}
-          </p>
+          <NoResultsMessage query={query} />
         ) : (
           <div className="space-y-3">
             {users.map((user) => (
@@ -236,5 +311,31 @@ function SearchPage() {
         )}
       </div>
     </MainLayout>
+  );
+}
+
+function NoResultsMessage({ query }: { query: string }) {
+  return (
+    <div className="text-center py-12 space-y-4">
+      <svg className="w-16 h-16 mx-auto text-foreground-subtle opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <div>
+        <p className="text-sm font-medium text-foreground-muted">
+          No results found for &ldquo;{query}&rdquo;
+        </p>
+        <p className="text-xs text-foreground-subtle mt-2">
+          Try different keywords or check spelling
+        </p>
+      </div>
+      <div className="max-w-xs mx-auto text-left bg-background-surface border border-border rounded-lg p-3">
+        <p className="text-[11px] font-medium text-foreground-subtle mb-1.5 uppercase tracking-wider">Suggestions</p>
+        <ul className="text-xs text-foreground-muted space-y-1">
+          <li>- Use broader or shorter search terms</li>
+          <li>- Search by tags (e.g. funny, anime)</li>
+          <li>- Search by username or country</li>
+        </ul>
+      </div>
+    </div>
   );
 }

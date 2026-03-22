@@ -109,6 +109,7 @@ export default function FeedCard({
   const router = useRouter();
   const { data: session } = useSession();
   const { t } = useTranslation();
+  const preferredLang = (session?.user as any)?.preferredLanguage || "en";
 
   // Auto-enable translation overlay when segments with bounding boxes exist or pre-rendered image available
   const hasOverlaySegments = useMemo(
@@ -234,6 +235,7 @@ export default function FeedCard({
   };
 
   const handleBookmark = () => {
+    const willSave = !bookmarked;
     const bookmarks = getBookmarks();
     if (bookmarked) {
       bookmarks.delete(id);
@@ -241,7 +243,15 @@ export default function FeedCard({
       bookmarks.add(id);
     }
     saveBookmarks(bookmarks);
-    setBookmarked(!bookmarked);
+    setBookmarked(willSave);
+    // DB sync when logged in
+    if (session?.user) {
+      fetch("/api/bookmarks", {
+        method: willSave ? "POST" : "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ postId: id }),
+      }).catch(() => {});
+    }
     toast(bookmarked ? t("feed.bookmarkRemoved") : t("feed.bookmarked"), "success");
   };
 
@@ -279,6 +289,9 @@ export default function FeedCard({
         {isOwnPost && (
           <div className="relative" ref={menuRef}>
             <button
+              aria-label="Post options"
+              aria-expanded={menuOpen}
+              aria-haspopup="true"
               onClick={() => setMenuOpen(!menuOpen)}
               className="p-1.5 rounded-lg text-foreground-subtle hover:text-foreground-muted hover:bg-background-elevated transition-colors"
             >
@@ -295,6 +308,7 @@ export default function FeedCard({
                     setMenuOpen(false);
                     setShowDeleteConfirm(true);
                   }}
+                  aria-label="Delete post"
                   className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-background-elevated transition-colors flex items-center gap-2"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -311,8 +325,14 @@ export default function FeedCard({
       {/* Delete confirmation dialog */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50" onClick={() => setShowDeleteConfirm(false)}>
-          <div className="bg-background-surface border border-border rounded-xl p-5 mx-4 max-w-sm w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-base font-semibold text-foreground mb-2">{t("feed.deletePost")}</h3>
+          <div
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="delete-dialog-title"
+            className="bg-background-surface border border-border rounded-xl p-5 mx-4 max-w-sm w-full shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 id="delete-dialog-title" className="text-base font-semibold text-foreground mb-2">{t("feed.deletePost")}</h3>
             <p className="text-sm text-foreground-muted mb-4">{t("feed.deleteConfirm")}</p>
             <div className="flex items-center gap-2 justify-end">
               <button
@@ -347,10 +367,43 @@ export default function FeedCard({
         </Link>
       )}
 
+      {/* Translation bar above image */}
+      {(segments.length > 0 || translatedImageUrl) && (
+        <div className="flex items-center justify-between mx-4 px-3 py-2 bg-background-surface border border-border rounded-t-lg">
+          <div className="flex items-center gap-2">
+            <TranslationToggle
+              showTranslation={showTranslation}
+              onChange={setShowTranslation}
+            />
+            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium ${
+              showTranslation
+                ? "bg-green-500/15 text-green-400"
+                : "bg-background-elevated text-foreground-subtle"
+            }`}>
+              {showTranslation ? (
+                <>
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Translated
+                </>
+              ) : (
+                "Original"
+              )}
+            </span>
+          </div>
+          {sourceLanguage && (
+            <span className="text-[11px] text-foreground-subtle font-medium">
+              {langToFlag(sourceLanguage)}{"\u2192"}{langToFlag(preferredLang)}
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Meme image(s) */}
       <Link href={`/post/${id}`} className="block">
         <div className="px-4 pb-2">
-          <div className="rounded-lg overflow-hidden border border-border">
+          <div className={`overflow-hidden border border-border ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-lg border-t-0" : "rounded-lg"}`}>
             {isTypeB && segments.length > 0 ? (
               /* Type B: translatedImageUrl (pre-rendered) > ScreenshotRenderer > original */
               showTranslation && translatedImageUrl ? (
@@ -402,15 +455,7 @@ export default function FeedCard({
         </div>
       </Link>
 
-      {/* Translation toggle — prominent position */}
-      {(segments.length > 0 || translatedImageUrl) && (
-        <div className="flex justify-center pb-3">
-          <TranslationToggle
-            showTranslation={showTranslation}
-            onChange={setShowTranslation}
-          />
-        </div>
-      )}
+      {/* (Translation toggle moved above image) */}
 
       {/* Fallback: show translation text when segments lack bounding boxes */}
       {segments.length > 0 && !hasOverlaySegments && (
@@ -474,6 +519,7 @@ export default function FeedCard({
         {/* Reddit-style vote buttons */}
         <div className="flex items-center gap-0.5">
           <button
+            aria-label="Upvote"
             onClick={() => handleVote(userVote === 1 ? 0 : 1)}
             disabled={votePending}
             className={`p-1.5 rounded-lg transition-all duration-200 ${
@@ -492,6 +538,7 @@ export default function FeedCard({
             {formatCount(voteScore)}
           </span>
           <button
+            aria-label="Downvote"
             onClick={() => handleVote(userVote === -1 ? 0 : -1)}
             disabled={votePending}
             className={`p-1.5 rounded-lg transition-all duration-200 ${
@@ -509,6 +556,7 @@ export default function FeedCard({
         <div className="w-px h-4 bg-border mx-1" />
 
         <ActionButton
+          ariaLabel="Comment"
           icon={
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
@@ -518,6 +566,7 @@ export default function FeedCard({
           onClick={handleComment}
         />
         <ActionButton
+          ariaLabel="Share"
           icon={
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
@@ -528,6 +577,7 @@ export default function FeedCard({
         />
         <div className="flex-1" />
         <button
+          aria-label={bookmarked ? "Remove bookmark" : "Bookmark"}
           onClick={handleBookmark}
           className={`p-2 rounded-lg transition-all duration-200 ${bookmarked ? "text-[#c9a84c] scale-110" : "text-foreground-subtle hover:text-foreground-muted"}`}
         >
@@ -545,14 +595,17 @@ function ActionButton({
   count,
   active,
   onClick,
+  ariaLabel,
 }: {
   icon: React.ReactNode;
   count: number;
   active?: boolean;
   onClick?: () => void;
+  ariaLabel?: string;
 }) {
   return (
     <button
+      aria-label={ariaLabel}
       onClick={onClick}
       className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg transition-all duration-200 ${
         active
@@ -572,6 +625,20 @@ function formatCount(n: number): string {
   if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
   if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
   return n.toString();
+}
+
+const LANG_FLAG_MAP: Record<string, string> = {
+  ko: "\uD83C\uDDF0\uD83C\uDDF7",
+  en: "\uD83C\uDDFA\uD83C\uDDF8",
+  ja: "\uD83C\uDDEF\uD83C\uDDF5",
+  zh: "\uD83C\uDDE8\uD83C\uDDF3",
+  es: "\uD83C\uDDEA\uD83C\uDDF8",
+  hi: "\uD83C\uDDEE\uD83C\uDDF3",
+  ar: "\uD83C\uDDF8\uD83C\uDDE6",
+};
+
+function langToFlag(code: string): string {
+  return LANG_FLAG_MAP[code] || code.toUpperCase();
 }
 
 function formatTimeAgo(dateStr: string): string {
