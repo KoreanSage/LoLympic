@@ -352,8 +352,11 @@ export default function FeedCard({
         <div className="px-4 pb-2">
           <div className="rounded-lg overflow-hidden border border-border">
             {isTypeB && segments.length > 0 ? (
-              /* Type B: Screenshot/forum posts — clean HTML */
-              showTranslation ? (
+              /* Type B: translatedImageUrl (pre-rendered) > ScreenshotRenderer > original */
+              showTranslation && translatedImageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={translatedImageUrl} alt={title} className="w-full" />
+              ) : showTranslation ? (
                 <ScreenshotRenderer
                   segments={segments}
                   showTranslation={showTranslation}

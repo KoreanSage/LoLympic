@@ -456,28 +456,119 @@ Output only the modified image.`,
 }
 
 // ---------------------------------------------------------------------------
-// Generate translated image for a payload — wrapper that calls generateTranslatedImage
-// and updates the DB with the resulting URL
+// Generate translated image for a payload using Clean Image + Sharp overlay
+// Strategy: Get the clean image (text removed) → overlay translated text via SVG
 // ---------------------------------------------------------------------------
 async function generateTranslatedImageForPayload(
   payloadId: string,
-  imageBase64: string,
-  mimeType: string,
-  segments: Array<{ sourceText: string; translatedText: string }>,
+  postId: string,
+  segments: Array<{
+    sourceText: string;
+    translatedText: string;
+    semanticRole: string;
+    boxX: number;
+    boxY: number;
+    boxWidth: number;
+    boxHeight: number;
+    fontFamily?: string;
+    fontWeight?: number;
+    fontSizePixels?: number;
+    color?: string;
+    textAlign?: string;
+    strokeColor?: string;
+    strokeWidth?: number;
+    isUppercase?: boolean;
+  }>,
   targetLanguage: string
 ): Promise<void> {
   try {
-    const url = await generateTranslatedImage(imageBase64, mimeType, segments, targetLanguage);
-    if (url) {
-      await prisma.translationPayload.update({
-        where: { id: payloadId },
-        data: { translatedImageUrl: url },
-      });
-      console.log(`Translated image saved for payload ${payloadId}: ${url}`);
+    // 1. Find the clean image for this post
+    const postImage = await prisma.postImage.findFirst({
+      where: { postId },
+      orderBy: { orderIndex: "asc" },
+      select: { cleanUrl: true, originalUrl: true },
+    });
+
+    if (!postImage) {
+      console.warn(`No image found for post ${postId}, skipping translated image`);
+      return;
     }
+
+    // Wait a bit for clean image generation to complete (it runs in parallel)
+    let cleanUrl = postImage.cleanUrl;
+    if (!cleanUrl) {
+      // Wait up to 30s for clean image to be generated
+      for (let retry = 0; retry < 6; retry++) {
+        await new Promise((r) => setTimeout(r, 5000));
+        const refreshed = await prisma.postImage.findFirst({
+          where: { postId },
+          orderBy: { orderIndex: "asc" },
+          select: { cleanUrl: true },
+        });
+        if (refreshed?.cleanUrl) {
+          cleanUrl = refreshed.cleanUrl;
+          break;
+        }
+      }
+    }
+
+    if (!cleanUrl) {
+      // Fallback: try Gemini image editing if no clean image available
+      console.warn(`No clean image for post ${postId}, falling back to Gemini`);
+      const originalImage = await prisma.postImage.findFirst({
+        where: { postId },
+        orderBy: { orderIndex: "asc" },
+        select: { originalUrl: true, mimeType: true },
+      });
+      if (originalImage) {
+        const simpleSegments = segments.map((s) => ({
+          sourceText: s.sourceText,
+          translatedText: s.translatedText,
+        }));
+        const url = await generateTranslatedImage(
+          await fetchAsBase64(originalImage.originalUrl),
+          originalImage.mimeType || "image/jpeg",
+          simpleSegments,
+          targetLanguage,
+        );
+        if (url) {
+          await prisma.translationPayload.update({
+            where: { id: payloadId },
+            data: { translatedImageUrl: url },
+          });
+        }
+      }
+      return;
+    }
+
+    // 2. Fetch clean image as buffer
+    const { composeTranslatedImage } = await import("@/lib/image-composer");
+    const cleanBuffer = Buffer.from(
+      await (await fetch(cleanUrl.startsWith("http") ? cleanUrl : `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}${cleanUrl}`)).arrayBuffer()
+    );
+
+    // 3. Compose: clean image + translated text overlay via Sharp
+    const composedBuffer = await composeTranslatedImage(cleanBuffer, segments);
+
+    // 4. Save the composed image
+    const url = await saveGeneratedImage(composedBuffer, `translated_${targetLanguage}`, ".png");
+
+    // 5. Update DB
+    await prisma.translationPayload.update({
+      where: { id: payloadId },
+      data: { translatedImageUrl: url },
+    });
+    console.log(`Translated image (Sharp) saved for payload ${payloadId}: ${url}`);
   } catch (err) {
-    console.error(`Failed to generate/save translated image for payload ${payloadId}:`, err);
+    console.error(`Failed to generate translated image for payload ${payloadId}:`, err);
   }
+}
+
+/** Helper: fetch a URL and return base64 string */
+async function fetchAsBase64(url: string): Promise<string> {
+  const res = await fetch(url);
+  const buf = Buffer.from(await res.arrayBuffer());
+  return buf.toString("base64");
 }
 
 // ---------------------------------------------------------------------------
@@ -583,7 +674,23 @@ export async function POST(request: NextRequest) {
 
     // Process each target language
     const results: Record<string, { payloadId?: string; version?: number; segmentCount?: number; confidence?: number | null; error?: string }> = {};
-    const allSegmentsByLang: Record<string, Array<{ sourceText: string; translatedText: string }>> = {};
+    const allSegmentsByLang: Record<string, Array<{
+      sourceText: string;
+      translatedText: string;
+      semanticRole: string;
+      boxX: number;
+      boxY: number;
+      boxWidth: number;
+      boxHeight: number;
+      fontFamily?: string;
+      fontWeight?: number;
+      fontSizePixels?: number;
+      color?: string;
+      textAlign?: string;
+      strokeColor?: string;
+      strokeWidth?: number;
+      isUppercase?: boolean;
+    }>> = {};
 
     for (const targetLang of targetLanguages) {
       if (targetLang === sourceLanguage) continue;
@@ -672,10 +779,23 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        // Track segments for translated image generation later
+        // Track segments (with position info) for translated image generation later
         allSegmentsByLang[targetLang] = allSegments.map((s) => ({
           sourceText: s.sourceText,
           translatedText: s.translatedText,
+          semanticRole: s.semanticRole,
+          boxX: s.box.x,
+          boxY: s.box.y,
+          boxWidth: s.box.width,
+          boxHeight: s.box.height,
+          fontFamily: s.style.fontFamily,
+          fontWeight: s.style.fontWeight,
+          fontSizePixels: s.style.fontSize,
+          color: s.style.color,
+          textAlign: s.style.textAlign,
+          strokeColor: s.style.strokeColor,
+          strokeWidth: s.style.strokeWidth,
+          isUppercase: undefined,
         }));
 
         // Translate title & body text
@@ -837,18 +957,17 @@ export async function POST(request: NextRequest) {
     );
 
     // Fire-and-forget: generate translated images for each language
-    // This produces pixel-perfect translated images (original layout with translated text)
+    // Uses Clean Image + Sharp SVG overlay for deterministic, pixel-perfect results
     for (const targetLang of targetLanguages) {
       const langResult = results[targetLang];
       const payloadId = langResult?.payloadId;
-      if (payloadId && imageDataList[0]?.base64) {
+      if (payloadId) {
         const langSegments = allSegmentsByLang[targetLang] || [];
         if (langSegments.length > 0) {
           fireAndForget(
             generateTranslatedImageForPayload(
               payloadId,
-              imageDataList[0].base64,
-              imageDataList[0].mimeType,
+              postId,
               langSegments,
               targetLang
             )

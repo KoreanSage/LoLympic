@@ -456,9 +456,15 @@ export default function PostDetail({
 
         {/* Image(s) */}
         {isTypeB && segments.length > 0 ? (
-          /* Type B: Screenshot/forum posts — render as clean HTML when translated, original image when not */
+          /* Type B: Screenshot/forum posts
+             Priority: translatedImageUrl (pre-rendered) > ScreenshotRenderer (HTML fallback) > original */
           <div className="rounded-xl overflow-hidden border border-border">
-            {showTranslation ? (
+            {showTranslation && translatedImageUrl ? (
+              // Pre-rendered translated image (Clean Image + Sharp overlay)
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={translatedImageUrl} alt={title} className="w-full" />
+            ) : showTranslation ? (
+              // HTML fallback while translated image is being generated
               <ScreenshotRenderer
                 segments={segments}
                 showTranslation={showTranslation}
