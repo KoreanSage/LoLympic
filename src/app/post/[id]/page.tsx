@@ -244,6 +244,7 @@ export default function PostPage() {
         translatedImageUrl={payload?.translatedImageUrl || undefined}
         mimeType={image?.mimeType || undefined}
         segments={segments}
+        memeType={payload?.memeType || undefined}
         reactionCount={post._count?.reactions ?? 0}
         commentCount={post._count?.comments ?? 0}
         shareCount={post.shareCount ?? 0}

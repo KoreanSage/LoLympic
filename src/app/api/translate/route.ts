@@ -146,6 +146,7 @@ interface CultureNoteResponse {
 }
 
 interface AITranslationResult {
+  memeType?: string;
   segments: TranslationSegmentResponse[];
   cultureNote: CultureNoteResponse;
   confidence?: number;
@@ -694,6 +695,7 @@ export async function POST(request: NextRequest) {
 
         // Store TranslationPayload + segments in a transaction
         const confidence = firstParsed.confidence ?? null;
+        const memeType = firstParsed.memeType ?? null;
         const payload = await prisma.$transaction(async (tx) => {
           const latestPayload = await tx.translationPayload.findFirst({
             where: {
@@ -712,6 +714,7 @@ export async function POST(request: NextRequest) {
               version: nextVersion,
               status: "COMPLETED",
               confidence,
+              memeType,
               translatedTitle,
               translatedBody,
               creatorType: "AI",

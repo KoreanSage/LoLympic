@@ -9,6 +9,7 @@ import Avatar from "@/components/ui/Avatar";
 import Badge from "@/components/ui/Badge";
 import Tabs from "@/components/ui/Tabs";
 import MemeRenderer from "@/components/translation/MemeRenderer";
+import ScreenshotRenderer from "@/components/translation/ScreenshotRenderer";
 import TranslationToggle from "@/components/translation/TranslationToggle";
 import CompareMode from "@/components/translation/CompareMode";
 import ImageCarousel from "@/components/ui/ImageCarousel";
@@ -38,6 +39,7 @@ interface PostDetailProps {
   translatedImageUrl?: string;
   mimeType?: string;
   segments: TranslationSegmentData[];
+  memeType?: string;
   reactionCount: number;
   commentCount: number;
   shareCount: number;
@@ -113,6 +115,7 @@ export default function PostDetail({
   translatedImageUrl,
   mimeType,
   segments,
+  memeType,
   reactionCount,
   commentCount,
   shareCount,
@@ -135,6 +138,11 @@ export default function PostDetail({
   );
   const isGif = mimeType === "image/gif";
   const hasTranslation = !isGif && (hasOverlaySegments || !!translatedImageUrl);
+
+  // Detect Type B (screenshot/forum posts) — use explicit memeType or heuristic
+  const isTypeB = memeType === "B" || (!memeType && segments.length >= 4 && segments.every(
+    (s) => ["DIALOGUE", "CAPTION", "OTHER", "HEADLINE", "LABEL"].includes(s.semanticRole)
+  ) && !segments.some((s) => s.semanticRole === "OVERLAY"));
   const [showTranslation, setShowTranslation] = useState(hasTranslation);
   const [activeTab, setActiveTab] = useState("culture");
   const [showCompare, setShowCompare] = useState(false);
@@ -447,7 +455,21 @@ export default function PostDetail({
         </div>
 
         {/* Image(s) */}
-        {images && images.length > 1 ? (
+        {isTypeB && segments.length > 0 ? (
+          /* Type B: Screenshot/forum posts — render as clean HTML when translated, original image when not */
+          <div className="rounded-xl overflow-hidden border border-border">
+            {showTranslation ? (
+              <ScreenshotRenderer
+                segments={segments}
+                showTranslation={showTranslation}
+                originalImageUrl={imageUrl}
+              />
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={imageUrl} alt={title} className="w-full" />
+            )}
+          </div>
+        ) : images && images.length > 1 ? (
           <div className="rounded-xl overflow-hidden border border-border">
             <ImageCarousel>
               {images.map((img, i) => {
