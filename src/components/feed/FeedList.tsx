@@ -33,6 +33,7 @@ interface FeedPost {
   translatedTitle?: string;
   translatedBody?: string;
   sourceLanguage?: string;
+  memeType?: string;
   author: {
     username: string;
     displayName?: string | null;
@@ -100,6 +101,7 @@ function mapApiPost(post: any): FeedPost {
     translatedTitle: payload?.translatedTitle || undefined,
     translatedBody: payload?.translatedBody || undefined,
     sourceLanguage: post.sourceLanguage || undefined,
+    memeType: payload?.memeType || undefined,
     author: {
       username: post.author?.username || "unknown",
       displayName: post.author?.displayName,
