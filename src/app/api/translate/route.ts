@@ -617,7 +617,7 @@ export async function POST(request: NextRequest) {
         if (post.title && sourceLanguage !== targetLang) {
           try {
             const titleModel = genAI.getGenerativeModel({
-              model: "gemini-2.0-flash-lite",
+              model: "gemini-2.5-flash",
               generationConfig: { temperature: 0.3, maxOutputTokens: 512 },
             });
             const titleResult = await titleModel.generateContent(
@@ -631,7 +631,7 @@ export async function POST(request: NextRequest) {
         if (post.body && sourceLanguage !== targetLang) {
           try {
             const bodyModel = genAI.getGenerativeModel({
-              model: "gemini-2.0-flash-lite",
+              model: "gemini-2.5-flash",
               generationConfig: { temperature: 0.3, maxOutputTokens: 1024 },
             });
             const bodyResult = await bodyModel.generateContent(

@@ -49,7 +49,7 @@ export async function backfillMissingTitleTranslations(
 
   const targetName = LANGUAGE_NAMES[targetLang] || targetLang;
   const model = getGenAI().getGenerativeModel({
-    model: "gemini-2.0-flash-lite",
+    model: "gemini-2.5-flash",
     generationConfig: { temperature: 0.3, maxOutputTokens: 512 },
   });
 
@@ -93,7 +93,7 @@ export async function backfillSinglePostTitle(
   try {
     const targetName = LANGUAGE_NAMES[targetLang] || targetLang;
     const model = getGenAI().getGenerativeModel({
-      model: "gemini-2.0-flash-lite",
+      model: "gemini-2.5-flash",
       generationConfig: { temperature: 0.3, maxOutputTokens: 512 },
     });
 

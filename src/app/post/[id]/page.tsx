@@ -15,34 +15,46 @@ export default function PostPage() {
   const [post, setPost] = useState<any>(null);
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [freshLang, setFreshLang] = useState<string | null>(null);
   const [clientTranslatedTitle, setClientTranslatedTitle] = useState<string | null>(null);
   const [clientTranslatedBody, setClientTranslatedBody] = useState<string | null>(null);
   const titleBackfillAttempted = useRef(false);
 
-  // Get the user's ACTUAL preferredLanguage: localStorage (instant) > DB > session JWT
-  useEffect(() => {
-    const stored = localStorage.getItem("lolympic_preferredLanguage");
-    if (stored) {
-      setFreshLang(stored);
+  // Resolve preferredLanguage: localStorage (instant) > DB > session JWT
+  // Use a synchronous initial value from localStorage to avoid double-fetch
+  const [preferredLang, setPreferredLang] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("lolympic_preferredLanguage");
+      if (stored) return stored;
     }
-    if (!session?.user) return;
+    return (session?.user as any)?.preferredLanguage || "en";
+  });
+  const [langReady, setLangReady] = useState(() => {
+    if (typeof window !== "undefined") {
+      return !!localStorage.getItem("lolympic_preferredLanguage");
+    }
+    return false;
+  });
+
+  // Verify from DB for accuracy (only updates if different)
+  useEffect(() => {
+    if (!session?.user) {
+      setLangReady(true);
+      return;
+    }
     fetch("/api/users/me")
       .then((r) => r.ok ? r.json() : null)
       .then((data) => {
         if (data?.preferredLanguage) {
-          setFreshLang(data.preferredLanguage);
+          setPreferredLang(data.preferredLanguage);
           localStorage.setItem("lolympic_preferredLanguage", data.preferredLanguage);
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setLangReady(true));
   }, [session?.user]);
 
-  // Use fresh value > session value > default
-  const preferredLang = freshLang || (session?.user as any)?.preferredLanguage || "en";
-
   useEffect(() => {
-    if (!id) return;
+    if (!id || !langReady) return;
 
     let cancelled = false;
     setLoading(true);
@@ -70,7 +82,7 @@ export default function PostPage() {
     return () => {
       cancelled = true;
     };
-  }, [id, preferredLang]);
+  }, [id, preferredLang, langReady]);
 
   // Client-side title/body translation: if payload has segments but no translatedTitle,
   // call a lightweight endpoint to translate it
@@ -212,6 +224,7 @@ export default function PostPage() {
         cultureNotes={cultureNotes}
         suggestions={[]}
         comments={[]}
+        preferredLang={preferredLang}
       />
     </MainLayout>
   );

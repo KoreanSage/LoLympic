@@ -308,7 +308,7 @@ async function handleRealtimeLeaderboard(type: string, limit: number) {
         by: ["countryId"],
         where: {
           countryId: { not: null },
-          status: { in: ["PUBLISHED", "DRAFT"] },
+          status: "PUBLISHED",
           visibility: "PUBLIC",
         },
         _count: { id: true },
@@ -339,7 +339,7 @@ async function handleRealtimeLeaderboard(type: string, limit: number) {
         by: ["countryId"],
         where: {
           countryId: { in: countryIds },
-          status: { in: ["PUBLISHED", "DRAFT"] },
+          status: "PUBLISHED",
           visibility: "PUBLIC",
         },
         _count: { authorId: true },
@@ -390,7 +390,7 @@ async function handleRealtimeLeaderboard(type: string, limit: number) {
       const userStats = await prisma.post.groupBy({
         by: ["authorId"],
         where: {
-          status: { in: ["PUBLISHED", "DRAFT"] },
+          status: "PUBLISHED",
           visibility: "PUBLIC",
         },
         _count: { id: true },
@@ -465,7 +465,7 @@ async function handleRealtimeLeaderboard(type: string, limit: number) {
       // Top posts by engagement score
       const posts = await prisma.post.findMany({
         where: {
-          status: { in: ["PUBLISHED", "DRAFT"] },
+          status: "PUBLISHED",
           visibility: "PUBLIC",
         },
         orderBy: [{ rankingScore: "desc" }, { reactionCount: "desc" }],

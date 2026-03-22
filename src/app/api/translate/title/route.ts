@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
@@ -24,15 +23,10 @@ function getGenAI() {
 // ---------------------------------------------------------------------------
 // POST /api/translate/title — Translate a post title (and optionally body)
 // Called client-side when a translation payload exists but has no translatedTitle
+// No auth required — payloadId serves as authorization (opaque UUID)
 // ---------------------------------------------------------------------------
 export async function POST(request: NextRequest) {
   try {
-    // Authentication required
-    const user = await getSessionUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const body = await request.json();
     const { title, body: postBody, targetLanguage, payloadId } = body;
 
@@ -71,7 +65,7 @@ export async function POST(request: NextRequest) {
 
     const targetName = LANGUAGE_NAMES[targetLanguage] || targetLanguage;
     const model = getGenAI().getGenerativeModel({
-      model: "gemini-2.0-flash-lite",
+      model: "gemini-2.5-flash",
       generationConfig: { temperature: 0.3, maxOutputTokens: 512 },
     });
 

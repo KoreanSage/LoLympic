@@ -45,4 +45,6 @@ export const LANGUAGE_FONT_DEFAULTS: Record<string, string> = {
   zh: "Noto Sans SC",
   en: "Impact",
   es: "Arial",
+  hi: "Noto Sans Devanagari",
+  ar: "Noto Sans Arabic",
 };

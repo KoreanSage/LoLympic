@@ -17,19 +17,6 @@ import SuggestionPanel from "./SuggestionPanel";
 import CommentSection from "./CommentSection";
 import { TranslationSegmentData } from "@/types/components";
 
-// ---------------------------------------------------------------------------
-// i18n labels per language
-// ---------------------------------------------------------------------------
-const UI_LABELS: Record<string, { cultureNote: string; suggestions: string; comments: string; noCultureNotes: string }> = {
-  ko: { cultureNote: "문화 노트", suggestions: "번역 제안", comments: "댓글", noCultureNotes: "아직 문화 노트가 없습니다" },
-  en: { cultureNote: "Culture Note", suggestions: "Translation Suggestions", comments: "Comments", noCultureNotes: "No culture notes yet" },
-  ja: { cultureNote: "文化ノート", suggestions: "翻訳提案", comments: "コメント", noCultureNotes: "文化ノートはまだありません" },
-  zh: { cultureNote: "文化笔记", suggestions: "翻译建议", comments: "评论", noCultureNotes: "暂无文化笔记" },
-  es: { cultureNote: "Nota cultural", suggestions: "Sugerencias de traducción", comments: "Comentarios", noCultureNotes: "Aún no hay notas culturales" },
-  hi: { cultureNote: "सांस्कृतिक नोट", suggestions: "अनुवाद सुझाव", comments: "टिप्पणियाँ", noCultureNotes: "अभी तक कोई सांस्कृतिक नोट नहीं" },
-  ar: { cultureNote: "ملاحظة ثقافية", suggestions: "اقتراحات الترجمة", comments: "التعليقات", noCultureNotes: "لا توجد ملاحظات ثقافية بعد" },
-};
-
 interface PostDetailProps {
   id: string;
   title: string;
@@ -63,6 +50,7 @@ interface PostDetailProps {
     mimeType?: string | null;
   }>;
   onDelete?: () => void;
+  preferredLang?: string;
   cultureNotes?: Array<{
     id: string;
     summary: string;
@@ -133,6 +121,7 @@ export default function PostDetail({
   tags,
   images,
   onDelete,
+  preferredLang: preferredLangProp,
   cultureNotes = [],
   suggestions = [],
   comments = [],
@@ -254,8 +243,7 @@ export default function PostDetail({
     }
   };
 
-  const preferredLang = (session?.user as any)?.preferredLanguage || "en";
-  const labels = UI_LABELS[preferredLang] || UI_LABELS.en;
+  const preferredLang = preferredLangProp || (session?.user as any)?.preferredLanguage || "en";
 
   const tabs = [
     { id: "culture", label: t("post.cultureNote"), count: cultureNotes.length },

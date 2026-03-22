@@ -77,6 +77,21 @@ export async function GET(
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
 
+    // Auth check (single call, used for both privacy and reactions)
+    let currentUser: Awaited<ReturnType<typeof getSessionUser>> = null;
+    try {
+      currentUser = await getSessionUser();
+    } catch {
+      // Not logged in
+    }
+
+    // Privacy check BEFORE any extra queries
+    if (post.status === "HIDDEN" || post.visibility === "PRIVATE") {
+      if (!currentUser || (currentUser.id !== post.authorId && currentUser.role !== "ADMIN")) {
+        return NextResponse.json({ error: "Post not found" }, { status: 404 });
+      }
+    }
+
     // Fallback: if no culture notes for requested language, fetch in any language
     if (lang && post.cultureNotes.length === 0) {
       const fallbackNotes = await prisma.cultureNote.findMany({
@@ -87,13 +102,6 @@ export async function GET(
         orderBy: { version: "desc" },
       });
       (post as any).cultureNotes = fallbackNotes;
-    }
-
-    if (post.status === "HIDDEN" || post.visibility === "PRIVATE") {
-      const user = await getSessionUser();
-      if (!user || (user.id !== post.authorId && user.role !== "ADMIN")) {
-        return NextResponse.json({ error: "Post not found" }, { status: 404 });
-      }
     }
 
     // Get reaction counts by type
@@ -109,17 +117,12 @@ export async function GET(
 
     // Check if current user has reacted
     let userReactions: string[] = [];
-    try {
-      const user = await getSessionUser();
-      if (user) {
-        const reactions = await prisma.postReaction.findMany({
-          where: { postId: id, userId: user.id },
-          select: { type: true },
-        });
-        userReactions = reactions.map((r) => r.type);
-      }
-    } catch {
-      // Not logged in — skip
+    if (currentUser) {
+      const reactions = await prisma.postReaction.findMany({
+        where: { postId: id, userId: currentUser.id },
+        select: { type: true },
+      });
+      userReactions = reactions.map((r) => r.type);
     }
 
     // Increment view count (fire and forget)

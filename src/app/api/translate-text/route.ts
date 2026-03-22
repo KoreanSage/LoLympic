@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     const targetName = LANG_NAMES[targetLanguage] || targetLanguage;
 
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash-lite",
+      model: "gemini-2.5-flash",
       generationConfig: {
         temperature: 0.3,
         maxOutputTokens: 1024,

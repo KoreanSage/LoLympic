@@ -282,14 +282,25 @@ export default function MemeRenderer({
 
       ctx.save();
 
-      // Sample background color for contrast detection
+      // Sample background color for contrast detection (average over region)
+      const sampleW = Math.max(1, Math.min(Math.floor(bw * dpr), 32));
+      const sampleH = Math.max(1, Math.min(Math.floor(bh * dpr), 32));
       const imgData = ctx.getImageData(
         Math.max(0, Math.floor(bx * dpr)),
         Math.max(0, Math.floor(by * dpr)),
-        Math.max(1, Math.min(4, Math.floor(bw * dpr))),
-        Math.max(1, Math.min(4, Math.floor(bh * dpr)))
+        sampleW,
+        sampleH
       );
-      const r = imgData.data[0], g = imgData.data[1], b = imgData.data[2];
+      let rSum = 0, gSum = 0, bSum = 0;
+      const pixelCount = imgData.data.length / 4;
+      for (let px = 0; px < imgData.data.length; px += 4) {
+        rSum += imgData.data[px];
+        gSum += imgData.data[px + 1];
+        bSum += imgData.data[px + 2];
+      }
+      const r = Math.round(rSum / pixelCount);
+      const g = Math.round(gSum / pixelCount);
+      const b = Math.round(bSum / pixelCount);
       const brightness = (r * 299 + g * 587 + b * 114) / 1000;
 
       // Cover original text with a clean semi-transparent backdrop
@@ -375,19 +386,33 @@ export default function MemeRenderer({
       const fillColor = seg.color || autoColor;
       const contrastStroke = brightness > 128 ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.4)";
 
+      // Apply shadow if provided by AI
+      if (seg.shadowColor) {
+        ctx.shadowColor = seg.shadowColor;
+        ctx.shadowOffsetX = (seg.shadowOffsetX ?? 1) * Math.min(scaleX, scaleY);
+        ctx.shadowOffsetY = (seg.shadowOffsetY ?? 1) * Math.min(scaleX, scaleY);
+        ctx.shadowBlur = (seg.shadowBlur ?? 2) * Math.min(scaleX, scaleY);
+      } else {
+        // Default subtle shadow for readability
+        ctx.shadowColor = brightness > 128 ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.6)";
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
+        ctx.shadowBlur = Math.max(2, fontSize * 0.08);
+      }
+
       for (let i = 0; i < lines.length; i++) {
         const ly = startY + i * lineHeight;
 
-        // Always add a subtle stroke for crisp text on backdrop
+        // Stroke for text edge definition
         if (seg.strokeColor || seg.strokeWidth) {
           ctx.strokeStyle = seg.strokeColor || contrastStroke;
           ctx.lineWidth = (seg.strokeWidth || 2) * Math.min(scaleX, scaleY);
           ctx.lineJoin = "round";
           ctx.strokeText(lines[i], anchorX, ly);
         } else {
-          // Subtle stroke for text edge definition
+          // Auto stroke for readability — thicker than before
           ctx.strokeStyle = contrastStroke;
-          ctx.lineWidth = Math.max(1, fontSize * 0.04);
+          ctx.lineWidth = Math.max(1.5, fontSize * 0.06);
           ctx.lineJoin = "round";
           ctx.strokeText(lines[i], anchorX, ly);
         }
@@ -396,6 +421,12 @@ export default function MemeRenderer({
         ctx.fillStyle = fillColor;
         ctx.fillText(lines[i], anchorX, ly);
       }
+
+      // Reset shadow
+      ctx.shadowColor = "transparent";
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
 
       ctx.restore();
     }
