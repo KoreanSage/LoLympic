@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import MainLayout from "@/components/layout/MainLayout";
 import Avatar from "@/components/ui/Avatar";
@@ -78,13 +78,26 @@ export default function SettingsPage() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
 
+  // Password change state
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [hasPassword, setHasPassword] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(false);
+
+  // Delete account state
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
   // Notification state
   const [notifReactions, setNotifReactions] = useState(true);
   const [notifComments, setNotifComments] = useState(true);
   const [notifFollows, setNotifFollows] = useState(true);
   const [notifSuggestions, setNotifSuggestions] = useState(true);
   const [notifSeason, setNotifSeason] = useState(true);
-  const [emailDigest, setEmailDigest] = useState(false);
 
   // Language state
   const [uiLanguage, setUiLanguage] = useState("en");
@@ -108,6 +121,8 @@ export default function SettingsPage() {
           setAvatarUrl(data.avatarUrl || null);
           setPreferredLang(data.preferredLanguage || "ko");
           setUiLanguage(data.uiLanguage || "en");
+          setHasPassword(!!data.hasPassword);
+          setEmailVerified(!!data.emailVerified);
         }
       })
       .catch(() => {})
@@ -178,7 +193,7 @@ export default function SettingsPage() {
       } else if (activeTab === "notifications") {
         // Notification preferences are stored locally for now
         localStorage.setItem("lolympic_notif_prefs", JSON.stringify({
-          notifReactions, notifComments, notifFollows, notifSuggestions, notifSeason, emailDigest,
+          notifReactions, notifComments, notifFollows, notifSuggestions, notifSeason,
         }));
         toast(t("settings.saved"), "success");
         setSaving(false);
@@ -383,30 +398,86 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
+                {!emailVerified && (
+                  <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4 flex items-center gap-3">
+                    <svg className="w-5 h-5 text-yellow-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                    <div>
+                      <p className="text-sm font-medium text-yellow-500">Email not verified</p>
+                      <p className="text-xs text-foreground-subtle">Email verification is not yet available. This does not affect your account functionality.</p>
+                    </div>
+                  </div>
+                )}
+
                 <div className="bg-background-surface border border-border rounded-xl p-6 space-y-4">
                   <h2 className="text-lg font-semibold text-foreground">{t("settings.password")}</h2>
-                  <p className="text-sm text-foreground-subtle">Change your password to keep your account secure.</p>
-                  <div className="space-y-3 opacity-50">
-                    <input
-                      type="password"
-                      placeholder="Current password"
-                      disabled
-                      className="w-full bg-background-elevated border border-border-hover rounded-lg px-3 py-2.5 text-sm text-foreground placeholder-foreground-subtle cursor-not-allowed"
-                    />
-                    <input
-                      type="password"
-                      placeholder="New password"
-                      disabled
-                      className="w-full bg-background-elevated border border-border-hover rounded-lg px-3 py-2.5 text-sm text-foreground placeholder-foreground-subtle cursor-not-allowed"
-                    />
-                    <input
-                      type="password"
-                      placeholder="Confirm new password"
-                      disabled
-                      className="w-full bg-background-elevated border border-border-hover rounded-lg px-3 py-2.5 text-sm text-foreground placeholder-foreground-subtle cursor-not-allowed"
-                    />
-                  </div>
-                  <p className="text-xs text-foreground-subtle">Password change will be available soon.</p>
+                  {hasPassword ? (
+                    <>
+                      <p className="text-sm text-foreground-subtle">Change your password to keep your account secure.</p>
+                      <div className="space-y-3">
+                        <input
+                          type="password"
+                          placeholder="Current password"
+                          value={currentPassword}
+                          onChange={(e) => setCurrentPassword(e.target.value)}
+                          className="w-full bg-background-elevated border border-border-hover rounded-lg px-3 py-2.5 text-sm text-foreground placeholder-foreground-subtle focus:outline-none focus:border-[#c9a84c]/50 transition-colors"
+                        />
+                        <input
+                          type="password"
+                          placeholder="New password (min 6 characters)"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          className="w-full bg-background-elevated border border-border-hover rounded-lg px-3 py-2.5 text-sm text-foreground placeholder-foreground-subtle focus:outline-none focus:border-[#c9a84c]/50 transition-colors"
+                        />
+                        <input
+                          type="password"
+                          placeholder="Confirm new password"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          className="w-full bg-background-elevated border border-border-hover rounded-lg px-3 py-2.5 text-sm text-foreground placeholder-foreground-subtle focus:outline-none focus:border-[#c9a84c]/50 transition-colors"
+                        />
+                      </div>
+                      <Button
+                        loading={passwordSaving}
+                        disabled={!currentPassword || !newPassword || !confirmPassword}
+                        onClick={async () => {
+                          if (newPassword !== confirmPassword) {
+                            toast("Passwords do not match", "error");
+                            return;
+                          }
+                          if (newPassword.length < 6) {
+                            toast("New password must be at least 6 characters", "error");
+                            return;
+                          }
+                          setPasswordSaving(true);
+                          try {
+                            const res = await fetch("/api/auth/change-password", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ currentPassword, newPassword }),
+                            });
+                            const data = await res.json();
+                            if (!res.ok) throw new Error(data.error || "Failed to change password");
+                            toast("Password changed successfully", "success");
+                            setCurrentPassword("");
+                            setNewPassword("");
+                            setConfirmPassword("");
+                          } catch (err: any) {
+                            toast(err.message || "Failed to change password", "error");
+                          } finally {
+                            setPasswordSaving(false);
+                          }
+                        }}
+                      >
+                        {passwordSaving ? "Changing..." : "Change Password"}
+                      </Button>
+                    </>
+                  ) : (
+                    <p className="text-sm text-foreground-subtle">
+                      Password change is not available for OAuth accounts. You signed in with Google.
+                    </p>
+                  )}
                 </div>
 
                 <div className="bg-background-surface border border-red-500/20 rounded-xl p-6 space-y-3">
@@ -414,7 +485,67 @@ export default function SettingsPage() {
                   <p className="text-sm text-foreground-subtle">
                     Once you delete your account, there is no going back. All your posts, translations, and achievements will be permanently removed.
                   </p>
-                  <Button variant="danger" onClick={() => toast("Account deletion coming soon", "info")}>Delete Account</Button>
+                  {!showDeleteConfirm ? (
+                    <Button variant="danger" onClick={() => setShowDeleteConfirm(true)}>Delete Account</Button>
+                  ) : (
+                    <div className="space-y-3 border-t border-red-500/20 pt-3">
+                      <p className="text-sm text-red-400 font-medium">Are you sure? This action is irreversible.</p>
+                      {hasPassword && (
+                        <input
+                          type="password"
+                          placeholder="Enter your password"
+                          value={deletePassword}
+                          onChange={(e) => setDeletePassword(e.target.value)}
+                          className="w-full bg-background-elevated border border-red-500/30 rounded-lg px-3 py-2.5 text-sm text-foreground placeholder-foreground-subtle focus:outline-none focus:border-red-500/50 transition-colors"
+                        />
+                      )}
+                      <input
+                        type="text"
+                        placeholder='Type "DELETE" to confirm'
+                        value={deleteConfirmation}
+                        onChange={(e) => setDeleteConfirmation(e.target.value)}
+                        className="w-full bg-background-elevated border border-red-500/30 rounded-lg px-3 py-2.5 text-sm text-foreground placeholder-foreground-subtle focus:outline-none focus:border-red-500/50 transition-colors"
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          variant="danger"
+                          loading={deleteLoading}
+                          disabled={deleteConfirmation !== "DELETE" || (hasPassword && !deletePassword)}
+                          onClick={async () => {
+                            setDeleteLoading(true);
+                            try {
+                              const res = await fetch("/api/auth/delete-account", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                  password: deletePassword || undefined,
+                                  confirmation: deleteConfirmation,
+                                }),
+                              });
+                              const data = await res.json();
+                              if (!res.ok) throw new Error(data.error || "Failed to delete account");
+                              await signOut({ callbackUrl: "/" });
+                            } catch (err: any) {
+                              toast(err.message || "Failed to delete account", "error");
+                              setDeleteLoading(false);
+                            }
+                          }}
+                        >
+                          {deleteLoading ? "Deleting..." : "Permanently Delete"}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          onClick={() => {
+                            setShowDeleteConfirm(false);
+                            setDeletePassword("");
+                            setDeleteConfirmation("");
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -433,7 +564,21 @@ export default function SettingsPage() {
                   <ToggleRow label={t("settings.notifSeason")} description="Season start, end, and medal announcements" checked={notifSeason} onChange={setNotifSeason} />
 
                   <div className="border-t border-border pt-4">
-                    <ToggleRow label={t("settings.notifEmail")} description="Weekly summary of activity sent to your email" checked={emailDigest} onChange={setEmailDigest} />
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm text-foreground">{t("settings.notifEmail")}</p>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-foreground-subtle/20 text-foreground-subtle">Coming soon</span>
+                        </div>
+                        <p className="text-xs text-foreground-subtle">Email notifications coming soon. An email service is required.</p>
+                      </div>
+                      <button
+                        disabled
+                        className="relative w-10 h-5 rounded-full bg-[#333] opacity-50 cursor-not-allowed"
+                      >
+                        <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white" />
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -510,7 +655,7 @@ export default function SettingsPage() {
                     </div>
                     <div className="bg-background-elevated rounded-lg p-3">
                       <span className="text-foreground-subtle">Countries</span>
-                      <p className="text-foreground font-medium">10 teams</p>
+                      <p className="text-foreground font-medium">{COUNTRIES.length} countries</p>
                     </div>
                     <div className="bg-background-elevated rounded-lg p-3">
                       <span className="text-foreground-subtle">Translation AI</span>

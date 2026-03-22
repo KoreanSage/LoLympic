@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/season-check",
       "schedule": "10 0 * * *"
+    },
+    {
+      "path": "/api/cron/tournament-advance",
+      "schedule": "5 0 29-31 12 *"
     }
   ]
 }

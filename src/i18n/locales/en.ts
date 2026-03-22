@@ -224,6 +224,18 @@ const en = {
   "auth.passwordPlaceholder6": "Min 6 characters",
   "auth.reenterPassword": "Re-enter password",
   "auth.signUpSuccessLoginFailed": "Account created but auto-login failed. Please sign in.",
+  "auth.forgotPassword": "Forgot password?",
+  "auth.forgotPasswordDescription": "Enter your email and we'll generate a reset link.",
+  "auth.resetLinkSent": "If an account with that email exists, a reset link has been generated. Check the server logs for the link.",
+  "auth.backToSignIn": "Back to Sign In",
+  "auth.sending": "Sending...",
+  "auth.sendResetLink": "Send Reset Link",
+  "auth.rememberPassword": "Remember your password?",
+  "auth.resetPassword": "Reset Password",
+  "auth.enterNewPassword": "Enter your new password below.",
+  "auth.passwordResetSuccess": "Password reset successfully! Redirecting to sign in...",
+  "auth.newPassword": "New Password",
+  "auth.resetting": "Resetting...",
 
   // ── Upload ─────────────────────────────────────────────────────────────────
   "upload.title": "Share a Meme",

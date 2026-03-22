@@ -30,7 +30,6 @@ interface Match {
 }
 
 const ROUND_EMOJI = ["", "8\uFE0F\u20E3", "4\uFE0F\u20E3", "\uD83C\uDFC6"];
-const ROUND_DATES = ["", "Dec 29", "Dec 30", "Dec 31"];
 const ROUND_LABELS = ["", "Round of 8", "Semi-Finals", "Grand Final"];
 
 const ROUND_KEYS = ["", "tournament.quarterfinals", "tournament.semifinals", "tournament.final"] as const;
@@ -125,15 +124,24 @@ export default function TournamentPage() {
     }
   };
 
-  // Group matches by round
-  const rounds = [1, 2, 3].map((round) => ({
-    round,
-    name: t(ROUND_KEYS[round] as any),
-    emoji: ROUND_EMOJI[round],
-    date: ROUND_DATES[round],
-    label: ROUND_LABELS[round],
-    matches: matches.filter((m) => m.round === round),
-  }));
+  // Group matches by round, deriving dates from match data
+  const rounds = [1, 2, 3].map((round) => {
+    const roundMatches = matches.filter((m) => m.round === round);
+    // Derive the display date from the first match's startAt
+    let date = "";
+    if (roundMatches.length > 0 && roundMatches[0].startAt) {
+      const d = new Date(roundMatches[0].startAt);
+      date = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    }
+    return {
+      round,
+      name: t(ROUND_KEYS[round] as any),
+      emoji: ROUND_EMOJI[round],
+      date,
+      label: ROUND_LABELS[round],
+      matches: roundMatches,
+    };
+  });
 
   // Find champion
   const finalMatch = matches.find((m) => m.round === 3 && m.winnerId);
@@ -225,9 +233,6 @@ export default function TournamentPage() {
             if (roundMatches.length === 0) {
               // Show placeholder for upcoming rounds
               if (!prevRound?.matches.length) return null;
-
-              // Find earliest start time from matches data for countdown
-              const nextRoundStartAt = ROUND_DATES[round]; // fallback
 
               return (
                 <div key={round}>

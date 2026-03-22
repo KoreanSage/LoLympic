@@ -226,6 +226,18 @@ const hi: Record<TranslationKeys, string> = {
   "auth.passwordPlaceholder6": "कम से कम 6 characters",
   "auth.reenterPassword": "Password दोबारा डालें",
   "auth.signUpSuccessLoginFailed": "Account बन गया लेकिन auto-login fail हो गया। Please sign in करें।",
+  "auth.forgotPassword": "पासवर्ड भूल गए?",
+  "auth.forgotPasswordDescription": "अपना ईमेल दर्ज करें और हम रीसेट लिंक जनरेट करेंगे।",
+  "auth.resetLinkSent": "अगर उस ईमेल से कोई अकाउंट है तो रीसेट लिंक जनरेट हो गया है। सर्वर लॉग्स चेक करें।",
+  "auth.backToSignIn": "साइन इन पर वापस जाएं",
+  "auth.sending": "भेज रहे हैं...",
+  "auth.sendResetLink": "रीसेट लिंक भेजें",
+  "auth.rememberPassword": "पासवर्ड याद है?",
+  "auth.resetPassword": "पासवर्ड रीसेट करें",
+  "auth.enterNewPassword": "अपना नया पासवर्ड दर्ज करें।",
+  "auth.passwordResetSuccess": "पासवर्ड सफलतापूर्वक रीसेट हो गया! साइन इन पर रीडायरेक्ट हो रहा है...",
+  "auth.newPassword": "नया पासवर्ड",
+  "auth.resetting": "रीसेट हो रहा है...",
 
   // ── Upload ─────────────────────────────────────────────────────────────────
   "upload.title": "Meme Share करें",

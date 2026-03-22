@@ -226,6 +226,18 @@ const ko: Record<TranslationKeys, string> = {
   "auth.passwordPlaceholder6": "최소 6자",
   "auth.reenterPassword": "비밀번호 재입력",
   "auth.signUpSuccessLoginFailed": "계정이 생성되었지만 자동 로그인에 실패했습니다. 로그인해 주세요.",
+  "auth.forgotPassword": "비밀번호를 잊으셨나요?",
+  "auth.forgotPasswordDescription": "이메일을 입력하면 재설정 링크를 생성해 드립니다.",
+  "auth.resetLinkSent": "해당 이메일의 계정이 있다면 재설정 링크가 생성되었습니다. 서버 로그를 확인하세요.",
+  "auth.backToSignIn": "로그인으로 돌아가기",
+  "auth.sending": "전송 중...",
+  "auth.sendResetLink": "재설정 링크 보내기",
+  "auth.rememberPassword": "비밀번호가 기억나시나요?",
+  "auth.resetPassword": "비밀번호 재설정",
+  "auth.enterNewPassword": "새 비밀번호를 입력하세요.",
+  "auth.passwordResetSuccess": "비밀번호가 재설정되었습니다! 로그인 페이지로 이동합니다...",
+  "auth.newPassword": "새 비밀번호",
+  "auth.resetting": "재설정 중...",
 
   // ── Upload ─────────────────────────────────────────────────────────────────
   "upload.title": "밈 공유하기",

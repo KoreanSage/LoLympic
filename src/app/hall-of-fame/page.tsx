@@ -69,6 +69,13 @@ export default function HallOfFamePage() {
               const user = userRes?.ok ? await userRes.json() : null;
               const postData = postRes?.ok ? await postRes.json() : null;
 
+              // Use country data from user profile if available, otherwise fallback
+              const countryData = user?.country
+                ? { id: user.country.id, nameEn: user.country.nameEn, flagEmoji: user.country.flagEmoji }
+                : s.championCountryId
+                  ? { id: s.championCountryId, nameEn: "", flagEmoji: "" }
+                  : null;
+
               return {
                 season: {
                   id: s.id,
@@ -79,9 +86,7 @@ export default function HallOfFamePage() {
                   championPostId: s.championPostId,
                 },
                 champion: user,
-                country: s.championCountryId
-                  ? { id: s.championCountryId, nameEn: "", flagEmoji: "" }
-                  : null,
+                country: countryData,
                 post: postData?.post || null,
               } as ChampionData;
             } catch {

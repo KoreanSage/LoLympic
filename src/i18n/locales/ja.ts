@@ -226,6 +226,18 @@ const ja: Record<TranslationKeys, string> = {
   "auth.passwordPlaceholder6": "6文字以上",
   "auth.reenterPassword": "パスワード再入力",
   "auth.signUpSuccessLoginFailed": "アカウントは作成されましたが、自動ログインに失敗しました。ログインしてください。",
+  "auth.forgotPassword": "パスワードをお忘れですか？",
+  "auth.forgotPasswordDescription": "メールアドレスを入力してください。リセットリンクを生成します。",
+  "auth.resetLinkSent": "該当するメールアドレスのアカウントがあれば、リセットリンクが生成されました。サーバーログをご確認ください。",
+  "auth.backToSignIn": "ログインに戻る",
+  "auth.sending": "送信中...",
+  "auth.sendResetLink": "リセットリンクを送信",
+  "auth.rememberPassword": "パスワードを覚えていますか？",
+  "auth.resetPassword": "パスワードリセット",
+  "auth.enterNewPassword": "新しいパスワードを入力してください。",
+  "auth.passwordResetSuccess": "パスワードがリセットされました！ログインページに移動します...",
+  "auth.newPassword": "新しいパスワード",
+  "auth.resetting": "リセット中...",
 
   // ── Upload ─────────────────────────────────────────────────────────────────
   "upload.title": "ミームをシェア",
