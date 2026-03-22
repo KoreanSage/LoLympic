@@ -36,9 +36,38 @@ type TranslationStatus = "pending" | "translating" | "done" | "error";
 
 interface PublishProgress {
   phase: "uploading" | "creating" | "translating" | "done" | "error";
+  uploadProgress?: number; // 0-100 percentage across all images
+  uploadedCount?: number;
+  totalCount?: number;
   languages: Record<string, TranslationStatus>;
   error?: string;
   postId?: string;
+}
+
+function uploadFileWithProgress(
+  file: File,
+  onProgress: (loaded: number, total: number) => void
+): Promise<any> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "/api/upload");
+    xhr.upload.addEventListener("progress", (e) => {
+      if (e.lengthComputable) onProgress(e.loaded, e.total);
+    });
+    xhr.addEventListener("load", () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try { resolve(JSON.parse(xhr.responseText)); } catch { reject(new Error("Invalid response")); }
+      } else {
+        try { const err = JSON.parse(xhr.responseText); reject(new Error(err.error || "Upload failed")); }
+        catch { reject(new Error("Upload failed")); }
+      }
+    });
+    xhr.addEventListener("error", () => reject(new Error("Upload failed")));
+    xhr.addEventListener("abort", () => reject(new Error("Upload cancelled")));
+    const formData = new FormData();
+    formData.append("file", file);
+    xhr.send(formData);
+  });
 }
 
 export default function UploadStudio() {
@@ -81,10 +110,10 @@ export default function UploadStudio() {
     const langStatuses: Record<string, TranslationStatus> = {};
     targetLangs.forEach((l) => (langStatuses[l.code] = "pending"));
 
-    setProgress({ phase: "uploading", languages: langStatuses });
+    setProgress({ phase: "uploading", uploadProgress: 0, uploadedCount: 0, totalCount: imageFiles.length, languages: langStatuses });
 
     try {
-      // Step 1: Upload all images
+      // Step 1: Upload all images with progress tracking
       const uploadedImages: Array<{
         url: string;
         width?: number;
@@ -93,15 +122,22 @@ export default function UploadStudio() {
         fileSizeBytes?: number;
       }> = [];
 
-      for (const file of imageFiles) {
-        const formData = new FormData();
-        formData.append("file", file);
-        const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
-        if (!uploadRes.ok) {
-          const err = await uploadRes.json();
-          throw new Error(err.error || "Upload failed");
-        }
-        const data = await uploadRes.json();
+      const totalSize = imageFiles.reduce((sum, f) => sum + f.size, 0);
+      let completedSize = 0;
+
+      for (let idx = 0; idx < imageFiles.length; idx++) {
+        const file = imageFiles[idx];
+        const fileStartSize = completedSize;
+        const data = await uploadFileWithProgress(file, (loaded, total) => {
+          const overallProgress = Math.round(((fileStartSize + loaded) / totalSize) * 100);
+          setProgress((p) => p && { ...p, uploadProgress: Math.min(overallProgress, 99) });
+        });
+        completedSize += file.size;
+        setProgress((p) => p && {
+          ...p,
+          uploadProgress: Math.round((completedSize / totalSize) * 100),
+          uploadedCount: idx + 1,
+        });
         uploadedImages.push({
           url: data.url,
           width: data.width,
@@ -152,38 +188,85 @@ export default function UploadStudio() {
       // Translate using first non-GIF image
       const translateImage = uploadedImages.find((img) => img.mimeType !== "image/gif") || uploadedImages[0];
 
-      const translatePromises = targetLangs.map(async (lang) => {
+      // Translate one language at a time with retry
+      const translateOneLang = async (langCode: string): Promise<boolean> => {
+        const translateRes = await fetch("/api/translate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            postId,
+            sourceLanguage,
+            targetLanguages: [langCode],
+            imageUrl: translateImage.url,
+          }),
+        });
+        if (!translateRes.ok) throw new Error("Translation API error");
+        const translateData = await translateRes.json();
+        const langResult = translateData.translations?.[langCode];
+        if (langResult?.error) throw new Error(langResult.error);
+        return true;
+      };
+
+      // Process languages with concurrency limit of 2 + auto-retry
+      const CONCURRENCY = 2;
+      const langQueue = [...targetLangs];
+      const failedLangs: Array<{ code: string; label: string }> = [];
+
+      const processLang = async (lang: { code: string; label: string }) => {
         try {
-          const translateRes = await fetch("/api/translate", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              postId,
-              sourceLanguage,
-              targetLanguages: [lang.code],
-              imageUrl: translateImage.url,
-            }),
-          });
-
-          if (!translateRes.ok) throw new Error("Translation API error");
-
-          const translateData = await translateRes.json();
-          const langResult = translateData.translations?.[lang.code];
-          if (langResult?.error) throw new Error(langResult.error);
-
+          await translateOneLang(lang.code);
           setProgress((p) => {
             if (!p) return p;
             return { ...p, languages: { ...p.languages, [lang.code]: "done" } };
           });
         } catch {
+          failedLangs.push(lang);
           setProgress((p) => {
             if (!p) return p;
             return { ...p, languages: { ...p.languages, [lang.code]: "error" } };
           });
         }
-      });
+      };
 
-      await Promise.allSettled(translatePromises);
+      // Run with concurrency limit
+      const runWithConcurrency = async (items: Array<{ code: string; label: string }>, concurrency: number) => {
+        const executing = new Set<Promise<void>>();
+        for (const item of items) {
+          const p = processLang(item).then(() => { executing.delete(p); });
+          executing.add(p);
+          if (executing.size >= concurrency) {
+            await Promise.race(executing);
+          }
+        }
+        await Promise.allSettled(executing);
+      };
+
+      await runWithConcurrency(langQueue, CONCURRENCY);
+
+      // Retry failed languages (one at a time with delay)
+      if (failedLangs.length > 0) {
+        console.log(`Retrying ${failedLangs.length} failed translations...`);
+        for (const lang of failedLangs) {
+          setProgress((p) => {
+            if (!p) return p;
+            return { ...p, languages: { ...p.languages, [lang.code]: "translating" } };
+          });
+          // Small delay before retry to let Gemini rate limit reset
+          await new Promise((r) => setTimeout(r, 2000));
+          try {
+            await translateOneLang(lang.code);
+            setProgress((p) => {
+              if (!p) return p;
+              return { ...p, languages: { ...p.languages, [lang.code]: "done" } };
+            });
+          } catch {
+            setProgress((p) => {
+              if (!p) return p;
+              return { ...p, languages: { ...p.languages, [lang.code]: "error" } };
+            });
+          }
+        }
+      }
 
       setProgress((p) => p && { ...p, phase: "done" });
 
@@ -238,6 +321,22 @@ export default function UploadStudio() {
               {progress.phase === "done" && "Published!"}
               {progress.phase === "error" && "Something went wrong"}
             </h2>
+
+            {/* Upload progress bar */}
+            {progress.phase === "uploading" && (
+              <div className="mt-4 w-full max-w-xs mx-auto">
+                <div className="flex items-center justify-between text-xs text-foreground-subtle mb-1.5">
+                  <span>{progress.uploadedCount ?? 0}/{progress.totalCount ?? 0} files</span>
+                  <span>{progress.uploadProgress ?? 0}%</span>
+                </div>
+                <div className="w-full h-2 bg-background-elevated rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-[#c9a84c] rounded-full transition-all duration-300 ease-out"
+                    style={{ width: `${progress.uploadProgress ?? 0}%` }}
+                  />
+                </div>
+              </div>
+            )}
 
             {progress.phase === "translating" && (
               <p className="text-sm text-foreground-subtle mt-2">

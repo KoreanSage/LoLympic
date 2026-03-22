@@ -63,10 +63,13 @@ export default function MonthlyWinnerBanner() {
   if (!winner || dismissed) return null;
 
   return (
-    <div className="relative bg-gradient-to-r from-[#c9a84c]/15 via-[#c9a84c]/5 to-[#c9a84c]/15 border border-[#c9a84c]/20 rounded-xl p-4 mb-4">
+    <div className="relative bg-gradient-to-r from-[#c9a84c]/15 via-[#c9a84c]/5 to-[#c9a84c]/15 border border-[#c9a84c]/25 rounded-xl p-4 mb-4 overflow-hidden">
+      {/* Decorative top gold line */}
+      <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#c9a84c]/60 to-transparent" />
+
       <button
         onClick={handleDismiss}
-        className="absolute top-2 right-2 p-1 rounded-full hover:bg-background-overlay text-foreground-subtle hover:text-foreground-muted transition-colors"
+        className="absolute top-2 right-2 p-1 rounded-full hover:bg-background-overlay text-foreground-subtle hover:text-foreground-muted transition-colors z-10"
         aria-label="Dismiss"
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -75,11 +78,11 @@ export default function MonthlyWinnerBanner() {
       </button>
 
       <div className="flex items-center gap-4">
-        {/* Thumbnail */}
+        {/* Thumbnail with gold border */}
         {winner.post.images[0]?.originalUrl && (
           <Link
             href={`/post/${winner.post.id}`}
-            className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 border border-border"
+            className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 border-2 border-[#c9a84c]/40 shadow-[0_0_8px_rgba(201,168,76,0.15)] hover:border-[#c9a84c] transition-colors"
           >
             <img
               src={winner.post.images[0].originalUrl}
@@ -91,6 +94,7 @@ export default function MonthlyWinnerBanner() {
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
+            <span className="text-xs">🏆</span>
             <span className="text-xs font-bold text-[#c9a84c]">
               {t("season.memeOfTheMonth", { month: MONTH_NAMES[winner.month - 1] })}
             </span>
@@ -108,12 +112,20 @@ export default function MonthlyWinnerBanner() {
           </p>
         </div>
 
-        <Link
-          href="/seasons"
-          className="text-xs text-[#c9a84c] hover:underline flex-shrink-0 hidden sm:block"
-        >
-          {t("season.viewAll")}
-        </Link>
+        <div className="flex flex-col items-end gap-1 flex-shrink-0 hidden sm:flex">
+          <Link
+            href={`/post/${winner.post.id}`}
+            className="text-xs text-[#c9a84c] hover:text-[#d4b65e] font-medium transition-colors"
+          >
+            View Details →
+          </Link>
+          <Link
+            href="/seasons"
+            className="text-[10px] text-foreground-subtle hover:text-foreground-muted transition-colors"
+          >
+            {t("season.viewAll")}
+          </Link>
+        </div>
       </div>
     </div>
   );

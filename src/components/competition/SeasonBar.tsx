@@ -34,6 +34,7 @@ export default function SeasonBar({ className = "" }: { className?: string }) {
   const [data, setData] = useState<SeasonData | null>(null);
   const [leading, setLeading] = useState<LeadingCountry | null>(null);
   const [timeLeft, setTimeLeft] = useState("");
+  const [daysRemaining, setDaysRemaining] = useState<number | null>(null);
   const [progress, setProgress] = useState(0);
   const [loaded, setLoaded] = useState(false);
 
@@ -72,16 +73,19 @@ export default function SeasonBar({ className = "" }: { className?: string }) {
       if (remaining <= 0) {
         setTimeLeft(t("season.ended"));
         setProgress(100);
+        setDaysRemaining(0);
         return;
       }
 
       const days = Math.floor(remaining / (1000 * 60 * 60 * 24));
       const hours = Math.floor((remaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const mins = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+
+      setDaysRemaining(days);
 
       if (days > 0) {
         setTimeLeft(`${days}d ${hours}h`);
       } else {
-        const mins = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
         setTimeLeft(`${hours}h ${mins}m`);
       }
 
@@ -91,12 +95,13 @@ export default function SeasonBar({ className = "" }: { className?: string }) {
     update();
     const interval = setInterval(update, 60000);
     return () => clearInterval(interval);
-  }, [data?.active]);
+  }, [data?.active, t]);
 
   if (!loaded) return null;
 
   const season = data?.active;
   const champion = data?.champion;
+  const isEndingSoon = daysRemaining !== null && daysRemaining < 7;
 
   // Champion banner — show above season bar if there's a recent champion
   // (visible for 1 year after season ends)
@@ -123,7 +128,9 @@ export default function SeasonBar({ className = "" }: { className?: string }) {
       )}
 
       {/* Season Bar */}
-      <div className="bg-background-surface border-b border-border px-4 py-1.5">
+      <div className={`bg-background-surface border-b border-border px-4 py-1.5 ${
+        isEndingSoon ? "animate-[pulse_3s_ease-in-out_infinite]" : ""
+      }`}>
         <div className="max-w-[1280px] mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3 text-xs">
             {!season ? (
@@ -152,7 +159,13 @@ export default function SeasonBar({ className = "" }: { className?: string }) {
                   {t("season.title")} {season.number}
                 </Link>
                 <span className="text-foreground-subtle">&middot;</span>
-                <span className="text-foreground-muted">{t("season.left", { time: timeLeft })}</span>
+                {/* Countdown with days/hours format */}
+                <span className={`font-medium ${isEndingSoon ? "text-orange-400" : "text-foreground-muted"}`}>
+                  {isEndingSoon && (
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-orange-400 mr-1.5 animate-pulse" />
+                  )}
+                  {t("season.left", { time: timeLeft })}
+                </span>
               </>
             )}
 
@@ -160,7 +173,8 @@ export default function SeasonBar({ className = "" }: { className?: string }) {
               <>
                 <span className="text-foreground-subtle">&middot;</span>
                 <span className="text-foreground-muted">
-                  {t("season.leading", { flag: leading.flag, name: leading.name })}
+                  <span className="mr-0.5">{leading.flag}</span>
+                  {t("season.leading", { flag: "", name: leading.name })}
                 </span>
               </>
             )}
@@ -171,7 +185,11 @@ export default function SeasonBar({ className = "" }: { className?: string }) {
             <div className="hidden sm:flex items-center gap-2">
               <div className="w-24 h-1 bg-background-overlay rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-[#c9a84c] rounded-full transition-all duration-500"
+                  className={`h-full rounded-full transition-all duration-500 ${
+                    isEndingSoon
+                      ? "bg-gradient-to-r from-orange-400 to-[#c9a84c]"
+                      : "bg-[#c9a84c]"
+                  }`}
                   style={{ width: `${progress}%` }}
                 />
               </div>

@@ -46,7 +46,7 @@ export default function Avatar({
     : "";
 
   return (
-    <div className={`relative inline-flex shrink-0 ${className}`}>
+    <div className={`relative inline-flex shrink-0 ${className}`} role="img" aria-label={alt}>
       {src ? (
         <img
           src={src}

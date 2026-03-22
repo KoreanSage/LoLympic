@@ -282,6 +282,8 @@ export default function TopNav() {
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="md:hidden p-2 rounded-lg text-foreground-subtle hover:text-foreground-muted hover:bg-background-elevated transition-colors"
             aria-label="Menu"
+            aria-expanded={mobileMenuOpen}
+            aria-haspopup="true"
           >
             {mobileMenuOpen ? (
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -317,6 +319,7 @@ export default function TopNav() {
           ) : (
             <button
               onClick={() => setShowSearch(true)}
+              aria-label={t("nav.search")}
               className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-background-elevated border border-border text-foreground-subtle hover:border-border-active hover:text-foreground-muted transition-colors text-sm"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -332,6 +335,7 @@ export default function TopNav() {
               href="/messages"
               onClick={() => setDmUnreadCount(0)}
               className="relative p-2 rounded-lg text-foreground-subtle hover:text-foreground-muted hover:bg-background-elevated transition-colors"
+              aria-label={t("nav.messages")}
               title={t("nav.messages")}
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -348,6 +352,9 @@ export default function TopNav() {
             <div className="relative" ref={notifRef}>
               <button
                 onClick={() => setShowNotifications(!showNotifications)}
+                aria-label={t("notif.title")}
+                aria-expanded={showNotifications}
+                aria-haspopup="true"
                 className="relative p-2 rounded-lg text-foreground-subtle hover:text-foreground-muted hover:bg-background-elevated transition-colors"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -428,6 +435,7 @@ export default function TopNav() {
               <Link
                 href={`/user/${username}`}
                 className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-background-elevated transition-colors"
+                aria-label={`Profile @${username}`}
                 title={`@${username}`}
               >
                 <Avatar
@@ -439,6 +447,7 @@ export default function TopNav() {
               <Link
                 href="/settings"
                 className="hidden sm:flex p-2 rounded-lg text-foreground-subtle hover:text-foreground-muted hover:bg-background-elevated transition-colors"
+                aria-label={t("nav.settings")}
                 title={t("nav.settings")}
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

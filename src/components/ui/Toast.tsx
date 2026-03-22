@@ -25,9 +25,18 @@ let nextId = 0;
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
 
+  const MAX_VISIBLE = 3;
+
   const toast = useCallback((message: string, type: ToastItem["type"] = "info") => {
     const id = nextId++;
-    setToasts((prev) => [...prev, { id, message, type }]);
+    setToasts((prev) => {
+      const next = [...prev, { id, message, type }];
+      // Keep only the newest MAX_VISIBLE toasts
+      if (next.length > MAX_VISIBLE) {
+        return next.slice(next.length - MAX_VISIBLE);
+      }
+      return next;
+    });
   }, []);
 
   const remove = useCallback((id: number) => {
@@ -37,7 +46,11 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={{ toast }}>
       {children}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] flex flex-col gap-2 items-center pointer-events-none">
+      <div
+        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] flex flex-col gap-2 items-center pointer-events-none"
+        aria-live="polite"
+        aria-relevant="additions"
+      >
         {toasts.map((t) => (
           <ToastMessage key={t.id} item={t} onDone={() => remove(t.id)} />
         ))}
@@ -70,6 +83,7 @@ function ToastMessage({ item, onDone }: { item: ToastItem; onDone: () => void })
 
   return (
     <div
+      role="alert"
       className={`
         pointer-events-auto px-4 py-2.5 rounded-xl text-sm text-white backdrop-blur-sm border border-white/10
         transition-all duration-300

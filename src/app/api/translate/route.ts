@@ -747,14 +747,24 @@ export async function POST(request: NextRequest) {
           return { parsed: null, imgIdx };
         };
 
-        // Launch all image translations in parallel
+        // Launch image translations with controlled concurrency (max 3 at a time)
         const validImages = imageDataList
           .map((imgData, idx) => ({ imgData, idx }))
           .filter(({ imgData }) => !!imgData.base64);
 
-        const imageResults = await Promise.all(
-          validImages.map(({ imgData, idx }) => translateSingleImage(idx, imgData))
-        );
+        const imageResults: Array<{ parsed: AITranslationResult | null; imgIdx: number }> = [];
+        const IMG_CONCURRENCY = 3;
+        for (let i = 0; i < validImages.length; i += IMG_CONCURRENCY) {
+          const batch = validImages.slice(i, i + IMG_CONCURRENCY);
+          const batchResults = await Promise.all(
+            batch.map(({ imgData, idx }) => translateSingleImage(idx, imgData))
+          );
+          imageResults.push(...batchResults);
+          // Small delay between batches to avoid rate limiting
+          if (i + IMG_CONCURRENCY < validImages.length) {
+            await new Promise((r) => setTimeout(r, 500));
+          }
+        }
 
         // Collect results (maintaining order)
         for (const { parsed, imgIdx } of imageResults.sort((a, b) => a.imgIdx - b.imgIdx)) {

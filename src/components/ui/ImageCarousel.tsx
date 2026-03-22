@@ -48,7 +48,12 @@ export default function ImageCarousel({ children, className = "" }: ImageCarouse
   }
 
   return (
-    <div className={`relative group ${className}`}>
+    <div
+      className={`relative group ${className}`}
+      role="group"
+      aria-roledescription="carousel"
+      aria-label={`Image carousel, ${total} images`}
+    >
       {/* Track */}
       <div
         className="overflow-hidden"
@@ -62,7 +67,13 @@ export default function ImageCarousel({ children, className = "" }: ImageCarouse
           style={{ transform: `translateX(-${current * 100}%)` }}
         >
           {children.map((child, i) => (
-            <div key={i} className="w-full flex-shrink-0">
+            <div
+              key={i}
+              className="w-full flex-shrink-0"
+              role="group"
+              aria-roledescription="slide"
+              aria-label={`Image ${i + 1} of ${total}`}
+            >
               {child}
             </div>
           ))}
@@ -77,6 +88,7 @@ export default function ImageCarousel({ children, className = "" }: ImageCarouse
             e.stopPropagation();
             goTo(current - 1);
           }}
+          aria-label="Previous image"
           className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70 z-10"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -93,6 +105,7 @@ export default function ImageCarousel({ children, className = "" }: ImageCarouse
             e.stopPropagation();
             goTo(current + 1);
           }}
+          aria-label="Next image"
           className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70 z-10"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -106,6 +119,7 @@ export default function ImageCarousel({ children, className = "" }: ImageCarouse
         {children.map((_, i) => (
           <button
             key={i}
+            aria-label={`Go to image ${i + 1} of ${total}`}
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();

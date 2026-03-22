@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import Avatar from "@/components/ui/Avatar";
 
@@ -49,8 +49,9 @@ export default function VotePage() {
   const [myVoteId, setMyVoteId] = useState<string | null>(null);
   const [voting, setVoting] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showConfetti, setShowConfetti] = useState(false);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const [resultsRes, voteRes] = await Promise.all([
         fetch("/api/seasons/vote/results"),
@@ -71,11 +72,11 @@ export default function VotePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [session]);
 
   useEffect(() => {
     fetchData();
-  }, [session]);
+  }, [fetchData]);
 
   const handleVote = async (monthlyWinnerId: string) => {
     if (!session || voting) return;
@@ -90,6 +91,9 @@ export default function VotePage() {
 
       if (res.ok) {
         setMyVoteId(monthlyWinnerId);
+        // Show confetti celebration
+        setShowConfetti(true);
+        setTimeout(() => setShowConfetti(false), 2000);
         await fetchData(); // refresh counts
       }
     } catch {
@@ -129,7 +133,19 @@ export default function VotePage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto py-8 px-4">
+    <div className="max-w-3xl mx-auto py-8 px-4 relative">
+      {/* Confetti celebration overlay */}
+      {showConfetti && (
+        <div className="fixed inset-0 pointer-events-none z-50 flex items-start justify-center">
+          <div className="text-center mt-32 animate-bounce">
+            <div className="text-6xl mb-2">🎉</div>
+            <div className="bg-[#c9a84c] text-black text-sm font-bold px-4 py-2 rounded-full shadow-lg">
+              Vote Cast!
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="text-center mb-8">
         <h1 className="text-2xl font-bold text-foreground mb-2">
@@ -159,27 +175,51 @@ export default function VotePage() {
             return (
               <div
                 key={entry.id}
-                className={`relative bg-background-surface border rounded-xl overflow-hidden transition-all ${
+                className={`relative bg-background-surface border rounded-xl overflow-hidden transition-all duration-200 ${
                   isWinner
-                    ? "border-[#c9a84c] ring-1 ring-[#c9a84c]/30"
+                    ? "border-[#c9a84c] ring-2 ring-[#c9a84c]/30 shadow-[0_0_24px_rgba(201,168,76,0.15)]"
                     : isMyVote
-                      ? "border-[#c9a84c]/50"
-                      : "border-border hover:border-border-active"
+                      ? "border-[#c9a84c]/50 ring-1 ring-[#c9a84c]/20"
+                      : "border-border hover:border-border-active hover:shadow-md hover:-translate-y-0.5"
                 }`}
               >
+                {/* Champion top bar with glow */}
                 {isWinner && (
-                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#c9a84c] via-[#FFD700] to-[#c9a84c]" />
+                  <div className="relative">
+                    <div className="h-1 bg-gradient-to-r from-[#c9a84c] via-[#FFD700] to-[#c9a84c]" />
+                    <div className="absolute inset-0 h-1 bg-gradient-to-r from-[#c9a84c] via-[#FFD700] to-[#c9a84c] blur-sm" />
+                  </div>
+                )}
+
+                {/* "Your Vote" badge */}
+                {isMyVote && (
+                  <div className="absolute top-2 right-2 z-10">
+                    <span className="inline-flex items-center gap-1 bg-[#c9a84c] text-black text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                      Your Vote
+                    </span>
+                  </div>
                 )}
 
                 <div className="flex items-stretch">
                   {/* Thumbnail */}
-                  <div className="w-24 sm:w-32 flex-shrink-0 bg-background-elevated">
+                  <div className={`w-24 sm:w-32 flex-shrink-0 bg-background-elevated relative ${
+                    isWinner ? "ring-1 ring-inset ring-[#c9a84c]/20" : ""
+                  }`}>
                     {entry.post.images[0]?.originalUrl && (
                       <img
                         src={entry.post.images[0].originalUrl}
                         alt={entry.post.title}
                         className="w-full h-full object-cover"
                       />
+                    )}
+                    {/* Champion crown overlay on image */}
+                    {isWinner && (
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#c9a84c]/30 to-transparent flex items-end justify-center pb-1">
+                        <span className="text-2xl drop-shadow-lg">👑</span>
+                      </div>
                     )}
                   </div>
 
@@ -192,8 +232,8 @@ export default function VotePage() {
                             {MONTH_NAMES[entry.month - 1]}
                           </span>
                           {isWinner && (
-                            <span className="text-xs font-bold text-[#c9a84c]">
-                              🏆 Champion
+                            <span className="text-xs font-black text-[#c9a84c] uppercase tracking-wide">
+                              👑 Champion
                             </span>
                           )}
                         </div>
@@ -207,10 +247,10 @@ export default function VotePage() {
                         <button
                           onClick={() => handleVote(entry.id)}
                           disabled={voting}
-                          className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                          className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
                             isMyVote
-                              ? "bg-[#c9a84c] text-black"
-                              : "bg-background-elevated border border-border hover:border-[#c9a84c]/50 text-foreground-muted"
+                              ? "bg-[#c9a84c] text-black shadow-[0_0_10px_rgba(201,168,76,0.3)]"
+                              : "bg-background-elevated border border-border hover:border-[#c9a84c]/50 hover:bg-[#c9a84c]/5 text-foreground-muted"
                           }`}
                         >
                           {isMyVote ? "Voted ✓" : "Vote"}
@@ -245,8 +285,8 @@ export default function VotePage() {
                       <div className="flex items-center gap-2">
                         <div className="flex-1 h-1.5 bg-background-overlay rounded-full overflow-hidden">
                           <div
-                            className={`h-full rounded-full transition-all duration-500 ${
-                              isWinner ? "bg-[#c9a84c]" : "bg-foreground-subtle/30"
+                            className={`h-full rounded-full transition-all duration-700 ease-out ${
+                              isWinner ? "bg-gradient-to-r from-[#c9a84c] to-[#FFD700]" : "bg-foreground-subtle/30"
                             }`}
                             style={{ width: `${(entry.voteCount / maxVotes) * 100}%` }}
                           />
