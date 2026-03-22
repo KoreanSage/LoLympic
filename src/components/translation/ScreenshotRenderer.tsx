@@ -60,18 +60,18 @@ export default function ScreenshotRenderer({
   const commentBlocks = blocks.slice(1);
 
   return (
-    <div className="w-full bg-white dark:bg-[#1a1a2e] rounded-xl overflow-hidden">
+    <div className="w-full bg-background-surface rounded-xl overflow-hidden">
       {/* Main post block */}
       {mainPost.length > 0 && (
-        <div className="p-5 border-b border-gray-100 dark:border-gray-800">
+        <div className="p-5 border-b border-border">
           {/* Anonymous author header */}
           <div className="flex items-center gap-2 mb-3">
-            <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-              <svg className="w-4 h-4 text-gray-400 dark:text-gray-500" fill="currentColor" viewBox="0 0 24 24">
+            <div className="w-8 h-8 rounded-full bg-background-elevated flex items-center justify-center">
+              <svg className="w-4 h-4 text-foreground-subtle" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
               </svg>
             </div>
-            <span className="font-semibold text-sm text-gray-800 dark:text-gray-200">
+            <span className="font-semibold text-sm text-foreground">
               Anonymous
             </span>
           </div>
@@ -94,19 +94,19 @@ export default function ScreenshotRenderer({
         return (
           <div
             key={blockIdx}
-            className={`border-b border-gray-50 dark:border-gray-800/50 last:border-0 ${
-              isReply ? "ml-8 pl-4 border-l-2 border-gray-200 dark:border-gray-700" : ""
+            className={`border-b border-border/50 last:border-0 ${
+              isReply ? "ml-8 pl-4 border-l-2 border-border" : ""
             }`}
           >
             <div className={`p-4 ${isReply ? "py-3" : ""}`}>
               {/* Comment author */}
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-                  <svg className="w-3 h-3 text-gray-400 dark:text-gray-500" fill="currentColor" viewBox="0 0 24 24">
+                <div className="w-6 h-6 rounded-full bg-background-elevated flex items-center justify-center">
+                  <svg className="w-3 h-3 text-foreground-subtle" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
                   </svg>
                 </div>
-                <span className="font-medium text-xs text-gray-600 dark:text-gray-400">
+                <span className="font-medium text-xs text-foreground-muted">
                   Anonymous {blockIdx + 1}
                 </span>
               </div>
@@ -137,20 +137,20 @@ function SegmentText({
   const role = segment.semanticRole;
 
   // Determine text size and weight based on semantic role
-  let className = "text-gray-800 dark:text-gray-200 leading-relaxed";
+  let className = "text-foreground-muted leading-relaxed";
 
   if (role === "HEADLINE") {
-    className = `font-bold text-gray-900 dark:text-gray-100 leading-snug ${
+    className = `font-bold text-foreground leading-snug ${
       isMainPost ? "text-lg" : "text-base"
     }`;
   } else if (role === "CAPTION" || role === "SUBTITLE") {
-    className = "text-sm text-gray-600 dark:text-gray-400 leading-relaxed";
+    className = "text-sm text-foreground-muted leading-relaxed";
   } else if (role === "LABEL") {
-    className = "text-xs text-gray-500 dark:text-gray-500";
+    className = "text-xs text-foreground-subtle";
   } else if (role === "WATERMARK") {
-    className = "text-xs text-gray-400 dark:text-gray-600 italic";
+    className = "text-xs text-foreground-subtle italic";
   } else {
-    className = `${isMainPost ? "text-base" : "text-sm"} text-gray-800 dark:text-gray-200 leading-relaxed`;
+    className = `${isMainPost ? "text-base" : "text-sm"} text-foreground-muted leading-relaxed`;
   }
 
   // Text alignment

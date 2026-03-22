@@ -8,6 +8,7 @@ import Avatar from "@/components/ui/Avatar";
 import Badge from "@/components/ui/Badge";
 import Card from "@/components/ui/Card";
 import MemeRenderer from "@/components/translation/MemeRenderer";
+import ScreenshotRenderer from "@/components/translation/ScreenshotRenderer";
 import TranslationToggle from "@/components/translation/TranslationToggle";
 import ImageCarousel from "@/components/ui/ImageCarousel";
 import { TranslationSegmentData } from "@/types/components";
@@ -54,6 +55,7 @@ interface FeedCardProps {
   translatedImageUrl?: string;
   mimeType?: string;
   segments: TranslationSegmentData[];
+  memeType?: string;
   reactionCount: number;
   commentCount: number;
   shareCount: number;
@@ -92,6 +94,7 @@ export default function FeedCard({
   translatedImageUrl,
   mimeType,
   segments,
+  memeType,
   reactionCount,
   commentCount,
   shareCount,
@@ -116,6 +119,11 @@ export default function FeedCard({
   );
   const isGif = mimeType === "image/gif";
   const hasTranslation = !isGif && (hasOverlaySegments || !!translatedImageUrl);
+
+  // Detect Type B (screenshot/forum posts)
+  const isTypeB = memeType === "B" || (!memeType && segments.length >= 4 && segments.every(
+    (s) => ["DIALOGUE", "CAPTION", "OTHER", "HEADLINE", "LABEL"].includes(s.semanticRole)
+  ) && !segments.some((s) => s.semanticRole === "OVERLAY"));
   const [showTranslation, setShowTranslation] = useState(false);
   useEffect(() => {
     setShowTranslation(hasTranslation);
@@ -343,7 +351,19 @@ export default function FeedCard({
       <Link href={`/post/${id}`} className="block">
         <div className="px-4 pb-2">
           <div className="rounded-lg overflow-hidden border border-border">
-            {images && images.length > 1 ? (
+            {isTypeB && segments.length > 0 ? (
+              /* Type B: Screenshot/forum posts — clean HTML */
+              showTranslation ? (
+                <ScreenshotRenderer
+                  segments={segments}
+                  showTranslation={showTranslation}
+                  originalImageUrl={imageUrl}
+                />
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={imageUrl} alt={title} className="w-full" />
+              )
+            ) : images && images.length > 1 ? (
               <ImageCarousel>
                 {images.map((img, i) => {
                   const imgIsGif = img.mimeType === "image/gif";

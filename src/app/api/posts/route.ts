@@ -103,6 +103,7 @@ export async function GET(request: NextRequest) {
                 take: 1,
                 select: {
                   id: true,
+                  memeType: true,
                   translatedImageUrl: true,
                   translatedTitle: true,
                   translatedBody: true,
