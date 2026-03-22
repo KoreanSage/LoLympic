@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Card from "@/components/ui/Card";
 import { useTranslation } from "@/i18n";
 
@@ -27,6 +27,23 @@ interface BattleCardProps {
   onDismiss: () => void;
 }
 
+// Streak milestones for extra engagement
+const STREAK_MESSAGES = [
+  "", // 0
+  "", // 1
+  "Nice pick! 🎯",
+  "On a roll! 🔥",
+  "Hat trick! 🎩",
+  "Unstoppable! ⚡",
+  "Domination! 💀",
+  "LEGENDARY! 👑",
+];
+
+function getStreakMessage(streak: number): string {
+  if (streak >= STREAK_MESSAGES.length) return "GOD MODE! 🌟";
+  return STREAK_MESSAGES[streak] || "";
+}
+
 export default function BattleCard({ onDismiss }: BattleCardProps) {
   const { t } = useTranslation();
   const [left, setLeft] = useState<BattlePost | null>(null);
@@ -35,8 +52,17 @@ export default function BattleCard({ onDismiss }: BattleCardProps) {
   const [voted, setVoted] = useState<"left" | "right" | null>(null);
   const [animating, setAnimating] = useState(false);
   const [noBattle, setNoBattle] = useState(false);
+
+  // Engagement state
   const [winStreak, setWinStreak] = useState(0);
   const [streakSide, setStreakSide] = useState<"left" | "right" | null>(null);
+  const [totalVotes, setTotalVotes] = useState(0);
+  const [showStreakFlash, setShowStreakFlash] = useState(false);
+  const [challengerEntering, setChallengerEntering] = useState<"left" | "right" | null>(null);
+  const [minimized, setMinimized] = useState(false);
+
+  // Pre-fetched next battle for instant transition
+  const nextBattleRef = useRef<{ left: BattlePost; right: BattlePost } | null>(null);
 
   const fetchBattle = useCallback(async () => {
     setLoading(true);
@@ -65,8 +91,10 @@ export default function BattleCard({ onDismiss }: BattleCardProps) {
       if (!left || !right || voted || animating) return;
       setVoted(side);
       setAnimating(true);
+      setTotalVotes((prev) => prev + 1);
 
       const chosenPostId = side === "left" ? left.id : right.id;
+      const loserSide = side === "left" ? "right" : "left";
 
       try {
         const res = await fetch("/api/battle", {
@@ -81,51 +109,99 @@ export default function BattleCard({ onDismiss }: BattleCardProps) {
         const data = await res.json();
 
         // Update streak
-        if (streakSide === side) {
-          setWinStreak((prev) => prev + 1);
-        } else {
-          setStreakSide(side);
-          setWinStreak(1);
+        const newStreak = streakSide === side ? winStreak + 1 : 1;
+        setStreakSide(side);
+        setWinStreak(newStreak);
+
+        // Flash effect for streaks ≥ 3
+        if (newStreak >= 3) {
+          setShowStreakFlash(true);
+          setTimeout(() => setShowStreakFlash(false), 600);
         }
 
-        // Show result briefly, then load next
+        // Store next battle data
+        nextBattleRef.current = data.nextBattle || null;
+
+        // Phase 1: Show winner result (800ms)
+        // Phase 2: Slide out loser (300ms)
+        // Phase 3: Slide in new challenger (300ms)
         setTimeout(() => {
           if (data.nextBattle) {
-            // Winner stays, loser is replaced
             const winner = side === "left" ? left : right;
-            const newChallenger =
-              side === "left" ? data.nextBattle.right : data.nextBattle.left;
-
-            // Update winner's stats locally
             const updatedWinner = {
               ...winner,
               battleWins: winner.battleWins + 1,
               reactionCount: winner.reactionCount + 5,
             };
 
-            if (side === "left") {
-              setLeft(updatedWinner);
-              setRight(newChallenger);
-            } else {
-              setRight(updatedWinner);
-              setLeft(newChallenger);
-            }
-            setVoted(null);
-            setAnimating(false);
+            // Start challenger exit animation
+            setChallengerEntering(loserSide);
+
+            setTimeout(() => {
+              // Swap in new challenger
+              const newChallenger =
+                side === "left" ? data.nextBattle.right : data.nextBattle.left;
+
+              if (side === "left") {
+                setLeft(updatedWinner);
+                setRight(newChallenger);
+              } else {
+                setRight(updatedWinner);
+                setLeft(newChallenger);
+              }
+
+              // Phase 3: slide-in animation
+              setTimeout(() => {
+                setChallengerEntering(null);
+                setVoted(null);
+                setAnimating(false);
+              }, 50);
+            }, 250);
           } else {
             setNoBattle(true);
           }
-        }, 1200);
+        }, 900);
       } catch {
         setVoted(null);
         setAnimating(false);
       }
     },
-    [left, right, voted, animating, streakSide]
+    [left, right, voted, animating, streakSide, winStreak]
   );
 
   if (noBattle) return null;
 
+  // Minimized state — small "Resume Battle" bar
+  if (minimized) {
+    return (
+      <button
+        onClick={() => setMinimized(false)}
+        className="w-full py-3 px-4 bg-background-surface border border-[#c9a84c]/30 rounded-xl flex items-center justify-between hover:border-[#c9a84c]/60 transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-sm">⚔️</span>
+          <span className="text-xs font-bold text-[#c9a84c]">
+            {t("battle.title")}
+          </span>
+          {totalVotes > 0 && (
+            <span className="text-[10px] text-foreground-subtle">
+              {totalVotes} votes
+            </span>
+          )}
+          {winStreak >= 2 && (
+            <span className="text-[10px] text-[#c9a84c]">
+              🔥 {winStreak} streak
+            </span>
+          )}
+        </div>
+        <span className="text-xs text-foreground-subtle">
+          Tap to continue →
+        </span>
+      </button>
+    );
+  }
+
+  // Loading state
   if (loading || !left || !right) {
     return (
       <Card noPadding>
@@ -148,9 +224,16 @@ export default function BattleCard({ onDismiss }: BattleCardProps) {
     );
   }
 
+  const streakMsg = getStreakMessage(winStreak);
+
   return (
     <Card noPadding>
-      <div className="p-4">
+      {/* Streak flash overlay */}
+      {showStreakFlash && (
+        <div className="absolute inset-0 z-10 pointer-events-none rounded-2xl animate-pulse bg-[#c9a84c]/10" />
+      )}
+
+      <div className="p-4 relative">
         {/* Header */}
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
@@ -158,130 +241,187 @@ export default function BattleCard({ onDismiss }: BattleCardProps) {
             <span className="text-sm font-bold text-[#c9a84c]">
               {t("battle.title")}
             </span>
-            {winStreak > 1 && (
-              <span className="text-xs bg-[#c9a84c]/20 text-[#c9a84c] px-2 py-0.5 rounded-full font-medium">
-                🔥 {winStreak} streak
+            {totalVotes > 0 && (
+              <span className="text-[10px] bg-background-elevated text-foreground-subtle px-1.5 py-0.5 rounded-full">
+                #{totalVotes + 1}
               </span>
             )}
           </div>
-          <button
-            onClick={onDismiss}
-            className="text-foreground-subtle hover:text-foreground-muted p-1 rounded-lg hover:bg-background-elevated transition-colors"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          <div className="flex items-center gap-1">
+            {/* Minimize button */}
+            <button
+              onClick={() => setMinimized(true)}
+              aria-label="Minimize battle"
+              className="text-foreground-subtle hover:text-foreground-muted p-1 rounded-lg hover:bg-background-elevated transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 12H6" />
+              </svg>
+            </button>
+            {/* Close button */}
+            <button
+              onClick={onDismiss}
+              aria-label="Close battle"
+              className="text-foreground-subtle hover:text-foreground-muted p-1 rounded-lg hover:bg-background-elevated transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
-        <p className="text-xs text-foreground-subtle mb-3">
-          {t("battle.tapToVote")}
-        </p>
+
+        {/* Streak & status bar */}
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-xs text-foreground-subtle">
+            {voted ? "Next challenger incoming..." : t("battle.tapToVote")}
+          </p>
+          {winStreak >= 2 && (
+            <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold transition-all duration-300 ${
+              winStreak >= 5
+                ? "bg-gradient-to-r from-[#c9a84c] to-[#FFD700] text-black animate-pulse"
+                : winStreak >= 3
+                ? "bg-[#c9a84c]/20 text-[#c9a84c]"
+                : "bg-background-elevated text-foreground-muted"
+            }`}>
+              <span>🔥 {winStreak}</span>
+              {streakMsg && <span className="ml-0.5">{streakMsg}</span>}
+            </div>
+          )}
+        </div>
 
         {/* Battle arena */}
         <div className="flex gap-2 items-stretch">
           {/* Left meme */}
-          <button
-            onClick={() => handleVote("left")}
-            disabled={!!voted}
-            className={`flex-1 rounded-xl overflow-hidden border-2 transition-all duration-300 relative ${
-              voted === "left"
-                ? "border-[#c9a84c] scale-[1.02] shadow-lg shadow-[#c9a84c]/20"
-                : voted === "right"
-                ? "border-border opacity-50 scale-[0.98]"
-                : "border-border hover:border-[#c9a84c]/50 active:scale-[0.98]"
-            }`}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={left.imageUrl}
-              alt={left.title}
-              className="w-full aspect-square object-cover"
-            />
-            <div className="p-2 bg-background-surface">
-              <div className="flex items-center gap-1 mb-1">
-                {left.country && (
-                  <span className="text-xs">{left.country.flagEmoji}</span>
-                )}
-                <span className="text-xs text-foreground-muted truncate">
-                  {left.author.displayName || left.author.username}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-foreground-subtle">
-                <span>🔥 {formatCount(left.reactionCount)}</span>
-                {left.battleWins > 0 && (
-                  <span className="text-[#c9a84c]">⚔️ {left.battleWins}W</span>
-                )}
-              </div>
-            </div>
-            {/* Winner overlay */}
-            {voted === "left" && (
-              <div className="absolute inset-0 flex items-center justify-center bg-[#c9a84c]/20 backdrop-blur-[1px]">
-                <div className="text-center">
-                  <div className="text-3xl mb-1">👑</div>
-                  <span className="text-xs font-bold text-[#c9a84c] bg-black/60 px-2 py-1 rounded-full">
-                    +5 🔥
-                  </span>
-                </div>
-              </div>
-            )}
-          </button>
+          <BattleSide
+            post={left}
+            side="left"
+            voted={voted}
+            isEntering={challengerEntering === "left"}
+            onVote={handleVote}
+            disabled={!!voted || animating}
+          />
 
           {/* VS divider */}
-          <div className="flex items-center">
-            <div className="w-8 h-8 rounded-full bg-[#c9a84c]/20 flex items-center justify-center">
-              <span className="text-[10px] font-black text-[#c9a84c]">VS</span>
+          <div className="flex flex-col items-center justify-center gap-1">
+            <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300 ${
+              voted
+                ? "bg-[#c9a84c]/30 scale-110"
+                : "bg-[#c9a84c]/15"
+            }`}>
+              <span className={`text-[11px] font-black transition-colors ${
+                voted ? "text-[#c9a84c]" : "text-foreground-subtle"
+              }`}>VS</span>
             </div>
           </div>
 
           {/* Right meme */}
-          <button
-            onClick={() => handleVote("right")}
-            disabled={!!voted}
-            className={`flex-1 rounded-xl overflow-hidden border-2 transition-all duration-300 relative ${
-              voted === "right"
-                ? "border-[#c9a84c] scale-[1.02] shadow-lg shadow-[#c9a84c]/20"
-                : voted === "left"
-                ? "border-border opacity-50 scale-[0.98]"
-                : "border-border hover:border-[#c9a84c]/50 active:scale-[0.98]"
-            }`}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={right.imageUrl}
-              alt={right.title}
-              className="w-full aspect-square object-cover"
-            />
-            <div className="p-2 bg-background-surface">
-              <div className="flex items-center gap-1 mb-1">
-                {right.country && (
-                  <span className="text-xs">{right.country.flagEmoji}</span>
-                )}
-                <span className="text-xs text-foreground-muted truncate">
-                  {right.author.displayName || right.author.username}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-foreground-subtle">
-                <span>🔥 {formatCount(right.reactionCount)}</span>
-                {right.battleWins > 0 && (
-                  <span className="text-[#c9a84c]">⚔️ {right.battleWins}W</span>
-                )}
-              </div>
-            </div>
-            {/* Winner overlay */}
-            {voted === "right" && (
-              <div className="absolute inset-0 flex items-center justify-center bg-[#c9a84c]/20 backdrop-blur-[1px]">
-                <div className="text-center">
-                  <div className="text-3xl mb-1">👑</div>
-                  <span className="text-xs font-bold text-[#c9a84c] bg-black/60 px-2 py-1 rounded-full">
-                    +5 🔥
-                  </span>
-                </div>
-              </div>
-            )}
-          </button>
+          <BattleSide
+            post={right}
+            side="right"
+            voted={voted}
+            isEntering={challengerEntering === "right"}
+            onVote={handleVote}
+            disabled={!!voted || animating}
+          />
         </div>
+
+        {/* Session stats footer */}
+        {totalVotes >= 3 && (
+          <div className="mt-3 pt-2 border-t border-border flex items-center justify-center gap-4 text-[10px] text-foreground-subtle">
+            <span>🗳️ {totalVotes} battles judged</span>
+            {winStreak >= 2 && (
+              <span>🏆 Best: {winStreak} streak</span>
+            )}
+          </div>
+        )}
       </div>
     </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Battle Side Component — one side of the VS card
+// ---------------------------------------------------------------------------
+function BattleSide({
+  post,
+  side,
+  voted,
+  isEntering,
+  onVote,
+  disabled,
+}: {
+  post: BattlePost;
+  side: "left" | "right";
+  voted: "left" | "right" | null;
+  isEntering: boolean;
+  onVote: (side: "left" | "right") => void;
+  disabled: boolean;
+}) {
+  const isWinner = voted === side;
+  const isLoser = voted !== null && voted !== side;
+
+  return (
+    <button
+      onClick={() => onVote(side)}
+      disabled={disabled}
+      className={`flex-1 rounded-xl overflow-hidden border-2 relative
+        transition-all duration-300 ease-out
+        ${isEntering ? "translate-y-4 opacity-0" : "translate-y-0 opacity-100"}
+        ${isWinner
+          ? "border-[#c9a84c] scale-[1.03] shadow-lg shadow-[#c9a84c]/25 z-10"
+          : isLoser
+          ? "border-border opacity-40 scale-[0.96] grayscale-[30%]"
+          : "border-border hover:border-[#c9a84c]/50 active:scale-[0.97]"
+        }`}
+    >
+      {/* Image */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={post.imageUrl}
+        alt={post.title}
+        className="w-full aspect-square object-cover"
+      />
+
+      {/* Info bar */}
+      <div className="p-2 bg-background-surface">
+        <div className="flex items-center gap-1 mb-0.5">
+          {post.country && (
+            <span className="text-xs">{post.country.flagEmoji}</span>
+          )}
+          <span className="text-[11px] text-foreground-muted truncate">
+            {post.author.displayName || post.author.username}
+          </span>
+        </div>
+        <div className="flex items-center gap-2 text-[10px] text-foreground-subtle">
+          <span>🔥 {formatCount(post.reactionCount)}</span>
+          {post.battleWins > 0 && (
+            <span className="text-[#c9a84c]">
+              {post.battleWins}W
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Winner overlay */}
+      {isWinner && (
+        <div className="absolute inset-0 flex items-center justify-center bg-[#c9a84c]/15 backdrop-blur-[1px] animate-in fade-in duration-200">
+          <div className="text-center animate-in zoom-in-50 duration-300">
+            <div className="text-4xl mb-1 drop-shadow-lg">👑</div>
+            <span className="text-xs font-bold text-[#c9a84c] bg-black/70 px-2.5 py-1 rounded-full">
+              WINNER +5🔥
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Loser overlay */}
+      {isLoser && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/30 animate-in fade-in duration-200">
+          <span className="text-2xl opacity-60">💀</span>
+        </div>
+      )}
+    </button>
   );
 }
 

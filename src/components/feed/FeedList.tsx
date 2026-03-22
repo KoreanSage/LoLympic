@@ -151,7 +151,8 @@ export default function FeedList({
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
   const [battleDismissed, setBattleDismissed] = useState(false);
-  const BATTLE_INTERVAL = 5; // Insert battle card every 5 posts
+  const BATTLE_FIRST = 3; // Show first battle after 3 posts
+  const BATTLE_INTERVAL = 7; // Then every 7 posts after that
   const sentinelRef = useRef<HTMLDivElement>(null);
   const pageRef = useRef(1);
   const fetchingRef = useRef(false);
@@ -244,7 +245,10 @@ export default function FeedList({
             {...post}
             onDelete={(deletedId) => setPosts((prev) => prev.filter((p) => p.id !== deletedId))}
           />
-          {!battleDismissed && (index + 1) % BATTLE_INTERVAL === 0 && (
+          {!battleDismissed && (
+            index + 1 === BATTLE_FIRST ||
+            (index + 1 > BATTLE_FIRST && (index + 1 - BATTLE_FIRST) % BATTLE_INTERVAL === 0)
+          ) && (
             <BattleCard onDismiss={() => setBattleDismissed(true)} />
           )}
         </React.Fragment>
