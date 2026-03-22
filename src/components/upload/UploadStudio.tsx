@@ -188,38 +188,85 @@ export default function UploadStudio() {
       // Translate using first non-GIF image
       const translateImage = uploadedImages.find((img) => img.mimeType !== "image/gif") || uploadedImages[0];
 
-      const translatePromises = targetLangs.map(async (lang) => {
+      // Translate one language at a time with retry
+      const translateOneLang = async (langCode: string): Promise<boolean> => {
+        const translateRes = await fetch("/api/translate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            postId,
+            sourceLanguage,
+            targetLanguages: [langCode],
+            imageUrl: translateImage.url,
+          }),
+        });
+        if (!translateRes.ok) throw new Error("Translation API error");
+        const translateData = await translateRes.json();
+        const langResult = translateData.translations?.[langCode];
+        if (langResult?.error) throw new Error(langResult.error);
+        return true;
+      };
+
+      // Process languages with concurrency limit of 2 + auto-retry
+      const CONCURRENCY = 2;
+      const langQueue = [...targetLangs];
+      const failedLangs: Array<{ code: string; label: string }> = [];
+
+      const processLang = async (lang: { code: string; label: string }) => {
         try {
-          const translateRes = await fetch("/api/translate", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              postId,
-              sourceLanguage,
-              targetLanguages: [lang.code],
-              imageUrl: translateImage.url,
-            }),
-          });
-
-          if (!translateRes.ok) throw new Error("Translation API error");
-
-          const translateData = await translateRes.json();
-          const langResult = translateData.translations?.[lang.code];
-          if (langResult?.error) throw new Error(langResult.error);
-
+          await translateOneLang(lang.code);
           setProgress((p) => {
             if (!p) return p;
             return { ...p, languages: { ...p.languages, [lang.code]: "done" } };
           });
         } catch {
+          failedLangs.push(lang);
           setProgress((p) => {
             if (!p) return p;
             return { ...p, languages: { ...p.languages, [lang.code]: "error" } };
           });
         }
-      });
+      };
 
-      await Promise.allSettled(translatePromises);
+      // Run with concurrency limit
+      const runWithConcurrency = async (items: Array<{ code: string; label: string }>, concurrency: number) => {
+        const executing = new Set<Promise<void>>();
+        for (const item of items) {
+          const p = processLang(item).then(() => { executing.delete(p); });
+          executing.add(p);
+          if (executing.size >= concurrency) {
+            await Promise.race(executing);
+          }
+        }
+        await Promise.allSettled(executing);
+      };
+
+      await runWithConcurrency(langQueue, CONCURRENCY);
+
+      // Retry failed languages (one at a time with delay)
+      if (failedLangs.length > 0) {
+        console.log(`Retrying ${failedLangs.length} failed translations...`);
+        for (const lang of failedLangs) {
+          setProgress((p) => {
+            if (!p) return p;
+            return { ...p, languages: { ...p.languages, [lang.code]: "translating" } };
+          });
+          // Small delay before retry to let Gemini rate limit reset
+          await new Promise((r) => setTimeout(r, 2000));
+          try {
+            await translateOneLang(lang.code);
+            setProgress((p) => {
+              if (!p) return p;
+              return { ...p, languages: { ...p.languages, [lang.code]: "done" } };
+            });
+          } catch {
+            setProgress((p) => {
+              if (!p) return p;
+              return { ...p, languages: { ...p.languages, [lang.code]: "error" } };
+            });
+          }
+        }
+      }
 
       setProgress((p) => p && { ...p, phase: "done" });
 
