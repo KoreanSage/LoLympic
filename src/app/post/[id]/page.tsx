@@ -18,6 +18,7 @@ export default function PostPage() {
   const [clientTranslatedTitle, setClientTranslatedTitle] = useState<string | null>(null);
   const [clientTranslatedBody, setClientTranslatedBody] = useState<string | null>(null);
   const titleBackfillAttempted = useRef(false);
+  const cleanImageAttempted = useRef(false);
 
   // Resolve preferredLanguage: localStorage (instant) > DB > session JWT
   // Use a synchronous initial value from localStorage to avoid double-fetch
@@ -62,6 +63,7 @@ export default function PostPage() {
     setClientTranslatedTitle(null);
     setClientTranslatedBody(null);
     titleBackfillAttempted.current = false;
+    cleanImageAttempted.current = false;
 
     fetch(`/api/posts/${id}?lang=${preferredLang}`)
       .then((res) => {
@@ -124,6 +126,38 @@ export default function PostPage() {
         console.warn("Client-side title translation failed:", err);
       });
   }, [post, preferredLang]);
+
+  // Auto-generate clean images if translation exists but no clean image
+  useEffect(() => {
+    if (!post || cleanImageAttempted.current) return;
+    const payload = post.translationPayloads?.[0];
+    if (!payload?.segments?.length) return;
+    // Check if any image is missing cleanUrl
+    const hasImageWithoutClean = (post.images || []).some(
+      (img: any) => !img.cleanUrl
+    );
+    if (!hasImageWithoutClean) return;
+
+    cleanImageAttempted.current = true;
+    fetch("/api/translate/generate-image", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ postId: post.id }),
+    })
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data?.images?.some((img: any) => img.cleanUrl)) {
+          // Reload the post to get updated clean URLs
+          fetch(`/api/posts/${id}?lang=${preferredLang}`)
+            .then((r) => r.ok ? r.json() : null)
+            .then((freshPost) => {
+              if (freshPost) setPost(freshPost);
+            })
+            .catch(() => {});
+        }
+      })
+      .catch(() => {});
+  }, [post, id, preferredLang]);
 
   if (loading) {
     return (

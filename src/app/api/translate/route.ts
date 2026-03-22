@@ -287,6 +287,41 @@ function fireAndForget(promise: Promise<unknown>) {
 }
 
 // ---------------------------------------------------------------------------
+// Generate clean images for all post images (fire-and-forget after translation)
+// ---------------------------------------------------------------------------
+async function generateCleanImagesForPost(
+  postId: string,
+  imageDataList: Array<{ base64: string; mimeType: string }>,
+  imageUrls: string[]
+) {
+  // Get post images from DB
+  const postImages = await prisma.postImage.findMany({
+    where: { postId },
+    orderBy: { orderIndex: "asc" },
+    select: { id: true, cleanUrl: true },
+  });
+
+  for (let i = 0; i < postImages.length && i < imageDataList.length; i++) {
+    const dbImage = postImages[i];
+    const imgData = imageDataList[i];
+    if (dbImage.cleanUrl || !imgData.base64) continue; // Skip if already has clean or no data
+
+    try {
+      const cleanUrl = await generateCleanImage(imgData.base64, imgData.mimeType);
+      if (cleanUrl) {
+        await prisma.postImage.update({
+          where: { id: dbImage.id },
+          data: { cleanUrl },
+        });
+        console.log(`Clean image generated for postImage ${dbImage.id}`);
+      }
+    } catch (err) {
+      console.error(`Clean image generation failed for postImage ${dbImage.id}:`, err);
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Generate clean image (text removed) using Gemini image editing
 // ---------------------------------------------------------------------------
 async function generateCleanImage(
@@ -760,8 +795,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // NOTE: Clean image generation is skipped here to avoid timeout.
-    // It can be triggered separately via /api/translate/generate-image.
+    // Fire-and-forget: generate clean images (text removed) in background
+    // This enables higher quality rendering on subsequent views
+    fireAndForget(
+      generateCleanImagesForPost(postId, imageDataList, imageUrls)
+    );
 
     // Update ranking score after translations complete
     updateRankingScore(postId).catch(() => {});
