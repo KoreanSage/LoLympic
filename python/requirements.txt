@@ -1,0 +1,30 @@
+# LoLympic MemeTranslator - Python Dependencies
+# ==============================================
+
+# Image Processing
+opencv-python-headless>=4.9.0
+Pillow>=10.2.0
+numpy>=1.26.0
+
+# Google Cloud APIs
+google-cloud-vision>=3.7.0
+google-generativeai>=0.8.0    # Gemini (text translation)
+google-genai>=1.0.0           # Gemini (image generation)
+
+# LaMa Inpainting (optional, for GPU environments)
+# torch>=2.2.0
+# torchvision>=0.17.0
+# simple-lama-inpainting>=0.1.0
+
+# HTTP & Utilities
+requests>=2.31.0
+aiohttp>=3.9.0
+pydantic>=2.6.0
+
+# Font management
+fonttools>=4.47.0
+
+# Server (for Next.js integration)
+fastapi>=0.109.0
+uvicorn>=0.27.0
+python-multipart>=0.0.9
