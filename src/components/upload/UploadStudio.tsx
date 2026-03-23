@@ -521,7 +521,7 @@ export default function UploadStudio() {
       {/* Post Type Selection */}
       <div className="mb-6">
         <label className="block text-xs font-medium text-foreground-muted mb-2">Post Type</label>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {POST_TYPES.map((pt) => (
             <button
               key={pt.value}
@@ -532,17 +532,19 @@ export default function UploadStudio() {
                 }
                 setPostType(pt.value);
               }}
-              className={`relative flex flex-col items-center gap-1.5 px-4 py-3 rounded-xl border-2 transition-all text-center ${
+              className={`relative flex flex-row sm:flex-col items-center gap-2 sm:gap-1.5 px-4 py-2.5 sm:py-3 rounded-xl border-2 transition-all text-left sm:text-center ${
                 postType === pt.value
                   ? "border-[#c9a84c] bg-[#c9a84c]/10"
                   : "border-border hover:border-border-active bg-background-surface"
               }`}
             >
               <span className="text-2xl">{pt.emoji}</span>
-              <span className={`text-sm font-semibold ${postType === pt.value ? "text-[#c9a84c]" : "text-foreground"}`}>
-                {pt.label}
-              </span>
-              <span className="text-[10px] text-foreground-subtle leading-tight">{pt.description}</span>
+              <div className="flex flex-col sm:items-center">
+                <span className={`text-sm font-semibold ${postType === pt.value ? "text-[#c9a84c]" : "text-foreground"}`}>
+                  {pt.label}
+                </span>
+                <span className="text-[10px] text-foreground-subtle leading-tight">{pt.description}</span>
+              </div>
             </button>
           ))}
         </div>

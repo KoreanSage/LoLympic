@@ -253,7 +253,7 @@ export default function LeaderboardPage() {
               </div>
 
               {/* Live Stats Cards */}
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="bg-background-surface border border-border rounded-xl p-3 text-center">
                   <div className="text-xl font-bold text-[#c9a84c]">{memes.length > 0 ? memes.reduce((sum, m) => sum + (m.reactionCount || 0), 0).toLocaleString() : '0'}</div>
                   <div className="text-[10px] text-foreground-subtle mt-0.5">{t("leaderboard.totalReactions")}</div>

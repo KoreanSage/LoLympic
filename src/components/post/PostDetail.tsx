@@ -575,7 +575,7 @@ export default function PostDetail({
       {/* Body (for meme posts that also have body text) */}
       {!isTextOnly && body && (
         <div>
-          <p className="text-[22px] text-foreground-muted leading-relaxed whitespace-pre-wrap">{body}</p>
+          <p className="text-base sm:text-lg text-foreground-muted leading-relaxed whitespace-pre-wrap">{body}</p>
           {originalBody && (
             <p className="text-sm text-foreground-subtle mt-1 whitespace-pre-wrap">{originalBody}</p>
           )}
