@@ -187,7 +187,7 @@ export default function FeedList({
       const params = new URLSearchParams({
         page: String(page),
         limit: "10",
-        sort: parsedFilters?.sort || "recent",
+        sort: parsedFilters?.sort || "trending",
       });
       if (lang) params.set("translateTo", lang);
       if (parsedFilters?.postType) params.set("category", parsedFilters.postType);

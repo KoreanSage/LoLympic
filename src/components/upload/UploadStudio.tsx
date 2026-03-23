@@ -152,7 +152,7 @@ export default function UploadStudio() {
             title: title.trim(),
             body: bodyText.trim() || null,
             sourceLanguage,
-            category: category || null,
+            category: category || postType,
             tags,
           }),
         });
@@ -267,7 +267,7 @@ export default function UploadStudio() {
             title: title.trim(),
             body: bodyText.trim() || null,
             sourceLanguage,
-            category: category || null,
+            category: category || postType,
             tags,
             images: uploadedImages,
           }),
