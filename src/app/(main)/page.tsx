@@ -34,16 +34,23 @@ export default function HomePage() {
   }, [session?.user]);
 
   const translateTo = freshLang || (session?.user as any)?.preferredLanguage || "";
+  const [feedFilters, setFeedFilters] = useState<{
+    country?: string;
+    language?: string;
+    category?: string;
+    postType?: string;
+    sort: string;
+  }>({ sort: "trending" });
 
   return (
     <MainLayout>
       <WinnerPopup />
       <div className="space-y-0">
         <MonthlyWinnerBanner />
-        <FeedFilters />
+        <FeedFilters onFilterChange={setFeedFilters} />
 
         <div className="pt-2">
-          <FeedList translateTo={translateTo} />
+          <FeedList translateTo={translateTo} filters={feedFilters} />
         </div>
       </div>
     </MainLayout>

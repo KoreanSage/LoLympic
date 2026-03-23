@@ -13,6 +13,7 @@ interface FeedFiltersProps {
     country?: string;
     language?: string;
     category?: string;
+    postType?: string;
     sort: string;
   }) => void;
   className?: string;
@@ -24,6 +25,7 @@ export default function FeedFilters({
 }: FeedFiltersProps) {
   const { t } = useTranslation();
   const [sort, setSort] = useState("trending");
+  const [postType, setPostType] = useState("");
   const [country, setCountry] = useState("");
   const [language, setLanguage] = useState("");
   const [category, setCategory] = useState("");
@@ -32,6 +34,13 @@ export default function FeedFilters({
     { value: "trending", label: t("filter.trending") },
     { value: "recent", label: t("filter.recent") },
     { value: "top", label: t("filter.top") },
+  ];
+
+  const POST_TYPE_OPTIONS: FilterOption[] = [
+    { value: "", label: t("filter.allCategories") },
+    { value: "meme", label: "\u{1F923} Memes" },
+    { value: "discussion", label: "\u{1F4AC} Discussion" },
+    { value: "question", label: "\u{2753} Questions" },
   ];
 
   const COUNTRY_OPTIONS: FilterOption[] = [
@@ -78,11 +87,15 @@ export default function FeedFilters({
   ];
 
   const handleChange = (key: string, value: string) => {
-    const newFilters = { country, language, category, sort };
+    const newFilters: { country: string; language: string; category: string; postType: string; sort: string } = { country, language, category, postType, sort };
     switch (key) {
       case "sort":
         setSort(value);
         newFilters.sort = value;
+        break;
+      case "postType":
+        setPostType(value);
+        newFilters.postType = value;
         break;
       case "country":
         setCountry(value);
@@ -113,6 +126,25 @@ export default function FeedFilters({
               onClick={() => handleChange("sort", opt.value)}
               className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
                 sort === opt.value
+                  ? "bg-background-overlay text-foreground"
+                  : "text-foreground-subtle hover:text-foreground-muted"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+
+        <span className="text-foreground-subtle">|</span>
+
+        {/* Post type pills */}
+        <div className="flex items-center gap-0.5 bg-background-surface rounded-lg p-0.5 border border-border shrink-0">
+          {POST_TYPE_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => handleChange("postType", opt.value)}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all whitespace-nowrap ${
+                postType === opt.value
                   ? "bg-background-overlay text-foreground"
                   : "text-foreground-subtle hover:text-foreground-muted"
               }`}

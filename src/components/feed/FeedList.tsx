@@ -34,6 +34,8 @@ interface FeedImage {
 interface FeedPost {
   id: string;
   title: string;
+  body?: string | null;
+  category?: string | null;
   translatedTitle?: string;
   translatedBody?: string;
   sourceLanguage?: string;
@@ -66,6 +68,13 @@ interface FeedPost {
 interface FeedListProps {
   translateTo?: string;
   emptyMessage?: string;
+  filters?: {
+    country?: string;
+    language?: string;
+    category?: string;
+    postType?: string;
+    sort?: string;
+  };
 }
 
 function mapApiPost(post: any): FeedPost {
@@ -102,6 +111,8 @@ function mapApiPost(post: any): FeedPost {
   return {
     id: post.id,
     title: post.title,
+    body: post.body || null,
+    category: post.category || null,
     translatedTitle: payload?.translatedTitle || undefined,
     translatedBody: payload?.translatedBody || undefined,
     sourceLanguage: post.sourceLanguage || undefined,
@@ -148,6 +159,7 @@ function mapApiPost(post: any): FeedPost {
 export default function FeedList({
   translateTo = "",
   emptyMessage,
+  filters,
 }: FeedListProps) {
   const { t } = useTranslation();
   const resolvedEmptyMessage = emptyMessage || t("feed.empty");
@@ -162,18 +174,26 @@ export default function FeedList({
   const fetchingRef = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
 
+  const filtersJson = JSON.stringify(filters);
+
   const fetchPosts = useCallback(async (page: number, lang: string, signal?: AbortSignal) => {
     if (fetchingRef.current) return;
     fetchingRef.current = true;
     setLoading(true);
 
+    const parsedFilters = filtersJson ? JSON.parse(filtersJson) : undefined;
+
     try {
       const params = new URLSearchParams({
         page: String(page),
         limit: "10",
-        sort: "recent",
+        sort: parsedFilters?.sort || "recent",
       });
       if (lang) params.set("translateTo", lang);
+      if (parsedFilters?.postType) params.set("category", parsedFilters.postType);
+      else if (parsedFilters?.category) params.set("category", parsedFilters.category);
+      if (parsedFilters?.country) params.set("country", parsedFilters.country);
+      if (parsedFilters?.language) params.set("language", parsedFilters.language);
 
       const res = await fetch(`/api/posts?${params}`, { signal });
       if (!res.ok) throw new Error("Failed to fetch");
@@ -190,9 +210,9 @@ export default function FeedList({
       setLoading(false);
       fetchingRef.current = false;
     }
-  }, []);
+  }, [filtersJson]);
 
-  // Reload when translateTo changes
+  // Reload when translateTo or filters change
   useEffect(() => {
     pageRef.current = 1;
     setPosts([]);
@@ -206,7 +226,7 @@ export default function FeedList({
       controller.abort();
       fetchingRef.current = false;
     };
-  }, [translateTo, fetchPosts]);
+  }, [translateTo, fetchPosts, filtersJson]);
 
   const loadMore = useCallback(() => {
     if (fetchingRef.current || !hasMore) return;
@@ -253,7 +273,8 @@ export default function FeedList({
           {(index + 1) % AD_SLOT_INTERVAL === 0 && (
             <AdSlot slot={`feed-${Math.floor((index + 1) / AD_SLOT_INTERVAL)}`} />
           )}
-          {!battleDismissed && (
+          {/* Battle cards only between meme/image posts, not text posts */}
+          {!battleDismissed && post.imageUrl && (
             index + 1 === BATTLE_FIRST ||
             (index + 1 > BATTLE_FIRST && (index + 1 - BATTLE_FIRST) % BATTLE_INTERVAL === 0)
           ) && (
