@@ -421,10 +421,33 @@ export default function PostDetail({
         </div>
       )}
 
-      {/* Title */}
-      <h1 className="text-xl font-bold text-foreground">{title}</h1>
-      {originalTitle && (
-        <p className="text-sm text-foreground-subtle -mt-1">{originalTitle}</p>
+      {/* Title — shows translated or original based on toggle */}
+      <h1 className="text-xl font-bold text-foreground">
+        {showTranslation ? title : (originalTitle || title)}
+      </h1>
+
+      {/* Translation toggle for text posts (title + body) */}
+      {isTextOnly && (originalTitle || originalBody) && (
+        <div className="flex items-center gap-2 -mt-1">
+          <TranslationToggle
+            showTranslation={showTranslation}
+            onChange={setShowTranslation}
+          />
+          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium ${
+            showTranslation
+              ? "bg-green-500/15 text-green-400"
+              : "bg-background-elevated text-foreground-subtle"
+          }`}>
+            {showTranslation ? "Translated" : "Original"}
+          </span>
+        </div>
+      )}
+
+      {/* Category badge */}
+      {isTextOnly && category && category !== "meme" && (
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-background-surface border border-border text-foreground-muted w-fit">
+          {category === "community" ? "💬 Community" : category}
+        </span>
       )}
 
       {/* Tags */}
@@ -438,37 +461,12 @@ export default function PostDetail({
         </div>
       )}
 
-      {/* Text-only post: show body prominently with translation toggle */}
+      {/* Text-only post: show body */}
       {isTextOnly && body && (
-        <div className="space-y-3">
-          {category && category !== "meme" && (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-background-surface border border-border text-foreground-muted">
-              {category === "discussion" ? "\u{1F4AC} Discussion" : category === "question" ? "\u{2753} Question" : category}
-            </span>
-          )}
-          <div className="bg-background-surface border border-border rounded-xl p-5">
-            {originalBody && (
-              <div className="flex items-center gap-2 mb-3">
-                <TranslationToggle
-                  showTranslation={showTranslation}
-                  onChange={setShowTranslation}
-                />
-                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-                  showTranslation
-                    ? "bg-green-500/15 text-green-400"
-                    : "bg-background-elevated text-foreground-subtle"
-                }`}>
-                  {showTranslation ? "Translated" : "Original"}
-                </span>
-              </div>
-            )}
-            <p className="text-lg text-foreground-muted leading-relaxed whitespace-pre-wrap">
-              {showTranslation ? body : (originalBody || body)}
-            </p>
-            {showTranslation && originalBody && (
-              <p className="text-sm text-foreground-subtle mt-3 whitespace-pre-wrap border-t border-border pt-3">{originalBody}</p>
-            )}
-          </div>
+        <div className="bg-background-surface border border-border rounded-xl p-5">
+          <p className="text-base text-foreground-muted leading-relaxed whitespace-pre-wrap">
+            {showTranslation ? body : (originalBody || body)}
+          </p>
         </div>
       )}
 

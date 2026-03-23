@@ -360,51 +360,20 @@ function FeedCardInner({
         </div>
       )}
 
-      {/* Title */}
+      {/* Title — translated or original based on toggle */}
       {title && (
         <Link href={`/post/${id}`}>
           <h3 className="px-4 pb-2 text-[22px] font-medium text-foreground-muted hover:text-foreground transition-colors line-clamp-2">
-            {translatedTitle || title}
+            {showTranslation && translatedTitle ? translatedTitle : title}
           </h3>
-          {translatedTitle && (
-            <p className="px-4 pb-2 text-xs text-foreground-subtle line-clamp-1">
-              {title}
-            </p>
-          )}
         </Link>
       )}
 
       {/* Text-only post body */}
       {isTextOnly && (
         <>
-          {category && category !== "meme" && (
-            <div className="px-4 pb-2">
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-background-surface border border-border text-foreground-muted">
-                {category === "community" ? "💬 Community" : category}
-              </span>
-            </div>
-          )}
-          {body && (
-            <Link href={`/post/${id}`} className="block">
-              <div className="px-4 pb-3">
-                <p className="text-sm text-foreground-muted leading-relaxed whitespace-pre-wrap">
-                  {showTranslation && translatedBody ? (
-                    translatedBody.length > 300 ? translatedBody.slice(0, 300) + "..." : translatedBody
-                  ) : (
-                    body.length > 300 ? body.slice(0, 300) + "..." : body
-                  )}
-                  {((showTranslation && translatedBody ? translatedBody : body) || "").length > 300 && (
-                    <span className="text-[#c9a84c] text-xs ml-1 hover:underline">Read more...</span>
-                  )}
-                </p>
-                {showTranslation && translatedBody && (
-                  <p className="text-xs text-foreground-subtle mt-1.5 line-clamp-2 whitespace-pre-wrap">{body}</p>
-                )}
-              </div>
-            </Link>
-          )}
-          {/* Translation toggle for text-only posts */}
-          {translatedBody && (
+          {/* Translation toggle — controls title + body */}
+          {(translatedTitle || translatedBody) && (
             <div className="flex items-center gap-2 px-4 pb-2">
               <TranslationToggle
                 showTranslation={showTranslation}
@@ -418,6 +387,28 @@ function FeedCardInner({
                 {showTranslation ? t("feed.translated") : t("feed.original")}
               </span>
             </div>
+          )}
+          {category && category !== "meme" && (
+            <div className="px-4 pb-2">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-background-surface border border-border text-foreground-muted">
+                {category === "community" ? "💬 Community" : category}
+              </span>
+            </div>
+          )}
+          {body && (
+            <Link href={`/post/${id}`} className="block">
+              <div className="px-4 pb-3">
+                <p className="text-sm text-foreground-muted leading-relaxed whitespace-pre-wrap">
+                  {(() => {
+                    const displayBody = showTranslation && translatedBody ? translatedBody : body;
+                    if (displayBody.length > 300) {
+                      return <>{displayBody.slice(0, 300)}...<span className="text-[#c9a84c] text-xs ml-1 hover:underline">Read more...</span></>;
+                    }
+                    return displayBody;
+                  })()}
+                </p>
+              </div>
+            </Link>
           )}
         </>
       )}
