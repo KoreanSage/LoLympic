@@ -37,6 +37,8 @@ interface FeedImage {
 interface FeedCardProps {
   id: string;
   title: string;
+  body?: string | null;
+  category?: string | null;
   translatedTitle?: string;
   translatedBody?: string;
   sourceLanguage?: string;
@@ -86,6 +88,8 @@ function saveBookmarks(ids: Set<string>) {
 function FeedCardInner({
   id,
   title,
+  body,
+  category,
   translatedTitle,
   translatedBody,
   sourceLanguage,
@@ -122,6 +126,7 @@ function FeedCardInner({
   );
   const isGif = mimeType === "image/gif";
   const hasTranslation = !isGif && (hasOverlaySegments || !!translatedImageUrl);
+  const isTextOnly = !imageUrl && (!images || images.length === 0);
 
   // Detect Type B (screenshot/forum posts)
   const isTypeB = memeType === "B" || (!memeType && segments.length >= 4 && segments.every(
@@ -369,8 +374,56 @@ function FeedCardInner({
         </Link>
       )}
 
-      {/* Translation bar above image */}
-      {(segments.length > 0 || translatedImageUrl) && (
+      {/* Text-only post body */}
+      {isTextOnly && (
+        <>
+          {category && category !== "meme" && (
+            <div className="px-4 pb-2">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-background-surface border border-border text-foreground-muted">
+                {category === "discussion" ? "\u{1F4AC} Discussion" : category === "question" ? "\u{2753} Question" : category}
+              </span>
+            </div>
+          )}
+          {body && (
+            <Link href={`/post/${id}`} className="block">
+              <div className="px-4 pb-3">
+                <p className="text-sm text-foreground-muted leading-relaxed whitespace-pre-wrap">
+                  {showTranslation && translatedBody ? (
+                    translatedBody.length > 300 ? translatedBody.slice(0, 300) + "..." : translatedBody
+                  ) : (
+                    body.length > 300 ? body.slice(0, 300) + "..." : body
+                  )}
+                  {((showTranslation && translatedBody ? translatedBody : body) || "").length > 300 && (
+                    <span className="text-[#c9a84c] text-xs ml-1 hover:underline">Read more...</span>
+                  )}
+                </p>
+                {showTranslation && translatedBody && (
+                  <p className="text-xs text-foreground-subtle mt-1.5 line-clamp-2 whitespace-pre-wrap">{body}</p>
+                )}
+              </div>
+            </Link>
+          )}
+          {/* Translation toggle for text-only posts */}
+          {translatedBody && (
+            <div className="flex items-center gap-2 px-4 pb-2">
+              <TranslationToggle
+                showTranslation={showTranslation}
+                onChange={setShowTranslation}
+              />
+              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium ${
+                showTranslation
+                  ? "bg-green-500/15 text-green-400"
+                  : "bg-background-elevated text-foreground-subtle"
+              }`}>
+                {showTranslation ? t("feed.translated") : t("feed.original")}
+              </span>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Translation bar above image (meme posts only) */}
+      {!isTextOnly && (segments.length > 0 || translatedImageUrl) && (
         <div className="flex items-center justify-between mx-4 px-3 py-2 bg-background-surface border border-border rounded-t-lg">
           <div className="flex items-center gap-2">
             <TranslationToggle
@@ -402,60 +455,62 @@ function FeedCardInner({
         </div>
       )}
 
-      {/* Meme image(s) */}
-      <Link href={`/post/${id}`} className="block">
-        <div className="px-4 pb-2">
-          <div className={`overflow-hidden border border-border ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-lg border-t-0" : "rounded-lg"}`}>
-            {isTypeB && segments.length > 0 ? (
-              /* Type B: translatedImageUrl (pre-rendered) > ScreenshotRenderer > original */
-              showTranslation && translatedImageUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={translatedImageUrl} alt={title} className="w-full" />
-              ) : showTranslation ? (
-                <ScreenshotRenderer
-                  segments={segments}
-                  showTranslation={showTranslation}
-                  originalImageUrl={imageUrl}
-                />
-              ) : (
+      {/* Meme image(s) — only for posts with images */}
+      {!isTextOnly && (
+        <Link href={`/post/${id}`} className="block">
+          <div className="px-4 pb-2">
+            <div className={`overflow-hidden border border-border ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-lg border-t-0" : "rounded-lg"}`}>
+              {isTypeB && segments.length > 0 ? (
+                /* Type B: translatedImageUrl (pre-rendered) > ScreenshotRenderer > original */
+                showTranslation && translatedImageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={translatedImageUrl} alt={title} className="w-full" />
+                ) : showTranslation ? (
+                  <ScreenshotRenderer
+                    segments={segments}
+                    showTranslation={showTranslation}
+                    originalImageUrl={imageUrl}
+                  />
+                ) : (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={imageUrl} alt={title} className="w-full" />
+                )
+              ) : images && images.length > 1 ? (
+                <ImageCarousel>
+                  {images.map((img, i) => {
+                    const imgIsGif = img.mimeType === "image/gif";
+                    const imgSegments = segments.filter((s: any) => (s.imageIndex ?? 0) === i);
+                    return imgIsGif ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img key={i} src={img.originalUrl} alt={title} className="w-full" />
+                    ) : (
+                      <MemeRenderer
+                        key={i}
+                        imageUrl={img.originalUrl}
+                        cleanImageUrl={img.cleanUrl || undefined}
+                        translatedImageUrl={i === 0 ? translatedImageUrl : undefined}
+                        segments={imgSegments}
+                        showTranslation={showTranslation}
+                      />
+                    );
+                  })}
+                </ImageCarousel>
+              ) : isGif ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={imageUrl} alt={title} className="w-full" />
-              )
-            ) : images && images.length > 1 ? (
-              <ImageCarousel>
-                {images.map((img, i) => {
-                  const imgIsGif = img.mimeType === "image/gif";
-                  const imgSegments = segments.filter((s: any) => (s.imageIndex ?? 0) === i);
-                  return imgIsGif ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img key={i} src={img.originalUrl} alt={title} className="w-full" />
-                  ) : (
-                    <MemeRenderer
-                      key={i}
-                      imageUrl={img.originalUrl}
-                      cleanImageUrl={img.cleanUrl || undefined}
-                      translatedImageUrl={i === 0 ? translatedImageUrl : undefined}
-                      segments={imgSegments}
-                      showTranslation={showTranslation}
-                    />
-                  );
-                })}
-              </ImageCarousel>
-            ) : isGif ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={imageUrl} alt={title} className="w-full" />
-            ) : (
-              <MemeRenderer
-                imageUrl={imageUrl}
-                cleanImageUrl={cleanImageUrl}
-                translatedImageUrl={translatedImageUrl}
-                segments={segments}
-                showTranslation={showTranslation}
-              />
-            )}
+              ) : (
+                <MemeRenderer
+                  imageUrl={imageUrl}
+                  cleanImageUrl={cleanImageUrl}
+                  translatedImageUrl={translatedImageUrl}
+                  segments={segments}
+                  showTranslation={showTranslation}
+                />
+              )}
+            </div>
           </div>
-        </div>
-      </Link>
+        </Link>
+      )}
 
       {/* (Translation toggle moved above image) */}
 

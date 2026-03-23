@@ -34,6 +34,7 @@ interface PostDetailProps {
     flagEmoji: string;
     nameEn: string;
   } | null;
+  category?: string | null;
   imageUrl: string;
   cleanImageUrl?: string;
   translatedImageUrl?: string;
@@ -110,6 +111,7 @@ export default function PostDetail({
   originalBody,
   author,
   country,
+  category,
   imageUrl,
   cleanImageUrl,
   translatedImageUrl,
@@ -138,6 +140,7 @@ export default function PostDetail({
   );
   const isGif = mimeType === "image/gif";
   const hasTranslation = !isGif && (hasOverlaySegments || !!translatedImageUrl);
+  const isTextOnly = !imageUrl && (!images || images.length === 0);
 
   // Detect Type B (screenshot/forum posts) — use explicit memeType or heuristic
   const isTypeB = memeType === "B" || (!memeType && segments.length >= 4 && segments.every(
@@ -435,8 +438,42 @@ export default function PostDetail({
         </div>
       )}
 
-      {/* Meme viewer */}
-      <div className="space-y-0">
+      {/* Text-only post: show body prominently with translation toggle */}
+      {isTextOnly && body && (
+        <div className="space-y-3">
+          {category && category !== "meme" && (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-background-surface border border-border text-foreground-muted">
+              {category === "discussion" ? "\u{1F4AC} Discussion" : category === "question" ? "\u{2753} Question" : category}
+            </span>
+          )}
+          <div className="bg-background-surface border border-border rounded-xl p-5">
+            {originalBody && (
+              <div className="flex items-center gap-2 mb-3">
+                <TranslationToggle
+                  showTranslation={showTranslation}
+                  onChange={setShowTranslation}
+                />
+                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                  showTranslation
+                    ? "bg-green-500/15 text-green-400"
+                    : "bg-background-elevated text-foreground-subtle"
+                }`}>
+                  {showTranslation ? "Translated" : "Original"}
+                </span>
+              </div>
+            )}
+            <p className="text-lg text-foreground-muted leading-relaxed whitespace-pre-wrap">
+              {showTranslation ? body : (originalBody || body)}
+            </p>
+            {showTranslation && originalBody && (
+              <p className="text-sm text-foreground-subtle mt-3 whitespace-pre-wrap border-t border-border pt-3">{originalBody}</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Meme viewer — only for posts with images */}
+      {!isTextOnly && <div className="space-y-0">
         {/* Translation bar above image */}
         {(segments.length > 0 || translatedImageUrl) && (
           <div className="flex items-center justify-between px-4 py-2.5 bg-background-surface border border-border rounded-t-xl">
@@ -535,10 +572,10 @@ export default function PostDetail({
             />
           </div>
         )}
-      </div>
+      </div>}
 
-      {/* Body */}
-      {body && (
+      {/* Body (for meme posts that also have body text) */}
+      {!isTextOnly && body && (
         <div>
           <p className="text-[22px] text-foreground-muted leading-relaxed whitespace-pre-wrap">{body}</p>
           {originalBody && (

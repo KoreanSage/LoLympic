@@ -234,6 +234,7 @@ export default function PostPage() {
           avatarUrl: post.author?.avatarUrl,
           isChampion: post.author?.isChampion || false,
         }}
+        category={post.category || null}
         country={
           post.country
             ? { flagEmoji: post.country.flagEmoji, nameEn: post.country.nameEn }
