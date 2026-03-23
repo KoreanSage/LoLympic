@@ -38,9 +38,8 @@ export default function FeedFilters({
 
   const POST_TYPE_OPTIONS: FilterOption[] = [
     { value: "", label: t("filter.allCategories") },
-    { value: "meme", label: "\u{1F923} Memes" },
-    { value: "discussion", label: "\u{1F4AC} Discussion" },
-    { value: "question", label: "\u{2753} Questions" },
+    { value: "meme", label: "😂 Memes" },
+    { value: "community", label: "💬 Community" },
   ];
 
   const COUNTRY_OPTIONS: FilterOption[] = [
