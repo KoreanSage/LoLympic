@@ -23,7 +23,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
         });
         userVote = vote?.value ?? 0;
       }
-    } catch {}
+    } catch (e) {
+      console.error("Failed to fetch user vote:", e);
+    }
 
     return NextResponse.json({ postId, voteScore: post.voteScore, userVote });
   } catch (error) {

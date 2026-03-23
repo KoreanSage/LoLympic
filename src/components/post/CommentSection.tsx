@@ -98,7 +98,7 @@ function MentionDropdown({
         setUsers(d.users || []);
         setActiveIndex(0);
       })
-      .catch(() => {})
+      .catch((e) => { console.error("Failed to fetch mention suggestions:", e); })
       .finally(() => setLoading(false));
     return () => controller.abort();
   }, [query, postId, visible]);

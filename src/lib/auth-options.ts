@@ -4,6 +4,13 @@ import GoogleProvider from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
 import prisma from "./prisma";
 
+// Ensure NEXTAUTH_SECRET is set in production to prevent insecure sessions
+if (process.env.NODE_ENV === "production" && !process.env.NEXTAUTH_SECRET) {
+  throw new Error(
+    "NEXTAUTH_SECRET environment variable is not set. This is required in production for secure session handling."
+  );
+}
+
 export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({

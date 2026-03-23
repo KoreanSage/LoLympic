@@ -433,6 +433,48 @@ const hi: Record<TranslationKeys, string> = {
   "dashboard.noData": "अभी तक कोई data नहीं",
   "dashboard.viewLeaderboard": "पूरा Leaderboard देखें",
   "dashboard.viewTournament": "Tournament देखें",
+
+  "bookmarks.subtitle": "आपके सहेजे गए मीम्स",
+  "bookmarks.explore": "मीम्स खोजें",
+
+  "search.recentSearches": "हाल की खोजें",
+  "search.memes": "मीम्स",
+  "search.users": "उपयोगकर्ता",
+  "search.reactions": "reactions",
+  "search.comments": "comments",
+  "search.posts": "posts",
+  "search.followers": "followers",
+  "search.noResultsTitle": "\"{query}\" के लिए कोई परिणाम नहीं मिला",
+  "search.noResultsHint": "अलग keywords आज़माएं या spelling जांचें",
+  "search.suggestions": "सुझाव",
+  "search.suggestionBroader": "व्यापक या छोटे search terms उपयोग करें",
+  "search.suggestionTags": "Tags से खोजें (जैसे funny, anime)",
+  "search.suggestionUsername": "Username या country से खोजें",
+
+  "tournament.roundOf8": "क्वार्टर फ़ाइनल",
+  "tournament.semiFinals": "सेमी-फ़ाइनल",
+  "tournament.grandFinal": "ग्रैंड फ़ाइनल",
+  "tournament.started": "शुरू हो गया",
+  "tournament.liveNow": "लाइव",
+  "tournament.startsIn": "{time} में शुरू",
+
+  "battle.tapToContinue": "जारी रखने के लिए टैप करें",
+  "battle.nextChallenger": "अगला चैलेंजर आ रहा है...",
+  "battle.streak.nicePick": "बढ़िया चुनाव!",
+  "battle.streak.onARoll": "लगातार जीत!",
+  "battle.streak.hatTrick": "हैट ट्रिक!",
+  "battle.streak.unstoppable": "अजेय!",
+  "battle.streak.domination": "दबदबा!",
+  "battle.streak.legendary": "लीजेंडरी!",
+  "battle.streak.godMode": "गॉड मोड!",
+
+  "feed.translated": "अनुवादित",
+  "feed.original": "मूल",
+
+  "auth.joinPlatform": "ग्लोबल मीम ट्रांसलेशन प्लेटफ़ॉर्म से जुड़ें",
+  "auth.platformTagline": "ग्लोबल मीम ट्रांसलेशन प्लेटफ़ॉर्म",
+  "auth.passwordMinLength8": "पासवर्ड कम से कम 8 अक्षरों का होना चाहिए",
+  "auth.passwordPlaceholder8": "कम से कम 8 अक्षर",
 } as const;
 
 export default hi;

@@ -31,6 +31,7 @@ interface BookmarkedPost {
 }
 
 function getBookmarkIds(): string[] {
+  if (typeof window === "undefined") return [];
   try {
     const raw = localStorage.getItem("lolympic_bookmarks");
     return raw ? JSON.parse(raw) : [];
@@ -133,7 +134,7 @@ export default function BookmarksPage() {
       <div className="py-6 space-y-6 max-w-2xl mx-auto">
         <div>
           <h1 className="text-2xl font-bold text-foreground mb-1">{t("bookmarks.title")}</h1>
-          <p className="text-sm text-foreground-subtle">Your saved memes</p>
+          <p className="text-sm text-foreground-subtle">{t("bookmarks.subtitle")}</p>
         </div>
 
         {loading ? (
@@ -160,7 +161,7 @@ export default function BookmarksPage() {
               href="/"
               className="px-4 py-2 rounded-lg text-sm font-medium bg-[#c9a84c] text-black hover:bg-[#b8963f] transition-colors"
             >
-              Explore Memes
+              {t("bookmarks.explore")}
             </Link>
           </div>
         ) : (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import Tabs from "@/components/ui/Tabs";
 import Avatar from "@/components/ui/Avatar";
 import MedalBadge from "./MedalBadge";
@@ -93,7 +93,7 @@ export default function LeaderboardTable({
 // Sub-tables
 // ---------------------------------------------------------------------------
 
-function CountryTable({ entries }: { entries: CountryEntry[] }) {
+const CountryTable = React.memo(function CountryTable({ entries }: { entries: CountryEntry[] }) {
   const { t } = useTranslation();
   if (entries.length === 0) return <EmptyState />;
 
@@ -132,9 +132,9 @@ function CountryTable({ entries }: { entries: CountryEntry[] }) {
       ))}
     </div>
   );
-}
+});
 
-function CreatorTable({ entries }: { entries: CreatorEntry[] }) {
+const CreatorTable = React.memo(function CreatorTable({ entries }: { entries: CreatorEntry[] }) {
   const { t } = useTranslation();
   if (entries.length === 0) return <EmptyState />;
 
@@ -178,9 +178,9 @@ function CreatorTable({ entries }: { entries: CreatorEntry[] }) {
       ))}
     </div>
   );
-}
+});
 
-function MemeTable({ entries }: { entries: MemeEntry[] }) {
+const MemeTable = React.memo(function MemeTable({ entries }: { entries: MemeEntry[] }) {
   const { t } = useTranslation();
   if (entries.length === 0) return <EmptyState />;
 
@@ -227,7 +227,7 @@ function MemeTable({ entries }: { entries: MemeEntry[] }) {
       ))}
     </div>
   );
-}
+});
 
 function EmptyState() {
   const { t } = useTranslation();

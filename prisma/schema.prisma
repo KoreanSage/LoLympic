@@ -511,7 +511,7 @@ model Comment {
   // Relations
   post          Post          @relation(fields: [postId], references: [id], onDelete: Cascade)
   author        User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  parent        Comment?      @relation("CommentReplies", fields: [parentId], references: [id])
+  parent        Comment?      @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
   replies       Comment[]     @relation("CommentReplies")
   likes         CommentLike[]
   reports       Report[]
@@ -702,7 +702,7 @@ model SeasonEntry {
   // Relations
   season  Season   @relation(fields: [seasonId], references: [id], onDelete: Cascade)
   post    Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  author  User     @relation(fields: [authorId], references: [id])
+  author  User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
   country Country? @relation(fields: [countryId], references: [id])
 
   @@unique([seasonId, postId])
@@ -813,7 +813,7 @@ model Medal {
 
   // Relations
   season  Season   @relation(fields: [seasonId], references: [id], onDelete: Cascade)
-  user    User?    @relation(fields: [userId], references: [id])
+  user    User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
   country Country? @relation(fields: [countryId], references: [id])
 
   // Medal → RewardGrant
@@ -856,9 +856,9 @@ model RewardGrant {
 
   // Relations
   reward  Reward   @relation(fields: [rewardId], references: [id])
-  user    User?    @relation(fields: [userId], references: [id])
+  user    User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
   country Country? @relation(fields: [countryId], references: [id])
-  season  Season?  @relation(fields: [seasonId], references: [id])
+  season  Season?  @relation(fields: [seasonId], references: [id], onDelete: Cascade)
   medal   Medal?   @relation(fields: [medalId], references: [id])
 
   @@index([userId])
@@ -983,7 +983,7 @@ model Battle {
 
 model Report {
   id            String       @id @default(cuid())
-  reporterId    String
+  reporterId    String?
   postId        String?
   commentId     String?
   suggestionId  String?
@@ -999,7 +999,7 @@ model Report {
   updatedAt DateTime @updatedAt
 
   // Relations
-  reporter   User        @relation("Reporter", fields: [reporterId], references: [id])
+  reporter   User?       @relation("Reporter", fields: [reporterId], references: [id], onDelete: SetNull)
   post       Post?       @relation(fields: [postId], references: [id])
   comment    Comment?    @relation(fields: [commentId], references: [id])
   suggestion Suggestion? @relation(fields: [suggestionId], references: [id])

@@ -137,7 +137,7 @@ export async function GET(request: NextRequest) {
             seasonId: season.id,
             year: now.getFullYear(),
           },
-        }).catch(() => {}); // fire-and-forget
+        }).catch((e) => { console.error("Failed to create tournament notification:", e); }); // fire-and-forget
       }
     }
 

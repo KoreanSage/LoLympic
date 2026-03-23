@@ -431,6 +431,54 @@ const en = {
   "dashboard.noData": "No data yet",
   "dashboard.viewLeaderboard": "View Full Leaderboard",
   "dashboard.viewTournament": "View Tournament",
+
+  // ── Bookmarks (extra) ────────────────────────────────────────────────────
+  "bookmarks.subtitle": "Your saved memes",
+  "bookmarks.explore": "Explore Memes",
+
+  // ── Search (extra) ───────────────────────────────────────────────────────
+  "search.recentSearches": "Recent searches",
+  "search.memes": "Memes",
+  "search.users": "Users",
+  "search.reactions": "reactions",
+  "search.comments": "comments",
+  "search.posts": "posts",
+  "search.followers": "followers",
+  "search.noResultsTitle": "No results found for \"{query}\"",
+  "search.noResultsHint": "Try different keywords or check spelling",
+  "search.suggestions": "Suggestions",
+  "search.suggestionBroader": "Use broader or shorter search terms",
+  "search.suggestionTags": "Search by tags (e.g. funny, anime)",
+  "search.suggestionUsername": "Search by username or country",
+
+  // ── Tournament (extra) ───────────────────────────────────────────────────
+  "tournament.roundOf8": "Round of 8",
+  "tournament.semiFinals": "Semi-Finals",
+  "tournament.grandFinal": "Grand Final",
+  "tournament.started": "Started",
+  "tournament.liveNow": "Live now",
+  "tournament.startsIn": "Starts in {time}",
+
+  // ── Battle (extra) ───────────────────────────────────────────────────────
+  "battle.tapToContinue": "Tap to continue",
+  "battle.nextChallenger": "Next challenger incoming...",
+  "battle.streak.nicePick": "Nice pick!",
+  "battle.streak.onARoll": "On a roll!",
+  "battle.streak.hatTrick": "Hat trick!",
+  "battle.streak.unstoppable": "Unstoppable!",
+  "battle.streak.domination": "Domination!",
+  "battle.streak.legendary": "LEGENDARY!",
+  "battle.streak.godMode": "GOD MODE!",
+
+  // ── Feed (extra) ─────────────────────────────────────────────────────────
+  "feed.translated": "Translated",
+  "feed.original": "Original",
+
+  // ── Auth (extra) ─────────────────────────────────────────────────────────
+  "auth.joinPlatform": "Join the Global Meme Translation Platform",
+  "auth.platformTagline": "Global Meme Translation Platform",
+  "auth.passwordMinLength8": "Password must be at least 8 characters",
+  "auth.passwordPlaceholder8": "Min 8 characters",
 } as const;
 
 export type TranslationKeys = keyof typeof en;

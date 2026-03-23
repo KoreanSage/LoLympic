@@ -190,7 +190,7 @@ export async function POST(request: NextRequest) {
         monthName,
         postTitle: topPost.title || "",
       },
-    }).catch(() => {}); // fire-and-forget
+    }).catch((e) => { console.error("Failed to create monthly winner notification:", e); }); // fire-and-forget
 
     return NextResponse.json({ winner });
   } catch (error) {

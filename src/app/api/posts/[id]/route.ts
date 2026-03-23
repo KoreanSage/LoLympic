@@ -131,7 +131,7 @@ export async function GET(
         where: { id },
         data: { viewCount: { increment: 1 } },
       })
-      .catch(() => {});
+      .catch((e) => { console.error("Failed to increment view count:", e); });
 
     // Backfill missing translatedTitle SYNCHRONOUSLY before responding
     let patchedPost = post;

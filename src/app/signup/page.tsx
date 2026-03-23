@@ -47,8 +47,8 @@ export default function SignUpPage() {
       setError(t("auth.passwordMismatch"));
       return;
     }
-    if (password.length < 6) {
-      setError(t("auth.passwordMinLength"));
+    if (password.length < 8) {
+      setError(t("auth.passwordMinLength8"));
       return;
     }
     if (!countryId) {
@@ -112,7 +112,7 @@ export default function SignUpPage() {
             </h1>
           </Link>
           <p className="mt-2 text-foreground-subtle text-sm">
-            Join the Global Meme Translation Platform
+            {t("auth.joinPlatform")}
           </p>
         </div>
 
@@ -184,10 +184,10 @@ export default function SignUpPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder={t("auth.passwordPlaceholder6")}
+                placeholder={t("auth.passwordPlaceholder8")}
                 className="w-full px-3 py-2.5 bg-background-elevated border border-border-hover rounded-lg text-foreground placeholder-foreground-subtle focus:outline-none focus:border-[#c9a84c] focus:ring-1 focus:ring-[#c9a84c]/50 transition-colors"
                 required
-                minLength={6}
+                minLength={8}
               />
             </div>
 
@@ -202,7 +202,7 @@ export default function SignUpPage() {
                 placeholder={t("auth.reenterPassword")}
                 className="w-full px-3 py-2.5 bg-background-elevated border border-border-hover rounded-lg text-foreground placeholder-foreground-subtle focus:outline-none focus:border-[#c9a84c] focus:ring-1 focus:ring-[#c9a84c]/50 transition-colors"
                 required
-                minLength={6}
+                minLength={8}
               />
             </div>
 

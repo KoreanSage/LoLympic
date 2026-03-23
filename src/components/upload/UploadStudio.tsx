@@ -275,7 +275,7 @@ export default function UploadStudio() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ postId, type: "clean" }),
-      }).catch(() => {});
+      }).catch((e) => { console.error("Background image generation failed:", e); });
 
       setTimeout(() => {
         if (postId) router.push(`/post/${postId}`);

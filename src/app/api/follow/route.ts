@@ -1,10 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 
 // POST /api/follow — Follow a user
 export async function POST(request: NextRequest) {
   try {
+    const rlKey = getRateLimitKey(request.headers, "follow");
+    const rl = checkRateLimit(rlKey, RATE_LIMITS.write);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: "Too many requests" },
+        { status: 429, headers: { "Retry-After": String(rl.retryAfter) } }
+      );
+    }
+
     const user = await getSessionUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -54,7 +64,7 @@ export async function POST(request: NextRequest) {
         actorId: user.id,
         type: "FOLLOW",
       },
-    }).catch(() => {}); // non-critical
+    }).catch((e) => { console.error("Failed to create follow notification:", e); }); // non-critical
 
     return NextResponse.json({ followed: true });
   } catch (error) {
@@ -66,6 +76,15 @@ export async function POST(request: NextRequest) {
 // DELETE /api/follow — Unfollow a user
 export async function DELETE(request: NextRequest) {
   try {
+    const rlKey = getRateLimitKey(request.headers, "follow");
+    const rl = checkRateLimit(rlKey, RATE_LIMITS.write);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: "Too many requests" },
+        { status: 429, headers: { "Retry-After": String(rl.retryAfter) } }
+      );
+    }
+
     const user = await getSessionUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

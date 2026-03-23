@@ -158,7 +158,9 @@ export default function PostDetail({
       const raw = localStorage.getItem("lolympic_bookmarks");
       const bookmarks: string[] = raw ? JSON.parse(raw) : [];
       setSaved(bookmarks.includes(id));
-    } catch {}
+    } catch (e) {
+      console.error("Failed to read bookmarks from localStorage:", e);
+    }
 
     // Load user's vote state from API
     fetch(`/api/posts/${id}/vote`)
@@ -169,7 +171,7 @@ export default function PostDetail({
           setUserVote(data.userVote ?? 0);
         }
       })
-      .catch(() => {});
+      .catch((e) => { console.error("Failed to fetch vote state:", e); });
   }, [id]);
 
   // More options menu state
@@ -619,7 +621,7 @@ export default function PostDetail({
           onClick={async () => {
             const url = window.location.href;
             if (navigator.share) {
-              try { await navigator.share({ title, url }); } catch {}
+              try { await navigator.share({ title, url }); } catch (e) { console.error("Share failed:", e); }
             } else {
               await navigator.clipboard.writeText(url);
               toast(t("feed.linkCopied"), "success");
@@ -644,14 +646,16 @@ export default function PostDetail({
                 if (!bookmarks.includes(id)) bookmarks.push(id);
                 localStorage.setItem("lolympic_bookmarks", JSON.stringify(bookmarks));
               }
-            } catch {}
+            } catch (e) {
+              console.error("Failed to update bookmarks in localStorage:", e);
+            }
             // DB sync when logged in
             if (session?.user) {
               fetch("/api/bookmarks", {
                 method: willSave ? "POST" : "DELETE",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ postId: id }),
-              }).catch(() => {});
+              }).catch((e) => { console.error("Failed to sync bookmark to server:", e); });
             }
             setSaved(willSave);
             toast(saved ? t("feed.bookmarkRemoved") : t("feed.bookmarked"), "success");

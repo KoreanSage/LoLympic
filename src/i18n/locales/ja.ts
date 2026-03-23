@@ -429,6 +429,48 @@ const ja: Record<TranslationKeys, string> = {
   "dashboard.noData": "データがまだありません",
   "dashboard.viewLeaderboard": "ランキング全体を見る",
   "dashboard.viewTournament": "トーナメントを見る",
+
+  "bookmarks.subtitle": "保存したミーム",
+  "bookmarks.explore": "ミームを探す",
+
+  "search.recentSearches": "最近の検索",
+  "search.memes": "ミーム",
+  "search.users": "ユーザー",
+  "search.reactions": "リアクション",
+  "search.comments": "コメント",
+  "search.posts": "投稿",
+  "search.followers": "フォロワー",
+  "search.noResultsTitle": "「{query}」の検索結果はありません",
+  "search.noResultsHint": "別のキーワードを試すか、スペルを確認してください",
+  "search.suggestions": "提案",
+  "search.suggestionBroader": "より広いまたは短い検索語を使用してください",
+  "search.suggestionTags": "タグで検索（例：funny、anime）",
+  "search.suggestionUsername": "ユーザー名または国で検索",
+
+  "tournament.roundOf8": "準々決勝",
+  "tournament.semiFinals": "準決勝",
+  "tournament.grandFinal": "決勝",
+  "tournament.started": "開始済み",
+  "tournament.liveNow": "ライブ",
+  "tournament.startsIn": "{time}後に開始",
+
+  "battle.tapToContinue": "タップして続ける",
+  "battle.nextChallenger": "次の挑戦者が登場...",
+  "battle.streak.nicePick": "ナイスピック！",
+  "battle.streak.onARoll": "連勝中！",
+  "battle.streak.hatTrick": "ハットトリック！",
+  "battle.streak.unstoppable": "止められない！",
+  "battle.streak.domination": "圧倒的！",
+  "battle.streak.legendary": "レジェンド！",
+  "battle.streak.godMode": "ゴッドモード！",
+
+  "feed.translated": "翻訳済み",
+  "feed.original": "オリジナル",
+
+  "auth.joinPlatform": "グローバルミーム翻訳プラットフォームに参加",
+  "auth.platformTagline": "グローバルミーム翻訳プラットフォーム",
+  "auth.passwordMinLength8": "パスワードは8文字以上必要です",
+  "auth.passwordPlaceholder8": "8文字以上",
 };
 
 export default ja;

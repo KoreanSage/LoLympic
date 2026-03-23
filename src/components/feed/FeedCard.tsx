@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -69,6 +69,7 @@ interface FeedCardProps {
 
 // Bookmark helpers
 function getBookmarks(): Set<string> {
+  if (typeof window === "undefined") return new Set();
   try {
     const raw = localStorage.getItem("lolympic_bookmarks");
     return raw ? new Set(JSON.parse(raw)) : new Set();
@@ -78,10 +79,11 @@ function getBookmarks(): Set<string> {
 }
 
 function saveBookmarks(ids: Set<string>) {
+  if (typeof window === "undefined") return;
   localStorage.setItem("lolympic_bookmarks", JSON.stringify(Array.from(ids)));
 }
 
-export default function FeedCard({
+function FeedCardInner({
   id,
   title,
   translatedTitle,
@@ -151,7 +153,7 @@ export default function FeedCard({
           setUserVote(data.userVote ?? 0);
         }
       })
-      .catch(() => {});
+      .catch((e) => { console.error("Failed to fetch vote state:", e); });
   }, [id]);
 
   // Close menu on outside click
@@ -187,7 +189,7 @@ export default function FeedCard({
     setBookmarked(getBookmarks().has(id));
   }, [id]);
 
-  const timeAgo = formatTimeAgo(createdAt);
+  const timeAgo = useMemo(() => formatTimeAgo(createdAt), [createdAt]);
 
   const handleVote = useCallback(async (newValue: number) => {
     if (votePending) return;
@@ -216,11 +218,11 @@ export default function FeedCard({
     }
   }, [id, voteScore, userVote, votePending]);
 
-  const handleComment = () => {
+  const handleComment = useCallback(() => {
     router.push(`/post/${id}`);
-  };
+  }, [router, id]);
 
-  const handleShare = async () => {
+  const handleShare = useCallback(async () => {
     const url = `${window.location.origin}/post/${id}`;
     if (navigator.share) {
       try {
@@ -232,9 +234,9 @@ export default function FeedCard({
       await navigator.clipboard.writeText(url);
       toast(t("feed.linkCopied"), "success");
     }
-  };
+  }, [id, title, toast, t]);
 
-  const handleBookmark = () => {
+  const handleBookmark = useCallback(() => {
     const willSave = !bookmarked;
     const bookmarks = getBookmarks();
     if (bookmarked) {
@@ -250,10 +252,10 @@ export default function FeedCard({
         method: willSave ? "POST" : "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ postId: id }),
-      }).catch(() => {});
+      }).catch((e) => { console.error("Failed to sync bookmark to server:", e); });
     }
     toast(bookmarked ? t("feed.bookmarkRemoved") : t("feed.bookmarked"), "success");
-  };
+  }, [id, bookmarked, session, toast, t]);
 
   return (
     <Card noPadding hoverable>
@@ -385,10 +387,10 @@ export default function FeedCard({
                   <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  Translated
+                  {t("feed.translated")}
                 </>
               ) : (
-                "Original"
+                t("feed.original")
               )}
             </span>
           </div>
@@ -590,7 +592,10 @@ export default function FeedCard({
   );
 }
 
-function ActionButton({
+const FeedCard = React.memo(FeedCardInner);
+export default FeedCard;
+
+const ActionButton = React.memo(function ActionButton({
   icon,
   count,
   active,
@@ -619,7 +624,7 @@ function ActionButton({
       )}
     </button>
   );
-}
+});
 
 function formatCount(n: number): string {
   if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;

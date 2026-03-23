@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth-options";
 import prisma from "@/lib/prisma";
 import { GoogleGenAI } from "@google/genai";
 import crypto from "crypto";
@@ -70,11 +72,16 @@ async function saveGeneratedImage(buffer: Buffer, prefix: string, ext: string): 
  * POST /api/translate/generate-image
  * Generates clean images (text removed via inpainting) for ALL post images.
  * Called automatically after translation or from the frontend.
- * No auth required — postId serves as authorization.
+ * Requires authentication to prevent unauthorized Gemini API usage.
  * Body: { postId }
  */
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await request.json();
     const { postId } = body as { postId: string };
 

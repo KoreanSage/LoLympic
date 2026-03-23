@@ -125,7 +125,7 @@ export default function SettingsPage() {
           setEmailVerified(!!data.emailVerified);
         }
       })
-      .catch(() => {})
+      .catch((e) => { console.error("Failed to fetch user profile:", e); })
       .finally(() => setProfileLoading(false));
   }, [status]);
 
@@ -446,8 +446,8 @@ export default function SettingsPage() {
                             toast("Passwords do not match", "error");
                             return;
                           }
-                          if (newPassword.length < 6) {
-                            toast("New password must be at least 6 characters", "error");
+                          if (newPassword.length < 8) {
+                            toast("New password must be at least 8 characters", "error");
                             return;
                           }
                           setPasswordSaving(true);

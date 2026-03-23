@@ -156,14 +156,14 @@ export default function TopNav() {
       .then((data) => {
         if (data) setUnreadCount(data.unreadCount ?? 0);
       })
-      .catch(() => {});
+      .catch((e) => { console.error("Failed to fetch notification count:", e); });
     // Fetch DM unread count
     fetch("/api/conversations/unread")
       .then((r) => r.ok ? r.json() : null)
       .then((data) => {
         if (data) setDmUnreadCount(data.unreadCount ?? 0);
       })
-      .catch(() => {});
+      .catch((e) => { console.error("Failed to fetch DM unread count:", e); });
   }, [status]);
 
   // Fetch notifications when dropdown opens & auto mark as read
@@ -185,11 +185,11 @@ export default function TopNav() {
           }).then(() => {
             setUnreadCount(0);
             setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-          }).catch(() => {});
+          }).catch((e) => { console.error("Failed to mark notifications as read:", e); });
         }
       }
-    } catch {
-      // ignore
+    } catch (e) {
+      console.error("Failed to fetch notifications:", e);
     } finally {
       setNotifLoading(false);
     }

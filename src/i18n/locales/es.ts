@@ -429,6 +429,48 @@ const es: Record<TranslationKeys, string> = {
   "dashboard.noData": "Aún no hay datos",
   "dashboard.viewLeaderboard": "Ver Clasificación Completa",
   "dashboard.viewTournament": "Ver Torneo",
+
+  "bookmarks.subtitle": "Tus memes guardados",
+  "bookmarks.explore": "Explorar Memes",
+
+  "search.recentSearches": "Busquedas recientes",
+  "search.memes": "Memes",
+  "search.users": "Usuarios",
+  "search.reactions": "reacciones",
+  "search.comments": "comentarios",
+  "search.posts": "publicaciones",
+  "search.followers": "seguidores",
+  "search.noResultsTitle": "No se encontraron resultados para \"{query}\"",
+  "search.noResultsHint": "Prueba con diferentes palabras clave o verifica la ortografia",
+  "search.suggestions": "Sugerencias",
+  "search.suggestionBroader": "Usa terminos de busqueda mas amplios o cortos",
+  "search.suggestionTags": "Busca por etiquetas (ej. funny, anime)",
+  "search.suggestionUsername": "Busca por nombre de usuario o pais",
+
+  "tournament.roundOf8": "Octavos de Final",
+  "tournament.semiFinals": "Semifinales",
+  "tournament.grandFinal": "Gran Final",
+  "tournament.started": "Iniciado",
+  "tournament.liveNow": "En vivo",
+  "tournament.startsIn": "Comienza en {time}",
+
+  "battle.tapToContinue": "Toca para continuar",
+  "battle.nextChallenger": "Proximo retador en camino...",
+  "battle.streak.nicePick": "Buena eleccion!",
+  "battle.streak.onARoll": "En racha!",
+  "battle.streak.hatTrick": "Hat trick!",
+  "battle.streak.unstoppable": "Imparable!",
+  "battle.streak.domination": "Dominacion!",
+  "battle.streak.legendary": "LEGENDARIO!",
+  "battle.streak.godMode": "MODO DIOS!",
+
+  "feed.translated": "Traducido",
+  "feed.original": "Original",
+
+  "auth.joinPlatform": "Unete a la Plataforma Global de Traduccion de Memes",
+  "auth.platformTagline": "Plataforma Global de Traduccion de Memes",
+  "auth.passwordMinLength8": "La contrasena debe tener al menos 8 caracteres",
+  "auth.passwordPlaceholder8": "Min 8 caracteres",
 };
 
 export default es;
