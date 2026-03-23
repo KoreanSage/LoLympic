@@ -266,9 +266,9 @@ function BattleCardInner({ onDismiss }: BattleCardProps) {
             <button
               onClick={() => setMinimized(true)}
               aria-label="Minimize battle"
-              className="text-foreground-subtle hover:text-foreground-muted p-1 rounded-lg hover:bg-background-elevated transition-colors"
+              className="text-foreground-subtle hover:text-foreground-muted p-2 rounded-lg hover:bg-background-elevated transition-colors"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 12H6" />
               </svg>
             </button>
@@ -276,9 +276,9 @@ function BattleCardInner({ onDismiss }: BattleCardProps) {
             <button
               onClick={onDismiss}
               aria-label="Close battle"
-              className="text-foreground-subtle hover:text-foreground-muted p-1 rounded-lg hover:bg-background-elevated transition-colors"
+              className="text-foreground-subtle hover:text-foreground-muted p-2 rounded-lg hover:bg-background-elevated transition-colors"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>

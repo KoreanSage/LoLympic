@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "@/i18n";
 
 interface FilterOption {
@@ -29,6 +29,24 @@ export default function FeedFilters({
   const [country, setCountry] = useState("");
   const [language, setLanguage] = useState("");
   const [category, setCategory] = useState("");
+  const [showRightFade, setShowRightFade] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const checkOverflow = () => {
+      setShowRightFade(el.scrollWidth > el.clientWidth && el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+    };
+    checkOverflow();
+    el.addEventListener("scroll", checkOverflow, { passive: true });
+    const ro = new ResizeObserver(checkOverflow);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener("scroll", checkOverflow);
+      ro.disconnect();
+    };
+  }, []);
 
   const SORT_OPTIONS: FilterOption[] = [
     { value: "trending", label: t("filter.trending") },
@@ -116,7 +134,8 @@ export default function FeedFilters({
     <div
       className={`border-b border-border py-3 -mx-4 px-4 ${className}`}
     >
-      <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide">
+      <div className="relative">
+      <div ref={scrollRef} className="flex items-center gap-3 overflow-x-auto scrollbar-hide">
         {/* Sort tabs */}
         <div className="flex items-center gap-0.5 bg-background-surface rounded-lg p-0.5 border border-border shrink-0">
           {SORT_OPTIONS.map((opt) => (
@@ -171,6 +190,10 @@ export default function FeedFilters({
           options={CATEGORY_OPTIONS}
           onChange={(v) => handleChange("category", v)}
         />
+      </div>
+      {showRightFade && (
+        <div className="absolute right-0 top-0 bottom-0 w-8 pointer-events-none bg-gradient-to-l from-background to-transparent" />
+      )}
       </div>
     </div>
   );

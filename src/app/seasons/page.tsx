@@ -219,44 +219,46 @@ export default function SeasonsPage() {
                 {t("season.monthsCompleted", { count: String(winners.length) })}
               </p>
             </div>
-            {/* Milestone dots with connecting line */}
-            <div className="relative">
-              {/* Background track */}
-              <div className="absolute top-3 left-0 right-0 h-0.5 bg-foreground/10 rounded-full" />
-              {/* Filled track */}
-              <div
-                className="absolute top-3 left-0 h-0.5 bg-[#c9a84c] rounded-full transition-all duration-1000"
-                style={{ width: `${(Math.max(0, currentMonth - 1) / 11) * 100}%` }}
-              />
-              <div className="flex justify-between relative">
-                {Array.from({ length: 12 }, (_, i) => {
-                  const month = i + 1;
-                  const isWinner = winnerMonths.has(month);
-                  const isCurrent = month === currentMonth;
-                  const isPast = month < currentMonth;
-                  return (
-                    <div key={month} className="flex flex-col items-center" title={MONTH_NAMES[i]}>
-                      <div
-                        className={`w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold transition-all ${
-                          isWinner
-                            ? "bg-[#c9a84c] text-black shadow-[0_0_8px_rgba(201,168,76,0.4)]"
-                            : isCurrent
-                              ? "bg-[#c9a84c]/30 text-[#c9a84c] border-2 border-[#c9a84c] animate-pulse"
-                              : isPast
-                                ? "bg-foreground/15 text-foreground-subtle"
-                                : "bg-foreground/5 text-foreground-subtle/50"
-                        }`}
-                      >
-                        {isWinner ? "✓" : MONTH_ABBREV[i].charAt(0)}
+            {/* Milestone dots with connecting line — horizontally scrollable on mobile */}
+            <div className="overflow-x-auto -mx-5 px-5 sm:mx-0 sm:px-0">
+              <div className="relative min-w-[480px] sm:min-w-0">
+                {/* Background track */}
+                <div className="absolute top-3 left-0 right-0 h-0.5 bg-foreground/10 rounded-full" />
+                {/* Filled track */}
+                <div
+                  className="absolute top-3 left-0 h-0.5 bg-[#c9a84c] rounded-full transition-all duration-1000"
+                  style={{ width: `${(Math.max(0, currentMonth - 1) / 11) * 100}%` }}
+                />
+                <div className="flex justify-between relative">
+                  {Array.from({ length: 12 }, (_, i) => {
+                    const month = i + 1;
+                    const isWinner = winnerMonths.has(month);
+                    const isCurrent = month === currentMonth;
+                    const isPast = month < currentMonth;
+                    return (
+                      <div key={month} className="flex flex-col items-center" title={MONTH_NAMES[i]}>
+                        <div
+                          className={`w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold transition-all ${
+                            isWinner
+                              ? "bg-[#c9a84c] text-black shadow-[0_0_8px_rgba(201,168,76,0.4)]"
+                              : isCurrent
+                                ? "bg-[#c9a84c]/30 text-[#c9a84c] border-2 border-[#c9a84c] animate-pulse"
+                                : isPast
+                                  ? "bg-foreground/15 text-foreground-subtle"
+                                  : "bg-foreground/5 text-foreground-subtle/50"
+                          }`}
+                        >
+                          {isWinner ? "✓" : MONTH_ABBREV[i].charAt(0)}
+                        </div>
+                        <span className={`text-[9px] mt-1 ${
+                          isCurrent ? "text-[#c9a84c] font-bold" : "text-foreground-subtle"
+                        }`}>
+                          {MONTH_ABBREV[i]}
+                        </span>
                       </div>
-                      <span className={`text-[9px] mt-1 ${
-                        isCurrent ? "text-[#c9a84c] font-bold" : "text-foreground-subtle"
-                      }`}>
-                        {MONTH_ABBREV[i]}
-                      </span>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>

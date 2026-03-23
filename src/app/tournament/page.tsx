@@ -322,7 +322,7 @@ function VoteView({
       <div className={`bg-background-surface border rounded-2xl overflow-hidden ${
         match.isActive ? "border-[#c9a84c]/50 shadow-[0_0_20px_rgba(201,168,76,0.15)]" : "border-border"
       }`}>
-        <div className="flex items-stretch">
+        <div className="flex flex-col sm:flex-row items-stretch">
           {/* Post 1 */}
           <VoteSide
             post={match.post1}
@@ -335,10 +335,14 @@ function VoteView({
             onVote={() => handleVote(match.id, match.post1.id)}
           />
 
-          {/* VS */}
-          <div className="flex flex-col items-center justify-center px-3 bg-background-elevated relative">
-            <div className="absolute inset-y-0 left-0 w-px bg-border" />
-            <div className="absolute inset-y-0 right-0 w-px bg-border" />
+          {/* VS - horizontal on mobile, vertical on desktop */}
+          <div className="flex sm:flex-col items-center justify-center py-2 sm:py-0 sm:px-3 bg-background-elevated relative">
+            {/* Mobile: horizontal dividers */}
+            <div className="sm:hidden absolute inset-x-0 top-0 h-px bg-border" />
+            <div className="sm:hidden absolute inset-x-0 bottom-0 h-px bg-border" />
+            {/* Desktop: vertical dividers */}
+            <div className="hidden sm:block absolute inset-y-0 left-0 w-px bg-border" />
+            <div className="hidden sm:block absolute inset-y-0 right-0 w-px bg-border" />
             <div className="w-10 h-10 rounded-full bg-[#c9a84c]/15 flex items-center justify-center">
               <span className="text-xs font-black text-[#c9a84c]">VS</span>
             </div>
@@ -502,9 +506,13 @@ function BracketView({
     <div>
       {/* Mobile scroll hint */}
       <div className="flex items-center justify-center gap-2 mb-2 sm:hidden">
-        <span className="text-[10px] text-foreground-subtle">← Scroll to see full bracket →</span>
+        <span className="text-xs text-foreground-muted animate-pulse">← Scroll to see full bracket →</span>
       </div>
 
+      <div className="relative">
+        {/* Gradient fade edges on mobile */}
+        <div className="pointer-events-none absolute inset-y-0 left-0 w-6 bg-gradient-to-r from-background to-transparent z-10 sm:hidden" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-6 bg-gradient-to-l from-background to-transparent z-10 sm:hidden" />
       <div className="overflow-x-auto pb-4 -mx-4 px-4">
         <div className="flex gap-6 min-w-[720px] items-start">
           {rounds.map(({ round, name, emoji, date, label, matches: roundMatches }) => {
@@ -553,6 +561,7 @@ function BracketView({
             );
           })}
         </div>
+      </div>
       </div>
     </div>
   );
