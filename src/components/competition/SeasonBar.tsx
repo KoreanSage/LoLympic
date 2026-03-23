@@ -55,7 +55,7 @@ export default function SeasonBar({ className = "" }: { className?: string }) {
           setLeading({ flag: entry.country.flagEmoji, name: entry.country.nameEn });
         }
       })
-      .catch(() => {});
+      .catch((e) => { console.error("Failed to fetch leaderboard data:", e); });
   }, []);
 
   // Update time left every minute

@@ -51,7 +51,7 @@ export default function MonthlyWinnerBanner() {
           setWinner(latest);
         }
       })
-      .catch(() => {});
+      .catch((e) => { console.error("Failed to fetch monthly winner:", e); });
   }, []);
 
   const handleDismiss = () => {

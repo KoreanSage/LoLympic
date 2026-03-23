@@ -429,6 +429,48 @@ const zh: Record<TranslationKeys, string> = {
   "dashboard.noData": "暂无数据",
   "dashboard.viewLeaderboard": "查看完整排行榜",
   "dashboard.viewTournament": "查看锦标赛",
+
+  "bookmarks.subtitle": "你保存的梗图",
+  "bookmarks.explore": "探索梗图",
+
+  "search.recentSearches": "最近搜索",
+  "search.memes": "梗图",
+  "search.users": "用户",
+  "search.reactions": "反应",
+  "search.comments": "评论",
+  "search.posts": "帖子",
+  "search.followers": "粉丝",
+  "search.noResultsTitle": "未找到\u201C{query}\u201D的结果",
+  "search.noResultsHint": "尝试不同的关键词或检查拼写",
+  "search.suggestions": "建议",
+  "search.suggestionBroader": "使用更广泛或更短的搜索词",
+  "search.suggestionTags": "按标签搜索（如 funny、anime）",
+  "search.suggestionUsername": "按用户名或国家搜索",
+
+  "tournament.roundOf8": "八强",
+  "tournament.semiFinals": "半决赛",
+  "tournament.grandFinal": "决赛",
+  "tournament.started": "已开始",
+  "tournament.liveNow": "进行中",
+  "tournament.startsIn": "{time}后开始",
+
+  "battle.tapToContinue": "点击继续",
+  "battle.nextChallenger": "下一位挑战者即将登场...",
+  "battle.streak.nicePick": "好眼光！",
+  "battle.streak.onARoll": "连胜中！",
+  "battle.streak.hatTrick": "帽子戏法！",
+  "battle.streak.unstoppable": "势不可挡！",
+  "battle.streak.domination": "全面统治！",
+  "battle.streak.legendary": "传奇！",
+  "battle.streak.godMode": "神级模式！",
+
+  "feed.translated": "已翻译",
+  "feed.original": "原文",
+
+  "auth.joinPlatform": "加入全球梗图翻译平台",
+  "auth.platformTagline": "全球梗图翻译平台",
+  "auth.passwordMinLength8": "密码至少需要8个字符",
+  "auth.passwordPlaceholder8": "至少8个字符",
 };
 
 export default zh;

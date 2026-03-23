@@ -50,7 +50,7 @@ export default function PostPage() {
           localStorage.setItem("lolympic_preferredLanguage", data.preferredLanguage);
         }
       })
-      .catch(() => {})
+      .catch((e) => { console.error("Failed to fetch user language preference:", e); })
       .finally(() => setLangReady(true));
   }, [session?.user]);
 
@@ -153,10 +153,10 @@ export default function PostPage() {
             .then((freshPost) => {
               if (freshPost) setPost(freshPost);
             })
-            .catch(() => {});
+            .catch((e) => { console.error("Failed to refresh post data:", e); });
         }
       })
-      .catch(() => {});
+      .catch((e) => { console.error("Failed to check clean image status:", e); });
   }, [post, id, preferredLang]);
 
   if (loading) {

@@ -15,6 +15,7 @@ export default function HomePage() {
   // Get the user's ACTUAL preferredLanguage: localStorage (instant) > DB > session JWT
   useEffect(() => {
     // Check localStorage first (set by settings page on save)
+    if (typeof window === "undefined") return;
     const stored = localStorage.getItem("lolympic_preferredLanguage");
     if (stored) {
       setFreshLang(stored);
@@ -29,7 +30,7 @@ export default function HomePage() {
           localStorage.setItem("lolympic_preferredLanguage", data.preferredLanguage);
         }
       })
-      .catch(() => {});
+      .catch((e) => { console.error("Failed to fetch user language preference:", e); });
   }, [session?.user]);
 
   const translateTo = freshLang || (session?.user as any)?.preferredLanguage || "";

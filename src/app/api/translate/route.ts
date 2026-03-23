@@ -981,7 +981,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update ranking score after translations complete
-    updateRankingScore(postId).catch(() => {});
+    updateRankingScore(postId).catch((e) => { console.error("Failed to update ranking score:", e); });
 
     return NextResponse.json({
       postId,

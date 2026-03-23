@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import Card from "@/components/ui/Card";
 import { useTranslation } from "@/i18n";
 
@@ -27,24 +27,29 @@ interface BattleCardProps {
   onDismiss: () => void;
 }
 
-// Streak milestones for extra engagement
-const STREAK_MESSAGES = [
+// Streak milestone translation keys (index = streak count)
+const STREAK_KEYS = [
   "", // 0
   "", // 1
-  "Nice pick! 🎯",
-  "On a roll! 🔥",
-  "Hat trick! 🎩",
-  "Unstoppable! ⚡",
-  "Domination! 💀",
-  "LEGENDARY! 👑",
-];
+  "battle.streak.nicePick",
+  "battle.streak.onARoll",
+  "battle.streak.hatTrick",
+  "battle.streak.unstoppable",
+  "battle.streak.domination",
+  "battle.streak.legendary",
+] as const;
 
-function getStreakMessage(streak: number): string {
-  if (streak >= STREAK_MESSAGES.length) return "GOD MODE! 🌟";
-  return STREAK_MESSAGES[streak] || "";
+// Streak emojis paired with each milestone
+const STREAK_EMOJIS = ["", "", "🎯", "🔥", "🎩", "⚡", "💀", "👑"];
+
+function getStreakMessage(streak: number, t: (key: any) => string): string {
+  if (streak >= STREAK_KEYS.length) return `${t("battle.streak.godMode")} 🌟`;
+  const key = STREAK_KEYS[streak];
+  if (!key) return "";
+  return `${t(key)} ${STREAK_EMOJIS[streak] || ""}`;
 }
 
-export default function BattleCard({ onDismiss }: BattleCardProps) {
+function BattleCardInner({ onDismiss }: BattleCardProps) {
   const { t } = useTranslation();
   const [left, setLeft] = useState<BattlePost | null>(null);
   const [right, setRight] = useState<BattlePost | null>(null);
@@ -75,7 +80,8 @@ export default function BattleCard({ onDismiss }: BattleCardProps) {
       }
       setLeft(data.left);
       setRight(data.right);
-    } catch {
+    } catch (e) {
+      console.error("Failed to fetch battle:", e);
       setNoBattle(true);
     } finally {
       setLoading(false);
@@ -161,7 +167,8 @@ export default function BattleCard({ onDismiss }: BattleCardProps) {
             setNoBattle(true);
           }
         }, 900);
-      } catch {
+      } catch (e) {
+        console.error("Failed to submit battle vote:", e);
         setVoted(null);
         setAnimating(false);
       }
@@ -195,7 +202,7 @@ export default function BattleCard({ onDismiss }: BattleCardProps) {
           )}
         </div>
         <span className="text-xs text-foreground-subtle">
-          Tap to continue →
+          {t("battle.tapToContinue")} →
         </span>
       </button>
     );
@@ -224,7 +231,13 @@ export default function BattleCard({ onDismiss }: BattleCardProps) {
     );
   }
 
-  const streakMsg = getStreakMessage(winStreak);
+  const streakMsg = getStreakMessage(winStreak, t);
+
+  const streakBadgeClass = useMemo(() => {
+    if (winStreak >= 5) return "bg-gradient-to-r from-[#c9a84c] to-[#FFD700] text-black animate-pulse";
+    if (winStreak >= 3) return "bg-[#c9a84c]/20 text-[#c9a84c]";
+    return "bg-background-elevated text-foreground-muted";
+  }, [winStreak]);
 
   return (
     <Card noPadding>
@@ -274,16 +287,10 @@ export default function BattleCard({ onDismiss }: BattleCardProps) {
         {/* Streak & status bar */}
         <div className="flex items-center justify-between mb-3">
           <p className="text-xs text-foreground-subtle">
-            {voted ? "Next challenger incoming..." : t("battle.tapToVote")}
+            {voted ? t("battle.nextChallenger") : t("battle.tapToVote")}
           </p>
           {winStreak >= 2 && (
-            <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold transition-all duration-300 ${
-              winStreak >= 5
-                ? "bg-gradient-to-r from-[#c9a84c] to-[#FFD700] text-black animate-pulse"
-                : winStreak >= 3
-                ? "bg-[#c9a84c]/20 text-[#c9a84c]"
-                : "bg-background-elevated text-foreground-muted"
-            }`}>
+            <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold transition-all duration-300 ${streakBadgeClass}`}>
               <span>🔥 {winStreak}</span>
               {streakMsg && <span className="ml-0.5">{streakMsg}</span>}
             </div>
@@ -340,10 +347,13 @@ export default function BattleCard({ onDismiss }: BattleCardProps) {
   );
 }
 
+const BattleCard = React.memo(BattleCardInner);
+export default BattleCard;
+
 // ---------------------------------------------------------------------------
 // Battle Side Component — one side of the VS card
 // ---------------------------------------------------------------------------
-function BattleSide({
+const BattleSide = React.memo(function BattleSide({
   post,
   side,
   voted,
@@ -423,7 +433,7 @@ function BattleSide({
       )}
     </button>
   );
-}
+});
 
 function formatCount(n: number): string {
   if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;

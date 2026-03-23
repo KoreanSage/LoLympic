@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { LanguageCode } from "@prisma/client";
+import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 
 // ---------------------------------------------------------------------------
 // GET /api/culture-notes?postId=xxx[&language=ko]
@@ -70,6 +71,15 @@ export async function GET(request: NextRequest) {
 // ---------------------------------------------------------------------------
 export async function POST(request: NextRequest) {
   try {
+    const rlKey = getRateLimitKey(request.headers, "culture-notes");
+    const rl = checkRateLimit(rlKey, RATE_LIMITS.write);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: "Too many requests" },
+        { status: 429, headers: { "Retry-After": String(rl.retryAfter) } }
+      );
+    }
+
     const user = await getSessionUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

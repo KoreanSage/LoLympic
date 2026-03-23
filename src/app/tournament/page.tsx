@@ -30,11 +30,12 @@ interface Match {
 }
 
 const ROUND_EMOJI = ["", "8\uFE0F\u20E3", "4\uFE0F\u20E3", "\uD83C\uDFC6"];
-const ROUND_LABELS = ["", "Round of 8", "Semi-Finals", "Grand Final"];
+const ROUND_LABEL_KEYS = ["", "tournament.roundOf8", "tournament.semiFinals", "tournament.grandFinal"] as const;
 
 const ROUND_KEYS = ["", "tournament.quarterfinals", "tournament.semifinals", "tournament.final"] as const;
 
 function CountdownTimer({ targetDate }: { targetDate: string }) {
+  const { t } = useTranslation();
   const [timeLeft, setTimeLeft] = useState("");
 
   useEffect(() => {
@@ -44,7 +45,7 @@ function CountdownTimer({ targetDate }: { targetDate: string }) {
       const diff = target - now;
 
       if (diff <= 0) {
-        setTimeLeft("Started");
+        setTimeLeft(t("tournament.started"));
         return;
       }
 
@@ -70,7 +71,7 @@ function CountdownTimer({ targetDate }: { targetDate: string }) {
 
   return (
     <span className="text-[10px] text-foreground-subtle bg-background-elevated px-2 py-0.5 rounded-full">
-      {timeLeft === "Started" ? "Live now" : `Starts in ${timeLeft}`}
+      {timeLeft === t("tournament.started") ? t("tournament.liveNow") : t("tournament.startsIn", { time: timeLeft })}
     </span>
   );
 }
@@ -91,8 +92,8 @@ export default function TournamentPage() {
       setMatches(data.matches || []);
       setUserVotes(data.userVotes || {});
       setSeasonName(data.season?.name || "");
-    } catch {
-      // ignore
+    } catch (e) {
+      console.error("Failed to fetch tournament data:", e);
     } finally {
       setLoading(false);
     }
@@ -117,8 +118,8 @@ export default function TournamentPage() {
         setUserVotes((prev) => ({ ...prev, [matchId]: postId }));
         await fetchData();
       }
-    } catch {
-      // ignore
+    } catch (e) {
+      console.error("Failed to submit tournament vote:", e);
     } finally {
       setVoting(null);
     }
@@ -138,7 +139,7 @@ export default function TournamentPage() {
       name: t(ROUND_KEYS[round] as any),
       emoji: ROUND_EMOJI[round],
       date,
-      label: ROUND_LABELS[round],
+      label: t(ROUND_LABEL_KEYS[round] as any),
       matches: roundMatches,
     };
   });
@@ -224,8 +225,13 @@ export default function TournamentPage() {
           </p>
         </div>
 
+        {/* Scroll hint for mobile */}
+        <div className="flex items-center justify-center gap-2 mb-2 sm:hidden">
+          <span className="text-[10px] text-foreground-subtle">← Scroll to see full bracket →</span>
+        </div>
+
         {/* Bracket with connector lines */}
-        <div className="space-y-2">
+        <div className="space-y-2 overflow-x-auto pb-4 -mx-4 px-4">
           {rounds.map(({ round, name, emoji, date, label, matches: roundMatches }, roundIdx) => {
             const prevRound = rounds[roundIdx - 1];
             const hasConnector = roundIdx > 0 && prevRound?.matches.length > 0;
@@ -375,7 +381,7 @@ function PostSide({
     <button
       onClick={() => match.isActive && isLoggedIn && onVote(match.id, post.id)}
       disabled={!match.isActive || voting || !isLoggedIn}
-      className={`flex-1 p-3 transition-all ${
+      className={`flex-1 min-w-[140px] p-3 transition-all ${
         isWinner
           ? "bg-[#c9a84c]/10"
           : otherWon
@@ -447,10 +453,10 @@ function MatchCard({
   const p2Percent = 100 - p1Percent;
 
   return (
-    <div className={`bg-background-surface border rounded-xl overflow-hidden ${
+    <div className={`bg-background-surface border rounded-xl overflow-hidden min-w-[340px] ${
       match.isActive ? "border-[#c9a84c]/50 shadow-[0_0_12px_rgba(201,168,76,0.1)]" : "border-border"
     }`}>
-      <div className="flex items-stretch">
+      <div className="flex items-stretch overflow-x-auto">
         {/* Post 1 */}
         <PostSide
           post={match.post1}

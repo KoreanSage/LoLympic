@@ -21,8 +21,8 @@ function ResetPasswordForm() {
     e.preventDefault();
     setError("");
 
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters");
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters");
       return;
     }
 
@@ -110,7 +110,7 @@ function ResetPasswordForm() {
                 placeholder="••••••••"
                 className="w-full px-3 py-2.5 bg-background-elevated border border-border-hover rounded-lg text-foreground placeholder-foreground-subtle focus:outline-none focus:border-[#c9a84c] focus:ring-1 focus:ring-[#c9a84c]/50 transition-colors"
                 required
-                minLength={6}
+                minLength={8}
               />
             </div>
 
@@ -125,7 +125,7 @@ function ResetPasswordForm() {
                 placeholder="••••••••"
                 className="w-full px-3 py-2.5 bg-background-elevated border border-border-hover rounded-lg text-foreground placeholder-foreground-subtle focus:outline-none focus:border-[#c9a84c] focus:ring-1 focus:ring-[#c9a84c]/50 transition-colors"
                 required
-                minLength={6}
+                minLength={8}
               />
             </div>
 

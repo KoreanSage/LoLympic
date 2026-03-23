@@ -72,7 +72,7 @@ export default function RootLayout({
                   document.documentElement.className = theme;
                   var lang = localStorage.getItem('uiLanguage') || 'en';
                   document.documentElement.lang = lang;
-                } catch(e) {}
+                } catch(e) { console.error('Failed to read theme/lang from localStorage:', e); }
               })();
             `,
           }}

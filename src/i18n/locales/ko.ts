@@ -429,6 +429,54 @@ const ko: Record<TranslationKeys, string> = {
   "dashboard.noData": "아직 데이터가 없습니다",
   "dashboard.viewLeaderboard": "전체 리더보드 보기",
   "dashboard.viewTournament": "토너먼트 보기",
+
+  // ── Bookmarks (extra) ────────────────────────────────────────────────────
+  "bookmarks.subtitle": "저장한 밈",
+  "bookmarks.explore": "밈 둘러보기",
+
+  // ── Search (extra) ───────────────────────────────────────────────────────
+  "search.recentSearches": "최근 검색",
+  "search.memes": "밈",
+  "search.users": "사용자",
+  "search.reactions": "반응",
+  "search.comments": "댓글",
+  "search.posts": "게시물",
+  "search.followers": "팔로워",
+  "search.noResultsTitle": "\"{query}\"에 대한 결과가 없습니다",
+  "search.noResultsHint": "다른 키워드를 시도하거나 맞춤법을 확인하세요",
+  "search.suggestions": "제안",
+  "search.suggestionBroader": "더 넓거나 짧은 검색어를 사용하세요",
+  "search.suggestionTags": "태그로 검색 (예: funny, anime)",
+  "search.suggestionUsername": "사용자 이름이나 국가로 검색",
+
+  // ── Tournament (extra) ───────────────────────────────────────────────────
+  "tournament.roundOf8": "8강",
+  "tournament.semiFinals": "4강",
+  "tournament.grandFinal": "결승",
+  "tournament.started": "시작됨",
+  "tournament.liveNow": "진행중",
+  "tournament.startsIn": "{time} 후 시작",
+
+  // ── Battle (extra) ───────────────────────────────────────────────────────
+  "battle.tapToContinue": "탭하여 계속",
+  "battle.nextChallenger": "다음 도전자 등장...",
+  "battle.streak.nicePick": "좋은 선택!",
+  "battle.streak.onARoll": "연승 중!",
+  "battle.streak.hatTrick": "해트트릭!",
+  "battle.streak.unstoppable": "막을 수 없어!",
+  "battle.streak.domination": "압도적!",
+  "battle.streak.legendary": "전설!",
+  "battle.streak.godMode": "갓 모드!",
+
+  // ── Feed (extra) ─────────────────────────────────────────────────────────
+  "feed.translated": "번역됨",
+  "feed.original": "원본",
+
+  // ── Auth (extra) ─────────────────────────────────────────────────────────
+  "auth.joinPlatform": "글로벌 밈 번역 플랫폼에 참여하세요",
+  "auth.platformTagline": "글로벌 밈 번역 플랫폼",
+  "auth.passwordMinLength8": "비밀번호는 최소 8자 이상이어야 합니다",
+  "auth.passwordPlaceholder8": "최소 8자",
 };
 
 export default ko;

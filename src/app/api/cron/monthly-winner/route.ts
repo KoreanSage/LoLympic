@@ -22,9 +22,13 @@ export async function GET(request: NextRequest) {
 
   try {
     const now = new Date();
-    // Previous month
-    const targetMonth = now.getMonth() === 0 ? 12 : now.getMonth(); // getMonth is 0-indexed
-    const targetYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+    // Previous month (1-indexed): getMonth() is 0-indexed, so for the previous month
+    // we need (currentMonth0 - 1 + 12) % 12, then convert to 1-indexed by adding 1.
+    // January (0) -> previous = December (12), February (1) -> previous = January (1), etc.
+    const currentMonth0 = now.getMonth(); // 0-11
+    const prevMonth0 = (currentMonth0 - 1 + 12) % 12; // 0-11
+    const targetMonth = prevMonth0 + 1; // 1-12
+    const targetYear = currentMonth0 === 0 ? now.getFullYear() - 1 : now.getFullYear();
 
     // Find active season
     const season = await prisma.season.findFirst({

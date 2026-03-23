@@ -47,7 +47,7 @@ export default function LoginPage() {
             </h1>
           </Link>
           <p className="mt-2 text-foreground-subtle text-sm">
-            Global Meme Translation Platform
+            {t("auth.platformTagline")}
           </p>
         </div>
 

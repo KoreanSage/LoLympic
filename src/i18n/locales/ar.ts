@@ -433,6 +433,48 @@ const ar: Record<TranslationKeys, string> = {
   "dashboard.noData": "مفيش بيانات لسه",
   "dashboard.viewLeaderboard": "شوف الترتيب الكامل",
   "dashboard.viewTournament": "شوف البطولة",
+
+  "bookmarks.subtitle": "الميمز المحفوظة",
+  "bookmarks.explore": "استكشف الميمز",
+
+  "search.recentSearches": "عمليات البحث الأخيرة",
+  "search.memes": "ميمز",
+  "search.users": "مستخدمين",
+  "search.reactions": "تفاعلات",
+  "search.comments": "تعليقات",
+  "search.posts": "منشورات",
+  "search.followers": "متابعين",
+  "search.noResultsTitle": "لا توجد نتائج لـ \"{query}\"",
+  "search.noResultsHint": "جرب كلمات مختلفة أو تحقق من الإملاء",
+  "search.suggestions": "اقتراحات",
+  "search.suggestionBroader": "استخدم مصطلحات بحث أوسع أو أقصر",
+  "search.suggestionTags": "ابحث بالوسوم (مثل funny، anime)",
+  "search.suggestionUsername": "ابحث باسم المستخدم أو البلد",
+
+  "tournament.roundOf8": "دور الثمانية",
+  "tournament.semiFinals": "نصف النهائي",
+  "tournament.grandFinal": "النهائي الكبير",
+  "tournament.started": "بدأ",
+  "tournament.liveNow": "مباشر",
+  "tournament.startsIn": "يبدأ في {time}",
+
+  "battle.tapToContinue": "اضغط للمتابعة",
+  "battle.nextChallenger": "المنافس التالي قادم...",
+  "battle.streak.nicePick": "اختيار جيد!",
+  "battle.streak.onARoll": "سلسلة انتصارات!",
+  "battle.streak.hatTrick": "هاتريك!",
+  "battle.streak.unstoppable": "لا يمكن إيقافه!",
+  "battle.streak.domination": "هيمنة!",
+  "battle.streak.legendary": "أسطوري!",
+  "battle.streak.godMode": "وضع الإله!",
+
+  "feed.translated": "مترجم",
+  "feed.original": "الأصل",
+
+  "auth.joinPlatform": "انضم إلى منصة ترجمة الميمز العالمية",
+  "auth.platformTagline": "منصة ترجمة الميمز العالمية",
+  "auth.passwordMinLength8": "يجب أن تكون كلمة المرور 8 أحرف على الأقل",
+  "auth.passwordPlaceholder8": "8 أحرف على الأقل",
 } as const;
 
 export default ar;

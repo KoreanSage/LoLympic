@@ -61,15 +61,18 @@ const RECENT_SEARCHES_KEY = "lolympic_recent_searches";
 const MAX_RECENT_SEARCHES = 5;
 
 function getRecentSearches(): string[] {
+  if (typeof window === "undefined") return [];
   try {
     const raw = localStorage.getItem(RECENT_SEARCHES_KEY);
     return raw ? JSON.parse(raw) : [];
-  } catch {
+  } catch (e) {
+    console.error("Failed to read recent searches:", e);
     return [];
   }
 }
 
 function addRecentSearch(q: string) {
+  if (typeof window === "undefined") return;
   try {
     const searches = getRecentSearches().filter((s) => s !== q);
     searches.unshift(q);
@@ -77,14 +80,19 @@ function addRecentSearch(q: string) {
       RECENT_SEARCHES_KEY,
       JSON.stringify(searches.slice(0, MAX_RECENT_SEARCHES))
     );
-  } catch {}
+  } catch (e) {
+    console.error("Failed to save recent search:", e);
+  }
 }
 
 function removeRecentSearch(q: string) {
+  if (typeof window === "undefined") return;
   try {
     const searches = getRecentSearches().filter((s) => s !== q);
     localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(searches));
-  } catch {}
+  } catch (e) {
+    console.error("Failed to remove recent search:", e);
+  }
 }
 
 function SearchPage() {
@@ -121,8 +129,8 @@ function SearchPage() {
         setPostCount(data.postCount ?? 0);
         setUserCount(data.userCount ?? 0);
       }
-    } catch {
-      // ignore
+    } catch (e) {
+      console.error("Search failed:", e);
     } finally {
       setLoading(false);
     }
@@ -157,7 +165,7 @@ function SearchPage() {
                 : "text-foreground-subtle border-transparent hover:text-foreground-muted"
             }`}
           >
-            Memes {postCount > 0 && <span className="ml-1 text-xs opacity-70">({postCount})</span>}
+            {t("search.memes")} {postCount > 0 && <span className="ml-1 text-xs opacity-70">({postCount})</span>}
           </button>
           <button
             onClick={() => setActiveTab("users")}
@@ -167,7 +175,7 @@ function SearchPage() {
                 : "text-foreground-subtle border-transparent hover:text-foreground-muted"
             }`}
           >
-            Users {userCount > 0 && <span className="ml-1 text-xs opacity-70">({userCount})</span>}
+            {t("search.users")} {userCount > 0 && <span className="ml-1 text-xs opacity-70">({userCount})</span>}
           </button>
         </div>
 
@@ -189,7 +197,7 @@ function SearchPage() {
             {/* Recent searches */}
             {recentSearches.length > 0 && (
               <div className="max-w-sm mx-auto">
-                <h3 className="text-xs font-medium text-foreground-subtle mb-2 uppercase tracking-wider">Recent searches</h3>
+                <h3 className="text-xs font-medium text-foreground-subtle mb-2 uppercase tracking-wider">{t("search.recentSearches")}</h3>
                 <div className="space-y-1">
                   {recentSearches.map((q) => (
                     <div key={q} className="flex items-center gap-2 group">
@@ -251,11 +259,11 @@ function SearchPage() {
                           )}
                           <span>&middot;</span>
                           <span>
-                            {post.reactionCount} reactions
+                            {post.reactionCount} {t("search.reactions")}
                           </span>
                           <span>&middot;</span>
                           <span>
-                            {post.commentCount} comments
+                            {post.commentCount} {t("search.comments")}
                           </span>
                         </div>
                       </div>
@@ -299,8 +307,8 @@ function SearchPage() {
                         </p>
                       )}
                       <div className="flex gap-3 mt-1 text-xs text-foreground-subtle">
-                        <span>{user._count?.posts ?? 0} posts</span>
-                        <span>{user._count?.followers ?? 0} followers</span>
+                        <span>{user._count?.posts ?? 0} {t("search.posts")}</span>
+                        <span>{user._count?.followers ?? 0} {t("search.followers")}</span>
                       </div>
                     </div>
                   </div>
@@ -315,6 +323,7 @@ function SearchPage() {
 }
 
 function NoResultsMessage({ query }: { query: string }) {
+  const { t } = useTranslation();
   return (
     <div className="text-center py-12 space-y-4">
       <svg className="w-16 h-16 mx-auto text-foreground-subtle opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -322,18 +331,18 @@ function NoResultsMessage({ query }: { query: string }) {
       </svg>
       <div>
         <p className="text-sm font-medium text-foreground-muted">
-          No results found for &ldquo;{query}&rdquo;
+          {t("search.noResultsTitle", { query })}
         </p>
         <p className="text-xs text-foreground-subtle mt-2">
-          Try different keywords or check spelling
+          {t("search.noResultsHint")}
         </p>
       </div>
       <div className="max-w-xs mx-auto text-left bg-background-surface border border-border rounded-lg p-3">
-        <p className="text-[11px] font-medium text-foreground-subtle mb-1.5 uppercase tracking-wider">Suggestions</p>
+        <p className="text-[11px] font-medium text-foreground-subtle mb-1.5 uppercase tracking-wider">{t("search.suggestions")}</p>
         <ul className="text-xs text-foreground-muted space-y-1">
-          <li>- Use broader or shorter search terms</li>
-          <li>- Search by tags (e.g. funny, anime)</li>
-          <li>- Search by username or country</li>
+          <li>- {t("search.suggestionBroader")}</li>
+          <li>- {t("search.suggestionTags")}</li>
+          <li>- {t("search.suggestionUsername")}</li>
         </ul>
       </div>
     </div>

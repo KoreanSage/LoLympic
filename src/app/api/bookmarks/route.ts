@@ -63,18 +63,41 @@ export async function DELETE(req: NextRequest) {
   return NextResponse.json({ saved: false });
 }
 
-// GET /api/bookmarks — list saved posts for current user
+// GET /api/bookmarks — list saved posts for current user (paginated)
 export async function GET(req: NextRequest) {
   const user = await getSessionUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const saves = await prisma.postSave.findMany({
-    where: { userId: user.id },
-    select: { postId: true },
-    orderBy: { createdAt: "desc" },
-  });
+  const url = new URL(req.url);
+  const page = Math.max(1, parseInt(url.searchParams.get("page") || "1", 10) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get("limit") || "20", 10) || 20));
+  const skip = (page - 1) * limit;
 
-  return NextResponse.json({ postIds: saves.map((s) => s.postId) });
+  const [saves, totalCount] = await Promise.all([
+    prisma.postSave.findMany({
+      where: { userId: user.id },
+      select: { postId: true },
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: limit,
+    }),
+    prisma.postSave.count({
+      where: { userId: user.id },
+    }),
+  ]);
+
+  const totalPages = Math.ceil(totalCount / limit);
+
+  return NextResponse.json({
+    postIds: saves.map((s) => s.postId),
+    pagination: {
+      page,
+      limit,
+      totalCount,
+      totalPages,
+      hasMore: page < totalPages,
+    },
+  });
 }

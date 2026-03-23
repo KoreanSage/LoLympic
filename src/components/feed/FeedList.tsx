@@ -4,9 +4,13 @@ import React from "react";
 import { useEffect, useRef, useState, useCallback } from "react";
 import FeedCard from "./FeedCard";
 import BattleCard from "@/components/battle/BattleCard";
+import AdSlot from "@/components/ads/AdSlot";
 import { CardSkeleton } from "@/components/ui/Skeleton";
 import { TranslationSegmentData } from "@/types/components";
 import { useTranslation } from "@/i18n";
+
+/** Show an ad slot after every N-th feed item. Adjust this to change ad frequency. */
+const AD_SLOT_INTERVAL = 5;
 
 interface TopComment {
   id: string;
@@ -245,6 +249,10 @@ export default function FeedList({
             {...post}
             onDelete={(deletedId) => setPosts((prev) => prev.filter((p) => p.id !== deletedId))}
           />
+          {/* Ad slot insertion at configurable intervals */}
+          {(index + 1) % AD_SLOT_INTERVAL === 0 && (
+            <AdSlot slot={`feed-${Math.floor((index + 1) / AD_SLOT_INTERVAL)}`} />
+          )}
           {!battleDismissed && (
             index + 1 === BATTLE_FIRST ||
             (index + 1 > BATTLE_FIRST && (index + 1 - BATTLE_FIRST) % BATTLE_INTERVAL === 0)

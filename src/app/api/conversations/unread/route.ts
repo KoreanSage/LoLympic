@@ -13,17 +13,24 @@ export async function GET() {
       select: { conversationId: true, lastReadAt: true },
     });
 
-    let totalUnread = 0;
-    for (const p of participations) {
-      const count = await prisma.directMessage.count({
-        where: {
+    if (participations.length === 0) {
+      return NextResponse.json({ unreadCount: 0 });
+    }
+
+    // Single aggregation query instead of N+1 loop
+    const unreadCounts = await prisma.directMessage.groupBy({
+      by: ["conversationId"],
+      where: {
+        OR: participations.map((p) => ({
           conversationId: p.conversationId,
           senderId: { not: user.id },
           createdAt: { gt: p.lastReadAt },
-        },
-      });
-      totalUnread += count;
-    }
+        })),
+      },
+      _count: { id: true },
+    });
+
+    const totalUnread = unreadCounts.reduce((sum, g) => sum + g._count.id, 0);
 
     return NextResponse.json({ unreadCount: totalUnread });
   } catch (error) {
