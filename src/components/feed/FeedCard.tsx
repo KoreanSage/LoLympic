@@ -132,7 +132,7 @@ function FeedCardInner({
   const isTypeB = memeType === "B" || (!memeType && segments.length >= 4 && segments.every(
     (s) => ["DIALOGUE", "CAPTION", "OTHER", "HEADLINE", "LABEL"].includes(s.semanticRole)
   ) && !segments.some((s) => s.semanticRole === "OVERLAY"));
-  const [showTranslation, setShowTranslation] = useState(false);
+  const [showTranslation, setShowTranslation] = useState(true);
   useEffect(() => {
     setShowTranslation(hasTranslation);
   }, [hasTranslation]);
