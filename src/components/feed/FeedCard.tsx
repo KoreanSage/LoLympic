@@ -380,7 +380,7 @@ function FeedCardInner({
           {category && category !== "meme" && (
             <div className="px-4 pb-2">
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-background-surface border border-border text-foreground-muted">
-                {category === "discussion" ? "\u{1F4AC} Discussion" : category === "question" ? "\u{2753} Question" : category}
+                {category === "community" ? "💬 Community" : category}
               </span>
             </div>
           )}

@@ -19,9 +19,8 @@ const ALL_LANGUAGES = [
 const MAX_IMAGES = 10;
 
 const POST_TYPES = [
-  { value: "meme", label: "Meme", emoji: "\ud83d\ude02", description: "Image meme with auto-translation" },
-  { value: "discussion", label: "Discussion", emoji: "\ud83d\udcac", description: "Start a conversation" },
-  { value: "question", label: "Question", emoji: "\u2753", description: "Ask the community" },
+  { value: "meme", label: "Meme", emoji: "😂", description: "Image meme with auto-translation" },
+  { value: "community", label: "Community", emoji: "💬", description: "Share thoughts & discuss" },
 ] as const;
 
 type PostType = (typeof POST_TYPES)[number]["value"];
@@ -119,7 +118,7 @@ export default function UploadStudio() {
     setImagePreviews(newPreviews);
     // Suggest switching to discussion when all images removed
     if (newFiles.length === 0 && postType === "meme") {
-      setPostType("discussion");
+      setPostType("community");
     }
   };
 
@@ -127,7 +126,7 @@ export default function UploadStudio() {
     setImageFiles([]);
     setImagePreviews([]);
     if (postType === "meme") {
-      setPostType("discussion");
+      setPostType("community");
     }
   };
 
@@ -658,7 +657,7 @@ export default function UploadStudio() {
               <input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder={postType === "question" ? "Ask your question..." : postType === "discussion" ? "What's on your mind?" : "Give your meme a title..."}
+                placeholder={postType === "community" ? "What's on your mind?" : "Give your meme a title..."}
                 className="w-full bg-background-elevated border border-border-hover rounded-lg px-3 py-2.5 text-sm text-foreground placeholder-foreground-subtle focus:outline-none focus:border-[#c9a84c]/50 transition-colors"
                 maxLength={100}
               />
@@ -673,11 +672,9 @@ export default function UploadStudio() {
                 value={bodyText}
                 onChange={(e) => setBodyText(e.target.value)}
                 placeholder={
-                  postType === "question"
-                    ? "Add more details to your question..."
-                    : postType === "discussion"
-                      ? "Share your thoughts..."
-                      : "Add a description (optional)..."
+                  postType === "community"
+                    ? "Share your thoughts..."
+                    : "Add a description (optional)..."
                 }
                 rows={isTextOnly ? 6 : 3}
                 className="w-full bg-background-elevated border border-border-hover rounded-lg px-3 py-2.5 text-sm text-foreground placeholder-foreground-subtle focus:outline-none focus:border-[#c9a84c]/50 transition-colors resize-none"
