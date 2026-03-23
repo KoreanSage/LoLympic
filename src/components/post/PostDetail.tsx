@@ -139,8 +139,8 @@ export default function PostDetail({
     (s) => s.boxX != null && s.boxY != null && s.boxWidth != null && s.boxHeight != null
   );
   const isGif = mimeType === "image/gif";
-  const hasTranslation = !isGif && (hasOverlaySegments || !!translatedImageUrl);
   const isTextOnly = !imageUrl && (!images || images.length === 0);
+  const hasTranslation = !isGif && (hasOverlaySegments || !!translatedImageUrl || (isTextOnly && (!!originalTitle || !!originalBody)));
 
   // Detect Type B (screenshot/forum posts) — use explicit memeType or heuristic
   const isTypeB = memeType === "B" || (!memeType && segments.length >= 4 && segments.every(
