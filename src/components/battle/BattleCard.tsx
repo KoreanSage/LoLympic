@@ -8,6 +8,7 @@ interface BattlePost {
   id: string;
   title: string;
   imageUrl: string;
+  imageCount?: number;
   reactionCount: number;
   battleWins: number;
   battleLosses: number;
@@ -386,15 +387,26 @@ const BattleSide = React.memo(function BattleSide({
         }`}
     >
       {/* Image */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={post.imageUrl}
-        alt={post.title}
-        className="w-full aspect-square object-cover"
-      />
+      <div className="relative">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={post.imageUrl}
+          alt={post.title}
+          className="w-full aspect-square object-cover"
+        />
+        {/* Multi-image badge */}
+        {(post.imageCount ?? 0) > 1 && (
+          <span className="absolute top-1.5 right-1.5 bg-black/70 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md backdrop-blur-sm">
+            📸 {post.imageCount}
+          </span>
+        )}
+      </div>
 
       {/* Info bar */}
       <div className="p-2 bg-background-surface">
+        <p className="text-xs font-medium text-foreground truncate mb-0.5">
+          {post.title}
+        </p>
         <div className="flex items-center gap-1 mb-0.5">
           {post.country && (
             <span className="text-xs">{post.country.flagEmoji}</span>

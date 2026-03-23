@@ -38,6 +38,7 @@ async function getRandomPair(excludePostIds: string[], userId?: string) {
     reactionCount: true,
     battleWins: true,
     battleLosses: true,
+    _count: { select: { images: true } },
     images: {
       orderBy: { orderIndex: "asc" as const },
       take: 1,
@@ -70,6 +71,7 @@ async function getRandomPair(excludePostIds: string[], userId?: string) {
     id: p!.id,
     title: p!.title,
     imageUrl: p!.images[0]?.originalUrl || "",
+    imageCount: p!._count.images,
     reactionCount: p!.reactionCount,
     battleWins: p!.battleWins,
     battleLosses: p!.battleLosses,
