@@ -456,6 +456,7 @@ const ko: Record<TranslationKeys, string> = {
   "tournament.started": "시작됨",
   "tournament.liveNow": "진행중",
   "tournament.startsIn": "{time} 후 시작",
+  "tournament.bracketNotCreated": "Tournament bracket will be created when the season starts",
 
   // ── Battle (extra) ───────────────────────────────────────────────────────
   "battle.tapToContinue": "탭하여 계속",

@@ -19,8 +19,8 @@ interface Match {
   id: string;
   round: number;
   matchIndex: number;
-  post1: TournamentPost;
-  post2: TournamentPost;
+  post1: TournamentPost | null;
+  post2: TournamentPost | null;
   post1Votes: number;
   post2Votes: number;
   winnerId: string | null;
@@ -32,7 +32,7 @@ interface Match {
 
 type ViewTab = "vote" | "bracket";
 
-const ROUND_EMOJI = ["", "8️⃣", "4️⃣", "🏆"];
+const ROUND_EMOJI = ["", "8\uFE0F\u20E3", "4\uFE0F\u20E3", "\uD83C\uDFC6"];
 const ROUND_LABEL_KEYS = ["", "tournament.roundOf8", "tournament.semiFinals", "tournament.grandFinal"] as const;
 const ROUND_KEYS = ["", "tournament.quarterfinals", "tournament.semifinals", "tournament.final"] as const;
 
@@ -76,8 +76,10 @@ export default function TournamentPage() {
   const [seasonName, setSeasonName] = useState("");
   const [loading, setLoading] = useState(true);
   const [voting, setVoting] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<ViewTab>("vote");
+  const [activeTab, setActiveTab] = useState<ViewTab>("bracket");
   const [currentVoteIdx, setCurrentVoteIdx] = useState(0);
+  const [filledSlots, setFilledSlots] = useState(0);
+  const [totalSlots, setTotalSlots] = useState(0);
 
   const fetchData = useCallback(async () => {
     try {
@@ -86,6 +88,8 @@ export default function TournamentPage() {
       setMatches(data.matches || []);
       setUserVotes(data.userVotes || {});
       setSeasonName(data.season?.name || "");
+      setFilledSlots(data.filledSlots ?? 0);
+      setTotalSlots(data.totalSlots ?? 0);
     } catch (e) {
       console.error("Failed to fetch tournament data:", e);
     } finally {
@@ -125,15 +129,15 @@ export default function TournamentPage() {
     return { round, name: t(ROUND_KEYS[round] as any), emoji: ROUND_EMOJI[round], date, label: t(ROUND_LABEL_KEYS[round] as any), matches: roundMatches };
   });
 
-  // Votable matches (active first, then pending)
-  const activeMatches = matches.filter((m) => m.isActive);
-  const pendingMatches = matches.filter((m) => !m.isCompleted && !m.isActive);
+  // Votable matches: only those with both posts filled and active/pending
+  const activeMatches = matches.filter((m) => m.isActive && m.post1 && m.post2);
+  const pendingMatches = matches.filter((m) => !m.isCompleted && !m.isActive && m.post1 && m.post2);
   const votableMatches = [...activeMatches, ...pendingMatches];
 
   // Champion
   const finalMatch = matches.find((m) => m.round === 3 && m.winnerId);
   const champion = finalMatch
-    ? finalMatch.winnerId === finalMatch.post1.id ? finalMatch.post1 : finalMatch.post2
+    ? finalMatch.winnerId === finalMatch.post1?.id ? finalMatch.post1 : finalMatch.post2
     : null;
 
   if (loading) {
@@ -155,9 +159,9 @@ export default function TournamentPage() {
     return (
       <MainLayout showSidebar={false}>
         <div className="max-w-4xl mx-auto py-16 px-4 text-center">
-          <p className="text-5xl mb-4">🏆</p>
-          <h1 className="text-2xl font-bold text-foreground mb-2">🏆 {t("tournament.title")}</h1>
-          <p className="text-sm text-foreground-subtle">{t("tournament.subtitle")}</p>
+          <p className="text-5xl mb-4">{"\uD83C\uDFC6"}</p>
+          <h1 className="text-2xl font-bold text-foreground mb-2">{"\uD83C\uDFC6"} {t("tournament.title")}</h1>
+          <p className="text-sm text-foreground-subtle">{t("tournament.bracketNotCreated") || "Tournament bracket will be created when the season starts"}</p>
         </div>
       </MainLayout>
     );
@@ -174,7 +178,7 @@ export default function TournamentPage() {
             <div className="py-8 px-6 bg-gradient-to-b from-[#c9a84c]/15 via-[#FFD700]/5 to-[#c9a84c]/15 border border-[#c9a84c]/30 rounded-2xl text-center relative overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#c9a84c]/5 to-transparent animate-pulse" />
               <div className="relative">
-                <div className="text-5xl mb-3">👑</div>
+                <div className="text-5xl mb-3">{"\uD83D\uDC51"}</div>
                 <div className="inline-block px-6 py-1.5 bg-[#c9a84c]/20 border border-[#c9a84c]/40 rounded-full mb-4">
                   <h2 className="text-sm font-black uppercase tracking-widest text-[#c9a84c]">{t("tournament.memeOfTheYear")}</h2>
                 </div>
@@ -193,8 +197,27 @@ export default function TournamentPage() {
 
         {/* Header */}
         <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-foreground mb-2">🏆 {seasonName} — {t("tournament.title")}</h1>
+          <h1 className="text-2xl font-bold text-foreground mb-2">{"\uD83C\uDFC6"} {seasonName} — {t("tournament.title")}</h1>
           <p className="text-sm text-foreground-subtle">{t("tournament.subtitle")}</p>
+
+          {/* Progress indicator */}
+          {totalSlots > 0 && filledSlots < totalSlots && (
+            <div className="mt-3 inline-flex items-center gap-2 bg-background-elevated px-4 py-2 rounded-full">
+              <div className="flex gap-0.5">
+                {Array.from({ length: totalSlots }).map((_, i) => (
+                  <div
+                    key={i}
+                    className={`w-2 h-2 rounded-full transition-all ${
+                      i < filledSlots ? "bg-[#c9a84c]" : "bg-border"
+                    }`}
+                  />
+                ))}
+              </div>
+              <span className="text-xs text-foreground-subtle font-medium">
+                {filledSlots}/{totalSlots} slots filled
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Tab Switcher */}
@@ -207,7 +230,7 @@ export default function TournamentPage() {
                 : "text-foreground-subtle hover:text-foreground"
             }`}
           >
-            ⚔️ Vote
+            {"\u2694\uFE0F"} Vote
           </button>
           <button
             onClick={() => setActiveTab("bracket")}
@@ -217,7 +240,7 @@ export default function TournamentPage() {
                 : "text-foreground-subtle hover:text-foreground"
             }`}
           >
-            🏆 Bracket
+            {"\uD83C\uDFC6"} Bracket
           </button>
         </div>
 
@@ -278,10 +301,25 @@ function VoteView({
   t: (key: any, opts?: any) => string;
 }) {
   if (votableMatches.length === 0) {
+    // Check if matches exist but none are votable (empty slots)
+    const hasEmptySlots = matches.some((m) => !m.post1 || !m.post2);
     const completedCount = matches.filter((m) => m.isCompleted).length;
+
+    if (hasEmptySlots && completedCount === 0) {
+      return (
+        <div className="text-center py-12">
+          <div className="text-4xl mb-3">{"\u23F3"}</div>
+          <p className="text-foreground font-medium mb-1">Bracket is filling up!</p>
+          <p className="text-sm text-foreground-subtle">
+            Voting will begin once matchups are complete. Switch to Bracket view to see current progress.
+          </p>
+        </div>
+      );
+    }
+
     return (
       <div className="text-center py-12">
-        <div className="text-4xl mb-3">✅</div>
+        <div className="text-4xl mb-3">{"\u2705"}</div>
         <p className="text-foreground font-medium mb-1">All matches voted!</p>
         <p className="text-sm text-foreground-subtle">
           {completedCount}/{matches.length} matches completed
@@ -319,48 +357,50 @@ function VoteView({
       </div>
 
       {/* Battle Card */}
-      <div className={`bg-background-surface border rounded-2xl overflow-hidden ${
-        match.isActive ? "border-[#c9a84c]/50 shadow-[0_0_20px_rgba(201,168,76,0.15)]" : "border-border"
-      }`}>
-        <div className="flex flex-col sm:flex-row items-stretch">
-          {/* Post 1 */}
-          <VoteSide
-            post={match.post1}
-            isWinner={match.winnerId === match.post1.id}
-            isLoser={!!match.winnerId && match.winnerId !== match.post1.id}
-            isMyVote={myVote === match.post1.id}
-            percent={p1Pct}
-            showPercent={!!myVote || match.isCompleted}
-            canVote={match.isActive && isLoggedIn && !voting}
-            onVote={() => handleVote(match.id, match.post1.id)}
-          />
+      {match.post1 && match.post2 && (
+        <div className={`bg-background-surface border rounded-2xl overflow-hidden ${
+          match.isActive ? "border-[#c9a84c]/50 shadow-[0_0_20px_rgba(201,168,76,0.15)]" : "border-border"
+        }`}>
+          <div className="flex flex-col sm:flex-row items-stretch">
+            {/* Post 1 */}
+            <VoteSide
+              post={match.post1}
+              isWinner={match.winnerId === match.post1.id}
+              isLoser={!!match.winnerId && match.winnerId !== match.post1.id}
+              isMyVote={myVote === match.post1.id}
+              percent={p1Pct}
+              showPercent={!!myVote || match.isCompleted}
+              canVote={match.isActive && isLoggedIn && !voting}
+              onVote={() => handleVote(match.id, match.post1!.id)}
+            />
 
-          {/* VS - horizontal on mobile, vertical on desktop */}
-          <div className="flex sm:flex-col items-center justify-center py-2 sm:py-0 sm:px-3 bg-background-elevated relative">
-            {/* Mobile: horizontal dividers */}
-            <div className="sm:hidden absolute inset-x-0 top-0 h-px bg-border" />
-            <div className="sm:hidden absolute inset-x-0 bottom-0 h-px bg-border" />
-            {/* Desktop: vertical dividers */}
-            <div className="hidden sm:block absolute inset-y-0 left-0 w-px bg-border" />
-            <div className="hidden sm:block absolute inset-y-0 right-0 w-px bg-border" />
-            <div className="w-10 h-10 rounded-full bg-[#c9a84c]/15 flex items-center justify-center">
-              <span className="text-xs font-black text-[#c9a84c]">VS</span>
+            {/* VS - horizontal on mobile, vertical on desktop */}
+            <div className="flex sm:flex-col items-center justify-center py-2 sm:py-0 sm:px-3 bg-background-elevated relative">
+              {/* Mobile: horizontal dividers */}
+              <div className="sm:hidden absolute inset-x-0 top-0 h-px bg-border" />
+              <div className="sm:hidden absolute inset-x-0 bottom-0 h-px bg-border" />
+              {/* Desktop: vertical dividers */}
+              <div className="hidden sm:block absolute inset-y-0 left-0 w-px bg-border" />
+              <div className="hidden sm:block absolute inset-y-0 right-0 w-px bg-border" />
+              <div className="w-10 h-10 rounded-full bg-[#c9a84c]/15 flex items-center justify-center">
+                <span className="text-xs font-black text-[#c9a84c]">VS</span>
+              </div>
             </div>
-          </div>
 
-          {/* Post 2 */}
-          <VoteSide
-            post={match.post2}
-            isWinner={match.winnerId === match.post2.id}
-            isLoser={!!match.winnerId && match.winnerId !== match.post2.id}
-            isMyVote={myVote === match.post2.id}
-            percent={p2Pct}
-            showPercent={!!myVote || match.isCompleted}
-            canVote={match.isActive && isLoggedIn && !voting}
-            onVote={() => handleVote(match.id, match.post2.id)}
-          />
+            {/* Post 2 */}
+            <VoteSide
+              post={match.post2}
+              isWinner={match.winnerId === match.post2.id}
+              isLoser={!!match.winnerId && match.winnerId !== match.post2.id}
+              isMyVote={myVote === match.post2.id}
+              percent={p2Pct}
+              showPercent={!!myVote || match.isCompleted}
+              canVote={match.isActive && isLoggedIn && !voting}
+              onVote={() => handleVote(match.id, match.post2!.id)}
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Navigation */}
       <div className="flex items-center justify-between mt-4">
@@ -369,7 +409,7 @@ function VoteView({
           disabled={safeIdx === 0}
           className="px-3 py-1.5 text-xs font-medium rounded-lg bg-background-elevated text-foreground-subtle hover:text-foreground disabled:opacity-30 transition-all"
         >
-          ← Prev
+          {"\u2190"} Prev
         </button>
         <div className="flex gap-1">
           {votableMatches.map((_, i) => (
@@ -387,14 +427,14 @@ function VoteView({
           disabled={safeIdx === votableMatches.length - 1}
           className="px-3 py-1.5 text-xs font-medium rounded-lg bg-background-elevated text-foreground-subtle hover:text-foreground disabled:opacity-30 transition-all"
         >
-          Next →
+          Next {"\u2192"}
         </button>
       </div>
 
       {/* Progress */}
       <div className="mt-4 text-center">
         <span className="text-[10px] text-foreground-subtle">
-          🗳️ {Object.keys(userVotes).length}/{matches.length} matches voted
+          {"\uD83D\uDDF3\uFE0F"} {Object.keys(userVotes).length}/{matches.length} matches voted
         </span>
       </div>
     </div>
@@ -437,20 +477,20 @@ function VoteSide({
         <img src={post.imageUrl} alt={post.title} className="w-full h-full object-cover" />
         {(post.imageCount ?? 0) > 1 && (
           <span className="absolute top-1.5 right-1.5 bg-black/70 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md backdrop-blur-sm">
-            📸 {post.imageCount}
+            {"\uD83D\uDCF8"} {post.imageCount}
           </span>
         )}
         {isWinner && (
           <div className="absolute inset-0 flex items-center justify-center bg-[#c9a84c]/20 backdrop-blur-[1px]">
             <div className="text-center">
-              <div className="text-3xl drop-shadow-lg">👑</div>
+              <div className="text-3xl drop-shadow-lg">{"\uD83D\uDC51"}</div>
               <span className="text-[10px] font-bold text-[#c9a84c] bg-black/70 px-2 py-0.5 rounded-full">WINNER</span>
             </div>
           </div>
         )}
         {isMyVote && !isWinner && (
           <div className="absolute top-1.5 left-1.5 bg-[#c9a84c] text-black text-[9px] font-bold px-1.5 py-0.5 rounded-md">
-            ✓ Your vote
+            {"\u2713"} Your vote
           </div>
         )}
       </div>
@@ -506,7 +546,7 @@ function BracketView({
     <div>
       {/* Mobile scroll hint */}
       <div className="flex items-center justify-center gap-2 mb-2 sm:hidden">
-        <span className="text-xs text-foreground-muted animate-pulse">← Scroll to see full bracket →</span>
+        <span className="text-xs text-foreground-muted animate-pulse">{"\u2190"} Scroll to see full bracket {"\u2192"}</span>
       </div>
 
       <div className="relative">
@@ -600,13 +640,13 @@ function BracketMatchCard({
       {/* Post 1 */}
       <BracketPostRow
         post={match.post1}
-        isWinner={match.winnerId === match.post1.id}
-        isLoser={!!match.winnerId && match.winnerId !== match.post1.id}
-        isMyVote={myVote === match.post1.id}
+        isWinner={match.winnerId === match.post1?.id}
+        isLoser={!!match.winnerId && match.winnerId !== match.post1?.id}
+        isMyVote={myVote === match.post1?.id}
         percent={p1Pct}
         showPercent={!!myVote || match.isCompleted}
-        canVote={match.isActive && isLoggedIn && !voting}
-        onClick={() => onVote(match.id, match.post1.id)}
+        canVote={match.isActive && isLoggedIn && !voting && !!match.post1 && !!match.post2}
+        onClick={() => match.post1 && onVote(match.id, match.post1.id)}
       />
 
       {/* Divider */}
@@ -619,13 +659,13 @@ function BracketMatchCard({
       {/* Post 2 */}
       <BracketPostRow
         post={match.post2}
-        isWinner={match.winnerId === match.post2.id}
-        isLoser={!!match.winnerId && match.winnerId !== match.post2.id}
-        isMyVote={myVote === match.post2.id}
+        isWinner={match.winnerId === match.post2?.id}
+        isLoser={!!match.winnerId && match.winnerId !== match.post2?.id}
+        isMyVote={myVote === match.post2?.id}
         percent={p2Pct}
         showPercent={!!myVote || match.isCompleted}
-        canVote={match.isActive && isLoggedIn && !voting}
-        onClick={() => onVote(match.id, match.post2.id)}
+        canVote={match.isActive && isLoggedIn && !voting && !!match.post1 && !!match.post2}
+        onClick={() => match.post2 && onVote(match.id, match.post2.id)}
       />
     </div>
   );
@@ -683,7 +723,7 @@ function BracketPostRow({
         )}
         {isWinner && (
           <div className="absolute inset-0 flex items-center justify-center bg-[#c9a84c]/30">
-            <span className="text-sm">👑</span>
+            <span className="text-sm">{"\uD83D\uDC51"}</span>
           </div>
         )}
       </div>
@@ -714,7 +754,7 @@ function BracketPostRow({
 
       {/* My vote indicator */}
       {isMyVote && !isWinner && (
-        <span className="text-[9px] text-[#c9a84c] font-bold flex-shrink-0">✓</span>
+        <span className="text-[9px] text-[#c9a84c] font-bold flex-shrink-0">{"\u2713"}</span>
       )}
     </button>
   );

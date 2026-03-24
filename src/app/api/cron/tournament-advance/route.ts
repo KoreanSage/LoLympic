@@ -51,8 +51,16 @@ export async function GET(request: NextRequest) {
     const roundWinners = new Map<number, string[]>(); // round → winner postIds
 
     for (const match of expiredMatches) {
-      // Winner = more votes. Tie → post1 wins (higher seed / random)
-      const winnerId = match.post1Votes >= match.post2Votes ? match.post1Id : match.post2Id;
+      // Skip matches where posts haven't been assigned yet
+      if (!match.post1Id && !match.post2Id) continue;
+
+      // If only one post is assigned, that post auto-advances
+      // Otherwise, winner = more votes. Tie → post1 wins (higher seed / random)
+      const winnerId: string | null = !match.post1Id ? match.post2Id
+        : !match.post2Id ? match.post1Id
+        : match.post1Votes >= match.post2Votes ? match.post1Id : match.post2Id;
+
+      if (!winnerId) continue;
 
       await prisma.tournamentMatch.update({
         where: { id: match.id },

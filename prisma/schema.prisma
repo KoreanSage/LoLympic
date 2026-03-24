@@ -919,8 +919,8 @@ model TournamentMatch {
   round       Int      // 1=quarterfinal(12/29), 2=semifinal(12/30), 3=final(12/31)
   matchIndex  Int      // match number within round (0-based)
 
-  post1Id     String
-  post2Id     String
+  post1Id     String?
+  post2Id     String?
   winnerId    String?  // set when voting ends
 
   post1Votes  Int      @default(0)
@@ -933,8 +933,8 @@ model TournamentMatch {
 
   // Relations
   season Season @relation(fields: [seasonId], references: [id], onDelete: Cascade)
-  post1  Post   @relation("TournamentPost1", fields: [post1Id], references: [id])
-  post2  Post   @relation("TournamentPost2", fields: [post2Id], references: [id])
+  post1  Post?  @relation("TournamentPost1", fields: [post1Id], references: [id])
+  post2  Post?  @relation("TournamentPost2", fields: [post2Id], references: [id])
   votes  TournamentVote[]
 
   @@unique([seasonId, round, matchIndex])

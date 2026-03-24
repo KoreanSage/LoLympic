@@ -453,6 +453,7 @@ const ja: Record<TranslationKeys, string> = {
   "tournament.started": "開始済み",
   "tournament.liveNow": "ライブ",
   "tournament.startsIn": "{time}後に開始",
+  "tournament.bracketNotCreated": "Tournament bracket will be created when the season starts",
 
   "battle.tapToContinue": "タップして続ける",
   "battle.nextChallenger": "次の挑戦者が登場...",

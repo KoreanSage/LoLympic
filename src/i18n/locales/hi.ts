@@ -457,6 +457,7 @@ const hi: Record<TranslationKeys, string> = {
   "tournament.started": "शुरू हो गया",
   "tournament.liveNow": "लाइव",
   "tournament.startsIn": "{time} में शुरू",
+  "tournament.bracketNotCreated": "Tournament bracket will be created when the season starts",
 
   "battle.tapToContinue": "जारी रखने के लिए टैप करें",
   "battle.nextChallenger": "अगला चैलेंजर आ रहा है...",
