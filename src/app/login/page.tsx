@@ -93,9 +93,11 @@ export default function LoginPage() {
             <div className="flex justify-end">
               <Link
                 href="/forgot-password"
-                className="text-xs text-foreground-subtle hover:text-[#c9a84c] transition-colors"
+                className="text-xs text-foreground-subtle hover:text-[#c9a84c] transition-colors group relative"
+                title="Coming soon - email delivery not yet available"
               >
                 {t("auth.forgotPassword") || "Forgot password?"}
+                <span className="ml-1 text-yellow-500/70 text-[10px]">(coming soon)</span>
               </Link>
             </div>
 

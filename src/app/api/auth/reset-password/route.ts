@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import prisma from "@/lib/prisma";
 import { consumeResetToken } from "@/lib/password-reset-tokens";
+import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 
 /**
  * POST /api/auth/reset-password
@@ -11,6 +12,16 @@ import { consumeResetToken } from "@/lib/password-reset-tokens";
  */
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit to prevent brute-force token guessing
+    const rlKey = getRateLimitKey(request.headers, "reset-password");
+    const rl = checkRateLimit(rlKey, RATE_LIMITS.auth);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: "Too many attempts. Try again later." },
+        { status: 429 }
+      );
+    }
+
     const { token, password } = await request.json();
 
     if (!token || typeof token !== "string") {
@@ -27,8 +38,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate & consume token (single-use)
-    const result = consumeResetToken(token);
+    // Validate & consume token (single-use, now DB-backed)
+    const result = await consumeResetToken(token);
     if (!result) {
       return NextResponse.json(
         { error: "Invalid or expired reset token" },

@@ -105,6 +105,10 @@ export async function GET() {
       },
       rankings,
       monthlyLeaders,
+    }, {
+      headers: {
+        "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+      },
     });
   } catch (error) {
     console.error("Dashboard API error:", error);
