@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { useTranslation } from "@/i18n";
 import Link from "next/link";
 
@@ -84,10 +85,14 @@ export default function MonthlyWinnerBanner() {
             href={`/post/${winner.post.id}`}
             className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 border-2 border-[#c9a84c]/40 shadow-[0_0_8px_rgba(201,168,76,0.15)] hover:border-[#c9a84c] transition-colors"
           >
-            <img
+            <Image
               src={winner.post.images[0].originalUrl}
               alt={winner.post.title}
+              width={64}
+              height={64}
               className="w-full h-full object-cover"
+              priority
+              unoptimized
             />
           </Link>
         )}

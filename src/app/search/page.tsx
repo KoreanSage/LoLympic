@@ -7,6 +7,7 @@ import Link from "next/link";
 import MainLayout from "@/components/layout/MainLayout";
 import Avatar from "@/components/ui/Avatar";
 import Card from "@/components/ui/Card";
+import ErrorState from "@/components/ui/ErrorState";
 
 interface PostResult {
   id: string;
@@ -105,6 +106,7 @@ function SearchPage() {
   const [postCount, setPostCount] = useState(0);
   const [userCount, setUserCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
 
   // Load recent searches on mount
@@ -115,6 +117,7 @@ function SearchPage() {
   const doSearch = useCallback(async (q: string) => {
     if (!q.trim()) return;
     setLoading(true);
+    setError(false);
     // Save to recent searches
     addRecentSearch(q.trim());
     setRecentSearches(getRecentSearches());
@@ -131,6 +134,7 @@ function SearchPage() {
       }
     } catch (e) {
       console.error("Search failed:", e);
+      setError(true);
     } finally {
       setLoading(false);
     }
@@ -180,7 +184,9 @@ function SearchPage() {
         </div>
 
         {/* Results */}
-        {loading ? (
+        {error ? (
+          <ErrorState message="Search failed" onRetry={() => doSearch(query)} />
+        ) : loading ? (
           <div className="flex items-center justify-center py-20">
             <div className="w-8 h-8 border-2 border-[#c9a84c] border-t-transparent rounded-full animate-spin" />
           </div>

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { getSessionUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
@@ -7,6 +8,24 @@ import { GoogleGenAI } from "@google/genai";
 import { LanguageCode } from "@prisma/client";
 import crypto from "crypto";
 import { updateRankingScore } from "@/lib/ranking";
+
+const TRANSLATE_LANGUAGES = ["ko", "en", "ja", "zh", "es", "hi", "ar"] as const;
+
+const translateSchema = z.object({
+  postId: z.string().min(1, "postId is required"),
+  sourceLanguage: z.enum(TRANSLATE_LANGUAGES, {
+    errorMap: () => ({ message: `sourceLanguage must be one of: ${TRANSLATE_LANGUAGES.join(", ")}` }),
+  }),
+  targetLanguages: z
+    .array(
+      z.enum(TRANSLATE_LANGUAGES, {
+        errorMap: () => ({ message: `Each target language must be one of: ${TRANSLATE_LANGUAGES.join(", ")}` }),
+      })
+    )
+    .min(1, "At least one target language is required")
+    .max(7),
+  imageUrl: z.string().url().optional(),
+});
 
 // Vercel Hobby: max 60s, Pro: up to 300s
 export const maxDuration = 60;
@@ -591,42 +610,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
-    const {
-      postId,
-      sourceLanguage,
-      targetLanguages,
-      imageUrl, // Legacy: single image (still supported)
-    }: {
-      postId: string;
-      sourceLanguage: string;
-      targetLanguages: string[];
-      imageUrl?: string;
-    } = body;
-
-    // Validation
-    if (!postId || !sourceLanguage || !targetLanguages?.length) {
+    const rawBody = await request.json();
+    const parsed = translateSchema.safeParse(rawBody);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "Missing required fields: postId, sourceLanguage, targetLanguages" },
+        { error: "Validation failed", details: parsed.error.flatten().fieldErrors },
         { status: 400 }
       );
     }
 
-    if (!isValidLanguageCode(sourceLanguage)) {
-      return NextResponse.json(
-        { error: `Invalid source language: ${sourceLanguage}` },
-        { status: 400 }
-      );
-    }
-
-    for (const lang of targetLanguages) {
-      if (!isValidLanguageCode(lang)) {
-        return NextResponse.json(
-          { error: `Invalid target language: ${lang}` },
-          { status: 400 }
-        );
-      }
-    }
+    const { postId, sourceLanguage, targetLanguages, imageUrl } = parsed.data;
 
     // Verify post exists and get all images
     const post = await prisma.post.findUnique({

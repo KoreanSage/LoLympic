@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import Image from "next/image";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/Toast";
@@ -515,9 +516,7 @@ export default function PostDetail({
              Priority: translatedImageUrl (pre-rendered) > ScreenshotRenderer (HTML fallback) > original */
           <div className={`overflow-hidden border border-border ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-xl border-t-0" : "rounded-xl"}`}>
             {showTranslation && translatedImageUrl ? (
-              // Pre-rendered translated image (Clean Image + Sharp overlay)
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={translatedImageUrl} alt={title} className="w-full" />
+              <Image src={translatedImageUrl} alt={title} width={800} height={800} className="w-full h-auto" unoptimized />
             ) : showTranslation ? (
               // HTML fallback while translated image is being generated
               <ScreenshotRenderer
@@ -526,8 +525,7 @@ export default function PostDetail({
                 originalImageUrl={imageUrl}
               />
             ) : (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={imageUrl} alt={title} className="w-full" />
+              <Image src={imageUrl} alt={title} width={800} height={800} className="w-full h-auto" unoptimized />
             )}
           </div>
         ) : images && images.length > 1 ? (
@@ -537,8 +535,7 @@ export default function PostDetail({
                 const imgIsGif = img.mimeType === "image/gif";
                 const imgSegments = segments.filter((s: any) => (s.imageIndex ?? 0) === i);
                 return imgIsGif ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img key={i} src={img.originalUrl} alt={title} className="w-full" />
+                  <Image key={i} src={img.originalUrl} alt={title} width={800} height={800} className="w-full h-auto" unoptimized />
                 ) : (
                   <MemeRenderer
                     key={i}
@@ -554,8 +551,7 @@ export default function PostDetail({
           </div>
         ) : isGif ? (
           <div className={`overflow-hidden border border-border ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-xl border-t-0" : "rounded-xl"}`}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={imageUrl} alt={title} className="w-full" />
+            <Image src={imageUrl} alt={title} width={800} height={800} className="w-full h-auto" unoptimized />
           </div>
         ) : showCompare ? (
           <CompareMode imageUrl={imageUrl} segments={segments} />

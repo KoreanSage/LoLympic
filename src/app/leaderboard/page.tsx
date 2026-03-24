@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useTranslation } from "@/i18n";
 import MainLayout from "@/components/layout/MainLayout";
 import LeaderboardTable from "@/components/competition/LeaderboardTable";
 import SeasonBar from "@/components/competition/SeasonBar";
+import ErrorState from "@/components/ui/ErrorState";
 
 // ---------------------------------------------------------------------------
 // Types matching the API response shapes
@@ -108,6 +109,7 @@ export default function LeaderboardPage() {
   const [creators, setCreators] = useState<ReturnType<typeof mapCreators>>([]);
   const [memes, setMemes] = useState<ReturnType<typeof mapMemes>>([]);
   const [empty, setEmpty] = useState(false);
+  const [error, setError] = useState(false);
   const [isRealtime, setIsRealtime] = useState(false);
   const [battleMemes, setBattleMemes] = useState<
     Array<{
@@ -121,60 +123,68 @@ export default function LeaderboardPage() {
     }>
   >([]);
 
-  useEffect(() => {
-    async function fetchAll() {
-      try {
-        const [countryRes, creatorRes, memeRes, battleRes] = await Promise.all([
-          fetch("/api/leaderboard?type=country"),
-          fetch("/api/leaderboard?type=creator"),
-          fetch("/api/leaderboard?type=meme"),
-          fetch("/api/leaderboard?type=battle&limit=5"),
-        ]);
+  const fetchAll = useCallback(async () => {
+    setLoading(true);
+    setError(false);
+    try {
+      const [countryRes, creatorRes, memeRes, battleRes] = await Promise.all([
+        fetch("/api/leaderboard?type=country"),
+        fetch("/api/leaderboard?type=creator"),
+        fetch("/api/leaderboard?type=meme"),
+        fetch("/api/leaderboard?type=battle&limit=5"),
+      ]);
 
-        const countryData: ApiLeaderboardResponse = await countryRes.json();
-        const creatorData: ApiLeaderboardResponse = await creatorRes.json();
-        const memeData: ApiLeaderboardResponse = await memeRes.json();
-        const battleData = await battleRes.json().catch(() => ({ entries: [] }));
+      const countryData: ApiLeaderboardResponse = await countryRes.json();
+      const creatorData: ApiLeaderboardResponse = await creatorRes.json();
+      const memeData: ApiLeaderboardResponse = await memeRes.json();
+      const battleData = await battleRes.json().catch(() => ({ entries: [] }));
 
-        // Check if data is from realtime fallback
-        if ((countryData as any).source === "realtime") {
-          setIsRealtime(true);
-        }
-
-        const mappedCountries = mapCountries(
-          (countryData.entries ?? []) as ApiCountryEntry[]
-        );
-        const mappedCreators = mapCreators(
-          (creatorData.entries ?? []) as ApiCreatorEntry[]
-        );
-        const mappedMemes = mapMemes(
-          (memeData.entries ?? []) as ApiMemeEntry[]
-        );
-
-        setCountries(mappedCountries);
-        setCreators(mappedCreators);
-        setMemes(mappedMemes);
-        if (battleData.entries?.length > 0) {
-          setBattleMemes(battleData.entries);
-        }
-
-        if (
-          mappedCountries.length === 0 &&
-          mappedCreators.length === 0 &&
-          mappedMemes.length === 0
-        ) {
-          setEmpty(true);
-        }
-      } catch (err) {
-        console.error("Failed to fetch leaderboard data:", err);
-        setEmpty(true);
-      } finally {
-        setLoading(false);
+      // Check if data is from realtime fallback
+      if ((countryData as any).source === "realtime") {
+        setIsRealtime(true);
       }
-    }
 
-    fetchAll();
+      const mappedCountries = mapCountries(
+        (countryData.entries ?? []) as ApiCountryEntry[]
+      );
+      const mappedCreators = mapCreators(
+        (creatorData.entries ?? []) as ApiCreatorEntry[]
+      );
+      const mappedMemes = mapMemes(
+        (memeData.entries ?? []) as ApiMemeEntry[]
+      );
+
+      setCountries(mappedCountries);
+      setCreators(mappedCreators);
+      setMemes(mappedMemes);
+      if (battleData.entries?.length > 0) {
+        setBattleMemes(battleData.entries);
+      }
+
+      if (
+        mappedCountries.length === 0 &&
+        mappedCreators.length === 0 &&
+        mappedMemes.length === 0
+      ) {
+        setEmpty(true);
+      }
+    } catch (err) {
+      console.error("Failed to fetch leaderboard data:", err);
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  if (error) {
+    return (
+      <MainLayout showSidebar={false}>
+        <ErrorState message="Failed to load leaderboard" onRetry={fetchAll} />
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout showSidebar={false}>

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import Image from "next/image";
 import Card from "@/components/ui/Card";
 import { useTranslation } from "@/i18n";
 
@@ -387,12 +388,14 @@ const BattleSide = React.memo(function BattleSide({
         }`}
     >
       {/* Image */}
-      <div className="relative">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+      <div className="relative aspect-square">
+        <Image
           src={post.imageUrl}
           alt={post.title}
-          className="w-full aspect-square object-cover"
+          fill
+          sizes="(max-width: 768px) 40vw, 200px"
+          className="object-cover"
+          unoptimized
         />
         {/* Multi-image badge */}
         {(post.imageCount ?? 0) > 1 && (

@@ -41,6 +41,7 @@ export const metadata: Metadata = {
     icon: "/icon.svg",
     apple: "/icon.svg",
   },
+  manifest: "/manifest.json",
   robots: {
     index: true,
     follow: true,
