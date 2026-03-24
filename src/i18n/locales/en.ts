@@ -452,6 +452,7 @@ const en = {
   "search.suggestionUsername": "Search by username or country",
 
   // ── Tournament (extra) ───────────────────────────────────────────────────
+    "tournament.roundOf16": "Round of 16",
   "tournament.roundOf8": "Round of 8",
   "tournament.semiFinals": "Semi-Finals",
   "tournament.grandFinal": "Grand Final",

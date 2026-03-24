@@ -32,9 +32,9 @@ interface Match {
 
 type ViewTab = "vote" | "bracket";
 
-const ROUND_EMOJI = ["", "8\uFE0F\u20E3", "4\uFE0F\u20E3", "\uD83C\uDFC6"];
-const ROUND_LABEL_KEYS = ["", "tournament.roundOf8", "tournament.semiFinals", "tournament.grandFinal"] as const;
-const ROUND_KEYS = ["", "tournament.quarterfinals", "tournament.semifinals", "tournament.final"] as const;
+const ROUND_EMOJI = ["", "1️⃣6️⃣", "8️⃣", "4️⃣", "🏆"];
+const ROUND_LABEL_KEYS = ["", "tournament.roundOf16", "tournament.roundOf8", "tournament.semiFinals", "tournament.grandFinal"] as const;
+const ROUND_KEYS = ["", "tournament.roundOf16", "tournament.quarterfinals", "tournament.semifinals", "tournament.final"] as const;
 
 // ---------------------------------------------------------------------------
 // Countdown Timer
@@ -120,7 +120,7 @@ export default function TournamentPage() {
   };
 
   // Group matches by round
-  const rounds = [1, 2, 3].map((round) => {
+  const rounds = [1, 2, 3, 4].map((round) => {
     const roundMatches = matches.filter((m) => m.round === round);
     let date = "";
     if (roundMatches.length > 0 && roundMatches[0].startAt) {
@@ -135,7 +135,7 @@ export default function TournamentPage() {
   const votableMatches = [...activeMatches, ...pendingMatches];
 
   // Champion
-  const finalMatch = matches.find((m) => m.round === 3 && m.winnerId);
+  const finalMatch = matches.find((m) => m.round === 4 && m.winnerId);
   const champion = finalMatch
     ? finalMatch.winnerId === finalMatch.post1?.id ? finalMatch.post1 : finalMatch.post2
     : null;
@@ -554,18 +554,18 @@ function BracketView({
         <div className="pointer-events-none absolute inset-y-0 left-0 w-6 bg-gradient-to-r from-background to-transparent z-10 sm:hidden" />
         <div className="pointer-events-none absolute inset-y-0 right-0 w-6 bg-gradient-to-l from-background to-transparent z-10 sm:hidden" />
       <div className="overflow-x-auto pb-4 -mx-4 px-4">
-        <div className="flex gap-6 min-w-[720px] items-start">
+        <div className="flex gap-4 min-w-[900px] items-start">
           {rounds.map(({ round, name, emoji, date, label, matches: roundMatches }) => {
             // Vertical spacing grows with each round to align with previous round's pairs
-            const matchPadding = round === 2 ? "pt-[3.25rem]" : round === 3 ? "pt-[8.5rem]" : "";
-            const matchGap = round === 1 ? "gap-3" : round === 2 ? "gap-[6.75rem]" : "";
+            const matchPadding = round === 2 ? "pt-[2rem]" : round === 3 ? "pt-[5rem]" : round === 4 ? "pt-[11rem]" : "";
+            const matchGap = round === 1 ? "gap-2" : round === 2 ? "gap-[4.5rem]" : round === 3 ? "gap-[10rem]" : "";
 
             return (
-              <div key={round} className="flex-1 min-w-[210px]">
+              <div key={round} className="flex-1 min-w-[180px]">
                 {/* Round header */}
-                <div className={`flex items-center gap-2 mb-1 ${round === 3 ? "text-[#c9a84c]" : ""}`}>
+                <div className={`flex items-center gap-2 mb-1 ${round === 4 ? "text-[#c9a84c]" : ""}`}>
                   <span className="text-sm">{emoji}</span>
-                  <span className={`text-xs font-bold ${round === 3 ? "text-[#c9a84c]" : "text-foreground"}`}>{name}</span>
+                  <span className={`text-xs font-bold ${round === 4 ? "text-[#c9a84c]" : "text-foreground"}`}>{name}</span>
                   <span className="text-[10px] text-foreground-subtle">{label}</span>
                 </div>
                 <div className="flex items-center gap-2 mb-3">
@@ -586,7 +586,7 @@ function BracketView({
                         onVote={handleVote}
                         voting={voting === match.id}
                         isLoggedIn={isLoggedIn}
-                        isGrandFinal={round === 3}
+                        isGrandFinal={round === 4}
                       />
                     ))
                   ) : (

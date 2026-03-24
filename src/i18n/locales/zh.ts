@@ -447,6 +447,7 @@ const zh: Record<TranslationKeys, string> = {
   "search.suggestionTags": "按标签搜索（如 funny、anime）",
   "search.suggestionUsername": "按用户名或国家搜索",
 
+    "tournament.roundOf16": "16强",
   "tournament.roundOf8": "八强",
   "tournament.semiFinals": "半决赛",
   "tournament.grandFinal": "决赛",
