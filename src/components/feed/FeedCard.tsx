@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -454,8 +455,7 @@ function FeedCardInner({
               {isTypeB && segments.length > 0 ? (
                 /* Type B: translatedImageUrl (pre-rendered) > ScreenshotRenderer > original */
                 showTranslation && translatedImageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={translatedImageUrl} alt={title} className="w-full" />
+                  <Image src={translatedImageUrl} alt={title} width={800} height={800} className="w-full h-auto" unoptimized />
                 ) : showTranslation ? (
                   <ScreenshotRenderer
                     segments={segments}
@@ -463,8 +463,7 @@ function FeedCardInner({
                     originalImageUrl={imageUrl}
                   />
                 ) : (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={imageUrl} alt={title} className="w-full" />
+                  <Image src={imageUrl} alt={title} width={800} height={800} className="w-full h-auto" unoptimized />
                 )
               ) : images && images.length > 1 ? (
                 <ImageCarousel>
@@ -472,8 +471,7 @@ function FeedCardInner({
                     const imgIsGif = img.mimeType === "image/gif";
                     const imgSegments = segments.filter((s: any) => (s.imageIndex ?? 0) === i);
                     return imgIsGif ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img key={i} src={img.originalUrl} alt={title} className="w-full" />
+                      <Image key={i} src={img.originalUrl} alt={title} width={800} height={800} className="w-full h-auto" unoptimized />
                     ) : (
                       <MemeRenderer
                         key={i}
@@ -487,8 +485,7 @@ function FeedCardInner({
                   })}
                 </ImageCarousel>
               ) : isGif ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={imageUrl} alt={title} className="w-full" />
+                <Image src={imageUrl} alt={title} width={800} height={800} className="w-full h-auto" unoptimized />
               ) : (
                 <MemeRenderer
                   imageUrl={imageUrl}

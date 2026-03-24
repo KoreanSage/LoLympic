@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 interface AvatarProps {
   src?: string | null;
   alt?: string;
@@ -15,6 +17,14 @@ const sizeMap = {
   md: "w-8 h-8",
   lg: "w-10 h-10",
   xl: "w-14 h-14",
+};
+
+const pixelSizeMap = {
+  xs: 20,
+  sm: 24,
+  md: 32,
+  lg: 40,
+  xl: 56,
 };
 
 const flagSizeMap = {
@@ -48,10 +58,13 @@ export default function Avatar({
   return (
     <div className={`relative inline-flex shrink-0 ${className}`} role="img" aria-label={alt}>
       {src ? (
-        <img
+        <Image
           src={src}
           alt={alt}
+          width={pixelSizeMap[size]}
+          height={pixelSizeMap[size]}
           className={`${sizeMap[size]} rounded-full object-cover bg-background-overlay ${championRing}`}
+          unoptimized
         />
       ) : (
         <div

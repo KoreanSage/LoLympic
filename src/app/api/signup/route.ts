@@ -1,7 +1,20 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import bcrypt from "bcryptjs";
 import prisma from "@/lib/prisma";
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
+
+const signupSchema = z.object({
+  email: z.string().email("Invalid email address").max(255),
+  username: z
+    .string()
+    .min(3, "Username must be at least 3 characters")
+    .max(30, "Username must be at most 30 characters")
+    .regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores"),
+  password: z.string().min(8, "Password must be at least 8 characters").max(128),
+  countryId: z.string().max(10).optional(),
+  displayName: z.string().max(50).optional(),
+});
 
 export async function POST(req: Request) {
   try {
@@ -11,34 +24,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Too many attempts. Try again later." }, { status: 429 });
     }
 
-    const { email, username, password, countryId, displayName } =
-      await req.json();
-
-    // Validate required fields
-    if (!email || !username || !password) {
+    const rawBody = await req.json();
+    const parsed = signupSchema.safeParse(rawBody);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "Email, username, and password are required" },
+        { error: "Validation failed", details: parsed.error.flatten().fieldErrors },
         { status: 400 }
       );
     }
 
-    if (password.length < 8) {
-      return NextResponse.json(
-        { error: "Password must be at least 8 characters" },
-        { status: 400 }
-      );
-    }
-
-    // Check username format
-    if (!/^[a-zA-Z0-9_]{3,30}$/.test(username)) {
-      return NextResponse.json(
-        {
-          error:
-            "Username must be 3-30 characters, letters, numbers, and underscores only",
-        },
-        { status: 400 }
-      );
-    }
+    const { email, username, password, countryId, displayName } = parsed.data;
 
     // Check if email already exists
     const existingEmail = await prisma.user.findUnique({

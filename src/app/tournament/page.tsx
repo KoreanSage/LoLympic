@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import Image from "next/image";
 import { useSession } from "next-auth/react";
 import { useTranslation } from "@/i18n";
 import MainLayout from "@/components/layout/MainLayout";
+import ErrorState from "@/components/ui/ErrorState";
 
 interface TournamentPost {
   id: string;
@@ -75,6 +77,7 @@ export default function TournamentPage() {
   const [userVotes, setUserVotes] = useState<Record<string, string>>({});
   const [seasonName, setSeasonName] = useState("");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [voting, setVoting] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ViewTab>("bracket");
   const [currentVoteIdx, setCurrentVoteIdx] = useState(0);
@@ -82,6 +85,8 @@ export default function TournamentPage() {
   const [totalSlots, setTotalSlots] = useState(0);
 
   const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(false);
     try {
       const res = await fetch("/api/tournament");
       const data = await res.json();
@@ -92,6 +97,7 @@ export default function TournamentPage() {
       setTotalSlots(data.totalSlots ?? 0);
     } catch (e) {
       console.error("Failed to fetch tournament data:", e);
+      setError(true);
     } finally {
       setLoading(false);
     }
@@ -140,6 +146,14 @@ export default function TournamentPage() {
     ? finalMatch.winnerId === finalMatch.post1?.id ? finalMatch.post1 : finalMatch.post2
     : null;
 
+  if (error) {
+    return (
+      <MainLayout showSidebar={false}>
+        <ErrorState message="Failed to load tournament" onRetry={fetchData} />
+      </MainLayout>
+    );
+  }
+
   if (loading) {
     return (
       <MainLayout showSidebar={false}>
@@ -182,9 +196,8 @@ export default function TournamentPage() {
                 <div className="inline-block px-6 py-1.5 bg-[#c9a84c]/20 border border-[#c9a84c]/40 rounded-full mb-4">
                   <h2 className="text-sm font-black uppercase tracking-widest text-[#c9a84c]">{t("tournament.memeOfTheYear")}</h2>
                 </div>
-                <div className="w-52 mx-auto rounded-xl overflow-hidden border-2 border-[#c9a84c] shadow-[0_0_30px_rgba(201,168,76,0.3)] mb-4">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={champion.imageUrl} alt={champion.title} className="w-full aspect-square object-cover" />
+                <div className="w-52 mx-auto rounded-xl overflow-hidden border-2 border-[#c9a84c] shadow-[0_0_30px_rgba(201,168,76,0.3)] mb-4 relative aspect-square">
+                  <Image src={champion.imageUrl} alt={champion.title} fill sizes="208px" className="object-cover" priority unoptimized />
                 </div>
                 <p className="text-base font-bold text-foreground">{champion.title}</p>
                 <p className="text-sm text-foreground-muted mt-1">
@@ -473,8 +486,7 @@ function VoteSide({
     >
       {/* Image */}
       <div className="relative w-full aspect-square rounded-xl overflow-hidden mb-2 border border-border">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={post.imageUrl} alt={post.title} className="w-full h-full object-cover" />
+        <Image src={post.imageUrl} alt={post.title} fill sizes="(max-width: 640px) 45vw, 250px" className="object-cover" unoptimized />
         {(post.imageCount ?? 0) > 1 && (
           <span className="absolute top-1.5 right-1.5 bg-black/70 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md backdrop-blur-sm">
             {"\uD83D\uDCF8"} {post.imageCount}
@@ -714,8 +726,7 @@ function BracketPostRow({
     >
       {/* Thumbnail */}
       <div className="relative w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 border border-border">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={post.imageUrl} alt={post.title} className="w-full h-full object-cover" />
+        <Image src={post.imageUrl} alt={post.title} width={40} height={40} className="object-cover w-full h-full" unoptimized />
         {(post.imageCount ?? 0) > 1 && (
           <span className="absolute bottom-0 right-0 bg-black/70 text-white text-[7px] font-bold px-1 rounded-tl">
             {post.imageCount}

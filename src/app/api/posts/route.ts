@@ -1,9 +1,38 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { getSessionUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { LanguageCode, PostStatus, Prisma } from "@prisma/client";
 import { backfillMissingTitleTranslations } from "@/lib/translate-backfill";
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
+
+const VALID_LANGUAGES = ["ko", "en", "ja", "zh", "es", "hi", "ar"] as const;
+
+const createPostSchema = z.object({
+  title: z.string().min(1, "Title is required").max(200, "Title must be under 200 characters"),
+  body: z.string().max(5000, "Body must be under 5000 characters").optional(),
+  category: z.string().max(50).optional(),
+  tags: z.array(z.string().max(50)).max(10, "Maximum 10 tags allowed").optional(),
+  sourceLanguage: z.enum(VALID_LANGUAGES, {
+    errorMap: () => ({ message: `sourceLanguage must be one of: ${VALID_LANGUAGES.join(", ")}` }),
+  }),
+  visibility: z.enum(["PUBLIC", "UNLISTED", "PRIVATE"]).optional(),
+  seasonId: z.string().optional(),
+  images: z
+    .array(
+      z.object({
+        url: z.string().url("Image url must be a valid URL"),
+        cleanUrl: z.string().url().optional(),
+        width: z.number().int().positive().optional(),
+        height: z.number().int().positive().optional(),
+        mimeType: z.string().max(100).optional(),
+        fileSizeBytes: z.number().int().nonnegative().optional(),
+        altText: z.string().max(300).optional(),
+      })
+    )
+    .max(10, "Maximum 10 images allowed")
+    .optional(),
+});
 
 // ---------------------------------------------------------------------------
 // GET /api/posts — List posts with pagination, filters, sorting
@@ -191,7 +220,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
+    const rawBody = await request.json();
+    const parsed = createPostSchema.safeParse(rawBody);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Validation failed", details: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      );
+    }
+
     const {
       title,
       body: postBody,
@@ -201,67 +238,7 @@ export async function POST(request: NextRequest) {
       visibility,
       seasonId,
       images,
-    }: {
-      title: string;
-      body?: string;
-      category?: string;
-      tags?: string[];
-      sourceLanguage: string;
-      visibility?: string;
-      seasonId?: string;
-      images?: Array<{
-        url: string;
-        cleanUrl?: string;
-        width?: number;
-        height?: number;
-        mimeType?: string;
-        fileSizeBytes?: number;
-        altText?: string;
-      }>;
-    } = body;
-
-    // Validation
-    if (!title || !sourceLanguage) {
-      return NextResponse.json(
-        { error: "title and sourceLanguage are required" },
-        { status: 400 }
-      );
-    }
-
-    if (typeof title !== "string" || title.trim().length === 0 || title.length > 200) {
-      return NextResponse.json(
-        { error: "Title must be 1-200 characters" },
-        { status: 400 }
-      );
-    }
-
-    if (postBody && (typeof postBody !== "string" || postBody.length > 5000)) {
-      return NextResponse.json(
-        { error: "Body must be under 5000 characters" },
-        { status: 400 }
-      );
-    }
-
-    if (tags && (!Array.isArray(tags) || tags.length > 10)) {
-      return NextResponse.json(
-        { error: "Maximum 10 tags allowed" },
-        { status: 400 }
-      );
-    }
-
-    if (images && (!Array.isArray(images) || images.length > 10)) {
-      return NextResponse.json(
-        { error: "Maximum 10 images allowed" },
-        { status: 400 }
-      );
-    }
-
-    if (!["ko", "en", "ja", "zh", "es", "hi", "ar"].includes(sourceLanguage)) {
-      return NextResponse.json(
-        { error: `Invalid sourceLanguage: ${sourceLanguage}` },
-        { status: 400 }
-      );
-    }
+    } = parsed.data;
 
     const post = await prisma.post.create({
       data: {
@@ -270,7 +247,7 @@ export async function POST(request: NextRequest) {
         category: category ?? null,
         tags: tags ?? [],
         sourceLanguage: sourceLanguage as LanguageCode,
-        visibility: visibility === "UNLISTED" ? "UNLISTED" : visibility === "PRIVATE" ? "PRIVATE" : "PUBLIC",
+        visibility: visibility || "PUBLIC",
         status: "PUBLISHED",
         authorId: user.id,
         countryId: user.countryId || null,
