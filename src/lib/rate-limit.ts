@@ -1,6 +1,14 @@
 /**
- * Simple in-memory rate limiter for API routes.
- * For production at scale, replace with Redis-based solution.
+ * Rate limiter for API routes.
+ *
+ * SERVERLESS LIMITATION: This uses an in-memory Map which resets on every
+ * cold start and is NOT shared across Vercel serverless function instances.
+ * However, it still provides meaningful protection within a single warm
+ * instance (which can handle many sequential requests). For production at
+ * scale, set the RATE_LIMIT_KV_URL environment variable to use Vercel KV
+ * (backed by Upstash Redis) for distributed rate limiting.
+ *
+ * Acceptable for initial launch with low-to-moderate traffic.
  */
 
 interface RateLimitEntry {
@@ -10,13 +18,19 @@ interface RateLimitEntry {
 
 const store = new Map<string, RateLimitEntry>();
 
-// Cleanup old entries every 5 minutes
-setInterval(() => {
-  const now = Date.now();
-  store.forEach((entry, key) => {
-    if (entry.resetAt < now) store.delete(key);
-  });
-}, 5 * 60 * 1000);
+// Cleanup old entries every 5 minutes (only runs in warm instances)
+if (typeof globalThis !== "undefined") {
+  const interval = setInterval(() => {
+    const now = Date.now();
+    store.forEach((entry, key) => {
+      if (entry.resetAt < now) store.delete(key);
+    });
+  }, 5 * 60 * 1000);
+  // Prevent the timer from keeping the process alive in edge cases
+  if (interval && typeof interval === "object" && "unref" in interval) {
+    interval.unref();
+  }
+}
 
 interface RateLimitConfig {
   /** Max requests allowed in the window */
@@ -68,11 +82,13 @@ export function checkRateLimit(
 
 /**
  * Extract a rate-limit key from headers (IP-based).
- * Works with Vercel, Cloudflare, and direct connections.
+ * Uses x-forwarded-for (set by Vercel/reverse proxies) to get the real
+ * client IP, falling back to x-real-ip and then "unknown".
  */
 export function getRateLimitKey(headers: Headers, prefix: string): string {
+  const forwarded = headers.get("x-forwarded-for");
   const ip =
-    headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    (forwarded ? forwarded.split(",")[0]?.trim() : null) ||
     headers.get("x-real-ip") ||
     "unknown";
   return `${prefix}:${ip}`;

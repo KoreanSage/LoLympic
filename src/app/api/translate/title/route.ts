@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getSessionUser } from "@/lib/auth";
+import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 import prisma from "@/lib/prisma";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
@@ -23,10 +25,26 @@ function getGenAI() {
 // ---------------------------------------------------------------------------
 // POST /api/translate/title — Translate a post title (and optionally body)
 // Called client-side when a translation payload exists but has no translatedTitle
-// No auth required — payloadId serves as authorization (opaque UUID)
+// Requires authentication to prevent unauthorized Gemini API usage.
 // ---------------------------------------------------------------------------
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit - AI translation call
+    const rlKey = getRateLimitKey(request.headers, "translate-title");
+    const rl = checkRateLimit(rlKey, RATE_LIMITS.translate);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: "Too many requests. Try again later." },
+        { status: 429, headers: { "Retry-After": String(rl.retryAfter) } }
+      );
+    }
+
+    // Auth check
+    const user = await getSessionUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await request.json();
     const { title, body: postBody, targetLanguage, payloadId } = body;
 

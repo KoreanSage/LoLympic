@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
 import prisma from "@/lib/prisma";
+import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 import { GoogleGenAI } from "@google/genai";
 import crypto from "crypto";
 
@@ -77,6 +78,16 @@ async function saveGeneratedImage(buffer: Buffer, prefix: string, ext: string): 
  */
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit - expensive AI image generation
+    const rlKey = getRateLimitKey(request.headers, "generate-image");
+    const rl = checkRateLimit(rlKey, RATE_LIMITS.translate);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: "Too many requests. Try again later." },
+        { status: 429, headers: { "Retry-After": String(rl.retryAfter) } }
+      );
+    }
+
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -4,6 +4,10 @@ import prisma from "@/lib/prisma";
 // ---------------------------------------------------------------------------
 // GET /api/leaderboard?type=country|creator|meme[&seasonId=xxx][&limit=10]
 // ---------------------------------------------------------------------------
+const LEADERBOARD_CACHE_HEADERS = {
+  "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+};
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -35,7 +39,9 @@ export async function GET(request: NextRequest) {
 
     // Battle leaderboard is always realtime (not season-dependent)
     if (type === "battle") {
-      return handleBattleLeaderboard(limit);
+      const result = await handleBattleLeaderboard(limit);
+      const body = await result.json();
+      return NextResponse.json(body, { headers: LEADERBOARD_CACHE_HEADERS });
     }
 
     // If we have a season, try season stats first — fallback to realtime if empty
@@ -43,13 +49,15 @@ export async function GET(request: NextRequest) {
       const result = await handleSeasonLeaderboard(type, resolvedSeasonId, limit);
       const body = await result.json();
       if (body.entries && body.entries.length > 0) {
-        return NextResponse.json(body);
+        return NextResponse.json(body, { headers: LEADERBOARD_CACHE_HEADERS });
       }
       // Season stats empty — fall through to realtime
     }
 
     // No season or empty season stats: fallback to realtime
-    return handleRealtimeLeaderboard(type, limit);
+    const result = await handleRealtimeLeaderboard(type, limit);
+    const body = await result.json();
+    return NextResponse.json(body, { headers: LEADERBOARD_CACHE_HEADERS });
   } catch (error) {
     console.error("Error fetching leaderboard:", error);
     return NextResponse.json(

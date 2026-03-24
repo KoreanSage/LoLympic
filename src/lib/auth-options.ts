@@ -179,13 +179,13 @@ export const authOptions: NextAuthOptions = {
           }
         } else {
           token.id = user.id;
-          token.username = (user as any).username;
-          token.displayName = (user as any).name;
-          token.avatarUrl = (user as any).image;
-          token.countryId = (user as any).countryId;
-          token.preferredLanguage = (user as any).preferredLanguage;
-          token.uiLanguage = (user as any).uiLanguage;
-          token.role = (user as any).role;
+          token.username = user.username;
+          token.displayName = user.name ?? undefined;
+          token.avatarUrl = user.image ?? undefined;
+          token.countryId = user.countryId;
+          token.preferredLanguage = user.preferredLanguage;
+          token.uiLanguage = user.uiLanguage;
+          token.role = user.role;
         }
       }
       return token;
@@ -193,15 +193,15 @@ export const authOptions: NextAuthOptions = {
 
     async session({ session, token }) {
       if (session.user) {
-        (session.user as any).id = token.id;
-        (session.user as any).username = token.username;
-        (session.user as any).displayName = token.displayName;
-        (session.user as any).avatarUrl = token.avatarUrl;
-        (session.user as any).countryId = token.countryId;
-        (session.user as any).preferredLanguage = token.preferredLanguage;
-        (session.user as any).uiLanguage = token.uiLanguage;
-        (session.user as any).role = token.role;
-        (session.user as any).needsSetup = token.needsSetup ?? false;
+        session.user.id = token.id as string;
+        session.user.username = token.username as string;
+        session.user.displayName = token.displayName;
+        session.user.avatarUrl = token.avatarUrl;
+        session.user.countryId = token.countryId;
+        session.user.preferredLanguage = token.preferredLanguage;
+        session.user.uiLanguage = token.uiLanguage;
+        session.user.role = token.role as string;
+        session.user.needsSetup = token.needsSetup ?? false;
       }
       return session;
     },

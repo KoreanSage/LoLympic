@@ -1,6 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 
 // GET /api/conversations — list user's conversations
 export async function GET() {
@@ -79,8 +80,17 @@ export async function GET() {
 }
 
 // POST /api/conversations — create or find existing conversation
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    const rlKey = getRateLimitKey(request.headers, "conversations");
+    const rl = checkRateLimit(rlKey, RATE_LIMITS.write);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: "Too many requests" },
+        { status: 429, headers: { "Retry-After": String(rl.retryAfter) } }
+      );
+    }
+
     const user = await getSessionUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
