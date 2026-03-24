@@ -457,6 +457,7 @@ const ar: Record<TranslationKeys, string> = {
   "tournament.started": "بدأ",
   "tournament.liveNow": "مباشر",
   "tournament.startsIn": "يبدأ في {time}",
+  "tournament.bracketNotCreated": "Tournament bracket will be created when the season starts",
 
   "battle.tapToContinue": "اضغط للمتابعة",
   "battle.nextChallenger": "المنافس التالي قادم...",

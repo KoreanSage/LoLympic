@@ -458,6 +458,7 @@ const en = {
   "tournament.started": "Started",
   "tournament.liveNow": "Live now",
   "tournament.startsIn": "Starts in {time}",
+  "tournament.bracketNotCreated": "Tournament bracket will be created when the season starts",
 
   // ── Battle (extra) ───────────────────────────────────────────────────────
   "battle.tapToContinue": "Tap to continue",

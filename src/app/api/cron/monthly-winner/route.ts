@@ -98,6 +98,15 @@ export async function GET(request: NextRequest) {
       },
     });
 
+    // Assign winner to tournament bracket (random empty QF slot)
+    try {
+      const { assignWinnerToSlot } = await import("@/lib/tournament");
+      await assignWinnerToSlot(season.id, topPost.id);
+    } catch (bracketError) {
+      console.warn("Could not assign to tournament bracket:", bracketError);
+      // Non-fatal: bracket might not exist yet or slots might be full
+    }
+
     return NextResponse.json({ message: "Winner selected", winner });
   } catch (error) {
     console.error("Cron monthly-winner error:", error);

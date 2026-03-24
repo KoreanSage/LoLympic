@@ -453,6 +453,7 @@ const zh: Record<TranslationKeys, string> = {
   "tournament.started": "已开始",
   "tournament.liveNow": "进行中",
   "tournament.startsIn": "{time}后开始",
+  "tournament.bracketNotCreated": "Tournament bracket will be created when the season starts",
 
   "battle.tapToContinue": "点击继续",
   "battle.nextChallenger": "下一位挑战者即将登场...",

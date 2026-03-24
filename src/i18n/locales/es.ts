@@ -453,6 +453,7 @@ const es: Record<TranslationKeys, string> = {
   "tournament.started": "Iniciado",
   "tournament.liveNow": "En vivo",
   "tournament.startsIn": "Comienza en {time}",
+  "tournament.bracketNotCreated": "Tournament bracket will be created when the season starts",
 
   "battle.tapToContinue": "Toca para continuar",
   "battle.nextChallenger": "Proximo retador en camino...",

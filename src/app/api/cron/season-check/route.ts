@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { generateEmptyBracket } from "@/lib/tournament";
 
 /**
  * GET /api/cron/season-check
@@ -126,7 +127,7 @@ export async function GET(request: NextRequest) {
       if (!existingForYear) {
         const lastSeason = await prisma.season.findFirst({ orderBy: { number: "desc" } });
         const nextNumber = (lastSeason?.number ?? 0) + 1;
-        await prisma.season.create({
+        const newSeason = await prisma.season.create({
           data: {
             name: `Season ${year}`,
             number: nextNumber,
@@ -136,6 +137,19 @@ export async function GET(request: NextRequest) {
           },
         });
         actions.push(`Created Season ${year}`);
+
+        // Auto-generate empty tournament bracket for the new season
+        try {
+          const result = await generateEmptyBracket(newSeason.id);
+          if (result.success) {
+            actions.push(`Generated empty tournament bracket for Season ${year}`);
+          } else {
+            actions.push(`Bracket generation skipped: ${result.error}`);
+          }
+        } catch (bracketError) {
+          console.warn("Failed to generate tournament bracket:", bracketError);
+          actions.push(`Failed to generate bracket for Season ${year}`);
+        }
       }
     }
 

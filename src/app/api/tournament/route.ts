@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth";
+import { generateEmptyBracket, assignWinnerToSlot } from "@/lib/tournament";
 
 // ---------------------------------------------------------------------------
 // GET /api/tournament?seasonId=xxx
@@ -70,14 +71,25 @@ export async function GET(request: NextRequest) {
       userVotes = Object.fromEntries(votes.map((v) => [v.matchId, v.postId]));
     }
 
+    // Count filled slots (non-null post references in QF matches)
+    const qfMatches = matches.filter((m) => m.round === 1);
+    const filledSlots = qfMatches.reduce((count, m) => {
+      return count + (m.post1Id ? 1 : 0) + (m.post2Id ? 1 : 0);
+    }, 0);
+    const totalSlots = qfMatches.length * 2;
+
     return NextResponse.json({
       season,
       matches: matches.map((m) => ({
         id: m.id,
         round: m.round,
         matchIndex: m.matchIndex,
-        post1: { ...m.post1, imageUrl: m.post1.images[0]?.originalUrl, imageCount: m.post1._count.images },
-        post2: { ...m.post2, imageUrl: m.post2.images[0]?.originalUrl, imageCount: m.post2._count.images },
+        post1: m.post1
+          ? { ...m.post1, imageUrl: m.post1.images[0]?.originalUrl, imageCount: m.post1._count.images }
+          : null,
+        post2: m.post2
+          ? { ...m.post2, imageUrl: m.post2.images[0]?.originalUrl, imageCount: m.post2._count.images }
+          : null,
         post1Votes: m.post1Votes,
         post2Votes: m.post2Votes,
         winnerId: m.winnerId,
@@ -87,6 +99,8 @@ export async function GET(request: NextRequest) {
         isCompleted: !!m.winnerId,
       })),
       userVotes,
+      filledSlots,
+      totalSlots,
     });
   } catch (error) {
     console.error("Tournament GET error:", error);
@@ -95,9 +109,10 @@ export async function GET(request: NextRequest) {
 }
 
 // ---------------------------------------------------------------------------
-// POST /api/tournament — Vote on a match or generate brackets
+// POST /api/tournament — Vote on a match, generate brackets, or assign winner
 // Body: { action: "vote", matchId, postId }
 //    or { action: "generate", seasonId } (admin only)
+//    or { action: "assign-winner", seasonId, postId } (admin only)
 // ---------------------------------------------------------------------------
 export async function POST(request: NextRequest) {
   try {
@@ -116,7 +131,22 @@ export async function POST(request: NextRequest) {
       if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {
         return NextResponse.json({ error: "Admin only" }, { status: 403 });
       }
-      return generateBracket(body.seasonId);
+      const result = await generateEmptyBracket(body.seasonId);
+      if (!result.success) {
+        return NextResponse.json({ error: result.error }, { status: 400 });
+      }
+      return NextResponse.json({ success: true });
+    }
+
+    if (body.action === "assign-winner") {
+      if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {
+        return NextResponse.json({ error: "Admin only" }, { status: 403 });
+      }
+      const result = await assignWinnerToSlot(body.seasonId, body.postId);
+      if (!result.success) {
+        return NextResponse.json({ error: result.error }, { status: 400 });
+      }
+      return NextResponse.json(result);
     }
 
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });
@@ -189,86 +219,4 @@ async function handleVote(userId: string, matchId: string, postId: string) {
   }
 
   return NextResponse.json({ success: true });
-}
-
-// ---------------------------------------------------------------------------
-// Generate tournament bracket from monthly winners
-// Schedule: 12/29 QF, 12/30 SF, 12/31 Final
-// ---------------------------------------------------------------------------
-async function generateBracket(seasonId: string) {
-  if (!seasonId) {
-    return NextResponse.json({ error: "seasonId required" }, { status: 400 });
-  }
-
-  // Check no existing tournament
-  const existing = await prisma.tournamentMatch.findFirst({ where: { seasonId } });
-  if (existing) {
-    return NextResponse.json({ error: "Tournament already generated" }, { status: 409 });
-  }
-
-  // Get monthly winners sorted by likeCount (monthly 🔥)
-  const winners = await prisma.monthlyWinner.findMany({
-    where: { seasonId },
-    orderBy: { likeCount: "desc" },
-    select: { postId: true, month: true, likeCount: true },
-  });
-
-  if (winners.length < 4) {
-    return NextResponse.json({ error: "Need at least 4 monthly winners" }, { status: 400 });
-  }
-
-  // Take top 8 (or all if fewer than 8)
-  const top8 = winners.slice(0, 8);
-
-  // Shuffle for random matchups
-  for (let i = top8.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [top8[i], top8[j]] = [top8[j], top8[i]];
-  }
-
-  // If fewer than 8, pad with byes (duplicate entries won't happen since we need pairs)
-  // For now, require even number. If odd, last one gets a bye to next round.
-  const year = new Date().getFullYear();
-
-  // Quarterfinals: Dec 29, 00:00 - 23:59
-  const qfStart = new Date(year, 11, 29, 0, 0, 0);
-  const qfEnd = new Date(year, 11, 29, 23, 59, 59);
-
-  // Semifinals: Dec 30
-  const sfStart = new Date(year, 11, 30, 0, 0, 0);
-  const sfEnd = new Date(year, 11, 30, 23, 59, 59);
-
-  // Final: Dec 31
-  const fStart = new Date(year, 11, 31, 0, 0, 0);
-  const fEnd = new Date(year, 11, 31, 23, 59, 59);
-
-  // Create quarterfinal matches
-  const numQFMatches = Math.floor(top8.length / 2);
-  const qfMatches = [];
-  for (let i = 0; i < numQFMatches; i++) {
-    qfMatches.push({
-      seasonId,
-      round: 1,
-      matchIndex: i,
-      post1Id: top8[i * 2].postId,
-      post2Id: top8[i * 2 + 1].postId,
-      startAt: qfStart,
-      endAt: qfEnd,
-    });
-  }
-
-  // Create placeholder semifinal and final matches
-  // These will be filled in by the cron job when QF results come in
-  // For now, just create QF matches
-  await prisma.tournamentMatch.createMany({ data: qfMatches });
-
-  return NextResponse.json({
-    success: true,
-    quarterFinals: numQFMatches,
-    schedule: {
-      quarterFinals: { start: qfStart, end: qfEnd },
-      semiFinals: { start: sfStart, end: sfEnd },
-      final: { start: fStart, end: fEnd },
-    },
-  });
 }
