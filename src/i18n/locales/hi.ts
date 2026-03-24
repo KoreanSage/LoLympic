@@ -451,6 +451,7 @@ const hi: Record<TranslationKeys, string> = {
   "search.suggestionTags": "Tags से खोजें (जैसे funny, anime)",
   "search.suggestionUsername": "Username या country से खोजें",
 
+    "tournament.roundOf16": "16 का दौर",
   "tournament.roundOf8": "क्वार्टर फ़ाइनल",
   "tournament.semiFinals": "सेमी-फ़ाइनल",
   "tournament.grandFinal": "ग्रैंड फ़ाइनल",

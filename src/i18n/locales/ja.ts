@@ -447,6 +447,7 @@ const ja: Record<TranslationKeys, string> = {
   "search.suggestionTags": "タグで検索（例：funny、anime）",
   "search.suggestionUsername": "ユーザー名または国で検索",
 
+    "tournament.roundOf16": "16強",
   "tournament.roundOf8": "準々決勝",
   "tournament.semiFinals": "準決勝",
   "tournament.grandFinal": "決勝",

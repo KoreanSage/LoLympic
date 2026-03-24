@@ -447,6 +447,7 @@ const es: Record<TranslationKeys, string> = {
   "search.suggestionTags": "Busca por etiquetas (ej. funny, anime)",
   "search.suggestionUsername": "Busca por nombre de usuario o pais",
 
+    "tournament.roundOf16": "Octavos de final",
   "tournament.roundOf8": "Octavos de Final",
   "tournament.semiFinals": "Semifinales",
   "tournament.grandFinal": "Gran Final",

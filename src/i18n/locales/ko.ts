@@ -450,6 +450,7 @@ const ko: Record<TranslationKeys, string> = {
   "search.suggestionUsername": "사용자 이름이나 국가로 검색",
 
   // ── Tournament (extra) ───────────────────────────────────────────────────
+    "tournament.roundOf16": "16강",
   "tournament.roundOf8": "8강",
   "tournament.semiFinals": "4강",
   "tournament.grandFinal": "결승",

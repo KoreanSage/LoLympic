@@ -451,6 +451,7 @@ const ar: Record<TranslationKeys, string> = {
   "search.suggestionTags": "ابحث بالوسوم (مثل funny، anime)",
   "search.suggestionUsername": "ابحث باسم المستخدم أو البلد",
 
+    "tournament.roundOf16": "دور الـ16",
   "tournament.roundOf8": "دور الثمانية",
   "tournament.semiFinals": "نصف النهائي",
   "tournament.grandFinal": "النهائي الكبير",

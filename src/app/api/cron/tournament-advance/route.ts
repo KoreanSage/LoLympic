@@ -114,9 +114,9 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Check if final is decided (round 3 has a winner)
+    // Check if final is decided (round 4 has a winner)
     const finalMatch = await prisma.tournamentMatch.findFirst({
-      where: { seasonId: season.id, round: 3, winnerId: { not: null } },
+      where: { seasonId: season.id, round: 4, winnerId: { not: null } },
     });
 
     if (finalMatch?.winnerId) {

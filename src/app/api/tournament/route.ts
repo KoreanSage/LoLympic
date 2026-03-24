@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth";
-import { generateEmptyBracket, assignWinnerToSlot } from "@/lib/tournament";
+import { generateEmptyBracket, assignWinnerToSlot, fillWildcardSlots } from "@/lib/tournament";
 
 // ---------------------------------------------------------------------------
 // GET /api/tournament?seasonId=xxx
@@ -146,6 +146,14 @@ export async function POST(request: NextRequest) {
       if (!result.success) {
         return NextResponse.json({ error: result.error }, { status: 400 });
       }
+      return NextResponse.json(result);
+    }
+
+    if (body.action === "fill-wildcards") {
+      if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {
+        return NextResponse.json({ error: "Admin only" }, { status: 403 });
+      }
+      const result = await fillWildcardSlots(body.seasonId);
       return NextResponse.json(result);
     }
 
