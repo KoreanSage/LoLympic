@@ -167,8 +167,8 @@ export default function FeedList({
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
   const [battleDismissed, setBattleDismissed] = useState(false);
-  const BATTLE_FIRST = 3; // Show first battle after 3 posts
-  const BATTLE_INTERVAL = 7; // Then every 7 posts after that
+  const BATTLE_FIRST = 7; // Show first battle after 7 posts (below country competition)
+  const BATTLE_INTERVAL = 10; // Then every 10 posts after that
   const sentinelRef = useRef<HTMLDivElement>(null);
   const pageRef = useRef(1);
   const fetchingRef = useRef(false);

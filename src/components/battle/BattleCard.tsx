@@ -390,7 +390,7 @@ const BattleSide = React.memo(function BattleSide({
         }`}
     >
       {/* Image */}
-      <div className="relative aspect-square">
+      <div className="relative aspect-[4/5]">
         <Image
           src={post.imageUrl}
           alt={post.title}
