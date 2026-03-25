@@ -218,43 +218,6 @@ export default function LeaderboardPage() {
           </div>
         ) : (
           <>
-          {battleMemes.length > 0 && (
-            <div className="mb-6">
-              <h2 className="text-sm font-bold text-[#c9a84c] mb-3 flex items-center gap-2">
-                <span>⚔️</span> {t("battle.hotBattle")}
-              </h2>
-              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-                {battleMemes.map((meme: any, i: number) => (
-                  <Link
-                    key={meme.id}
-                    href={`/post/${meme.id}`}
-                    className="flex-shrink-0 w-32 rounded-xl overflow-hidden border border-border bg-background-surface hover:border-[#c9a84c] transition-colors"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={meme.imageUrl}
-                      alt={meme.title}
-                      className="w-full aspect-square object-cover"
-                    />
-                    <div className="p-2">
-                      <div className="flex items-center gap-1 mb-0.5">
-                        {meme.country && (
-                          <span className="text-xs">{meme.country.flagEmoji}</span>
-                        )}
-                        <span className="text-[10px] text-foreground-muted truncate">
-                          {meme.author?.displayName || meme.author?.username}
-                        </span>
-                      </div>
-                      <div className="text-[10px] text-[#c9a84c] font-medium">
-                        ⚔️ {meme.battleWins}W / {meme.battleLosses}L
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Country Competition Dashboard */}
           {countries.length >= 3 && (
             <div className="space-y-6">
@@ -344,6 +307,44 @@ export default function LeaderboardPage() {
             creators={creators}
             memes={memes}
           />
+
+          {/* Hot Battle Memes — at bottom */}
+          {battleMemes.length > 0 && (
+            <div className="mt-6">
+              <h2 className="text-sm font-bold text-[#c9a84c] mb-3 flex items-center gap-2">
+                <span>⚔️</span> {t("battle.hotBattle")}
+              </h2>
+              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                {battleMemes.map((meme: any, i: number) => (
+                  <Link
+                    key={meme.id}
+                    href={`/post/${meme.id}`}
+                    className="flex-shrink-0 w-32 rounded-xl overflow-hidden border border-border bg-background-surface hover:border-[#c9a84c] transition-colors"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={meme.imageUrl}
+                      alt={meme.title}
+                      className="w-full aspect-square object-cover"
+                    />
+                    <div className="p-2">
+                      <div className="flex items-center gap-1 mb-0.5">
+                        {meme.country && (
+                          <span className="text-xs">{meme.country.flagEmoji}</span>
+                        )}
+                        <span className="text-[10px] text-foreground-muted truncate">
+                          {meme.author?.displayName || meme.author?.username}
+                        </span>
+                      </div>
+                      <div className="text-[10px] text-[#c9a84c] font-medium">
+                        ⚔️ {meme.battleWins}W / {meme.battleLosses}L
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
           </>
         )}
       </div>
