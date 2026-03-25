@@ -260,9 +260,9 @@ export default function PostDetail({
   const preferredLang = preferredLangProp || (session?.user as any)?.preferredLanguage || "en";
 
   const tabs = [
+    { id: "comments", label: t("post.comments"), count: commentCount },
     { id: "culture", label: t("post.cultureNote"), count: cultureNotes.length },
     { id: "suggestions", label: t("post.discussion"), count: suggestions.length },
-    { id: "comments", label: t("post.comments"), count: commentCount },
   ];
 
   return (
