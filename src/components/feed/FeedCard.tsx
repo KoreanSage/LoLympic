@@ -126,7 +126,8 @@ function FeedCardInner({
     [segments]
   );
   const isGif = mimeType === "image/gif";
-  const hasTranslation = !isGif && (hasOverlaySegments || !!translatedImageUrl);
+  const hasImageTranslation = !isGif && (hasOverlaySegments || !!translatedImageUrl);
+  const hasTranslation = hasImageTranslation || !!translatedTitle || !!translatedBody;
   const isTextOnly = !imageUrl && (!images || images.length === 0);
 
   // Detect Type B (screenshot/forum posts)
@@ -412,6 +413,23 @@ function FeedCardInner({
             </Link>
           )}
         </>
+      )}
+
+      {/* Title-only translation toggle for image posts with translated title but no image translation */}
+      {!isTextOnly && (translatedTitle || translatedBody) && !(segments.length > 0 || translatedImageUrl) && (
+        <div className="flex items-center gap-2 px-4 pb-2">
+          <TranslationToggle
+            showTranslation={showTranslation}
+            onChange={setShowTranslation}
+          />
+          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium ${
+            showTranslation
+              ? "bg-green-500/15 text-green-400"
+              : "bg-background-elevated text-foreground-subtle"
+          }`}>
+            {showTranslation ? t("feed.translated") : t("feed.original")}
+          </span>
+        </div>
       )}
 
       {/* Translation bar above image (meme posts only) */}

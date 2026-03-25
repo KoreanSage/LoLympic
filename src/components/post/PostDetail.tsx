@@ -148,7 +148,7 @@ export default function PostDetail({
     (s) => ["DIALOGUE", "CAPTION", "OTHER", "HEADLINE", "LABEL"].includes(s.semanticRole)
   ) && !segments.some((s) => s.semanticRole === "OVERLAY"));
   const [showTranslation, setShowTranslation] = useState(hasTranslation);
-  const [activeTab, setActiveTab] = useState("culture");
+  const [activeTab, setActiveTab] = useState("comments");
   const [showCompare, setShowCompare] = useState(false);
   const [saved, setSaved] = useState(false);
   const [voteScore, setVoteScore] = useState(0);
@@ -266,27 +266,26 @@ export default function PostDetail({
   ];
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-3">
       {/* Author header */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         <Avatar
           src={author.avatarUrl}
           alt={author.displayName || author.username}
-          size="lg"
+          size="md"
           countryFlag={country?.flagEmoji}
           isChampion={author.isChampion}
         />
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-foreground">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5">
+            <span className="text-sm font-medium text-foreground truncate">
               {author.displayName || author.username}
             </span>
             {country && (
               <span className="text-xs text-foreground-subtle">{country.nameEn}</span>
             )}
-          </div>
-          <div className="flex items-center gap-2 text-xs text-foreground-subtle">
-            <span suppressHydrationWarning>{new Date(createdAt).toLocaleDateString()}</span>
+            <span className="text-xs text-foreground-subtle">·</span>
+            <span className="text-xs text-foreground-subtle" suppressHydrationWarning>{new Date(createdAt).toLocaleDateString()}</span>
           </div>
         </div>
 
@@ -423,7 +422,7 @@ export default function PostDetail({
       )}
 
       {/* Title — shows translated or original based on toggle */}
-      <h1 className="text-xl font-bold text-foreground">
+      <h1 className="text-lg font-bold text-foreground leading-snug">
         {showTranslation ? title : (originalTitle || title)}
       </h1>
 
@@ -472,7 +471,7 @@ export default function PostDetail({
       )}
 
       {/* Meme viewer — only for posts with images */}
-      {!isTextOnly && <div className="space-y-0">
+      {!isTextOnly && <div className="space-y-0 -mt-1">
         {/* Translation bar above image */}
         {(segments.length > 0 || translatedImageUrl) && (
           <div className="flex items-center justify-between px-4 py-2.5 bg-background-surface border border-border rounded-t-xl">
@@ -514,9 +513,9 @@ export default function PostDetail({
         {isTypeB && segments.length > 0 ? (
           /* Type B: Screenshot/forum posts
              Priority: translatedImageUrl (pre-rendered) > ScreenshotRenderer (HTML fallback) > original */
-          <div className={`overflow-hidden border border-border ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-xl border-t-0" : "rounded-xl"}`}>
+          <div className={`overflow-hidden border border-border max-h-[400px] flex items-center justify-center bg-black/5 ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-xl border-t-0" : "rounded-xl"}`}>
             {showTranslation && translatedImageUrl ? (
-              <Image src={translatedImageUrl} alt={title} width={800} height={800} className="w-full h-auto" unoptimized />
+              <Image src={translatedImageUrl} alt={title} width={800} height={800} className="w-full h-full object-contain" unoptimized />
             ) : showTranslation ? (
               // HTML fallback while translated image is being generated
               <ScreenshotRenderer
@@ -525,17 +524,17 @@ export default function PostDetail({
                 originalImageUrl={imageUrl}
               />
             ) : (
-              <Image src={imageUrl} alt={title} width={800} height={800} className="w-full h-auto" unoptimized />
+              <Image src={imageUrl} alt={title} width={800} height={800} className="w-full h-full object-contain" unoptimized />
             )}
           </div>
         ) : images && images.length > 1 ? (
-          <div className={`overflow-hidden border border-border ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-xl border-t-0" : "rounded-xl"}`}>
+          <div className={`overflow-hidden border border-border max-h-[400px] ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-xl border-t-0" : "rounded-xl"}`}>
             <ImageCarousel>
               {images.map((img, i) => {
                 const imgIsGif = img.mimeType === "image/gif";
                 const imgSegments = segments.filter((s: any) => (s.imageIndex ?? 0) === i);
                 return imgIsGif ? (
-                  <Image key={i} src={img.originalUrl} alt={title} width={800} height={800} className="w-full h-auto" unoptimized />
+                  <Image key={i} src={img.originalUrl} alt={title} width={800} height={800} className="w-full h-full object-contain" unoptimized />
                 ) : (
                   <MemeRenderer
                     key={i}
@@ -550,13 +549,13 @@ export default function PostDetail({
             </ImageCarousel>
           </div>
         ) : isGif ? (
-          <div className={`overflow-hidden border border-border ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-xl border-t-0" : "rounded-xl"}`}>
-            <Image src={imageUrl} alt={title} width={800} height={800} className="w-full h-auto" unoptimized />
+          <div className={`overflow-hidden border border-border max-h-[400px] flex items-center justify-center bg-black/5 ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-xl border-t-0" : "rounded-xl"}`}>
+            <Image src={imageUrl} alt={title} width={800} height={800} className="w-full h-full object-contain" unoptimized />
           </div>
         ) : showCompare ? (
           <CompareMode imageUrl={imageUrl} segments={segments} />
         ) : (
-          <div className={`overflow-hidden border border-border ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-xl border-t-0" : "rounded-xl"}`}>
+          <div className={`overflow-hidden border border-border max-h-[400px] flex items-center justify-center ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-xl border-t-0" : "rounded-xl"}`}>
             <MemeRenderer
               imageUrl={imageUrl}
               cleanImageUrl={cleanImageUrl}
@@ -579,14 +578,14 @@ export default function PostDetail({
       )}
 
       {/* Stats */}
-      <div className="flex items-center gap-6 text-xs text-foreground-subtle">
+      <div className="flex items-center gap-4 text-xs text-foreground-subtle -mb-1">
         <span>{viewCount.toLocaleString()} {t("post.views")}</span>
         <span>{commentCount.toLocaleString()} {t("post.comments")}</span>
         <span>{shareCount.toLocaleString()} {t("post.shares")}</span>
       </div>
 
       {/* Action bar */}
-      <div className="flex items-center gap-2 py-2 border-y border-border">
+      <div className="flex items-center gap-2 py-1.5 border-y border-border">
         {/* Upvote / Score / Downvote */}
         <div className="flex items-center gap-1">
           <button
@@ -697,7 +696,7 @@ export default function PostDetail({
       {/* Tabs: Culture Note | Suggestions | Comments */}
       <Tabs
         tabs={tabs}
-        defaultTab="culture"
+        defaultTab="comments"
         onChange={setActiveTab}
       />
 

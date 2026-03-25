@@ -128,7 +128,7 @@ export async function GET(request: NextRequest) {
           },
           translationPayloads: translateTo
             ? {
-                where: { targetLanguage: translateTo, status: "COMPLETED" },
+                where: { targetLanguage: translateTo, status: { in: ["COMPLETED", "APPROVED"] } },
                 orderBy: { version: "desc" as const },
                 take: 1,
                 select: {
