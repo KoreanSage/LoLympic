@@ -21,8 +21,8 @@ const createPostSchema = z.object({
   images: z
     .array(
       z.object({
-        url: z.string().url("Image url must be a valid URL"),
-        cleanUrl: z.string().url().optional(),
+        url: z.string().min(1, "Image url is required"),
+        cleanUrl: z.string().url().nullable().optional(),
         width: z.number().int().positive().optional(),
         height: z.number().int().positive().optional(),
         mimeType: z.string().max(100).optional(),
