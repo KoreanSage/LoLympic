@@ -66,7 +66,9 @@ export default function I18nProvider({ children }: { children: React.ReactNode }
 
   const t = useCallback(
     (key: TranslationKeys, params?: Record<string, string | number>): string => {
-      let text = dict[key] || (en as any)[key] || key;
+      const raw = dict[key] || (en as any)[key] || key;
+      // Defensive: ensure we always return a string, never an object/Date/etc.
+      let text = typeof raw === "string" ? raw : String(raw);
       if (params) {
         for (const [k, v] of Object.entries(params)) {
           text = text.replace(new RegExp(`\\{${k}\\}`, "g"), String(v));

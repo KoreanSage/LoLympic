@@ -134,7 +134,7 @@ function mapApiPost(post: any): FeedPost {
     reactionCount: post.reactionCount ?? post._count?.reactions ?? 0,
     commentCount: post.commentCount ?? post._count?.comments ?? 0,
     shareCount: post.shareCount ?? 0,
-    createdAt: post.createdAt,
+    createdAt: String(post.createdAt || ""),
     tags: post.tags || [],
     images: (post.images || []).map((img: any) => ({
       originalUrl: img.originalUrl,
