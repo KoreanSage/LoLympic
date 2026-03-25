@@ -21,7 +21,7 @@ export interface I18nContextType {
 
 export const I18nContext = createContext<I18nContextType>({
   locale: "en",
-  t: (key) => key,
+  t: (key) => String(key),
   setLocale: () => {},
 });
 
