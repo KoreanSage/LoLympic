@@ -390,13 +390,13 @@ const BattleSide = React.memo(function BattleSide({
         }`}
     >
       {/* Image */}
-      <div className="relative aspect-[4/5]">
+      <div className="relative aspect-[4/5] bg-black/20">
         <Image
           src={post.imageUrl}
           alt={post.title}
           fill
           sizes="(max-width: 768px) 40vw, 200px"
-          className="object-cover"
+          className="object-contain"
           unoptimized
         />
         {/* Multi-image badge */}
