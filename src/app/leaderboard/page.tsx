@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import Link from "next/link";
 import { useTranslation } from "@/i18n";
 import MainLayout from "@/components/layout/MainLayout";
 import LeaderboardTable from "@/components/competition/LeaderboardTable";
@@ -224,9 +225,10 @@ export default function LeaderboardPage() {
               </h2>
               <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
                 {battleMemes.map((meme: any, i: number) => (
-                  <div
+                  <Link
                     key={meme.id}
-                    className="flex-shrink-0 w-32 rounded-xl overflow-hidden border border-border bg-background-surface"
+                    href={`/post/${meme.id}`}
+                    className="flex-shrink-0 w-32 rounded-xl overflow-hidden border border-border bg-background-surface hover:border-[#c9a84c] transition-colors"
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
@@ -247,7 +249,7 @@ export default function LeaderboardPage() {
                         ⚔️ {meme.battleWins}W / {meme.battleLosses}L
                       </div>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import Tabs from "@/components/ui/Tabs";
 import Avatar from "@/components/ui/Avatar";
 import MedalBadge from "./MedalBadge";
@@ -100,13 +101,14 @@ const CountryTable = React.memo(function CountryTable({ entries }: { entries: Co
   return (
     <div className="space-y-1">
       {entries.map((entry) => (
-        <div
+        <Link
           key={entry.countryId}
+          href={`/search?q=${encodeURIComponent(entry.name)}`}
           className={`
-            flex items-center gap-3 px-4 py-3 rounded-lg transition-colors
+            flex items-center gap-3 px-4 py-3 rounded-lg transition-colors cursor-pointer
             ${
               entry.medal
-                ? "bg-background-surface border border-border"
+                ? "bg-background-surface border border-border hover:border-[#c9a84c]"
                 : "hover:bg-background-surface"
             }
           `}
@@ -128,7 +130,7 @@ const CountryTable = React.memo(function CountryTable({ entries }: { entries: Co
           <span className="text-sm font-mono text-[#c9a84c]">
             {entry.totalScore.toLocaleString()}
           </span>
-        </div>
+        </Link>
       ))}
     </div>
   );
@@ -141,13 +143,14 @@ const CreatorTable = React.memo(function CreatorTable({ entries }: { entries: Cr
   return (
     <div className="space-y-1">
       {entries.map((entry) => (
-        <div
+        <Link
           key={entry.username}
+          href={`/user/${entry.username}`}
           className={`
-            flex items-center gap-3 px-4 py-3 rounded-lg transition-colors
+            flex items-center gap-3 px-4 py-3 rounded-lg transition-colors cursor-pointer
             ${
               entry.medal
-                ? "bg-background-surface border border-border"
+                ? "bg-background-surface border border-border hover:border-[#c9a84c]"
                 : "hover:bg-background-surface"
             }
           `}
@@ -174,7 +177,7 @@ const CreatorTable = React.memo(function CreatorTable({ entries }: { entries: Cr
           <span className="text-sm font-mono text-[#c9a84c]">
             {entry.totalScore.toLocaleString()}
           </span>
-        </div>
+        </Link>
       ))}
     </div>
   );
@@ -187,13 +190,14 @@ const MemeTable = React.memo(function MemeTable({ entries }: { entries: MemeEntr
   return (
     <div className="space-y-1">
       {entries.map((entry) => (
-        <div
+        <Link
           key={entry.postId}
+          href={`/post/${entry.postId}`}
           className={`
-            flex items-center gap-3 px-4 py-3 rounded-lg transition-colors
+            flex items-center gap-3 px-4 py-3 rounded-lg transition-colors cursor-pointer
             ${
               entry.medal
-                ? "bg-background-surface border border-border"
+                ? "bg-background-surface border border-border hover:border-[#c9a84c]"
                 : "hover:bg-background-surface"
             }
           `}
@@ -223,7 +227,7 @@ const MemeTable = React.memo(function MemeTable({ entries }: { entries: MemeEntr
           <span className="text-sm font-mono text-[#c9a84c]">
             {entry.totalScore.toLocaleString()}
           </span>
-        </div>
+        </Link>
       ))}
     </div>
   );
