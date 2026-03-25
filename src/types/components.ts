@@ -36,6 +36,7 @@ export interface MemeRendererProps {
   segments: TranslationSegmentData[];
   width?: number;
   height?: number;
+  maxHeight?: number;
   showTranslation?: boolean;
 }
 

@@ -498,6 +498,7 @@ function FeedCardInner({
                         translatedImageUrl={i === 0 ? translatedImageUrl : undefined}
                         segments={imgSegments}
                         showTranslation={showTranslation}
+                        maxHeight={500}
                       />
                     );
                   })}
@@ -511,6 +512,7 @@ function FeedCardInner({
                   translatedImageUrl={translatedImageUrl}
                   segments={segments}
                   showTranslation={showTranslation}
+                  maxHeight={500}
                 />
               )}
             </div>

@@ -589,6 +589,7 @@ export default function PostDetail({
         {/* Upvote / Score / Downvote */}
         <div className="flex items-center gap-1">
           <button
+            aria-label="Upvote"
             onClick={async () => {
               if (votePending) return;
               const newVal = userVote === 1 ? 0 : 1;
@@ -616,6 +617,7 @@ export default function PostDetail({
             {voteScore}
           </span>
           <button
+            aria-label="Downvote"
             onClick={async () => {
               if (votePending) return;
               const newVal = userVote === -1 ? 0 : -1;

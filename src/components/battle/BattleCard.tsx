@@ -232,11 +232,11 @@ function BattleCardInner({ onDismiss }: BattleCardProps) {
             </span>
           </div>
           <div className="flex gap-3">
-            <div className="flex-1 aspect-square bg-background-elevated rounded-xl animate-pulse" />
+            <div className="flex-1 aspect-[4/5] bg-background-elevated rounded-xl animate-pulse" />
             <div className="flex items-center">
               <span className="text-xs font-bold text-foreground-subtle">VS</span>
             </div>
-            <div className="flex-1 aspect-square bg-background-elevated rounded-xl animate-pulse" />
+            <div className="flex-1 aspect-[4/5] bg-background-elevated rounded-xl animate-pulse" />
           </div>
         </div>
       </Card>

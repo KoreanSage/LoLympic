@@ -138,6 +138,7 @@ export default function MemeRenderer({
   segments,
   width,
   height,
+  maxHeight,
   showTranslation = true,
 }: MemeRendererProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -193,8 +194,14 @@ export default function MemeRenderer({
       displayW = displayH * aspectRatio;
     }
 
+    // Constrain to maxHeight while preserving aspect ratio
+    if (maxHeight && displayH > maxHeight) {
+      displayH = maxHeight;
+      displayW = displayH * aspectRatio;
+    }
+
     setDisplaySize({ w: displayW, h: displayH });
-  }, [image, width, height]);
+  }, [image, width, height, maxHeight]);
 
   // Render canvas
   const render = useCallback(() => {
