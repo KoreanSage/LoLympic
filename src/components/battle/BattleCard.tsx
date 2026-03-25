@@ -178,6 +178,16 @@ function BattleCardInner({ onDismiss }: BattleCardProps) {
     [left, right, voted, animating, streakSide, winStreak]
   );
 
+  // IMPORTANT: useMemo must be called BEFORE any conditional returns
+  // to maintain consistent hook call order (React Rules of Hooks)
+  const streakMsg = getStreakMessage(winStreak, t);
+
+  const streakBadgeClass = useMemo(() => {
+    if (winStreak >= 5) return "bg-gradient-to-r from-[#c9a84c] to-[#FFD700] text-black animate-pulse";
+    if (winStreak >= 3) return "bg-[#c9a84c]/20 text-[#c9a84c]";
+    return "bg-background-elevated text-foreground-muted";
+  }, [winStreak]);
+
   if (noBattle) return null;
 
   // Minimized state — small "Resume Battle" bar
@@ -232,14 +242,6 @@ function BattleCardInner({ onDismiss }: BattleCardProps) {
       </Card>
     );
   }
-
-  const streakMsg = getStreakMessage(winStreak, t);
-
-  const streakBadgeClass = useMemo(() => {
-    if (winStreak >= 5) return "bg-gradient-to-r from-[#c9a84c] to-[#FFD700] text-black animate-pulse";
-    if (winStreak >= 3) return "bg-[#c9a84c]/20 text-[#c9a84c]";
-    return "bg-background-elevated text-foreground-muted";
-  }, [winStreak]);
 
   return (
     <Card noPadding>
