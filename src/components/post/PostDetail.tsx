@@ -526,7 +526,7 @@ export default function PostDetail({
         {isTypeB && segments.length > 0 ? (
           /* Type B: Screenshot/forum posts
              Priority: translatedImageUrl (pre-rendered) > ScreenshotRenderer (HTML fallback) > original */
-          <div className={`overflow-hidden border border-border max-h-[70vh] flex items-center justify-center bg-black/5 ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-xl border-t-0" : "rounded-xl"}`}>
+          <div className={`overflow-hidden border border-border flex items-center justify-center bg-black/5 ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-xl border-t-0" : "rounded-xl"}`}>
             {showTranslation && translatedImageUrl ? (
               <Image src={translatedImageUrl} alt={title} width={800} height={800} className="w-full h-full object-contain" unoptimized />
             ) : showTranslation ? (
@@ -541,7 +541,7 @@ export default function PostDetail({
             )}
           </div>
         ) : images && images.length > 1 ? (
-          <div className={`overflow-hidden border border-border max-h-[70vh] ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-xl border-t-0" : "rounded-xl"}`}>
+          <div className={`overflow-hidden border border-border ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-xl border-t-0" : "rounded-xl"}`}>
             <ImageCarousel>
               {images.map((img, i) => {
                 const imgIsGif = img.mimeType === "image/gif";
@@ -562,13 +562,13 @@ export default function PostDetail({
             </ImageCarousel>
           </div>
         ) : isGif ? (
-          <div className={`overflow-hidden border border-border max-h-[70vh] flex items-center justify-center bg-black/5 ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-xl border-t-0" : "rounded-xl"}`}>
+          <div className={`overflow-hidden border border-border flex items-center justify-center bg-black/5 ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-xl border-t-0" : "rounded-xl"}`}>
             <Image src={imageUrl} alt={title} width={800} height={800} className="w-full h-full object-contain" unoptimized />
           </div>
         ) : showCompare ? (
           <CompareMode imageUrl={imageUrl} segments={segments} />
         ) : (
-          <div className={`overflow-hidden border border-border max-h-[70vh] flex items-center justify-center ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-xl border-t-0" : "rounded-xl"}`}>
+          <div className={`overflow-hidden border border-border flex items-center justify-center ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-xl border-t-0" : "rounded-xl"}`}>
             <MemeRenderer
               imageUrl={imageUrl}
               cleanImageUrl={cleanImageUrl}
