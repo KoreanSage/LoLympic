@@ -192,22 +192,22 @@ export default function LeaderboardPage() {
   return (
     <MainLayout showSidebar={false}>
       <div className="py-6 space-y-6">
-        <div className="text-center">
-          <div className="flex items-center justify-center gap-2">
-            <h1 className="text-2xl font-bold text-foreground mb-1">
-              {t("leaderboard.title")}
-            </h1>
-            <button
-              onClick={() => setShowScoring(true)}
-              className="w-6 h-6 rounded-full border border-border text-foreground-subtle hover:text-[#c9a84c] hover:border-[#c9a84c] transition-colors flex items-center justify-center text-xs font-bold mb-1"
-              aria-label="How scoring works"
-            >
-              ?
-            </button>
-          </div>
+        <div className="text-center space-y-3">
+          <h1 className="text-2xl font-bold text-foreground">
+            {t("leaderboard.title")}
+          </h1>
           <p className="text-sm text-foreground-subtle">
             {isRealtime ? t("leaderboard.allTimeRankings") : t("leaderboard.seasonRankings")}
           </p>
+          <button
+            onClick={() => setShowScoring(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-[#c9a84c]/30 bg-[#c9a84c]/10 text-[#c9a84c] hover:bg-[#c9a84c]/20 hover:border-[#c9a84c]/50 transition-all text-sm font-medium"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M12 18h.01" />
+            </svg>
+            {t("scoring.howItWorks")}
+          </button>
         </div>
 
         {isRealtime && !loading && !empty && (
