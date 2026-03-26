@@ -106,6 +106,8 @@ export default function UploadStudio() {
   };
 
   const handleRemoveImage = (index: number) => {
+    const removedPreview = imagePreviews[index];
+    if (removedPreview) URL.revokeObjectURL(removedPreview);
     const newFiles = imageFiles.filter((_, i) => i !== index);
     const newPreviews = imagePreviews.filter((_, i) => i !== index);
     setImageFiles(newFiles);
@@ -113,6 +115,7 @@ export default function UploadStudio() {
   };
 
   const handleClearAll = () => {
+    imagePreviews.forEach((url) => URL.revokeObjectURL(url));
     setImageFiles([]);
     setImagePreviews([]);
   };

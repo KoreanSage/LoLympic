@@ -5,11 +5,9 @@ import { useTranslation } from "@/i18n";
 
 interface RankCardProps {
   totalXp: number;
-  level: number;
-  tier: string;
 }
 
-export default function RankCard({ totalXp, level, tier }: RankCardProps) {
+export default function RankCard({ totalXp }: RankCardProps) {
   const { t } = useTranslation();
   const rank = calculateRank(totalXp);
 

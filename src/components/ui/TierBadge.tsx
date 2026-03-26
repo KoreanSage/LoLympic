@@ -1,6 +1,6 @@
 "use client";
 
-import { TIER_COLORS, TIER_ICONS, calculateRank, formatRank, type Tier } from "@/lib/levels";
+import { TIER_COLORS, TIER_ICONS, type Tier } from "@/lib/levels";
 
 interface TierBadgeProps {
   tier: string;
@@ -25,9 +25,6 @@ export default function TierBadge({ tier, level, size = "sm" }: TierBadgeProps) 
   } else {
     // md: Icon + tier name + division
     if (level !== undefined) {
-      const rank = calculateRank(0); // We need totalXp, but we can derive division from level
-      // Re-derive rank from the level to get division
-      // We'll use a helper approach: find the tier range and compute division
       const tierName = tier.charAt(0) + tier.slice(1).toLowerCase();
       const division = getDivisionFromLevel(tierKey, level);
       label = division ? `${tierName} ${division}` : tierName;

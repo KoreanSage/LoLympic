@@ -33,6 +33,8 @@ interface ApiCreatorEntry {
   medal: "GOLD" | "SILVER" | "BRONZE" | null;
   score: number;
   totalPosts: number;
+  tier: string | null;
+  level: number | null;
 }
 
 interface ApiMemeEntry {
@@ -82,6 +84,8 @@ function mapCreators(entries: ApiCreatorEntry[]) {
     totalScore: e.score,
     medal: e.medal ?? undefined,
     totalPosts: e.totalPosts,
+    tier: e.tier ?? undefined,
+    level: e.level ?? undefined,
   }));
 }
 

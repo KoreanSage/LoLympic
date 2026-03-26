@@ -26,7 +26,12 @@ export default function ScoringExplanationModal({
 
   if (!isOpen) return null;
 
-  const sections = [
+  const sections: Array<{
+    title: string;
+    desc: string;
+    formula: string | null;
+    extra?: string;
+  }> = [
     {
       title: t("scoring.countryTitle"),
       desc: t("scoring.countryDesc"),
@@ -60,6 +65,8 @@ export default function ScoringExplanationModal({
 
       {/* Modal Card */}
       <div
+        role="dialog"
+        aria-modal="true"
         className="relative w-full max-w-md bg-background-surface border border-border rounded-2xl p-6 space-y-5 animate-in zoom-in-95 fade-in duration-200 max-h-[85vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
@@ -81,9 +88,9 @@ export default function ScoringExplanationModal({
                   {section.formula}
                 </div>
               )}
-              {(section as any).extra && (
+              {section.extra && (
                 <p className="text-[10px] text-foreground-subtle italic">
-                  {(section as any).extra}
+                  {section.extra}
                 </p>
               )}
             </div>

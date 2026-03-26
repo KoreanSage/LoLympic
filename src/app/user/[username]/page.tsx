@@ -247,7 +247,7 @@ export default function UserProfilePage() {
         </Card>
 
         {/* Rank Card */}
-        <RankCard totalXp={profile.totalXp} level={profile.level} tier={profile.tier} />
+        <RankCard totalXp={profile.totalXp} />
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3">
