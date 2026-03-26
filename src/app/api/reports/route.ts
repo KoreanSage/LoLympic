@@ -24,7 +24,7 @@ type ReportReason = (typeof VALID_REASONS)[number];
 export async function POST(request: NextRequest) {
   try {
     const rlKey = getRateLimitKey(request.headers, "reports");
-    const rl = checkRateLimit(rlKey, RATE_LIMITS.write);
+    const rl = await checkRateLimit(rlKey, RATE_LIMITS.write);
     if (!rl.allowed) {
       return NextResponse.json(
         { error: "Too many requests" },

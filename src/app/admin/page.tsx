@@ -24,12 +24,30 @@ interface UserRow {
   _count: { posts: number };
 }
 
+interface ReportRow {
+  id: string;
+  reason: string;
+  detail: string | null;
+  status: string;
+  createdAt: string;
+  reporter: { id: string; username: string; displayName: string | null } | null;
+  post: { id: string; title: string } | null;
+  comment: { id: string; body: string } | null;
+  suggestionId: string | null;
+}
+
 export default function AdminDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { t } = useTranslation();
+  const [activeTab, setActiveTab] = useState<"overview" | "reports">("overview");
   const [stats, setStats] = useState<Stats | null>(null);
   const [users, setUsers] = useState<UserRow[]>([]);
+  const [reports, setReports] = useState<ReportRow[]>([]);
+  const [reportsTotal, setReportsTotal] = useState(0);
+  const [reportsPage, setReportsPage] = useState(1);
+  const [reportsLoading, setReportsLoading] = useState(false);
+  const [reportFilter, setReportFilter] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [actionMsg, setActionMsg] = useState("");
 
@@ -62,6 +80,45 @@ export default function AdminDashboard() {
       // ignore
     }
     setLoading(false);
+  };
+
+  const loadReports = async (page = 1, status = "") => {
+    setReportsLoading(true);
+    try {
+      const params = new URLSearchParams({ page: String(page), limit: "20" });
+      if (status) params.set("status", status);
+      const res = await fetch(`/api/admin/reports?${params}`);
+      if (res.ok) {
+        const data = await res.json();
+        setReports(data.reports || []);
+        setReportsTotal(data.pagination?.total ?? 0);
+      }
+    } catch {
+      // ignore
+    }
+    setReportsLoading(false);
+  };
+
+  const handleReportAction = async (
+    reportId: string,
+    action: "dismiss" | "delete"
+  ) => {
+    const res = await fetch("/api/admin/reports", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        reportId,
+        status: action === "dismiss" ? "DISMISSED" : "RESOLVED",
+        deleteContent: action === "delete",
+      }),
+    });
+    if (res.ok) {
+      setActionMsg(action === "dismiss" ? "Report dismissed" : "Content removed & report resolved");
+      loadReports(reportsPage, reportFilter);
+    } else {
+      const data = await res.json();
+      setActionMsg(`Error: ${data.error}`);
+    }
   };
 
   const handleCreateSeason = async (isBeta = false) => {
@@ -156,6 +213,204 @@ export default function AdminDashboard() {
           </div>
         )}
 
+        {/* Tab Navigation */}
+        <div className="flex gap-1 mb-8 border-b border-border">
+          <button
+            onClick={() => setActiveTab("overview")}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === "overview"
+                ? "border-[#c9a84c] text-[#c9a84c]"
+                : "border-transparent text-foreground-muted hover:text-foreground"
+            }`}
+          >
+            Overview
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab("reports");
+              if (reports.length === 0) loadReports(1, reportFilter);
+            }}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === "reports"
+                ? "border-[#c9a84c] text-[#c9a84c]"
+                : "border-transparent text-foreground-muted hover:text-foreground"
+            }`}
+          >
+            Reports
+          </button>
+        </div>
+
+        {activeTab === "reports" && (
+          <div className="bg-background-surface border border-border rounded-xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">
+                Reports ({reportsTotal})
+              </h2>
+              <select
+                value={reportFilter}
+                onChange={(e) => {
+                  setReportFilter(e.target.value);
+                  setReportsPage(1);
+                  loadReports(1, e.target.value);
+                }}
+                className="bg-background-elevated border border-border rounded-lg px-3 py-1.5 text-sm"
+              >
+                <option value="">All statuses</option>
+                <option value="PENDING">Pending</option>
+                <option value="REVIEWING">Reviewing</option>
+                <option value="RESOLVED">Resolved</option>
+                <option value="DISMISSED">Dismissed</option>
+              </select>
+            </div>
+
+            {reportsLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="w-6 h-6 border-2 border-[#c9a84c] border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : reports.length === 0 ? (
+              <p className="text-sm text-foreground-subtle text-center py-12">
+                No reports found.
+              </p>
+            ) : (
+              <>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border text-foreground-subtle text-left">
+                        <th className="pb-3 pr-4">Target</th>
+                        <th className="pb-3 pr-4">Reason</th>
+                        <th className="pb-3 pr-4">Reporter</th>
+                        <th className="pb-3 pr-4">Status</th>
+                        <th className="pb-3 pr-4">Date</th>
+                        <th className="pb-3">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {reports.map((r) => (
+                        <tr
+                          key={r.id}
+                          className="border-b border-border/50 hover:bg-background-elevated/50"
+                        >
+                          <td className="py-3 pr-4">
+                            {r.post ? (
+                              <div>
+                                <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-500/20 text-blue-400 mr-1">
+                                  POST
+                                </span>
+                                <span className="text-xs text-foreground truncate">
+                                  {r.post.title?.slice(0, 30) || r.post.id}
+                                </span>
+                              </div>
+                            ) : r.comment ? (
+                              <div>
+                                <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-medium bg-purple-500/20 text-purple-400 mr-1">
+                                  COMMENT
+                                </span>
+                                <span className="text-xs text-foreground truncate">
+                                  {r.comment.body?.slice(0, 30)}
+                                </span>
+                              </div>
+                            ) : r.suggestionId ? (
+                              <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-medium bg-orange-500/20 text-orange-400">
+                                SUGGESTION
+                              </span>
+                            ) : (
+                              <span className="text-xs text-foreground-subtle">Unknown</span>
+                            )}
+                          </td>
+                          <td className="py-3 pr-4 text-foreground-muted text-xs max-w-[200px]">
+                            <div className="font-medium">{r.reason}</div>
+                            {r.detail && (
+                              <div className="text-foreground-subtle truncate">{r.detail}</div>
+                            )}
+                          </td>
+                          <td className="py-3 pr-4 text-foreground-muted text-xs">
+                            {r.reporter
+                              ? `@${r.reporter.username}`
+                              : "Anonymous"}
+                          </td>
+                          <td className="py-3 pr-4">
+                            <span
+                              className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                                r.status === "PENDING"
+                                  ? "bg-yellow-500/20 text-yellow-400"
+                                  : r.status === "REVIEWING"
+                                  ? "bg-blue-500/20 text-blue-400"
+                                  : r.status === "RESOLVED"
+                                  ? "bg-green-500/20 text-green-400"
+                                  : "bg-foreground-subtle/20 text-foreground-subtle"
+                              }`}
+                            >
+                              {r.status}
+                            </span>
+                          </td>
+                          <td className="py-3 pr-4 text-foreground-subtle text-xs">
+                            {new Date(r.createdAt).toLocaleDateString()}
+                          </td>
+                          <td className="py-3">
+                            {r.status === "PENDING" || r.status === "REVIEWING" ? (
+                              <div className="flex gap-1">
+                                <button
+                                  onClick={() => handleReportAction(r.id, "dismiss")}
+                                  className="px-2 py-1 rounded text-xs bg-background-elevated border border-border hover:border-foreground-subtle transition-colors"
+                                >
+                                  Dismiss
+                                </button>
+                                {(r.post || r.comment) && (
+                                  <button
+                                    onClick={() => handleReportAction(r.id, "delete")}
+                                    className="px-2 py-1 rounded text-xs bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
+                                  >
+                                    Remove
+                                  </button>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-xs text-foreground-subtle">--</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Pagination */}
+                {reportsTotal > 20 && (
+                  <div className="flex items-center justify-center gap-2 mt-4 pt-4 border-t border-border">
+                    <button
+                      disabled={reportsPage <= 1}
+                      onClick={() => {
+                        const p = reportsPage - 1;
+                        setReportsPage(p);
+                        loadReports(p, reportFilter);
+                      }}
+                      className="px-3 py-1 rounded text-xs border border-border hover:bg-background-elevated disabled:opacity-40 transition-colors"
+                    >
+                      Previous
+                    </button>
+                    <span className="text-xs text-foreground-muted">
+                      Page {reportsPage} of {Math.ceil(reportsTotal / 20)}
+                    </span>
+                    <button
+                      disabled={reportsPage >= Math.ceil(reportsTotal / 20)}
+                      onClick={() => {
+                        const p = reportsPage + 1;
+                        setReportsPage(p);
+                        loadReports(p, reportFilter);
+                      }}
+                      className="px-3 py-1 rounded text-xs border border-border hover:bg-background-elevated disabled:opacity-40 transition-colors"
+                    >
+                      Next
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
+        {activeTab === "overview" && <>
         {/* Stats Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <StatCard label={t("admin.users")} value={stats?.users ?? 0} />
@@ -269,6 +524,7 @@ export default function AdminDashboard() {
             </table>
           </div>
         </div>
+        </>}
       </div>
     </div>
   );

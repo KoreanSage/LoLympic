@@ -78,7 +78,7 @@ export default function LeaderboardTable({
     <div className={className}>
       <Tabs tabs={tabs} defaultTab="countries" onChange={setActiveTab} />
 
-      <div className="mt-4">
+      <div className="mt-4 overflow-x-auto">
         {activeTab === "countries" && (
           <CountryTable entries={countries} />
         )}
@@ -108,7 +108,7 @@ const CountryTable = React.memo(function CountryTable({ entries }: { entries: Co
           key={entry.countryId}
           href={`/?country=${entry.countryId}`}
           className={`
-            flex items-center gap-3 px-4 py-3 rounded-lg transition-colors cursor-pointer
+            flex items-center gap-2 md:gap-3 px-2 md:px-4 py-2 md:py-3 rounded-lg transition-colors cursor-pointer
             ${
               entry.medal
                 ? "bg-background-surface border border-border hover:border-[#c9a84c]"
@@ -121,13 +121,13 @@ const CountryTable = React.memo(function CountryTable({ entries }: { entries: Co
           </span>
           {entry.medal && <MedalBadge type={entry.medal} size="sm" />}
           <span className="text-lg">{entry.flagEmoji}</span>
-          <span className="text-sm font-medium text-foreground flex-1">
+          <span className="text-sm font-medium text-foreground flex-1 min-w-0 truncate">
             {entry.name}
           </span>
-          <span className="text-xs text-foreground-subtle">
+          <span className="text-xs text-foreground-subtle hidden sm:inline">
             {entry.totalPosts} {t("leaderboard.posts")}
           </span>
-          <span className="text-xs text-foreground-subtle">
+          <span className="text-xs text-foreground-subtle hidden sm:inline">
             {entry.totalCreators} {t("leaderboard.creators")}
           </span>
           <span className="text-sm font-mono text-[#c9a84c]">
@@ -150,7 +150,7 @@ const CreatorTable = React.memo(function CreatorTable({ entries }: { entries: Cr
           key={entry.username}
           href={`/user/${entry.username}`}
           className={`
-            flex items-center gap-3 px-4 py-3 rounded-lg transition-colors cursor-pointer
+            flex items-center gap-2 md:gap-3 px-2 md:px-4 py-2 md:py-3 rounded-lg transition-colors cursor-pointer
             ${
               entry.medal
                 ? "bg-background-surface border border-border hover:border-[#c9a84c]"
@@ -177,7 +177,7 @@ const CreatorTable = React.memo(function CreatorTable({ entries }: { entries: Cr
             </div>
             <span className="text-xs text-foreground-subtle">@{entry.username}</span>
           </div>
-          <span className="text-xs text-foreground-subtle">
+          <span className="text-xs text-foreground-subtle hidden sm:inline">
             {entry.totalPosts} {t("leaderboard.posts")}
           </span>
           <span className="text-sm font-mono text-[#c9a84c]">
@@ -200,7 +200,7 @@ const MemeTable = React.memo(function MemeTable({ entries }: { entries: MemeEntr
           key={entry.postId}
           href={`/post/${entry.postId}`}
           className={`
-            flex items-center gap-3 px-4 py-3 rounded-lg transition-colors cursor-pointer
+            flex items-center gap-2 md:gap-3 px-2 md:px-4 py-2 md:py-3 rounded-lg transition-colors cursor-pointer
             ${
               entry.medal
                 ? "bg-background-surface border border-border hover:border-[#c9a84c]"
@@ -227,7 +227,7 @@ const MemeTable = React.memo(function MemeTable({ entries }: { entries: MemeEntr
               @{entry.authorUsername}
             </span>
           </div>
-          <span className="text-xs text-foreground-subtle">
+          <span className="text-xs text-foreground-subtle hidden sm:inline">
             {entry.reactionCount} ⬆️
           </span>
           <span className="text-sm font-mono text-[#c9a84c]">

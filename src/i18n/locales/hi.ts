@@ -57,6 +57,7 @@ const hi: Record<TranslationKeys, string> = {
   // ── Feed ───────────────────────────────────────────────────────────────────
   "feed.empty": "अभी तक कोई post नहीं है। पहला meme share करो!",
   "feed.endOfFeed": "बस, इतना ही",
+  "feed.fetchError": "Posts load नहीं हो पाए।",
   "feed.viewAllComments": "सभी {count} comments देखें",
   "feed.deletePost": "Post Delete करें",
   "feed.deleteConfirm": "क्या आप सच में ये post delete करना चाहते हैं? ये वापस नहीं होगा।",
@@ -303,6 +304,7 @@ const hi: Record<TranslationKeys, string> = {
   "common.delete": "Delete",
   "common.confirm": "Confirm",
   "common.close": "बंद करें",
+  "common.retry": "फिर से कोशिश करें",
   "common.back": "वापस",
   "common.next": "आगे",
   "common.submit": "Submit",
@@ -376,6 +378,7 @@ const hi: Record<TranslationKeys, string> = {
 
   // ── Post Detail Page ─────────────────────────────────────────────────────
   "postDetail.notFound": "Post नहीं मिली",
+  "postDetail.loadError": "Post load नहीं हो पाई।",
   "profile.notFound": "User नहीं मिला",
 
   // ── Battle ──────────────────────────────────────────────────────────────────

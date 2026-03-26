@@ -1,14 +1,12 @@
 /**
  * Rate limiter for API routes.
  *
- * SERVERLESS LIMITATION: This uses an in-memory Map which resets on every
- * cold start and is NOT shared across Vercel serverless function instances.
- * However, it still provides meaningful protection within a single warm
- * instance (which can handle many sequential requests). For production at
- * scale, set the RATE_LIMIT_KV_URL environment variable to use Vercel KV
- * (backed by Upstash Redis) for distributed rate limiting.
+ * Uses Upstash Redis when UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN
+ * are set (production). Falls back to in-memory Map for development.
  *
- * Acceptable for initial launch with low-to-moderate traffic.
+ * SERVERLESS LIMITATION (in-memory mode): The Map resets on every cold start
+ * and is NOT shared across Vercel serverless function instances. The Redis
+ * mode solves this by providing distributed rate limiting.
  */
 
 interface RateLimitEntry {
@@ -53,11 +51,88 @@ export const RATE_LIMITS = {
   read: { max: 120, windowSeconds: 60 } as RateLimitConfig,
 } as const;
 
+// ---------------------------------------------------------------------------
+// Upstash Redis rate limiting (fetch-based, no SDK needed)
+// ---------------------------------------------------------------------------
+
+async function checkRedisRateLimit(
+  key: string,
+  limit: number,
+  windowMs: number
+): Promise<{ allowed: true } | { allowed: false; retryAfter: number } | null> {
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!url || !token) return null; // fallback to in-memory
+
+  try {
+    const redisKey = `rl:${key}`;
+    const headers = { Authorization: `Bearer ${token}` };
+
+    // INCR the key
+    const incrRes = await fetch(
+      `${url}/incr/${encodeURIComponent(redisKey)}`,
+      { headers }
+    );
+    const incrData = await incrRes.json();
+    const count = incrData.result as number;
+
+    if (count === 1) {
+      // First request in this window — set expiry
+      await fetch(
+        `${url}/pexpire/${encodeURIComponent(redisKey)}/${windowMs}`,
+        { headers }
+      );
+    }
+
+    if (count <= limit) {
+      return { allowed: true };
+    }
+
+    // Over limit — estimate retry time from TTL
+    const ttlRes = await fetch(
+      `${url}/pttl/${encodeURIComponent(redisKey)}`,
+      { headers }
+    );
+    const ttlData = await ttlRes.json();
+    const ttlMs = (ttlData.result as number) || windowMs;
+
+    return {
+      allowed: false,
+      retryAfter: Math.ceil(ttlMs / 1000),
+    };
+  } catch (err) {
+    console.error("Redis rate limit error, falling back to in-memory:", err);
+    return null; // fallback to in-memory
+  }
+}
+
 /**
  * Check rate limit for a given key (usually IP or userId).
  * Returns { allowed: true } or { allowed: false, retryAfter: seconds }.
+ *
+ * Uses Upstash Redis in production, in-memory Map in development.
  */
-export function checkRateLimit(
+export async function checkRateLimit(
+  key: string,
+  config: RateLimitConfig
+): Promise<{ allowed: true } | { allowed: false; retryAfter: number }> {
+  const windowMs = config.windowSeconds * 1000;
+
+  // Try Redis first (production)
+  const redisResult = await checkRedisRateLimit(key, config.max, windowMs);
+  if (redisResult !== null) {
+    return redisResult;
+  }
+
+  // Fallback: in-memory rate limiting
+  return checkRateLimitInMemory(key, config);
+}
+
+/**
+ * Synchronous in-memory rate limit check.
+ * Kept as a named export for cases that need sync behavior.
+ */
+export function checkRateLimitInMemory(
   key: string,
   config: RateLimitConfig
 ): { allowed: true } | { allowed: false; retryAfter: number } {

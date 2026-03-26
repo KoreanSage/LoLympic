@@ -83,7 +83,7 @@ export async function POST(
 ) {
   try {
     const rlKey = getRateLimitKey(request.headers, "messages");
-    const rl = checkRateLimit(rlKey, RATE_LIMITS.write);
+    const rl = await checkRateLimit(rlKey, RATE_LIMITS.write);
     if (!rl.allowed) {
       return NextResponse.json(
         { error: "Too many requests" },

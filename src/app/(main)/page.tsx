@@ -9,10 +9,16 @@ import MonthlyWinnerBanner from "@/components/competition/MonthlyWinnerBanner";
 import WinnerPopup from "@/components/competition/WinnerPopup";
 import HeroBanner from "@/components/feed/HeroBanner";
 import RankChangeToast from "@/components/feed/RankChangeToast";
+import { trackEvent } from "@/lib/analytics";
 
 export default function HomePage() {
   const { data: session } = useSession();
   const [freshLang, setFreshLang] = useState<string | null>(null);
+
+  // Track page view
+  useEffect(() => {
+    trackEvent("page_view", { page: "home" });
+  }, []);
 
   // Get the user's ACTUAL preferredLanguage: localStorage (instant) > DB > session JWT
   useEffect(() => {

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import ImageUploader from "./ImageUploader";
 import ImageCarousel from "@/components/ui/ImageCarousel";
 import Button from "@/components/ui/Button";
+import { trackEvent } from "@/lib/analytics";
 
 const ALL_LANGUAGES = [
   { code: "ko", label: "\ud55c\uad6d\uc5b4", icon: "\ud55c" },
@@ -196,6 +197,7 @@ export default function UploadStudio() {
         }
 
         setProgress((p) => p && { ...p, phase: "done" });
+        trackEvent("meme_upload", { postType: "community" });
 
         setTimeout(() => {
           if (postId) router.push(`/post/${postId}`);
@@ -368,6 +370,7 @@ export default function UploadStudio() {
         }
 
         setProgress((p) => p && { ...p, phase: "done" });
+        trackEvent("meme_upload", { postType: "meme" });
 
         // Background image generation
         fetch("/api/translate/generate-image", {
@@ -775,7 +778,7 @@ export default function UploadStudio() {
             </div>
           ) : (
             /* Two-column layout when images are uploaded */
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Left: Large image preview */}
               <div>
                 {renderImagePreview()}

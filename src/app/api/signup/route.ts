@@ -19,7 +19,7 @@ const signupSchema = z.object({
 export async function POST(req: Request) {
   try {
     const rlKey = getRateLimitKey(req.headers as any, "signup");
-    const rl = checkRateLimit(rlKey, RATE_LIMITS.auth);
+    const rl = await checkRateLimit(rlKey, RATE_LIMITS.auth);
     if (!rl.allowed) {
       return NextResponse.json({ error: "Too many attempts. Try again later." }, { status: 429 });
     }

@@ -57,6 +57,7 @@ const es: Record<TranslationKeys, string> = {
   // ── Feed ───────────────────────────────────────────────────────────────────
   "feed.empty": "Aún no hay publicaciones. ¡Sé el primero en compartir un meme!",
   "feed.endOfFeed": "Llegaste al final",
+  "feed.fetchError": "No se pudieron cargar las publicaciones.",
   "feed.viewAllComments": "Ver los {count} comentarios",
   "feed.deletePost": "Eliminar publicación",
   "feed.deleteConfirm": "¿Estás seguro de que quieres eliminar esta publicación? Esta acción no se puede deshacer.",
@@ -303,6 +304,7 @@ const es: Record<TranslationKeys, string> = {
   "common.delete": "Eliminar",
   "common.confirm": "Confirmar",
   "common.close": "Cerrar",
+  "common.retry": "Intentar de nuevo",
   "common.back": "Atrás",
   "common.next": "Siguiente",
   "common.submit": "Enviar",
@@ -372,6 +374,7 @@ const es: Record<TranslationKeys, string> = {
   "hallOfFame.noChampions": "Aún no hay campeones.",
   "hallOfFame.firstChampion": "El primer campeón será coronado al final de la temporada actual.",
   "postDetail.notFound": "Publicación no encontrada",
+  "postDetail.loadError": "No se pudo cargar la publicación.",
   "profile.notFound": "Usuario no encontrado",
 
   // ── Battle ──────────────────────────────────────────────────────────────────

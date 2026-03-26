@@ -1,0 +1,123 @@
+import { NextRequest } from "next/server";
+import { getSessionUser } from "@/lib/auth";
+import prisma from "@/lib/prisma";
+
+/**
+ * SSE endpoint that streams notification updates to the client.
+ * Polls the DB every 5 seconds for new unread notifications.
+ * Auto-closes after 5 minutes (Vercel serverless limit).
+ */
+export async function GET(request: NextRequest) {
+  const user = await getSessionUser();
+  if (!user) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  const userId = user.id;
+  const MAX_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+  const POLL_INTERVAL_MS = 5000; // 5 seconds
+  const startTime = Date.now();
+
+  const stream = new ReadableStream({
+    async start(controller) {
+      const encoder = new TextEncoder();
+
+      function send(event: string, data: unknown) {
+        try {
+          controller.enqueue(
+            encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
+          );
+        } catch {
+          // Stream closed
+        }
+      }
+
+      let lastCheckedAt = new Date();
+
+      async function poll() {
+        try {
+          // Check if we've exceeded the max duration
+          if (Date.now() - startTime > MAX_DURATION_MS) {
+            send("close", { reason: "timeout" });
+            controller.close();
+            return;
+          }
+
+          // Check if the request was aborted
+          if (request.signal.aborted) {
+            controller.close();
+            return;
+          }
+
+          const [unreadCount, latestNotifications] = await Promise.all([
+            prisma.notification.count({
+              where: { recipientId: userId, isRead: false },
+            }),
+            prisma.notification.findMany({
+              where: {
+                recipientId: userId,
+                createdAt: { gt: lastCheckedAt },
+              },
+              orderBy: { createdAt: "desc" },
+              take: 5,
+              include: {
+                actor: {
+                  select: {
+                    id: true,
+                    username: true,
+                    displayName: true,
+                    avatarUrl: true,
+                  },
+                },
+                post: {
+                  select: {
+                    id: true,
+                    title: true,
+                  },
+                },
+              },
+            }),
+          ]);
+
+          lastCheckedAt = new Date();
+
+          send("notification", {
+            unreadCount,
+            latest: latestNotifications,
+          });
+        } catch (err) {
+          console.error("SSE poll error:", err);
+        }
+
+        // Schedule next poll
+        if (Date.now() - startTime < MAX_DURATION_MS && !request.signal.aborted) {
+          setTimeout(poll, POLL_INTERVAL_MS);
+        } else {
+          try {
+            controller.close();
+          } catch {
+            // Already closed
+          }
+        }
+      }
+
+      // Send initial heartbeat
+      send("connected", { userId });
+
+      // Start polling
+      poll();
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache, no-transform",
+      Connection: "keep-alive",
+      "X-Accel-Buffering": "no",
+    },
+  });
+}

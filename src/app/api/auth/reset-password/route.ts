@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
   try {
     // Rate limit to prevent brute-force token guessing
     const rlKey = getRateLimitKey(request.headers, "reset-password");
-    const rl = checkRateLimit(rlKey, RATE_LIMITS.auth);
+    const rl = await checkRateLimit(rlKey, RATE_LIMITS.auth);
     if (!rl.allowed) {
       return NextResponse.json(
         { error: "Too many attempts. Try again later." },

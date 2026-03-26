@@ -77,6 +77,18 @@ export default function RootLayout({
             `,
           }}
         />
+        {/* Register service worker for offline support */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js').catch(function() {});
+                });
+              }
+            `,
+          }}
+        />
       </head>
       <body className="min-h-screen bg-background font-sans text-foreground antialiased">
         <SessionProvider>

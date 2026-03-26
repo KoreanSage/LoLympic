@@ -157,13 +157,26 @@ export default function PostDetail({
 
   // Load user's existing reaction and bookmark state on mount
   useEffect(() => {
-    // Load bookmark from localStorage
+    // Load bookmark from localStorage first (instant)
     try {
       const raw = localStorage.getItem("lolympic_bookmarks");
       const bookmarks: string[] = raw ? JSON.parse(raw) : [];
       setSaved(bookmarks.includes(id));
     } catch (e) {
       console.error("Failed to read bookmarks from localStorage:", e);
+    }
+
+    // If logged in, verify bookmark from server
+    if (session?.user) {
+      fetch("/api/bookmarks?limit=100")
+        .then((r) => r.ok ? r.json() : null)
+        .then((data) => {
+          if (data?.postIds) {
+            const serverSaved = (data.postIds as string[]).includes(id);
+            setSaved(serverSaved);
+          }
+        })
+        .catch(() => { /* keep localStorage state */ });
     }
 
     // Load user's vote state from API
@@ -176,7 +189,7 @@ export default function PostDetail({
         }
       })
       .catch((e) => { console.error("Failed to fetch vote state:", e); });
-  }, [id]);
+  }, [id, session?.user]);
 
   // More options menu state
   const [showMoreMenu, setShowMoreMenu] = useState(false);

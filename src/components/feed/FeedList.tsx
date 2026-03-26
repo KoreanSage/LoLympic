@@ -166,6 +166,7 @@ export default function FeedList({
   const resolvedEmptyMessage = emptyMessage || t("feed.empty");
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [battleDismissed, setBattleDismissed] = useState(false);
   const BATTLE_FIRST = 7; // Show first battle after 7 posts (below country competition)
@@ -183,6 +184,8 @@ export default function FeedList({
     setLoading(true);
 
     const parsedFilters = filtersJson ? JSON.parse(filtersJson) : undefined;
+
+    setFetchError(false);
 
     try {
       const params = new URLSearchParams({
@@ -206,6 +209,7 @@ export default function FeedList({
     } catch (err: any) {
       if (err?.name === "AbortError") return;
       console.error("Feed fetch error:", err);
+      setFetchError(true);
       setHasMore(false);
     } finally {
       setLoading(false);
@@ -247,6 +251,32 @@ export default function FeedList({
     observer.observe(sentinelRef.current);
     return () => observer.disconnect();
   }, [loadMore]);
+
+  // Error state with retry
+  if (fetchError && posts.length === 0 && !loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center gap-3">
+        <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center mb-2">
+          <svg className="w-8 h-8 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+          </svg>
+        </div>
+        <p className="text-sm text-foreground-subtle">{t("feed.fetchError") || "Failed to load posts."}</p>
+        <button
+          onClick={() => {
+            pageRef.current = 1;
+            setPosts([]);
+            setHasMore(true);
+            setFetchError(false);
+            fetchPosts(1, translateTo);
+          }}
+          className="px-4 py-2 rounded-lg bg-[#c9a84c] text-black text-sm font-medium hover:bg-[#d4b85e] transition-colors"
+        >
+          {t("common.retry") || "Try again"}
+        </button>
+      </div>
+    );
+  }
 
   // Empty state
   if (posts.length === 0 && !loading) {

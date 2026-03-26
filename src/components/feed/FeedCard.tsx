@@ -192,10 +192,34 @@ function FeedCardInner({
     }
   }, [id, deletePending, toast, onDelete]);
 
-  // Load bookmark state from localStorage
+  // Load bookmark state: server (logged in) or localStorage (guest)
   useEffect(() => {
+    // Always check localStorage first for instant UI
     setBookmarked(getBookmarks().has(id));
-  }, [id]);
+    // If logged in, verify against server
+    if (session?.user) {
+      fetch("/api/bookmarks?limit=100")
+        .then((r) => r.ok ? r.json() : null)
+        .then((data) => {
+          if (data?.postIds) {
+            const serverBookmarked = (data.postIds as string[]).includes(id);
+            setBookmarked(serverBookmarked);
+            // Sync localStorage with server state
+            const local = getBookmarks();
+            if (serverBookmarked && !local.has(id)) {
+              local.add(id);
+              saveBookmarks(local);
+            } else if (!serverBookmarked && local.has(id)) {
+              local.delete(id);
+              saveBookmarks(local);
+            }
+          }
+        })
+        .catch(() => {
+          // Keep localStorage state on error
+        });
+    }
+  }, [id, session?.user]);
 
   const timeAgo = useMemo(() => formatTimeAgo(createdAt), [createdAt]);
 
@@ -474,7 +498,7 @@ function FeedCardInner({
               {isTypeB && segments.length > 0 ? (
                 /* Type B: translatedImageUrl (pre-rendered) > ScreenshotRenderer > original */
                 showTranslation && translatedImageUrl ? (
-                  <Image src={translatedImageUrl} alt={title} width={800} height={800} className="w-full h-auto max-h-[40vh] object-contain" unoptimized />
+                  <Image src={translatedImageUrl} alt={title} width={800} height={800} className="w-full h-auto max-h-[40vh] object-contain" sizes="(max-width: 768px) 100vw, 600px" unoptimized />
                 ) : showTranslation ? (
                   <ScreenshotRenderer
                     segments={segments}
@@ -482,7 +506,7 @@ function FeedCardInner({
                     originalImageUrl={imageUrl}
                   />
                 ) : (
-                  <Image src={imageUrl} alt={title} width={800} height={800} className="w-full h-auto max-h-[40vh] object-contain" unoptimized />
+                  <Image src={imageUrl} alt={title} width={800} height={800} className="w-full h-auto max-h-[40vh] object-contain" sizes="(max-width: 768px) 100vw, 600px" unoptimized />
                 )
               ) : images && images.length > 1 ? (
                 <ImageCarousel>
@@ -490,7 +514,7 @@ function FeedCardInner({
                     const imgIsGif = img.mimeType === "image/gif";
                     const imgSegments = segments.filter((s: any) => (s.imageIndex ?? 0) === i);
                     return imgIsGif ? (
-                      <Image key={i} src={img.originalUrl} alt={title} width={800} height={800} className="w-full h-auto max-h-[40vh] object-contain" unoptimized />
+                      <Image key={i} src={img.originalUrl} alt={title} width={800} height={800} className="w-full h-auto max-h-[40vh] object-contain" sizes="(max-width: 768px) 100vw, 600px" unoptimized />
                     ) : (
                       <MemeRenderer
                         key={i}
@@ -505,7 +529,7 @@ function FeedCardInner({
                   })}
                 </ImageCarousel>
               ) : isGif ? (
-                <Image src={imageUrl} alt={title} width={800} height={800} className="w-full h-auto max-h-[40vh] object-contain" unoptimized />
+                <Image src={imageUrl} alt={title} width={800} height={800} className="w-full h-auto max-h-[40vh] object-contain" sizes="(max-width: 768px) 100vw, 600px" unoptimized />
               ) : (
                 <MemeRenderer
                   imageUrl={imageUrl}

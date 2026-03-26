@@ -17,7 +17,7 @@ const USE_BLOB = !!process.env.BLOB_READ_WRITE_TOKEN;
 export async function POST(request: NextRequest) {
   try {
     const rlKey = getRateLimitKey(request.headers, "upload");
-    const rl = checkRateLimit(rlKey, RATE_LIMITS.upload);
+    const rl = await checkRateLimit(rlKey, RATE_LIMITS.upload);
     if (!rl.allowed) {
       return NextResponse.json({ error: "Too many uploads. Try again later." }, { status: 429 });
     }

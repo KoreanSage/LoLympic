@@ -57,6 +57,7 @@ const ar: Record<TranslationKeys, string> = {
   // ── Feed ───────────────────────────────────────────────────────────────────
   "feed.empty": "مفيش بوستات لسه. كن أول واحد يشارك ميم!",
   "feed.endOfFeed": "وصلت للآخر",
+  "feed.fetchError": "فشل تحميل البوستات.",
   "feed.viewAllComments": "شوف كل الـ {count} تعليقات",
   "feed.deletePost": "امسح البوست",
   "feed.deleteConfirm": "متأكد إنك عايز تمسح البوست ده؟ مفيش رجعة.",
@@ -303,6 +304,7 @@ const ar: Record<TranslationKeys, string> = {
   "common.delete": "مسح",
   "common.confirm": "تأكيد",
   "common.close": "قفل",
+  "common.retry": "حاول تاني",
   "common.back": "رجوع",
   "common.next": "التالي",
   "common.submit": "ابعت",
@@ -376,6 +378,7 @@ const ar: Record<TranslationKeys, string> = {
 
   // ── Post Detail Page ─────────────────────────────────────────────────────
   "postDetail.notFound": "البوست مش موجود",
+  "postDetail.loadError": "فشل تحميل البوست.",
   "profile.notFound": "المستخدم مش موجود",
 
   // ── Battle ──────────────────────────────────────────────────────────────────

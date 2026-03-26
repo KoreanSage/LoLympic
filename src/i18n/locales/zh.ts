@@ -57,6 +57,7 @@ const zh: Record<TranslationKeys, string> = {
   // ── Feed ───────────────────────────────────────────────────────────────────
   "feed.empty": "还没有帖子。快来分享第一个表情包吧！",
   "feed.endOfFeed": "已经到底了",
+  "feed.fetchError": "加载帖子失败。",
   "feed.viewAllComments": "查看全部 {count} 条评论",
   "feed.deletePost": "删除帖子",
   "feed.deleteConfirm": "确定要删除这篇帖子吗？此操作无法撤销。",
@@ -303,6 +304,7 @@ const zh: Record<TranslationKeys, string> = {
   "common.delete": "删除",
   "common.confirm": "确认",
   "common.close": "关闭",
+  "common.retry": "重试",
   "common.back": "返回",
   "common.next": "下一步",
   "common.submit": "提交",
@@ -372,6 +374,7 @@ const zh: Record<TranslationKeys, string> = {
   "hallOfFame.noChampions": "暂无冠军。",
   "hallOfFame.firstChampion": "第一位冠军将在本赛季结束时加冕。",
   "postDetail.notFound": "帖子未找到",
+  "postDetail.loadError": "加载帖子失败。",
   "profile.notFound": "用户未找到",
 
   // ── Battle ──────────────────────────────────────────────────────────────────

@@ -148,15 +148,73 @@ export default function TopNav() {
     }
   }, [showNotifications]);
 
-  // Fetch unread count on mount
+  // Real-time notifications via SSE, with polling fallback
   useEffect(() => {
     if (status !== "authenticated") return;
-    fetch("/api/notifications?limit=1")
-      .then((r) => r.ok ? r.json() : null)
-      .then((data) => {
-        if (data) setUnreadCount(data.unreadCount ?? 0);
-      })
-      .catch((e) => { console.error("Failed to fetch notification count:", e); });
+
+    let eventSource: EventSource | null = null;
+    let pollTimer: ReturnType<typeof setInterval> | null = null;
+    let sseConnected = false;
+
+    // Try SSE first
+    try {
+      eventSource = new EventSource("/api/notifications/stream");
+
+      eventSource.addEventListener("notification", (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          setUnreadCount(data.unreadCount ?? 0);
+        } catch {
+          // Ignore parse errors
+        }
+      });
+
+      eventSource.addEventListener("connected", () => {
+        sseConnected = true;
+      });
+
+      eventSource.addEventListener("close", () => {
+        eventSource?.close();
+        // Reconnect after timeout
+        setTimeout(() => {
+          if (status === "authenticated") {
+            eventSource = new EventSource("/api/notifications/stream");
+          }
+        }, 2000);
+      });
+
+      eventSource.onerror = () => {
+        // SSE failed, fall back to polling
+        eventSource?.close();
+        eventSource = null;
+        if (!sseConnected && !pollTimer) {
+          startPolling();
+        }
+      };
+    } catch {
+      // EventSource not supported, fall back to polling
+      startPolling();
+    }
+
+    function startPolling() {
+      // Initial fetch
+      fetchNotifCount();
+      // Poll every 30 seconds
+      pollTimer = setInterval(fetchNotifCount, 30000);
+    }
+
+    function fetchNotifCount() {
+      fetch("/api/notifications?limit=1")
+        .then((r) => r.ok ? r.json() : null)
+        .then((data) => {
+          if (data) setUnreadCount(data.unreadCount ?? 0);
+        })
+        .catch((e) => { console.error("Failed to fetch notification count:", e); });
+    }
+
+    // Initial fetch for notification count (SSE first data may take up to 5s)
+    fetchNotifCount();
+
     // Fetch DM unread count
     fetch("/api/conversations/unread")
       .then((r) => r.ok ? r.json() : null)
@@ -164,6 +222,11 @@ export default function TopNav() {
         if (data) setDmUnreadCount(data.unreadCount ?? 0);
       })
       .catch((e) => { console.error("Failed to fetch DM unread count:", e); });
+
+    return () => {
+      eventSource?.close();
+      if (pollTimer) clearInterval(pollTimer);
+    };
   }, [status]);
 
   // Fetch notifications when dropdown opens & auto mark as read

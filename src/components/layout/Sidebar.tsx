@@ -132,6 +132,9 @@ export default function Sidebar() {
   const [loadingCreators, setLoadingCreators] = useState(true);
   const [loadingMemes, setLoadingMemes] = useState(true);
   const [loadingTags, setLoadingTags] = useState(true);
+  const [errorRankings, setErrorRankings] = useState(false);
+  const [errorCreators, setErrorCreators] = useState(false);
+  const [errorMemes, setErrorMemes] = useState(false);
 
   useEffect(() => {
     // Fetch country rankings with rank change detection
@@ -182,7 +185,10 @@ export default function Sidebar() {
           localStorage.setItem(SIDEBAR_RANK_CACHE_KEY, JSON.stringify(newRanks));
         } catch {}
       })
-      .catch((err) => console.error("Failed to fetch country rankings:", err))
+      .catch((err) => {
+        console.error("Failed to fetch country rankings:", err);
+        setErrorRankings(true);
+      })
       .finally(() => setLoadingRankings(false));
 
     // Fetch top creators
@@ -208,7 +214,10 @@ export default function Sidebar() {
           }))
         );
       })
-      .catch((err) => console.error("Failed to fetch top creators:", err))
+      .catch((err) => {
+        console.error("Failed to fetch top creators:", err);
+        setErrorCreators(true);
+      })
       .finally(() => setLoadingCreators(false));
 
     // Fetch hot memes
@@ -234,7 +243,10 @@ export default function Sidebar() {
           }))
         );
       })
-      .catch((err) => console.error("Failed to fetch hot memes:", err))
+      .catch((err) => {
+        console.error("Failed to fetch hot memes:", err);
+        setErrorMemes(true);
+      })
       .finally(() => setLoadingMemes(false));
 
     // Fetch trending posts and extract unique tags
@@ -278,6 +290,8 @@ export default function Sidebar() {
         </div>
         {loadingRankings ? (
           <RankingSkeleton rows={5} />
+        ) : errorRankings ? (
+          <p className="text-xs text-red-400/80 text-center py-4">Failed to load rankings</p>
         ) : rankings.length === 0 ? (
           <div className="text-center py-4">
             <p className="text-xs text-foreground-subtle">{t("sidebar.emptyCountry")}</p>
@@ -330,6 +344,8 @@ export default function Sidebar() {
         </h3>
         {loadingMemes ? (
           <MemesSkeleton />
+        ) : errorMemes ? (
+          <p className="text-xs text-red-400/80 text-center py-4">Failed to load memes</p>
         ) : hotMemes.length === 0 ? (
           <div className="text-center py-4">
             <p className="text-xs text-foreground-subtle">{t("sidebar.emptyMemes")}</p>
@@ -374,6 +390,8 @@ export default function Sidebar() {
         </h3>
         {loadingCreators ? (
           <RankingSkeleton rows={5} />
+        ) : errorCreators ? (
+          <p className="text-xs text-red-400/80 text-center py-4">Failed to load creators</p>
         ) : creators.length === 0 ? (
           <div className="text-center py-4">
             <p className="text-xs text-foreground-subtle">{t("sidebar.emptyCreators")}</p>

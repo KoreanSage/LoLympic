@@ -10,7 +10,7 @@ import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 export async function POST(request: NextRequest) {
   try {
     const rlKey = getRateLimitKey(request.headers, "forgot-password");
-    const rl = checkRateLimit(rlKey, RATE_LIMITS.auth);
+    const rl = await checkRateLimit(rlKey, RATE_LIMITS.auth);
     if (!rl.allowed) {
       return NextResponse.json(
         { error: "Too many attempts. Try again later." },

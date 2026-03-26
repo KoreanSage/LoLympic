@@ -57,6 +57,7 @@ const ko: Record<TranslationKeys, string> = {
   // ── Feed ───────────────────────────────────────────────────────────────────
   "feed.empty": "아직 게시물이 없습니다. 첫 번째 밈을 공유해보세요!",
   "feed.endOfFeed": "마지막 게시물입니다",
+  "feed.fetchError": "게시물을 불러오지 못했습니다.",
   "feed.viewAllComments": "댓글 {count}개 모두 보기",
   "feed.deletePost": "게시물 삭제",
   "feed.deleteConfirm": "이 게시물을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.",
@@ -303,6 +304,7 @@ const ko: Record<TranslationKeys, string> = {
   "common.delete": "삭제",
   "common.confirm": "확인",
   "common.close": "닫기",
+  "common.retry": "다시 시도",
   "common.back": "뒤로",
   "common.next": "다음",
   "common.submit": "제출",
@@ -372,6 +374,7 @@ const ko: Record<TranslationKeys, string> = {
   "hallOfFame.noChampions": "아직 챔피언이 없습니다.",
   "hallOfFame.firstChampion": "첫 번째 챔피언은 현재 시즌이 끝날 때 선정됩니다.",
   "postDetail.notFound": "게시물을 찾을 수 없습니다",
+  "postDetail.loadError": "게시물을 불러오지 못했습니다.",
   "profile.notFound": "사용자를 찾을 수 없습니다",
 
   // ── Battle ──────────────────────────────────────────────────────────────────

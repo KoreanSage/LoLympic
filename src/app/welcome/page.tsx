@@ -1,18 +1,37 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Button from "@/components/ui/Button";
 import { useTranslation } from "@/i18n";
 
-const COUNTRIES = [
-  { id: "KR", name: "South Korea", flag: "\u{1F1F0}\u{1F1F7}", local: "\uB300\uD55C\uBBFC\uAD6D" },
+// Popular countries shown first, then remaining sorted alphabetically
+const POPULAR_COUNTRIES = [
   { id: "US", name: "United States", flag: "\u{1F1FA}\u{1F1F8}", local: "United States" },
+  { id: "KR", name: "South Korea", flag: "\u{1F1F0}\u{1F1F7}", local: "\uB300\uD55C\uBBFC\uAD6D" },
   { id: "JP", name: "Japan", flag: "\u{1F1EF}\u{1F1F5}", local: "\u65E5\u672C" },
   { id: "CN", name: "China", flag: "\u{1F1E8}\u{1F1F3}", local: "\u4E2D\u56FD" },
-  { id: "MX", name: "Mexico", flag: "\u{1F1F2}\u{1F1FD}", local: "M\u00E9xico" },
 ];
+
+const OTHER_COUNTRIES = [
+  { id: "AE", name: "United Arab Emirates", flag: "\u{1F1E6}\u{1F1EA}", local: "\u0627\u0644\u0625\u0645\u0627\u0631\u0627\u062A" },
+  { id: "AR", name: "Argentina", flag: "\u{1F1E6}\u{1F1F7}", local: "Argentina" },
+  { id: "AU", name: "Australia", flag: "\u{1F1E6}\u{1F1FA}", local: "Australia" },
+  { id: "CA", name: "Canada", flag: "\u{1F1E8}\u{1F1E6}", local: "Canada" },
+  { id: "CL", name: "Chile", flag: "\u{1F1E8}\u{1F1F1}", local: "Chile" },
+  { id: "CO", name: "Colombia", flag: "\u{1F1E8}\u{1F1F4}", local: "Colombia" },
+  { id: "EG", name: "Egypt", flag: "\u{1F1EA}\u{1F1EC}", local: "\u0645\u0635\u0631" },
+  { id: "ES", name: "Spain", flag: "\u{1F1EA}\u{1F1F8}", local: "Espa\u00F1a" },
+  { id: "GB", name: "United Kingdom", flag: "\u{1F1EC}\u{1F1E7}", local: "United Kingdom" },
+  { id: "HK", name: "Hong Kong", flag: "\u{1F1ED}\u{1F1F0}", local: "\u9999\u6E2F" },
+  { id: "IN", name: "India", flag: "\u{1F1EE}\u{1F1F3}", local: "\u092D\u093E\u0930\u0924" },
+  { id: "MX", name: "Mexico", flag: "\u{1F1F2}\u{1F1FD}", local: "M\u00E9xico" },
+  { id: "SA", name: "Saudi Arabia", flag: "\u{1F1F8}\u{1F1E6}", local: "\u0627\u0644\u0633\u0639\u0648\u062F\u064A\u0629" },
+  { id: "TW", name: "Taiwan", flag: "\u{1F1F9}\u{1F1FC}", local: "\u53F0\u7063" },
+].sort((a, b) => a.name.localeCompare(b.name));
+
+const COUNTRIES = [...POPULAR_COUNTRIES, ...OTHER_COUNTRIES];
 
 export default function WelcomePage() {
   const { data: session, status, update: updateSession } = useSession();
@@ -153,10 +172,17 @@ export default function WelcomePage() {
             <label className="block text-sm font-medium text-foreground-muted mb-1.5">
               {t("settings.country")} <span className="text-red-400">*</span>
             </label>
-            <div className="grid grid-cols-1 gap-2">
-              {COUNTRIES.map((c) => (
+            <div className="grid grid-cols-1 gap-2 max-h-[400px] overflow-y-auto pr-1">
+              {COUNTRIES.map((c, idx) => (
+                <React.Fragment key={c.id}>
+                  {idx === POPULAR_COUNTRIES.length && (
+                    <div className="flex items-center gap-2 py-1">
+                      <div className="flex-1 h-px bg-border" />
+                      <span className="text-[10px] text-foreground-subtle">All countries</span>
+                      <div className="flex-1 h-px bg-border" />
+                    </div>
+                  )}
                 <button
-                  key={c.id}
                   type="button"
                   onClick={() => setCountryId(c.id)}
                   className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-left transition-all ${
@@ -176,6 +202,7 @@ export default function WelcomePage() {
                     </svg>
                   )}
                 </button>
+                </React.Fragment>
               ))}
             </div>
           </div>

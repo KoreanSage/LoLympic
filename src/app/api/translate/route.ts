@@ -597,7 +597,7 @@ export async function POST(request: NextRequest) {
   try {
     // Rate limit: expensive AI calls
     const rlKey = getRateLimitKey(request.headers, "translate");
-    const rl = checkRateLimit(rlKey, RATE_LIMITS.translate);
+    const rl = await checkRateLimit(rlKey, RATE_LIMITS.translate);
     if (!rl.allowed) {
       return NextResponse.json(
         { error: "Too many requests. Try again later." },

@@ -57,6 +57,7 @@ const ja: Record<TranslationKeys, string> = {
   // ── Feed ───────────────────────────────────────────────────────────────────
   "feed.empty": "まだ投稿がありません。最初のミームをシェアしよう！",
   "feed.endOfFeed": "すべて表示しました",
+  "feed.fetchError": "投稿の読み込みに失敗しました。",
   "feed.viewAllComments": "{count} 件のコメントをすべて見る",
   "feed.deletePost": "投稿を削除",
   "feed.deleteConfirm": "この投稿を削除しますか？この操作は取り消せません。",
@@ -303,6 +304,7 @@ const ja: Record<TranslationKeys, string> = {
   "common.delete": "削除",
   "common.confirm": "確認",
   "common.close": "閉じる",
+  "common.retry": "もう一度試す",
   "common.back": "戻る",
   "common.next": "次へ",
   "common.submit": "送信",
@@ -372,6 +374,7 @@ const ja: Record<TranslationKeys, string> = {
   "hallOfFame.noChampions": "まだチャンピオンがいません。",
   "hallOfFame.firstChampion": "最初のチャンピオンは現在のシーズン終了時に選出されます。",
   "postDetail.notFound": "投稿が見つかりません",
+  "postDetail.loadError": "投稿の読み込みに失敗しました。",
   "profile.notFound": "ユーザーが見つかりません",
 
   // ── Battle ──────────────────────────────────────────────────────────────────

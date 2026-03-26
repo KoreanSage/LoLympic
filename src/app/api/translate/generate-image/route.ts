@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
   try {
     // Rate limit - expensive AI image generation
     const rlKey = getRateLimitKey(request.headers, "generate-image");
-    const rl = checkRateLimit(rlKey, RATE_LIMITS.translate);
+    const rl = await checkRateLimit(rlKey, RATE_LIMITS.translate);
     if (!rl.allowed) {
       return NextResponse.json(
         { error: "Too many requests. Try again later." },

@@ -7,7 +7,7 @@ import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 export async function POST(request: NextRequest) {
   try {
     const rlKey = getRateLimitKey(request.headers, "follow");
-    const rl = checkRateLimit(rlKey, RATE_LIMITS.write);
+    const rl = await checkRateLimit(rlKey, RATE_LIMITS.write);
     if (!rl.allowed) {
       return NextResponse.json(
         { error: "Too many requests" },
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const rlKey = getRateLimitKey(request.headers, "follow");
-    const rl = checkRateLimit(rlKey, RATE_LIMITS.write);
+    const rl = await checkRateLimit(rlKey, RATE_LIMITS.write);
     if (!rl.allowed) {
       return NextResponse.json(
         { error: "Too many requests" },

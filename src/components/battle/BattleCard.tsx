@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import Image from "next/image";
 import Card from "@/components/ui/Card";
 import { useTranslation } from "@/i18n";
+import { trackEvent } from "@/lib/analytics";
 
 interface BattlePost {
   id: string;
@@ -115,6 +116,7 @@ function BattleCardInner({ onDismiss }: BattleCardProps) {
           }),
         });
         const data = await res.json();
+        trackEvent("battle_vote");
 
         // Update streak
         const newStreak = streakSide === side ? winStreak + 1 : 1;

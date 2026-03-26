@@ -55,6 +55,7 @@ const en = {
   // ── Feed ───────────────────────────────────────────────────────────────────
   "feed.empty": "No posts yet. Be the first to share a meme!",
   "feed.endOfFeed": "You've reached the end",
+  "feed.fetchError": "Failed to load posts.",
   "feed.viewAllComments": "View all {count} comments",
   "feed.deletePost": "Delete Post",
   "feed.deleteConfirm": "Are you sure you want to delete this post? This action cannot be undone.",
@@ -301,6 +302,7 @@ const en = {
   "common.delete": "Delete",
   "common.confirm": "Confirm",
   "common.close": "Close",
+  "common.retry": "Try again",
   "common.back": "Back",
   "common.next": "Next",
   "common.submit": "Submit",
@@ -374,6 +376,7 @@ const en = {
 
   // ── Post Detail Page ─────────────────────────────────────────────────────
   "postDetail.notFound": "Post not found",
+  "postDetail.loadError": "Failed to load post.",
   "profile.notFound": "User not found",
 
   // ── Battle ──────────────────────────────────────────────────────────────────
