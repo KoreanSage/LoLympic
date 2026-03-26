@@ -473,7 +473,7 @@ function FeedCardInner({
               {isTypeB && segments.length > 0 ? (
                 /* Type B: translatedImageUrl (pre-rendered) > ScreenshotRenderer > original */
                 showTranslation && translatedImageUrl ? (
-                  <Image src={translatedImageUrl} alt={title} width={800} height={800} className="w-full h-auto max-h-[50vh] object-contain" unoptimized />
+                  <Image src={translatedImageUrl} alt={title} width={800} height={800} className="w-full h-auto max-h-[40vh] object-contain" unoptimized />
                 ) : showTranslation ? (
                   <ScreenshotRenderer
                     segments={segments}
@@ -481,7 +481,7 @@ function FeedCardInner({
                     originalImageUrl={imageUrl}
                   />
                 ) : (
-                  <Image src={imageUrl} alt={title} width={800} height={800} className="w-full h-auto max-h-[50vh] object-contain" unoptimized />
+                  <Image src={imageUrl} alt={title} width={800} height={800} className="w-full h-auto max-h-[40vh] object-contain" unoptimized />
                 )
               ) : images && images.length > 1 ? (
                 <ImageCarousel>
@@ -489,7 +489,7 @@ function FeedCardInner({
                     const imgIsGif = img.mimeType === "image/gif";
                     const imgSegments = segments.filter((s: any) => (s.imageIndex ?? 0) === i);
                     return imgIsGif ? (
-                      <Image key={i} src={img.originalUrl} alt={title} width={800} height={800} className="w-full h-auto max-h-[50vh] object-contain" unoptimized />
+                      <Image key={i} src={img.originalUrl} alt={title} width={800} height={800} className="w-full h-auto max-h-[40vh] object-contain" unoptimized />
                     ) : (
                       <MemeRenderer
                         key={i}
@@ -498,13 +498,13 @@ function FeedCardInner({
                         translatedImageUrl={i === 0 ? translatedImageUrl : undefined}
                         segments={imgSegments}
                         showTranslation={showTranslation}
-                        maxHeight={400}
+                        maxHeight={350}
                       />
                     );
                   })}
                 </ImageCarousel>
               ) : isGif ? (
-                <Image src={imageUrl} alt={title} width={800} height={800} className="w-full h-auto max-h-[50vh] object-contain" unoptimized />
+                <Image src={imageUrl} alt={title} width={800} height={800} className="w-full h-auto max-h-[40vh] object-contain" unoptimized />
               ) : (
                 <MemeRenderer
                   imageUrl={imageUrl}
@@ -512,7 +512,7 @@ function FeedCardInner({
                   translatedImageUrl={translatedImageUrl}
                   segments={segments}
                   showTranslation={showTranslation}
-                  maxHeight={400}
+                  maxHeight={350}
                 />
               )}
             </div>
