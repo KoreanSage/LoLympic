@@ -515,6 +515,20 @@ const ar: Record<TranslationKeys, string> = {
   "onboarding.step4Title": "مستعد للتمثيل؟ \uD83D\uDE80",
   "onboarding.step4Cta": "ارفع أول ميم لك",
   "onboarding.step4Browse": "تصفح أولاً",
+
+  // ── Rank / Level System ─────────────────────────────────────────────────────
+  "rank.level": "المستوى",
+  "rank.tier": "الرتبة",
+  "rank.xpToNext": "{xp} XP للمستوى التالي",
+  "rank.totalXp": "إجمالي XP",
+  "rank.iron": "حديد",
+  "rank.bronze": "برونز",
+  "rank.silver": "فضة",
+  "rank.gold": "ذهب",
+  "rank.platinum": "بلاتين",
+  "rank.diamond": "ألماس",
+  "rank.master": "ماستر",
+  "rank.challenger": "تشالنجر",
 } as const;
 
 export default ar;

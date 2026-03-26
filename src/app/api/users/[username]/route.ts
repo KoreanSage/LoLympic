@@ -19,6 +19,9 @@ export async function GET(
         bio: true,
         countryId: true,
         isChampion: true,
+        totalXp: true,
+        level: true,
+        tier: true,
         createdAt: true,
         country: {
           select: {

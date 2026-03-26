@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import { ReactionType } from "@prisma/client";
 import { updateRankingScore } from "@/lib/ranking";
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
+import { awardXp, XP_AWARDS } from "@/lib/xp";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -118,7 +119,7 @@ export async function POST(
     // Verify post exists and is accessible
     const post = await prisma.post.findUnique({
       where: { id: postId },
-      select: { id: true, status: true },
+      select: { id: true, status: true, authorId: true },
     });
     if (!post || post.status === "REMOVED") {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
@@ -169,6 +170,11 @@ export async function POST(
 
     // Update ranking score (fire and forget)
     updateRankingScore(postId).catch((e) => { console.error("Failed to update ranking score:", e); });
+
+    // Award XP to post author when they receive a reaction (not self-reactions)
+    if (action === "added" && post.authorId !== user.id) {
+      awardXp(post.authorId, XP_AWARDS.REACTION_RECEIVED).catch(() => {});
+    }
 
     // Return updated counts
     const counts = await prisma.postReaction.groupBy({

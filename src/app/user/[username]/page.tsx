@@ -8,6 +8,8 @@ import MainLayout from "@/components/layout/MainLayout";
 import Avatar from "@/components/ui/Avatar";
 import Card from "@/components/ui/Card";
 import Tabs from "@/components/ui/Tabs";
+import TierBadge from "@/components/ui/TierBadge";
+import RankCard from "@/components/ui/RankCard";
 import { useToast } from "@/components/ui/Toast";
 import { useTranslation } from "@/i18n";
 
@@ -24,6 +26,9 @@ interface UserProfile {
     nameEn: string;
     flagEmoji: string;
   } | null;
+  totalXp: number;
+  level: number;
+  tier: string;
   followerCount: number;
   followingCount: number;
   postCount: number;
@@ -167,12 +172,14 @@ export default function UserProfilePage() {
               alt={profile.displayName || profile.username}
               size="xl"
               countryFlag={profile.country?.flagEmoji}
+              tier={profile.tier}
             />
             <div className="flex-1 text-center sm:text-left">
               <div className="flex items-center justify-center sm:justify-start gap-2 mb-1">
                 <h1 className="text-xl font-bold text-foreground">
                   {profile.displayName || profile.username}
                 </h1>
+                <TierBadge tier={profile.tier} level={profile.level} size="sm" />
                 {profile.country && (
                   <span className="text-sm text-foreground-subtle">
                     {profile.country.flagEmoji} {profile.country.nameEn}
@@ -238,6 +245,9 @@ export default function UserProfilePage() {
             </div>
           </div>
         </Card>
+
+        {/* Rank Card */}
+        <RankCard totalXp={profile.totalXp} level={profile.level} tier={profile.tier} />
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3">

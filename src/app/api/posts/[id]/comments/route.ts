@@ -3,6 +3,7 @@ import { getSessionUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { updateRankingScore } from "@/lib/ranking";
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
+import { awardXp, XP_AWARDS } from "@/lib/xp";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -232,6 +233,11 @@ export async function POST(
 
     // Update ranking score (fire and forget)
     updateRankingScore(postId).catch((e) => { console.error("Failed to update ranking score:", e); });
+
+    // Award XP to post author when they receive a comment (not self-comments)
+    if (post.authorId !== user.id) {
+      awardXp(post.authorId, XP_AWARDS.COMMENT_RECEIVED).catch(() => {});
+    }
 
     // Create notification (fire and forget)
     const notifiedUserIds = new Set<string>();

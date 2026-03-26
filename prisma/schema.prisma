@@ -228,6 +228,11 @@ model User {
   profileBorder     String?
   activeRewardCode  String?
 
+  // Level system
+  totalXp           Int          @default(0)
+  level             Int          @default(1)
+  tier              String       @default("IRON")
+
   // Champion status (permanent gold border)
   isChampion        Boolean      @default(false)
   championSeasonId  String?      // Which season they won

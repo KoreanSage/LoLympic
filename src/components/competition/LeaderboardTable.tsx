@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import Tabs from "@/components/ui/Tabs";
 import Avatar from "@/components/ui/Avatar";
+import TierBadge from "@/components/ui/TierBadge";
 import MedalBadge from "./MedalBadge";
 import { useTranslation } from "@/i18n";
 
@@ -28,6 +29,8 @@ interface CreatorEntry {
   displayName?: string | null;
   avatarUrl?: string | null;
   countryFlag?: string;
+  tier?: string;
+  level?: number;
   totalScore: number;
   medal?: "GOLD" | "SILVER" | "BRONZE";
   totalPosts: number;
@@ -166,9 +169,12 @@ const CreatorTable = React.memo(function CreatorTable({ entries }: { entries: Cr
             countryFlag={entry.countryFlag}
           />
           <div className="flex-1 min-w-0">
-            <span className="text-sm font-medium text-foreground truncate block">
-              {entry.displayName || entry.username}
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-sm font-medium text-foreground truncate">
+                {entry.displayName || entry.username}
+              </span>
+              {entry.tier && <TierBadge tier={entry.tier} size="xs" />}
+            </div>
             <span className="text-xs text-foreground-subtle">@{entry.username}</span>
           </div>
           <span className="text-xs text-foreground-subtle">

@@ -511,6 +511,20 @@ const zh: Record<TranslationKeys, string> = {
   "onboarding.step4Title": "准备好了吗？\uD83D\uDE80",
   "onboarding.step4Cta": "上传第一个梗图",
   "onboarding.step4Browse": "先看看",
+
+  // ── Rank / Level System ─────────────────────────────────────────────────────
+  "rank.level": "等级",
+  "rank.tier": "段位",
+  "rank.xpToNext": "距下一级还需 {xp} XP",
+  "rank.totalXp": "总XP",
+  "rank.iron": "黑铁",
+  "rank.bronze": "青铜",
+  "rank.silver": "白银",
+  "rank.gold": "黄金",
+  "rank.platinum": "铂金",
+  "rank.diamond": "钻石",
+  "rank.master": "大师",
+  "rank.challenger": "王者",
 };
 
 export default zh;

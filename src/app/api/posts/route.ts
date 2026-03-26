@@ -5,6 +5,7 @@ import prisma from "@/lib/prisma";
 import { LanguageCode, PostStatus, Prisma } from "@prisma/client";
 import { backfillMissingTitleTranslations } from "@/lib/translate-backfill";
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
+import { awardXp, XP_AWARDS } from "@/lib/xp";
 
 const VALID_LANGUAGES = ["ko", "en", "ja", "zh", "es", "hi", "ar"] as const;
 
@@ -291,6 +292,9 @@ export async function POST(request: NextRequest) {
 
     // If images are present and auto-translate is desired, the client should
     // call POST /api/translate separately after post creation.
+
+    // Award XP for creating a post (fire and forget)
+    awardXp(user.id, XP_AWARDS.POST_CREATED).catch(() => {});
 
     return NextResponse.json({ post }, { status: 201 });
   } catch (error) {

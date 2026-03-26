@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { TIER_COLORS, type Tier } from "@/lib/levels";
 
 interface AvatarProps {
   src?: string | null;
@@ -8,6 +9,7 @@ interface AvatarProps {
   size?: "xs" | "sm" | "md" | "lg" | "xl";
   countryFlag?: string;
   isChampion?: boolean;
+  tier?: string;
   className?: string;
 }
 
@@ -49,11 +51,29 @@ export default function Avatar({
   size = "md",
   countryFlag,
   isChampion = false,
+  tier,
   className = "",
 }: AvatarProps) {
+  // Champion ring takes priority over tier ring
+  const tierColor = tier && !isChampion ? TIER_COLORS[tier as Tier] : undefined;
+  const isHighTier = tier === "DIAMOND" || tier === "MASTER" || tier === "CHALLENGER";
+  const showTierGlow = !isChampion && isHighTier && tierColor;
+
   const championRing = isChampion
     ? `${ringSizeMap[size]} ring-[#c9a84c] ring-offset-1 ring-offset-background`
     : "";
+
+  const tierRing = tierColor && !isChampion
+    ? `${ringSizeMap[size]} ring-offset-1 ring-offset-background`
+    : "";
+
+  const ringClass = isChampion ? championRing : tierRing;
+  const ringStyle = tierColor && !isChampion
+    ? {
+        "--tw-ring-color": tierColor,
+        ...(showTierGlow ? { boxShadow: `0 0 8px 2px ${tierColor}40` } : {}),
+      } as React.CSSProperties
+    : undefined;
 
   return (
     <div className={`relative inline-flex shrink-0 ${className}`} role="img" aria-label={alt}>
@@ -63,12 +83,14 @@ export default function Avatar({
           alt={alt}
           width={pixelSizeMap[size]}
           height={pixelSizeMap[size]}
-          className={`${sizeMap[size]} rounded-full object-cover bg-background-overlay ${championRing}`}
+          className={`${sizeMap[size]} rounded-full object-cover bg-background-overlay ${ringClass}`}
+          style={ringStyle}
           unoptimized
         />
       ) : (
         <div
-          className={`${sizeMap[size]} rounded-full bg-background-overlay flex items-center justify-center text-foreground-subtle ${championRing}`}
+          className={`${sizeMap[size]} rounded-full bg-background-overlay flex items-center justify-center text-foreground-subtle ${ringClass}`}
+          style={ringStyle}
         >
           <span className="font-medium">
             {alt.charAt(0).toUpperCase()}

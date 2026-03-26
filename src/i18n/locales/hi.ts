@@ -515,6 +515,20 @@ const hi: Record<TranslationKeys, string> = {
   "onboarding.step4Title": "प्रतिनिधित्व के लिए तैयार? \uD83D\uDE80",
   "onboarding.step4Cta": "अपना पहला मीम अपलोड करें",
   "onboarding.step4Browse": "पहले देखें",
+
+  // ── Rank / Level System ─────────────────────────────────────────────────────
+  "rank.level": "स्तर",
+  "rank.tier": "श्रेणी",
+  "rank.xpToNext": "अगले स्तर तक {xp} XP",
+  "rank.totalXp": "कुल XP",
+  "rank.iron": "आयरन",
+  "rank.bronze": "ब्रॉन्ज़",
+  "rank.silver": "सिल्वर",
+  "rank.gold": "गोल्ड",
+  "rank.platinum": "प्लैटिनम",
+  "rank.diamond": "डायमंड",
+  "rank.master": "मास्टर",
+  "rank.challenger": "चैलेंजर",
 } as const;
 
 export default hi;

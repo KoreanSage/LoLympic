@@ -519,6 +519,20 @@ const en = {
   "onboarding.step4Title": "Ready to Represent? \uD83D\uDE80",
   "onboarding.step4Cta": "Upload Your First Meme",
   "onboarding.step4Browse": "Browse First",
+
+  // ── Rank / Level System ─────────────────────────────────────────────────────
+  "rank.level": "Level",
+  "rank.tier": "Tier",
+  "rank.xpToNext": "{xp} XP to next level",
+  "rank.totalXp": "Total XP",
+  "rank.iron": "Iron",
+  "rank.bronze": "Bronze",
+  "rank.silver": "Silver",
+  "rank.gold": "Gold",
+  "rank.platinum": "Platinum",
+  "rank.diamond": "Diamond",
+  "rank.master": "Master",
+  "rank.challenger": "Challenger",
 } as const;
 
 export type TranslationKeys = keyof typeof en;

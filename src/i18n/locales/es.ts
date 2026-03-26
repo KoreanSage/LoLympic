@@ -511,6 +511,20 @@ const es: Record<TranslationKeys, string> = {
   "onboarding.step4Title": "\u00BFListo para Representar? \uD83D\uDE80",
   "onboarding.step4Cta": "Sube tu Primer Meme",
   "onboarding.step4Browse": "Explorar Primero",
+
+  // ── Rank / Level System ─────────────────────────────────────────────────────
+  "rank.level": "Nivel",
+  "rank.tier": "Rango",
+  "rank.xpToNext": "{xp} XP para el siguiente nivel",
+  "rank.totalXp": "XP Total",
+  "rank.iron": "Hierro",
+  "rank.bronze": "Bronce",
+  "rank.silver": "Plata",
+  "rank.gold": "Oro",
+  "rank.platinum": "Platino",
+  "rank.diamond": "Diamante",
+  "rank.master": "Maestro",
+  "rank.challenger": "Retador",
 };
 
 export default es;

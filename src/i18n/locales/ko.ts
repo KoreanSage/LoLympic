@@ -517,6 +517,20 @@ const ko: Record<TranslationKeys, string> = {
   "onboarding.step4Title": "대표할 준비 됐나요? \uD83D\uDE80",
   "onboarding.step4Cta": "첫 밈 올리기",
   "onboarding.step4Browse": "둘러보기",
+
+  // ── Rank / Level System ─────────────────────────────────────────────────────
+  "rank.level": "레벨",
+  "rank.tier": "등급",
+  "rank.xpToNext": "다음 레벨까지 {xp} XP",
+  "rank.totalXp": "총 XP",
+  "rank.iron": "아이언",
+  "rank.bronze": "브론즈",
+  "rank.silver": "실버",
+  "rank.gold": "골드",
+  "rank.platinum": "플래티넘",
+  "rank.diamond": "다이아몬드",
+  "rank.master": "마스터",
+  "rank.challenger": "챌린저",
 };
 
 export default ko;

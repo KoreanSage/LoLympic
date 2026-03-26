@@ -181,6 +181,8 @@ async function handleSeasonLeaderboard(
               profileBorder: true,
               countryId: true,
               isChampion: true,
+              tier: true,
+              level: true,
             },
           },
           country: {
@@ -419,6 +421,8 @@ async function handleRealtimeLeaderboard(type: string, limit: number) {
           profileBorder: true,
           countryId: true,
           isChampion: true,
+          tier: true,
+          level: true,
           country: {
             select: { id: true, nameEn: true, flagEmoji: true },
           },
@@ -444,6 +448,8 @@ async function handleRealtimeLeaderboard(type: string, limit: number) {
               profileTitle: user.profileTitle,
               profileBorder: user.profileBorder,
               countryId: user.countryId,
+              tier: user.tier,
+              level: user.level,
             },
             country: user.country,
             medal: null as "GOLD" | "SILVER" | "BRONZE" | null,

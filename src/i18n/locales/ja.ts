@@ -511,6 +511,20 @@ const ja: Record<TranslationKeys, string> = {
   "onboarding.step4Title": "代表する準備はできた？\uD83D\uDE80",
   "onboarding.step4Cta": "最初のミームを投稿",
   "onboarding.step4Browse": "まず見てみる",
+
+  // ── Rank / Level System ─────────────────────────────────────────────────────
+  "rank.level": "レベル",
+  "rank.tier": "ティア",
+  "rank.xpToNext": "次のレベルまで {xp} XP",
+  "rank.totalXp": "合計XP",
+  "rank.iron": "アイアン",
+  "rank.bronze": "ブロンズ",
+  "rank.silver": "シルバー",
+  "rank.gold": "ゴールド",
+  "rank.platinum": "プラチナ",
+  "rank.diamond": "ダイヤモンド",
+  "rank.master": "マスター",
+  "rank.challenger": "チャレンジャー",
 };
 
 export default ja;
