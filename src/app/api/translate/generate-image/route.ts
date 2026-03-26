@@ -4,6 +4,9 @@ import { authOptions } from "@/lib/auth-options";
 import prisma from "@/lib/prisma";
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 import { GoogleGenAI } from "@google/genai";
+import { runLamaInpainting } from "@/lib/replicate";
+import { generateInpaintingMask } from "@/lib/mask-generator";
+import sharp from "sharp";
 import crypto from "crypto";
 
 // Allow longer timeout for image generation (multiple images)
@@ -24,14 +27,14 @@ function extractMimeType(filePathOrUrl: string): string {
   return map[ext] || "image/jpeg";
 }
 
-async function readImageAsBase64(imageUrl: string): Promise<{ base64: string; mimeType: string }> {
+async function readImageAsBuffer(imageUrl: string): Promise<{ buffer: Buffer; mimeType: string }> {
   if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
     const res = await fetch(imageUrl);
     if (!res.ok) throw new Error(`Failed to fetch image: ${res.status}`);
     const arrayBuffer = await res.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
     const mimeType = res.headers.get("content-type") || extractMimeType(imageUrl);
-    return { base64: buffer.toString("base64"), mimeType };
+    return { buffer, mimeType };
   }
   const path = await import("path");
   const fs = await import("fs/promises");
@@ -46,7 +49,7 @@ async function readImageAsBase64(imageUrl: string): Promise<{ base64: string; mi
     throw new Error("Invalid image path");
   }
   const imageBuffer = await fs.readFile(imagePath);
-  return { base64: imageBuffer.toString("base64"), mimeType: extractMimeType(imagePath) };
+  return { buffer: imageBuffer, mimeType: extractMimeType(imagePath) };
 }
 
 async function saveGeneratedImage(buffer: Buffer, prefix: string, ext: string): Promise<string> {
@@ -70,10 +73,132 @@ async function saveGeneratedImage(buffer: Buffer, prefix: string, ext: string): 
 }
 
 /**
+ * Generate a clean image using LaMa inpainting (primary) with Gemini fallback.
+ * Uses translation segments from DB to build the inpainting mask.
+ */
+async function generateCleanImageWithLama(
+  imageBuffer: Buffer,
+  mimeType: string,
+  postId: string,
+  imageIndex: number = 0
+): Promise<string | null> {
+  try {
+    // Get translation segments from DB for this post/image to build the mask
+    const segments = await prisma.translationSegment.findMany({
+      where: {
+        translationPayload: { postId },
+        imageIndex,
+      },
+      select: {
+        boxX: true,
+        boxY: true,
+        boxWidth: true,
+        boxHeight: true,
+        semanticRole: true,
+      },
+    });
+
+    if (segments.length === 0) {
+      console.log(`[LaMa] No segments found for post ${postId} image ${imageIndex}, skipping`);
+      return null;
+    }
+
+    // Get image dimensions
+    const metadata = await sharp(imageBuffer).metadata();
+    const imgWidth = metadata.width;
+    const imgHeight = metadata.height;
+    if (!imgWidth || !imgHeight) {
+      console.warn(`[LaMa] Could not determine image dimensions for post ${postId}`);
+      return null;
+    }
+
+    // Generate inpainting mask from segments
+    const maskBuffer = await generateInpaintingMask(segments, imgWidth, imgHeight);
+
+    // Run LaMa inpainting
+    const lamaOutputUrl = await runLamaInpainting(imageBuffer, maskBuffer, mimeType);
+
+    // Download the clean image from LaMa output URL
+    const cleanRes = await fetch(lamaOutputUrl);
+    if (!cleanRes.ok) {
+      throw new Error(`Failed to download LaMa output: ${cleanRes.status}`);
+    }
+    const cleanBuffer = Buffer.from(await cleanRes.arrayBuffer());
+
+    // Upload to storage (Vercel Blob or local)
+    const cleanUrl = await saveGeneratedImage(cleanBuffer, "clean_lama", ".png");
+    console.log(`[LaMa] Clean image generated for post ${postId} image ${imageIndex}: ${cleanUrl}`);
+    return cleanUrl;
+  } catch (error) {
+    console.error(`[LaMa] Inpainting failed for post ${postId} image ${imageIndex}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Fallback: Generate clean image using Gemini inpainting
+ */
+async function generateCleanImageWithGemini(
+  imageBase64: string,
+  mimeType: string
+): Promise<string | null> {
+  try {
+    const response = await genAI2.models.generateContent({
+      model: "gemini-2.5-flash-image",
+      contents: [{
+        role: "user",
+        parts: [
+          {
+            text: `Remove ALL readable text content from this image using context-aware inpainting.
+
+What to remove:
+- All text that conveys meaning (captions, post content, comments, dialogue, labels)
+- Both overlay text (bold meme captions) AND embedded text (forum posts, chat messages, tweets)
+- Any watermark text
+
+What to KEEP (do NOT remove):
+- Profile pictures, avatars, icons
+- UI chrome (buttons, borders, layout frames)
+- Timestamps, numerical stats
+- Usernames and handles
+- Background images and photos
+- Logos (like team logos, brand logos on clothing)
+
+Replace each removed text area with the background that would naturally be behind it.
+Keep the overall layout structure intact.
+Output only the modified image.`,
+          },
+          { inlineData: { mimeType, data: imageBase64 } },
+        ],
+      }],
+      config: { responseModalities: ["TEXT", "IMAGE"] },
+    });
+
+    const parts = response?.candidates?.[0]?.content?.parts;
+    if (!parts) return null;
+
+    for (const part of parts) {
+      if (part.inlineData?.data) {
+        const cleanBuffer = Buffer.from(part.inlineData.data, "base64");
+        const ext = part.inlineData.mimeType?.includes("png") ? ".png" : ".jpg";
+        return await saveGeneratedImage(cleanBuffer, "clean_gemini", ext);
+      }
+    }
+
+    return null;
+  } catch (err) {
+    console.error("[Gemini fallback] Clean image generation failed:", err);
+    return null;
+  }
+}
+
+/**
  * POST /api/translate/generate-image
  * Generates clean images (text removed via inpainting) for ALL post images.
+ * Primary: LaMa inpainting (mask-based, higher quality)
+ * Fallback: Gemini inpainting (prompt-based)
  * Called automatically after translation or from the frontend.
- * Requires authentication to prevent unauthorized Gemini API usage.
+ * Requires authentication to prevent unauthorized API usage.
  * Body: { postId }
  */
 export async function POST(request: NextRequest) {
@@ -120,55 +245,23 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const results: Array<{ imageId: string; cleanUrl: string | null }> = [];
+    const results: Array<{ imageId: string; cleanUrl: string | null; method?: string }> = [];
 
-    for (const img of needsClean) {
+    for (let i = 0; i < needsClean.length; i++) {
+      const img = needsClean[i];
       try {
-        const { base64, mimeType } = await readImageAsBase64(img.originalUrl);
+        const { buffer: imageBuffer, mimeType } = await readImageAsBuffer(img.originalUrl);
 
-        const response = await genAI2.models.generateContent({
-          model: "gemini-2.5-flash-image",
-          contents: [{
-            role: "user",
-            parts: [
-              {
-                text: `Remove ALL readable text content from this image using context-aware inpainting.
+        // Primary: Try LaMa inpainting (mask-based)
+        let cleanUrl = await generateCleanImageWithLama(imageBuffer, mimeType, postId, img.orderIndex);
+        let method = "lama";
 
-What to remove:
-- All text that conveys meaning (captions, post content, comments, dialogue, labels)
-- Both overlay text (bold meme captions) AND embedded text (forum posts, chat messages, tweets)
-- Any watermark text
-
-What to KEEP (do NOT remove):
-- Profile pictures, avatars, icons
-- UI chrome (buttons, borders, layout frames)
-- Timestamps, numerical stats
-- Usernames and handles
-- Background images and photos
-- Logos (like team logos, brand logos on clothing)
-
-Replace each removed text area with the background that would naturally be behind it.
-Keep the overall layout structure intact.
-Output only the modified image.`,
-              },
-              { inlineData: { mimeType, data: base64 } },
-            ],
-          }],
-          config: { responseModalities: ["TEXT", "IMAGE"] },
-        });
-
-        const parts = response?.candidates?.[0]?.content?.parts;
-        let cleanUrl: string | null = null;
-
-        if (parts) {
-          for (const part of parts) {
-            if (part.inlineData?.data) {
-              const cleanBuffer = Buffer.from(part.inlineData.data, "base64");
-              const ext = part.inlineData.mimeType?.includes("png") ? ".png" : ".jpg";
-              cleanUrl = await saveGeneratedImage(cleanBuffer, "clean", ext);
-              break;
-            }
-          }
+        // Fallback: Try Gemini inpainting if LaMa fails
+        if (!cleanUrl) {
+          console.log(`[Fallback] Trying Gemini inpainting for image ${img.id}...`);
+          const base64 = imageBuffer.toString("base64");
+          cleanUrl = await generateCleanImageWithGemini(base64, mimeType);
+          method = "gemini";
         }
 
         if (cleanUrl) {
@@ -178,8 +271,8 @@ Output only the modified image.`,
           });
         }
 
-        results.push({ imageId: img.id, cleanUrl });
-        console.log(`Clean image generated for ${img.id}: ${cleanUrl ? "SUCCESS" : "FAILED"}`);
+        results.push({ imageId: img.id, cleanUrl, method: cleanUrl ? method : undefined });
+        console.log(`Clean image generated for ${img.id}: ${cleanUrl ? `SUCCESS (${method})` : "FAILED"}`);
       } catch (err) {
         console.error(`Clean image failed for image ${img.id}:`, err);
         results.push({ imageId: img.id, cleanUrl: null });

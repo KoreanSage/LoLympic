@@ -8,6 +8,9 @@ import { GoogleGenAI } from "@google/genai";
 import { LanguageCode } from "@prisma/client";
 import crypto from "crypto";
 import { updateRankingScore } from "@/lib/ranking";
+import { runLamaInpainting } from "@/lib/replicate";
+import { generateInpaintingMask } from "@/lib/mask-generator";
+import sharp from "sharp";
 
 const TRANSLATE_LANGUAGES = ["ko", "en", "ja", "zh", "es", "hi", "ar"] as const;
 
@@ -308,6 +311,7 @@ function fireAndForget(promise: Promise<unknown>) {
 
 // ---------------------------------------------------------------------------
 // Generate clean images for all post images (fire-and-forget after translation)
+// Uses LaMa inpainting (primary) with Gemini fallback
 // ---------------------------------------------------------------------------
 async function generateCleanImagesForPost(
   postId: string,
@@ -318,7 +322,7 @@ async function generateCleanImagesForPost(
   const postImages = await prisma.postImage.findMany({
     where: { postId },
     orderBy: { orderIndex: "asc" },
-    select: { id: true, cleanUrl: true },
+    select: { id: true, cleanUrl: true, orderIndex: true },
   });
 
   for (let i = 0; i < postImages.length && i < imageDataList.length; i++) {
@@ -327,13 +331,62 @@ async function generateCleanImagesForPost(
     if (dbImage.cleanUrl || !imgData.base64) continue; // Skip if already has clean or no data
 
     try {
-      const cleanUrl = await generateCleanImage(imgData.base64, imgData.mimeType);
+      let cleanUrl: string | null = null;
+
+      // Primary: Try LaMa inpainting (mask-based, higher quality)
+      try {
+        const imageBuffer = Buffer.from(imgData.base64, "base64");
+
+        // Get segments from DB to build the mask
+        const segments = await prisma.translationSegment.findMany({
+          where: {
+            translationPayload: { postId },
+            imageIndex: dbImage.orderIndex,
+          },
+          select: {
+            boxX: true,
+            boxY: true,
+            boxWidth: true,
+            boxHeight: true,
+            semanticRole: true,
+          },
+        });
+
+        if (segments.length > 0) {
+          const metadata = await sharp(imageBuffer).metadata();
+          const imgWidth = metadata.width;
+          const imgHeight = metadata.height;
+
+          if (imgWidth && imgHeight) {
+            const maskBuffer = await generateInpaintingMask(segments, imgWidth, imgHeight);
+            const lamaOutputUrl = await runLamaInpainting(imageBuffer, maskBuffer, imgData.mimeType);
+
+            // Download the clean image from LaMa output URL
+            const cleanRes = await fetch(lamaOutputUrl);
+            if (cleanRes.ok) {
+              const cleanBuffer = Buffer.from(await cleanRes.arrayBuffer());
+              cleanUrl = await saveGeneratedImage(cleanBuffer, "clean_lama", ".png");
+              console.log(`[LaMa] Clean image generated for postImage ${dbImage.id}`);
+            }
+          }
+        }
+      } catch (lamaErr) {
+        console.warn(`[LaMa] Failed for postImage ${dbImage.id}, falling back to Gemini:`, lamaErr);
+      }
+
+      // Fallback: Gemini inpainting
+      if (!cleanUrl) {
+        cleanUrl = await generateCleanImage(imgData.base64, imgData.mimeType);
+        if (cleanUrl) {
+          console.log(`[Gemini fallback] Clean image generated for postImage ${dbImage.id}`);
+        }
+      }
+
       if (cleanUrl) {
         await prisma.postImage.update({
           where: { id: dbImage.id },
           data: { cleanUrl },
         });
-        console.log(`Clean image generated for postImage ${dbImage.id}`);
       }
     } catch (err) {
       console.error(`Clean image generation failed for postImage ${dbImage.id}:`, err);
@@ -591,6 +644,59 @@ async function fetchAsBase64(url: string): Promise<string> {
 }
 
 // ---------------------------------------------------------------------------
+// Redis caching for translation results
+// Cache key: meme_translation:{postId}:{lang}, TTL: 7 days
+// ---------------------------------------------------------------------------
+const TRANSLATION_CACHE_TTL = 604800; // 7 days in seconds
+
+async function getCachedTranslation(
+  postId: string,
+  targetLang: string
+): Promise<AITranslationResult | null> {
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!url || !token) return null;
+
+  try {
+    const cacheKey = `meme_translation:${postId}:${targetLang}`;
+    const res = await fetch(
+      `${url}/get/${encodeURIComponent(cacheKey)}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    const data = await res.json();
+    if (data.result) {
+      console.log(`[Cache HIT] Translation for ${postId}:${targetLang}`);
+      return JSON.parse(data.result) as AITranslationResult;
+    }
+    return null;
+  } catch (err) {
+    console.warn("[Cache] Redis read failed, proceeding without cache:", err);
+    return null;
+  }
+}
+
+async function setCachedTranslation(
+  postId: string,
+  targetLang: string,
+  result: AITranslationResult
+): Promise<void> {
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!url || !token) return;
+
+  try {
+    const cacheKey = `meme_translation:${postId}:${targetLang}`;
+    await fetch(
+      `${url}/set/${encodeURIComponent(cacheKey)}/${encodeURIComponent(JSON.stringify(result))}/ex/${TRANSLATION_CACHE_TTL}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    console.log(`[Cache SET] Translation for ${postId}:${targetLang}`);
+  } catch (err) {
+    console.warn("[Cache] Redis write failed:", err);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // POST /api/translate
 // ---------------------------------------------------------------------------
 export async function POST(request: NextRequest) {
@@ -691,6 +797,9 @@ export async function POST(request: NextRequest) {
       const systemPrompt = buildTranslationSystemPrompt(sourceLanguage, targetLang);
 
       try {
+        // Check Redis cache before running Gemini analysis
+        const cachedResult = await getCachedTranslation(postId, targetLang);
+
         const model = genAI.getGenerativeModel({
           model: "gemini-2.5-flash",
           systemInstruction: systemPrompt,
@@ -705,6 +814,19 @@ export async function POST(request: NextRequest) {
         const allSegments: Array<TranslationSegmentResponse & { imageIndex: number }> = [];
         let firstParsed: AITranslationResult | null = null;
         const allCultureNotes: CultureNoteResponse[] = [];
+
+        // If we have a cached result, use it instead of calling Gemini
+        if (cachedResult && cachedResult.segments && cachedResult.segments.length > 0) {
+          console.log(`[Cache] Using cached translation for ${postId}:${targetLang}`);
+          firstParsed = cachedResult;
+          for (const seg of cachedResult.segments) {
+            allSegments.push({ ...seg, imageIndex: 0 });
+          }
+          if (cachedResult.cultureNote) {
+            allCultureNotes.push(cachedResult.cultureNote);
+          }
+        } else {
+        // --- Begin Gemini translation (no cache hit) ---
 
         // Helper: translate a single image with retry (max 2 attempts)
         const translateSingleImage = async (
@@ -777,6 +899,31 @@ export async function POST(request: NextRequest) {
         if (allSegments.length === 0 || !firstParsed) {
           console.error(`All translation attempts failed for ${targetLang}`);
           results[targetLang] = { error: `Translation failed for all images` };
+          continue;
+        }
+
+        // Cache the successful Gemini result for future use
+        if (!cachedResult) {
+          setCachedTranslation(postId, targetLang, {
+            memeType: firstParsed.memeType,
+            segments: allSegments.map(s => ({
+              sourceText: s.sourceText,
+              translatedText: s.translatedText,
+              semanticRole: s.semanticRole,
+              box: s.box,
+              style: s.style,
+            })),
+            cultureNote: allCultureNotes.length > 0 ? allCultureNotes[0] : { summary: "", explanation: "" },
+            confidence: firstParsed.confidence,
+          }).catch(err => console.warn("[Cache] Failed to cache translation:", err));
+        }
+
+        } // --- End Gemini else block ---
+
+        if (allSegments.length === 0 || !firstParsed) {
+          // Already handled inside the else block with `continue`, but guard for cache path too
+          console.error(`No segments available for ${targetLang}`);
+          results[targetLang] = { error: `Translation failed for ${targetLang}` };
           continue;
         }
 
