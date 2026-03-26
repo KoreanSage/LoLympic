@@ -74,7 +74,7 @@ export default function WelcomePage() {
       // Refresh the session to pick up new username
       await updateSession();
 
-      router.push("/");
+      router.push("/onboarding");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
       setSaving(false);

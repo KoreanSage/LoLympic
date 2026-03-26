@@ -7,6 +7,7 @@ import MainLayout from "@/components/layout/MainLayout";
 import LeaderboardTable from "@/components/competition/LeaderboardTable";
 import SeasonBar from "@/components/competition/SeasonBar";
 import ErrorState from "@/components/ui/ErrorState";
+import ScoringExplanationModal from "@/components/competition/ScoringExplanationModal";
 
 // ---------------------------------------------------------------------------
 // Types matching the API response shapes
@@ -103,6 +104,7 @@ function mapMemes(entries: ApiMemeEntry[]) {
 
 export default function LeaderboardPage() {
   const { t } = useTranslation();
+  const [showScoring, setShowScoring] = useState(false);
   const [loading, setLoading] = useState(true);
   const [countries, setCountries] = useState<ReturnType<typeof mapCountries>>(
     []
@@ -191,9 +193,18 @@ export default function LeaderboardPage() {
     <MainLayout showSidebar={false}>
       <div className="py-6 space-y-6">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-foreground mb-1">
-            {t("leaderboard.title")}
-          </h1>
+          <div className="flex items-center justify-center gap-2">
+            <h1 className="text-2xl font-bold text-foreground mb-1">
+              {t("leaderboard.title")}
+            </h1>
+            <button
+              onClick={() => setShowScoring(true)}
+              className="w-6 h-6 rounded-full border border-border text-foreground-subtle hover:text-[#c9a84c] hover:border-[#c9a84c] transition-colors flex items-center justify-center text-xs font-bold mb-1"
+              aria-label="How scoring works"
+            >
+              ?
+            </button>
+          </div>
           <p className="text-sm text-foreground-subtle">
             {isRealtime ? t("leaderboard.allTimeRankings") : t("leaderboard.seasonRankings")}
           </p>
@@ -348,6 +359,10 @@ export default function LeaderboardPage() {
           </>
         )}
       </div>
+      <ScoringExplanationModal
+        isOpen={showScoring}
+        onClose={() => setShowScoring(false)}
+      />
     </MainLayout>
   );
 }

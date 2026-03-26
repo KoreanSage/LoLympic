@@ -481,6 +481,44 @@ const en = {
   "auth.platformTagline": "Global Meme Translation Platform",
   "auth.passwordMinLength8": "Password must be at least 8 characters",
   "auth.passwordPlaceholder8": "Min 8 characters",
+
+  // ── Scoring Explanation ───────────────────────────────────────────────
+  "scoring.howItWorks": "How Scoring Works",
+  "scoring.countryTitle": "\uD83C\uDFC6 Country Score",
+  "scoring.countryDesc": "The total engagement received on all posts from your country",
+  "scoring.creatorTitle": "\uD83D\uDC64 Creator Score",
+  "scoring.creatorDesc": "Your personal score based on engagement your posts receive",
+  "scoring.creatorFormula": "reactions + comments \u00D7 2 + shares \u00D7 3",
+  "scoring.memeTitle": "\uD83C\uDFAD Meme Score",
+  "scoring.memeDesc": "Individual meme ranking with time decay",
+  "scoring.memeFormula": "reactions \u00D7 2 + comments \u00D7 3 + translations \u00D7 5 + views \u00D7 0.01",
+  "scoring.memeDecay": "Scores decrease over time to keep fresh content competitive",
+  "scoring.medalsTitle": "\uD83C\uDFC5 Medals",
+  "scoring.medalsDesc": "Top 3 in each category earn Gold \uD83E\uDD47, Silver \uD83E\uDD48, and Bronze \uD83E\uDD49 medals",
+  "scoring.gotIt": "Got it!",
+
+  // ── Hero Banner ──────────────────────────────────────────────────────
+  "hero.tagline": "Your Memes. 7 Languages. One Global Stage.",
+  "hero.subtitle": "Upload memes, compete for your country, and connect cultures through humor",
+  "hero.cta": "Start Creating",
+
+  // ── Onboarding ───────────────────────────────────────────────────────
+  "onboarding.skip": "Skip",
+  "onboarding.next": "Next",
+  "onboarding.back": "Back",
+  "onboarding.step1Title": "Welcome to LoLympic! \uD83C\uDF0D",
+  "onboarding.step1Desc": "The world's first global meme competition platform",
+  "onboarding.step1Detail": "Memes transcend language. Here, they unite countries.",
+  "onboarding.step2Title": "How It Works",
+  "onboarding.step2Upload": "Upload your meme",
+  "onboarding.step2Translate": "AI translates it to 7 languages",
+  "onboarding.step2Compete": "Compete against the world",
+  "onboarding.step3Title": "Score Points for Your Country \uD83C\uDFC6",
+  "onboarding.step3Desc": "Every reaction, comment, and share earns points",
+  "onboarding.step3Detail": "The more engagement your memes get, the higher your country ranks!",
+  "onboarding.step4Title": "Ready to Represent? \uD83D\uDE80",
+  "onboarding.step4Cta": "Upload Your First Meme",
+  "onboarding.step4Browse": "Browse First",
 } as const;
 
 export type TranslationKeys = keyof typeof en;

@@ -473,6 +473,44 @@ const zh: Record<TranslationKeys, string> = {
   "auth.platformTagline": "全球梗图翻译平台",
   "auth.passwordMinLength8": "密码至少需要8个字符",
   "auth.passwordPlaceholder8": "至少8个字符",
+
+  // ── Scoring Explanation ───────────────────────────────────────────────
+  "scoring.howItWorks": "评分机制",
+  "scoring.countryTitle": "\uD83C\uDFC6 国家得分",
+  "scoring.countryDesc": "该国所有帖子获得的总互动量",
+  "scoring.creatorTitle": "\uD83D\uDC64 创作者得分",
+  "scoring.creatorDesc": "基于帖子互动量的个人得分",
+  "scoring.creatorFormula": "反应 + 评论 \u00D7 2 + 分享 \u00D7 3",
+  "scoring.memeTitle": "\uD83C\uDFAD 梗图得分",
+  "scoring.memeDesc": "带时间衰减的单个梗图排名",
+  "scoring.memeFormula": "反应 \u00D7 2 + 评论 \u00D7 3 + 翻译 \u00D7 5 + 浏览 \u00D7 0.01",
+  "scoring.memeDecay": "分数会随时间降低，以保持新内容的竞争力",
+  "scoring.medalsTitle": "\uD83C\uDFC5 奖牌",
+  "scoring.medalsDesc": "每个类别前3名获得金\uD83E\uDD47、银\uD83E\uDD48、铜\uD83E\uDD49奖牌",
+  "scoring.gotIt": "明白了！",
+
+  // ── Hero Banner ──────────────────────────────────────────────────────
+  "hero.tagline": "你的梗图。7种语言。一个全球舞台。",
+  "hero.subtitle": "上传梗图，为国家而战，用幽默连接文化",
+  "hero.cta": "开始创作",
+
+  // ── Onboarding ───────────────────────────────────────────────────────
+  "onboarding.skip": "跳过",
+  "onboarding.next": "下一步",
+  "onboarding.back": "上一步",
+  "onboarding.step1Title": "欢迎来到 LoLympic！\uD83C\uDF0D",
+  "onboarding.step1Desc": "全球首个梗图竞赛平台",
+  "onboarding.step1Detail": "梗图超越语言。在这里，它们连接国家。",
+  "onboarding.step2Title": "使用方法",
+  "onboarding.step2Upload": "上传你的梗图",
+  "onboarding.step2Translate": "AI翻译成7种语言",
+  "onboarding.step2Compete": "与全世界竞争",
+  "onboarding.step3Title": "为国家赢得积分 \uD83C\uDFC6",
+  "onboarding.step3Desc": "每个反应、评论和分享都能赚取积分",
+  "onboarding.step3Detail": "梗图获得的互动越多，国家排名越高！",
+  "onboarding.step4Title": "准备好了吗？\uD83D\uDE80",
+  "onboarding.step4Cta": "上传第一个梗图",
+  "onboarding.step4Browse": "先看看",
 };
 
 export default zh;

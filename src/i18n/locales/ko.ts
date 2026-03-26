@@ -479,6 +479,44 @@ const ko: Record<TranslationKeys, string> = {
   "auth.platformTagline": "글로벌 밈 번역 플랫폼",
   "auth.passwordMinLength8": "비밀번호는 최소 8자 이상이어야 합니다",
   "auth.passwordPlaceholder8": "최소 8자",
+
+  // ── Scoring Explanation ───────────────────────────────────────────────
+  "scoring.howItWorks": "점수 산출 방식",
+  "scoring.countryTitle": "\uD83C\uDFC6 국가 점수",
+  "scoring.countryDesc": "해당 국가의 모든 게시물이 받은 총 참여도",
+  "scoring.creatorTitle": "\uD83D\uDC64 크리에이터 점수",
+  "scoring.creatorDesc": "게시물이 받은 참여도 기반 개인 점수",
+  "scoring.creatorFormula": "리액션 + 댓글 \u00D7 2 + 공유 \u00D7 3",
+  "scoring.memeTitle": "\uD83C\uDFAD 밈 점수",
+  "scoring.memeDesc": "시간 감쇠가 적용되는 개별 밈 랭킹",
+  "scoring.memeFormula": "리액션 \u00D7 2 + 댓글 \u00D7 3 + 번역 \u00D7 5 + 조회 \u00D7 0.01",
+  "scoring.memeDecay": "최신 콘텐츠가 경쟁력을 유지하도록 시간이 지나면 점수가 감소합니다",
+  "scoring.medalsTitle": "\uD83C\uDFC5 메달",
+  "scoring.medalsDesc": "각 카테고리 상위 3명이 금\uD83E\uDD47, 은\uD83E\uDD48, 동\uD83E\uDD49 메달을 획득합니다",
+  "scoring.gotIt": "확인!",
+
+  // ── Hero Banner ──────────────────────────────────────────────────────
+  "hero.tagline": "당신의 밈. 7개 언어. 하나의 글로벌 무대.",
+  "hero.subtitle": "밈을 올리고, 국가를 대표해 경쟁하고, 유머로 문화를 연결하세요",
+  "hero.cta": "밈 만들기",
+
+  // ── Onboarding ───────────────────────────────────────────────────────
+  "onboarding.skip": "건너뛰기",
+  "onboarding.next": "다음",
+  "onboarding.back": "이전",
+  "onboarding.step1Title": "LoLympic에 오신 걸 환영합니다! \uD83C\uDF0D",
+  "onboarding.step1Desc": "세계 최초 글로벌 밈 경쟁 플랫폼",
+  "onboarding.step1Detail": "밈은 언어를 초월합니다. 여기서는 국가를 하나로 만듭니다.",
+  "onboarding.step2Title": "이용 방법",
+  "onboarding.step2Upload": "밈 업로드",
+  "onboarding.step2Translate": "AI가 7개 언어로 번역",
+  "onboarding.step2Compete": "전 세계와 경쟁",
+  "onboarding.step3Title": "국가를 위해 점수를 쌓으세요 \uD83C\uDFC6",
+  "onboarding.step3Desc": "모든 리액션, 댓글, 공유가 점수가 됩니다",
+  "onboarding.step3Detail": "밈이 받는 참여가 많을수록 국가 순위가 올라갑니다!",
+  "onboarding.step4Title": "대표할 준비 됐나요? \uD83D\uDE80",
+  "onboarding.step4Cta": "첫 밈 올리기",
+  "onboarding.step4Browse": "둘러보기",
 };
 
 export default ko;

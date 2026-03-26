@@ -15,10 +15,17 @@ const prisma = new PrismaClient();
 
 // ── Config ──────────────────────────────────────────────
 const TOTAL_USERS = 200;
-const COMMENTS_PER_POST_MIN = 3;
-const COMMENTS_PER_POST_MAX = 25;
-const REACTIONS_PER_POST_MIN = 10;
-const REACTIONS_PER_POST_MAX = 300;
+
+// Engagement tiers — power-law distribution for realistic variety
+// Most posts get modest engagement; a few go "viral"
+const ENGAGEMENT_TIERS = [
+  { weight: 10, reactionsMin: 2,   reactionsMax: 15,   commentsMin: 0,  commentsMax: 3  },  // low — new/niche posts
+  { weight: 25, reactionsMin: 15,  reactionsMax: 50,   commentsMin: 2,  commentsMax: 8  },  // modest
+  { weight: 30, reactionsMin: 50,  reactionsMax: 120,  commentsMin: 5,  commentsMax: 15 },  // solid engagement
+  { weight: 20, reactionsMin: 120, reactionsMax: 250,  commentsMin: 10, commentsMax: 25 },  // popular
+  { weight: 10, reactionsMin: 250, reactionsMax: 500,  commentsMin: 15, commentsMax: 40 },  // hot
+  { weight: 5,  reactionsMin: 500, reactionsMax: 1200, commentsMin: 30, commentsMax: 80 },  // viral
+];
 
 // ── Country distribution (weighted for realism) ─────────
 const COUNTRY_WEIGHTS: { id: string; weight: number; lang: LanguageCode }[] = [
@@ -173,6 +180,20 @@ function weightedPick(weights: { id: string; weight: number; lang: LanguageCode 
   return weights[0];
 }
 
+function pickEngagementTier(isKnownMeme: boolean) {
+  // Known memes (with predefined titles) skew toward higher engagement
+  const tiers = isKnownMeme
+    ? ENGAGEMENT_TIERS.map((t, i) => ({ ...t, weight: i < 2 ? t.weight * 0.3 : t.weight * 1.5 }))
+    : ENGAGEMENT_TIERS;
+  const total = tiers.reduce((s, t) => s + t.weight, 0);
+  let r = Math.random() * total;
+  for (const t of tiers) {
+    r -= t.weight;
+    if (r <= 0) return t;
+  }
+  return tiers[0];
+}
+
 function randomDate(daysBack: number) {
   const now = Date.now();
   const past = now - daysBack * 24 * 60 * 60 * 1000;
@@ -251,7 +272,7 @@ async function main() {
 
   // 3. Upload memes and create posts
   console.log("\n📌 Creating posts...");
-  const posts: { id: string; authorId: string; lang: LanguageCode }[] = [];
+  const posts: { id: string; authorId: string; lang: LanguageCode; _isKnownMeme: boolean }[] = [];
 
   for (let i = 0; i < imageFiles.length; i++) {
     const filePath = imageFiles[i];
@@ -312,20 +333,26 @@ async function main() {
       },
     });
 
-    posts.push({ id: post.id, authorId: author.id, lang: sourceLang });
+    posts.push({ id: post.id, authorId: author.id, lang: sourceLang, _isKnownMeme: !!known });
     console.log(`  [${i + 1}/${imageFiles.length}] "${title.substring(0, 40)}..." by ${author.countryId}`);
   }
   console.log(`✅ Created ${posts.length} posts`);
 
-  // 4. Generate reactions (upvotes/downvotes)
-  console.log("\n📌 Generating reactions...");
+  // 4. Generate reactions + comments with realistic power-law distribution
+  console.log("\n📌 Generating reactions & comments with varied engagement...");
   let totalReactions = 0;
+  let totalComments = 0;
 
   for (const post of posts) {
-    const numReactions = rand(REACTIONS_PER_POST_MIN, REACTIONS_PER_POST_MAX);
-    const reactors = new Set<string>();
+    // Determine if this was a known/curated meme (higher engagement)
+    const isKnown = post._isKnownMeme;
+    const tier = pickEngagementTier(isKnown);
+    const targetReactions = rand(tier.reactionsMin, tier.reactionsMax);
+    const targetComments = rand(tier.commentsMin, tier.commentsMax);
 
-    for (let r = 0; r < numReactions; r++) {
+    // --- Reactions ---
+    const reactors = new Set<string>();
+    for (let r = 0; r < targetReactions; r++) {
       const reactor = pick(users);
       if (reactors.has(reactor.id) || reactor.id === post.authorId) continue;
       reactors.add(reactor.id);
@@ -348,28 +375,8 @@ async function main() {
       }
     }
 
-    // Update cached count
-    const reactionCount = await prisma.postReaction.count({
-      where: { postId: post.id },
-    });
-    await prisma.post.update({
-      where: { id: post.id },
-      data: {
-        reactionCount,
-        viewCount: rand(numReactions * 2, numReactions * 10),
-      },
-    });
-  }
-  console.log(`✅ Created ${totalReactions} reactions`);
-
-  // 5. Generate comments
-  console.log("\n📌 Generating comments...");
-  let totalComments = 0;
-
-  for (const post of posts) {
-    const numComments = rand(COMMENTS_PER_POST_MIN, COMMENTS_PER_POST_MAX);
-
-    for (let c = 0; c < numComments; c++) {
+    // --- Comments ---
+    for (let c = 0; c < targetComments; c++) {
       const commenter = pick(users);
       const langKey = (["en", "ko", "ja", "zh", "es", "hi", "ar"] as const).includes(commenter.lang as any)
         ? commenter.lang
@@ -393,12 +400,28 @@ async function main() {
       }
     }
 
+    // Update cached counts
+    const reactionCount = await prisma.postReaction.count({
+      where: { postId: post.id },
+    });
+    const commentCount = await prisma.comment.count({
+      where: { postId: post.id },
+    });
+    // View count scales with engagement but with noise
+    const viewMultiplier = rand(3, 12);
     await prisma.post.update({
       where: { id: post.id },
-      data: { commentCount: numComments },
+      data: {
+        reactionCount,
+        commentCount,
+        viewCount: rand(reactionCount * viewMultiplier, reactionCount * viewMultiplier * 2),
+        voteScore: Math.max(0, reactionCount - rand(0, Math.floor(reactionCount * 0.15))),
+      },
     });
+
+    console.log(`  Post ${post.id.substring(0, 8)}... → ${reactionCount} reactions, ${commentCount} comments (${tier.reactionsMin}-${tier.reactionsMax} tier)`);
   }
-  console.log(`✅ Created ${totalComments} comments`);
+  console.log(`✅ Created ${totalReactions} reactions, ${totalComments} comments`);
 
   // 6. Generate some follows
   console.log("\n📌 Generating follows...");

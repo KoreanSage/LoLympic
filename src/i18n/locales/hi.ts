@@ -477,6 +477,44 @@ const hi: Record<TranslationKeys, string> = {
   "auth.platformTagline": "ग्लोबल मीम ट्रांसलेशन प्लेटफ़ॉर्म",
   "auth.passwordMinLength8": "पासवर्ड कम से कम 8 अक्षरों का होना चाहिए",
   "auth.passwordPlaceholder8": "कम से कम 8 अक्षर",
+
+  // ── Scoring Explanation ───────────────────────────────────────────────
+  "scoring.howItWorks": "स्कोरिंग कैसे काम करती है",
+  "scoring.countryTitle": "\uD83C\uDFC6 देश का स्कोर",
+  "scoring.countryDesc": "आपके देश की सभी पोस्ट पर कुल एंगेजमेंट",
+  "scoring.creatorTitle": "\uD83D\uDC64 क्रिएटर स्कोर",
+  "scoring.creatorDesc": "आपकी पोस्ट के एंगेजमेंट पर आधारित व्यक्तिगत स्कोर",
+  "scoring.creatorFormula": "रिएक्शन + कमेंट \u00D7 2 + शेयर \u00D7 3",
+  "scoring.memeTitle": "\uD83C\uDFAD मीम स्कोर",
+  "scoring.memeDesc": "समय क्षय के साथ व्यक्तिगत मीम रैंकिंग",
+  "scoring.memeFormula": "रिएक्शन \u00D7 2 + कमेंट \u00D7 3 + अनुवाद \u00D7 5 + व्यू \u00D7 0.01",
+  "scoring.memeDecay": "नई सामग्री को प्रतिस्पर्धी बनाए रखने के लिए स्कोर समय के साथ कम होता है",
+  "scoring.medalsTitle": "\uD83C\uDFC5 पदक",
+  "scoring.medalsDesc": "प्रत्येक श्रेणी में शीर्ष 3 को स्वर्ण \uD83E\uDD47, रजत \uD83E\uDD48 और कांस्य \uD83E\uDD49 पदक मिलते हैं",
+  "scoring.gotIt": "समझ गया!",
+
+  // ── Hero Banner ──────────────────────────────────────────────────────
+  "hero.tagline": "आपके मीम्स। 7 भाषाएं। एक वैश्विक मंच।",
+  "hero.subtitle": "मीम अपलोड करें, अपने देश के लिए प्रतिस्पर्धा करें, हास्य से संस्कृतियों को जोड़ें",
+  "hero.cta": "बनाना शुरू करें",
+
+  // ── Onboarding ───────────────────────────────────────────────────────
+  "onboarding.skip": "छोड़ें",
+  "onboarding.next": "अगला",
+  "onboarding.back": "पीछे",
+  "onboarding.step1Title": "LoLympic में आपका स्वागत है! \uD83C\uDF0D",
+  "onboarding.step1Desc": "दुनिया का पहला वैश्विक मीम प्रतियोगिता मंच",
+  "onboarding.step1Detail": "मीम्स भाषा से परे हैं। यहां, वे देशों को जोड़ते हैं।",
+  "onboarding.step2Title": "यह कैसे काम करता है",
+  "onboarding.step2Upload": "अपना मीम अपलोड करें",
+  "onboarding.step2Translate": "AI 7 भाषाओं में अनुवाद करता है",
+  "onboarding.step2Compete": "दुनिया से मुकाबला करें",
+  "onboarding.step3Title": "अपने देश के लिए अंक कमाएं \uD83C\uDFC6",
+  "onboarding.step3Desc": "हर रिएक्शन, कमेंट और शेयर से अंक मिलते हैं",
+  "onboarding.step3Detail": "आपके मीम्स को जितना ज़्यादा एंगेजमेंट मिलेगा, आपके देश की रैंकिंग उतनी ऊपर जाएगी!",
+  "onboarding.step4Title": "प्रतिनिधित्व के लिए तैयार? \uD83D\uDE80",
+  "onboarding.step4Cta": "अपना पहला मीम अपलोड करें",
+  "onboarding.step4Browse": "पहले देखें",
 } as const;
 
 export default hi;

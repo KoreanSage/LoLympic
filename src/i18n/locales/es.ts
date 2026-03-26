@@ -473,6 +473,44 @@ const es: Record<TranslationKeys, string> = {
   "auth.platformTagline": "Plataforma Global de Traduccion de Memes",
   "auth.passwordMinLength8": "La contrasena debe tener al menos 8 caracteres",
   "auth.passwordPlaceholder8": "Min 8 caracteres",
+
+  // ── Scoring Explanation ───────────────────────────────────────────────
+  "scoring.howItWorks": "C\u00F3mo funciona la puntuaci\u00F3n",
+  "scoring.countryTitle": "\uD83C\uDFC6 Puntuaci\u00F3n del Pa\u00EDs",
+  "scoring.countryDesc": "El engagement total recibido en todas las publicaciones de tu pa\u00EDs",
+  "scoring.creatorTitle": "\uD83D\uDC64 Puntuaci\u00F3n del Creador",
+  "scoring.creatorDesc": "Tu puntuaci\u00F3n personal basada en el engagement de tus publicaciones",
+  "scoring.creatorFormula": "reacciones + comentarios \u00D7 2 + compartidos \u00D7 3",
+  "scoring.memeTitle": "\uD83C\uDFAD Puntuaci\u00F3n del Meme",
+  "scoring.memeDesc": "Ranking individual de memes con decaimiento temporal",
+  "scoring.memeFormula": "reacciones \u00D7 2 + comentarios \u00D7 3 + traducciones \u00D7 5 + vistas \u00D7 0.01",
+  "scoring.memeDecay": "Las puntuaciones disminuyen con el tiempo para mantener competitivo el contenido nuevo",
+  "scoring.medalsTitle": "\uD83C\uDFC5 Medallas",
+  "scoring.medalsDesc": "Los 3 primeros de cada categor\u00EDa ganan medallas de Oro \uD83E\uDD47, Plata \uD83E\uDD48 y Bronce \uD83E\uDD49",
+  "scoring.gotIt": "\u00A1Entendido!",
+
+  // ── Hero Banner ──────────────────────────────────────────────────────
+  "hero.tagline": "Tus Memes. 7 Idiomas. Un Escenario Global.",
+  "hero.subtitle": "Sube memes, compite por tu pa\u00EDs y conecta culturas a trav\u00E9s del humor",
+  "hero.cta": "Empezar a Crear",
+
+  // ── Onboarding ───────────────────────────────────────────────────────
+  "onboarding.skip": "Saltar",
+  "onboarding.next": "Siguiente",
+  "onboarding.back": "Atr\u00E1s",
+  "onboarding.step1Title": "\u00A1Bienvenido a LoLympic! \uD83C\uDF0D",
+  "onboarding.step1Desc": "La primera plataforma global de competencia de memes",
+  "onboarding.step1Detail": "Los memes trascienden el idioma. Aqu\u00ED, unen pa\u00EDses.",
+  "onboarding.step2Title": "C\u00F3mo Funciona",
+  "onboarding.step2Upload": "Sube tu meme",
+  "onboarding.step2Translate": "La IA lo traduce a 7 idiomas",
+  "onboarding.step2Compete": "Compite contra el mundo",
+  "onboarding.step3Title": "Gana Puntos para tu Pa\u00EDs \uD83C\uDFC6",
+  "onboarding.step3Desc": "Cada reacci\u00F3n, comentario y compartido suma puntos",
+  "onboarding.step3Detail": "\u00A1Cuanto m\u00E1s engagement tengan tus memes, m\u00E1s sube tu pa\u00EDs en el ranking!",
+  "onboarding.step4Title": "\u00BFListo para Representar? \uD83D\uDE80",
+  "onboarding.step4Cta": "Sube tu Primer Meme",
+  "onboarding.step4Browse": "Explorar Primero",
 };
 
 export default es;

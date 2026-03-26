@@ -477,6 +477,44 @@ const ar: Record<TranslationKeys, string> = {
   "auth.platformTagline": "منصة ترجمة الميمز العالمية",
   "auth.passwordMinLength8": "يجب أن تكون كلمة المرور 8 أحرف على الأقل",
   "auth.passwordPlaceholder8": "8 أحرف على الأقل",
+
+  // ── Scoring Explanation ───────────────────────────────────────────────
+  "scoring.howItWorks": "كيف يعمل التسجيل",
+  "scoring.countryTitle": "\uD83C\uDFC6 نقاط البلد",
+  "scoring.countryDesc": "إجمالي التفاعل على جميع منشورات بلدك",
+  "scoring.creatorTitle": "\uD83D\uDC64 نقاط المنشئ",
+  "scoring.creatorDesc": "نقاطك الشخصية بناءً على تفاعل منشوراتك",
+  "scoring.creatorFormula": "ردود الفعل + التعليقات \u00D7 2 + المشاركات \u00D7 3",
+  "scoring.memeTitle": "\uD83C\uDFAD نقاط الميم",
+  "scoring.memeDesc": "ترتيب الميم الفردي مع تناقص زمني",
+  "scoring.memeFormula": "ردود الفعل \u00D7 2 + التعليقات \u00D7 3 + الترجمات \u00D7 5 + المشاهدات \u00D7 0.01",
+  "scoring.memeDecay": "تنخفض النقاط بمرور الوقت للحفاظ على تنافسية المحتوى الجديد",
+  "scoring.medalsTitle": "\uD83C\uDFC5 الميداليات",
+  "scoring.medalsDesc": "أفضل 3 في كل فئة يحصلون على ذهبية \uD83E\uDD47 وفضية \uD83E\uDD48 وبرونزية \uD83E\uDD49",
+  "scoring.gotIt": "فهمت!",
+
+  // ── Hero Banner ──────────────────────────────────────────────────────
+  "hero.tagline": "ميماتك. 7 لغات. منصة عالمية واحدة.",
+  "hero.subtitle": "ارفع الميمات، تنافس لبلدك، واربط الثقافات بالفكاهة",
+  "hero.cta": "ابدأ الإنشاء",
+
+  // ── Onboarding ───────────────────────────────────────────────────────
+  "onboarding.skip": "تخطي",
+  "onboarding.next": "التالي",
+  "onboarding.back": "السابق",
+  "onboarding.step1Title": "!مرحبًا بك في LoLympic \uD83C\uDF0D",
+  "onboarding.step1Desc": "أول منصة عالمية لمسابقة الميمات",
+  "onboarding.step1Detail": "الميمات تتجاوز اللغة. هنا، توحد البلدان.",
+  "onboarding.step2Title": "كيف يعمل",
+  "onboarding.step2Upload": "ارفع الميم الخاص بك",
+  "onboarding.step2Translate": "الذكاء الاصطناعي يترجمه إلى 7 لغات",
+  "onboarding.step2Compete": "تنافس ضد العالم",
+  "onboarding.step3Title": "اكسب نقاطًا لبلدك \uD83C\uDFC6",
+  "onboarding.step3Desc": "كل تفاعل وتعليق ومشاركة تكسب نقاطًا",
+  "onboarding.step3Detail": "!كلما زاد التفاعل على ميماتك، ارتفع ترتيب بلدك",
+  "onboarding.step4Title": "مستعد للتمثيل؟ \uD83D\uDE80",
+  "onboarding.step4Cta": "ارفع أول ميم لك",
+  "onboarding.step4Browse": "تصفح أولاً",
 } as const;
 
 export default ar;

@@ -473,6 +473,44 @@ const ja: Record<TranslationKeys, string> = {
   "auth.platformTagline": "グローバルミーム翻訳プラットフォーム",
   "auth.passwordMinLength8": "パスワードは8文字以上必要です",
   "auth.passwordPlaceholder8": "8文字以上",
+
+  // ── Scoring Explanation ───────────────────────────────────────────────
+  "scoring.howItWorks": "スコアの仕組み",
+  "scoring.countryTitle": "\uD83C\uDFC6 国スコア",
+  "scoring.countryDesc": "その国の全投稿が受けたエンゲージメントの合計",
+  "scoring.creatorTitle": "\uD83D\uDC64 クリエイタースコア",
+  "scoring.creatorDesc": "投稿が受けたエンゲージメントに基づく個人スコア",
+  "scoring.creatorFormula": "リアクション + コメント \u00D7 2 + シェア \u00D7 3",
+  "scoring.memeTitle": "\uD83C\uDFAD ミームスコア",
+  "scoring.memeDesc": "時間減衰付きの個別ミームランキング",
+  "scoring.memeFormula": "リアクション \u00D7 2 + コメント \u00D7 3 + 翻訳 \u00D7 5 + 閲覧 \u00D7 0.01",
+  "scoring.memeDecay": "新しいコンテンツが競争力を保つよう、時間とともにスコアが減少します",
+  "scoring.medalsTitle": "\uD83C\uDFC5 メダル",
+  "scoring.medalsDesc": "各カテゴリの上位3名が金\uD83E\uDD47、銀\uD83E\uDD48、銅\uD83E\uDD49メダルを獲得",
+  "scoring.gotIt": "了解！",
+
+  // ── Hero Banner ──────────────────────────────────────────────────────
+  "hero.tagline": "あなたのミーム。7言語。一つのグローバルステージ。",
+  "hero.subtitle": "ミームを投稿し、国を代表して競い、ユーモアで文化をつなごう",
+  "hero.cta": "作成開始",
+
+  // ── Onboarding ───────────────────────────────────────────────────────
+  "onboarding.skip": "スキップ",
+  "onboarding.next": "次へ",
+  "onboarding.back": "戻る",
+  "onboarding.step1Title": "LoLympicへようこそ！\uD83C\uDF0D",
+  "onboarding.step1Desc": "世界初のグローバルミームコンペティション",
+  "onboarding.step1Detail": "ミームは言語を超える。ここでは国をつなぐ。",
+  "onboarding.step2Title": "使い方",
+  "onboarding.step2Upload": "ミームをアップロード",
+  "onboarding.step2Translate": "AIが7言語に翻訳",
+  "onboarding.step2Compete": "世界と競争",
+  "onboarding.step3Title": "国のためにポイントを稼ごう \uD83C\uDFC6",
+  "onboarding.step3Desc": "すべてのリアクション、コメント、シェアがポイントに",
+  "onboarding.step3Detail": "ミームへのエンゲージメントが多いほど国のランキングが上がる！",
+  "onboarding.step4Title": "代表する準備はできた？\uD83D\uDE80",
+  "onboarding.step4Cta": "最初のミームを投稿",
+  "onboarding.step4Browse": "まず見てみる",
 };
 
 export default ja;
