@@ -140,7 +140,7 @@ export default function Sidebar() {
       .then((data) => {
         const entries = (data.entries ?? []) as Array<{
           rank: number;
-          country: { nameEn: string; flagEmoji: string };
+          country: { id: string; nameEn: string; flagEmoji: string };
           medal: "GOLD" | "SILVER" | "BRONZE" | null;
           score: number;
           totalPosts: number;
