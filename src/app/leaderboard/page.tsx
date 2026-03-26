@@ -262,32 +262,32 @@ export default function LeaderboardPage() {
               <div className="bg-background-surface border border-border rounded-xl p-6">
                 <div className="flex items-end justify-center gap-3 mb-4">
                   {/* 2nd Place */}
-                  <div className="flex flex-col items-center">
+                  <Link href={`/?country=${countries[1]?.countryId}`} className="flex flex-col items-center hover:opacity-80 transition-opacity">
                     <span className="text-3xl mb-1">{countries[1]?.flagEmoji}</span>
                     <div className="w-20 bg-gradient-to-t from-[#8a8a8a] to-[#c0c0c0] rounded-t-lg flex flex-col items-center justify-end p-2" style={{ height: '100px' }}>
                       <span className="text-xs font-bold text-white">2nd</span>
                       <span className="text-[10px] text-white/80 truncate w-full text-center">{countries[1]?.name}</span>
                       <span className="text-xs font-bold text-white mt-0.5">{countries[1]?.totalScore?.toLocaleString()}</span>
                     </div>
-                  </div>
+                  </Link>
                   {/* 1st Place */}
-                  <div className="flex flex-col items-center">
+                  <Link href={`/?country=${countries[0]?.countryId}`} className="flex flex-col items-center hover:opacity-80 transition-opacity">
                     <span className="text-4xl mb-1">{countries[0]?.flagEmoji}</span>
                     <div className="w-24 bg-gradient-to-t from-[#a07c1c] to-[#c9a84c] rounded-t-lg flex flex-col items-center justify-end p-2" style={{ height: '140px' }}>
                       <span className="text-sm font-bold text-white">1st</span>
                       <span className="text-[10px] text-white/80 truncate w-full text-center">{countries[0]?.name}</span>
                       <span className="text-sm font-bold text-white mt-0.5">{countries[0]?.totalScore?.toLocaleString()}</span>
                     </div>
-                  </div>
+                  </Link>
                   {/* 3rd Place */}
-                  <div className="flex flex-col items-center">
+                  <Link href={`/?country=${countries[2]?.countryId}`} className="flex flex-col items-center hover:opacity-80 transition-opacity">
                     <span className="text-2xl mb-1">{countries[2]?.flagEmoji}</span>
                     <div className="w-20 bg-gradient-to-t from-[#8B4513] to-[#CD7F32] rounded-t-lg flex flex-col items-center justify-end p-2" style={{ height: '80px' }}>
                       <span className="text-xs font-bold text-white">3rd</span>
                       <span className="text-[10px] text-white/80 truncate w-full text-center">{countries[2]?.name}</span>
                       <span className="text-xs font-bold text-white mt-0.5">{countries[2]?.totalScore?.toLocaleString()}</span>
                     </div>
-                  </div>
+                  </Link>
                 </div>
               </div>
 
@@ -299,7 +299,7 @@ export default function LeaderboardPage() {
                   const pct = Math.max(3, (c.totalScore / maxScore) * 100);
                   const barColor = i === 0 ? 'bg-[#c9a84c]' : i === 1 ? 'bg-[#c0c0c0]' : i === 2 ? 'bg-[#CD7F32]' : 'bg-foreground-subtle/30';
                   return (
-                    <div key={c.countryId} className="flex items-center gap-2">
+                    <Link key={c.countryId} href={`/?country=${c.countryId}`} className="flex items-center gap-2 hover:bg-background-elevated rounded-lg px-1 -mx-1 py-0.5 transition-colors cursor-pointer">
                       <span className="text-sm w-6 text-right">{c.flagEmoji}</span>
                       <span className="text-xs text-foreground-muted w-20 truncate">{c.name}</span>
                       <div className="flex-1 h-5 bg-background-elevated rounded-full overflow-hidden">
@@ -310,7 +310,7 @@ export default function LeaderboardPage() {
                           <span className="text-[10px] font-bold text-white">{c.totalScore?.toLocaleString()}</span>
                         </div>
                       </div>
-                    </div>
+                    </Link>
                   );
                 })}
               </div>

@@ -14,6 +14,7 @@ const SIDEBAR_RANK_CACHE_KEY = "lolympic_sidebar_country_ranks";
 
 interface CountryRanking {
   rank: number;
+  id: string;
   flag: string;
   name: string;
   score: number;
@@ -160,6 +161,7 @@ export default function Sidebar() {
           }
           return {
             rank: e.rank,
+            id: e.country.id,
             flag: e.country.flagEmoji,
             name: e.country.nameEn,
             score: e.score,
@@ -283,11 +285,12 @@ export default function Sidebar() {
         ) : (
           <div className="space-y-1.5">
             {rankings.map((c) => (
-              <div
+              <Link
                 key={c.rank}
-                className={`group rounded-lg px-1 -mx-1 ${
+                href={`/?country=${c.id}`}
+                className={`group block rounded-lg px-1 -mx-1 hover:bg-background-elevated transition-colors cursor-pointer ${
                   c.rank === 1
-                    ? "bg-[#c9a84c]/10 border border-[#c9a84c]/20"
+                    ? "bg-[#c9a84c]/10 border border-[#c9a84c]/20 hover:bg-[#c9a84c]/15"
                     : ""
                 }`}
               >
@@ -314,7 +317,7 @@ export default function Sidebar() {
                 <div className="ml-[26px]">
                   <ScoreBar score={c.score} maxScore={maxCountryScore} />
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         )}
