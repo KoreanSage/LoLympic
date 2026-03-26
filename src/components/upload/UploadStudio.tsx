@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import ImageUploader from "./ImageUploader";
 import ImageCarousel from "@/components/ui/ImageCarousel";
@@ -91,17 +91,11 @@ export default function UploadStudio() {
   const [isPublishing, setIsPublishing] = useState(false);
   const [progress, setProgress] = useState<PublishProgress | null>(null);
   const [showImageUploader, setShowImageUploader] = useState(false);
+  const [showMemeDescriptionField, setShowMemeDescriptionField] = useState(false);
 
   const hasImages = imageFiles.length > 0;
   const hasGif = imageFiles.some((f) => f.type === "image/gif");
   const isTextOnly = !hasImages;
-
-  // Auto-detect post type based on images
-  useEffect(() => {
-    if (hasImages && postType !== "meme") {
-      setPostType("meme");
-    }
-  }, [hasImages]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleImagesSelected = (files: File[], previewUrls: string[]) => {
     const combined = [...imageFiles, ...files].slice(0, MAX_IMAGES);
@@ -116,18 +110,11 @@ export default function UploadStudio() {
     const newPreviews = imagePreviews.filter((_, i) => i !== index);
     setImageFiles(newFiles);
     setImagePreviews(newPreviews);
-    // Suggest switching to discussion when all images removed
-    if (newFiles.length === 0 && postType === "meme") {
-      setPostType("community");
-    }
   };
 
   const handleClearAll = () => {
     setImageFiles([]);
     setImagePreviews([]);
-    if (postType === "meme") {
-      setPostType("community");
-    }
   };
 
   const handlePublish = async () => {
@@ -515,31 +502,253 @@ export default function UploadStudio() {
     );
   }
 
+  const isMeme = postType === "meme";
+
+  // Shared form sections as render helpers
+  const renderLanguageSelect = () => (
+    <div>
+      <label className="block text-xs font-medium text-foreground-muted mb-1.5">
+        {isMeme ? "Meme Language" : "Post Language"} <span className="text-red-400">*</span>
+      </label>
+      <select
+        value={sourceLanguage}
+        onChange={(e) => setSourceLanguage(e.target.value)}
+        className="w-full bg-background-elevated border border-border-hover rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-[#c9a84c]/50 transition-colors"
+      >
+        {ALL_LANGUAGES.map((lang) => (
+          <option key={lang.code} value={lang.code}>
+            {lang.icon} {lang.label}
+          </option>
+        ))}
+      </select>
+      <p className="text-[10px] text-foreground-subtle mt-1">
+        {isMeme
+          ? "The language of the text in the meme image"
+          : "The language you're writing in"}
+      </p>
+    </div>
+  );
+
+  const renderCategorySelect = () => (
+    <div>
+      <label className="block text-xs font-medium text-foreground-muted mb-1.5">Category</label>
+      <div className="flex flex-wrap gap-2">
+        {CATEGORIES.map((cat) => (
+          <button
+            key={cat.value}
+            type="button"
+            onClick={() => setCategory(category === cat.value ? "" : cat.value)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              category === cat.value
+                ? "bg-[#c9a84c] text-black"
+                : "bg-background-elevated border border-border-hover text-foreground-muted hover:border-border-active"
+            }`}
+          >
+            {cat.emoji} {cat.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderTagsInput = () => (
+    <div>
+      <label className="block text-xs font-medium text-foreground-muted mb-1.5">Tags</label>
+      {tags.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          {tags.map((tag) => (
+            <span
+              key={tag}
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-[#c9a84c]/15 text-[#c9a84c] text-xs"
+            >
+              #{tag}
+              <button
+                type="button"
+                onClick={() => setTags(tags.filter((t) => t !== tag))}
+                className="hover:text-white transition-colors"
+              >
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+      <div className="flex gap-2">
+        <input
+          value={tagInput}
+          onChange={(e) => setTagInput(e.target.value)}
+          onKeyDown={(e) => {
+            if ((e.key === "Enter" || e.key === ",") && tagInput.trim()) {
+              e.preventDefault();
+              const newTag = tagInput.trim().toLowerCase().replace(/,/g, "");
+              if (newTag && !tags.includes(newTag) && tags.length < 10) {
+                setTags([...tags, newTag]);
+              }
+              setTagInput("");
+            }
+          }}
+          placeholder={tags.length >= 10 ? "Max 10 tags" : "Type and press Enter..."}
+          disabled={tags.length >= 10}
+          className="flex-1 bg-background-elevated border border-border-hover rounded-lg px-3 py-2 text-xs text-foreground placeholder-foreground-subtle focus:outline-none focus:border-[#c9a84c]/50 transition-colors disabled:opacity-50"
+        />
+      </div>
+      {tags.length < 10 && (
+        <div className="flex flex-wrap gap-1.5 mt-2">
+          {POPULAR_TAGS.filter((t) => !tags.includes(t)).slice(0, 8).map((tag) => (
+            <button
+              key={tag}
+              type="button"
+              onClick={() => {
+                if (tags.length < 10) setTags([...tags, tag]);
+              }}
+              className="px-2 py-0.5 rounded text-[11px] text-foreground-subtle border border-border hover:border-[#c9a84c]/40 hover:text-[#c9a84c] transition-colors"
+            >
+              +{tag}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  const renderTranslationPreview = () => (
+    hasGif && imageFiles.length === 1 ? (
+      <div className="bg-background-elevated rounded-lg p-3 border border-border">
+        <p className="text-xs text-foreground-subtle">GIF will be published as-is without AI translation.</p>
+      </div>
+    ) : (
+      <div className="bg-background-elevated rounded-lg p-3 border border-border">
+        <p className="text-xs text-foreground-subtle mb-2">Auto-translating to:</p>
+        <div className="flex flex-wrap gap-2">
+          {ALL_LANGUAGES.filter((l) => l.code !== sourceLanguage).map((lang) => (
+            <span key={lang.code} className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-background-overlay text-xs text-foreground-muted">
+              {lang.icon} {lang.label}
+            </span>
+          ))}
+        </div>
+      </div>
+    )
+  );
+
+  const renderPublishButton = () => (
+    <Button
+      onClick={handlePublish}
+      disabled={!title.trim() || (isMeme && !hasImages) || isPublishing}
+      className="w-full"
+    >
+      {hasGif && imageFiles.length === 1
+        ? "Publish GIF"
+        : isMeme
+          ? "Publish & Translate"
+          : "Publish"}
+    </Button>
+  );
+
+  const renderImagePreview = () => (
+    <div className="space-y-4">
+      {/* Large carousel preview */}
+      <div className="rounded-xl overflow-hidden border border-border bg-background-surface">
+        <ImageCarousel>
+          {imagePreviews.map((preview, i) => (
+            <div key={i} className="relative">
+              <img
+                src={preview}
+                alt={`Preview ${i + 1}`}
+                className="w-full object-contain max-h-[600px]"
+              />
+              <button
+                onClick={() => handleRemoveImage(i)}
+                className="absolute top-3 right-3 p-2 rounded-full bg-black/60 hover:bg-black/80 text-white transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          ))}
+        </ImageCarousel>
+      </div>
+
+      {/* Thumbnail strip */}
+      <div className="flex gap-2 overflow-x-auto pb-1">
+        {imagePreviews.map((preview, i) => (
+          <div key={i} className="relative shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 border-border">
+            <img src={preview} alt="" className="w-full h-full object-cover" />
+            <button
+              onClick={() => handleRemoveImage(i)}
+              className="absolute inset-0 bg-black/0 hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 hover:opacity-100"
+            >
+              <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        ))}
+
+        {/* Add more button */}
+        {imageFiles.length < MAX_IMAGES && (
+          <label className="shrink-0 w-20 h-20 rounded-lg border-2 border-dashed border-[#c9a84c]/40 hover:border-[#c9a84c] bg-[#c9a84c]/5 hover:bg-[#c9a84c]/10 flex flex-col items-center justify-center cursor-pointer transition-colors gap-0.5">
+            <svg className="w-6 h-6 text-[#c9a84c]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            <span className="text-[10px] text-[#c9a84c] font-medium">Add</span>
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              multiple
+              className="hidden"
+              onChange={(e) => {
+                if (e.target.files) {
+                  const newFiles = Array.from(e.target.files).slice(0, MAX_IMAGES - imageFiles.length);
+                  const newPreviews = newFiles.map((f) => URL.createObjectURL(f));
+                  setImageFiles((prev) => [...prev, ...newFiles]);
+                  setImagePreviews((prev) => [...prev, ...newPreviews]);
+                }
+                e.target.value = "";
+              }}
+            />
+          </label>
+        )}
+      </div>
+
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-foreground-subtle">
+          {imageFiles.length}/{MAX_IMAGES} images
+        </p>
+        <button
+          onClick={handleClearAll}
+          className="text-xs text-red-400 hover:text-red-300 transition-colors"
+        >
+          Clear all
+        </button>
+      </div>
+    </div>
+  );
+
   // Main form
   return (
     <div className="max-w-5xl mx-auto">
       {/* Post Type Selection */}
       <div className="mb-6">
         <label className="block text-xs font-medium text-foreground-muted mb-2">Post Type</label>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           {POST_TYPES.map((pt) => (
             <button
               key={pt.value}
               type="button"
               onClick={() => {
-                if (pt.value === "meme" && !hasImages) {
-                  setShowImageUploader(true);
-                }
                 setPostType(pt.value);
               }}
-              className={`relative flex flex-row sm:flex-col items-center gap-2 sm:gap-1.5 px-4 py-2.5 sm:py-3 rounded-xl border-2 transition-all text-left sm:text-center ${
+              className={`relative flex flex-col items-center gap-1.5 px-4 py-3 rounded-xl border-2 transition-all text-center ${
                 postType === pt.value
                   ? "border-[#c9a84c] bg-[#c9a84c]/10"
                   : "border-border hover:border-border-active bg-background-surface"
               }`}
             >
               <span className="text-2xl">{pt.emoji}</span>
-              <div className="flex flex-col sm:items-center">
+              <div className="flex flex-col items-center">
                 <span className={`text-sm font-semibold ${postType === pt.value ? "text-[#c9a84c]" : "text-foreground"}`}>
                   {pt.label}
                 </span>
@@ -550,104 +759,101 @@ export default function UploadStudio() {
         </div>
       </div>
 
-      <div className={hasImages ? "grid grid-cols-1 lg:grid-cols-2 gap-6" : ""}>
-        {/* Left: Images (only shown for meme type or when images exist) */}
-        {hasImages && (
-          <div className="space-y-4">
-            {imagePreviews.length > 0 && (
-              <>
-                {/* Carousel preview */}
-                <div className="rounded-xl overflow-hidden border border-border bg-background-surface">
-                  <ImageCarousel>
-                    {imagePreviews.map((preview, i) => (
-                      <div key={i} className="relative">
-                        <img
-                          src={preview}
-                          alt={`Preview ${i + 1}`}
-                          className="w-full object-contain max-h-[500px]"
-                        />
-                        <button
-                          onClick={() => handleRemoveImage(i)}
-                          className="absolute top-3 right-3 p-1.5 rounded-full bg-black/60 hover:bg-black/80 text-white transition-colors"
-                        >
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      </div>
-                    ))}
-                  </ImageCarousel>
-                </div>
+      {/* ===== MEME FLOW ===== */}
+      {isMeme && (
+        <>
+          {/* Step 1: Image Upload - prominent and first */}
+          {!hasImages ? (
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-foreground mb-3">
+                Upload your meme <span className="text-red-400">*</span>
+              </label>
+              <ImageUploader onImagesSelected={handleImagesSelected} maxFiles={MAX_IMAGES} />
+            </div>
+          ) : (
+            /* Two-column layout when images are uploaded */
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Left: Large image preview */}
+              <div>
+                {renderImagePreview()}
+              </div>
 
-                {/* Thumbnail strip */}
-                <div className="flex gap-2 overflow-x-auto pb-1">
-                  {imagePreviews.map((preview, i) => (
-                    <div key={i} className="relative shrink-0 w-16 h-16 rounded-lg overflow-hidden border border-border">
-                      <img src={preview} alt="" className="w-full h-full object-cover" />
-                      <button
-                        onClick={() => handleRemoveImage(i)}
-                        className="absolute inset-0 bg-black/0 hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 hover:opacity-100"
-                      >
-                        <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
-                  ))}
+              {/* Right: Meme details form */}
+              <div>
+                <div className="bg-background-surface border border-border rounded-xl p-6 space-y-5">
+                  <div>
+                    <h2 className="text-lg font-semibold text-foreground mb-1">Meme Details</h2>
+                    <p className="text-xs text-foreground-subtle">
+                      {hasGif && imageFiles.length === 1
+                        ? "GIF files will be posted without translation."
+                        : "We'll auto-translate to all 7 languages after you publish."}
+                    </p>
+                  </div>
 
-                  {/* Add more button */}
-                  {imageFiles.length < MAX_IMAGES && (
-                    <label className="shrink-0 w-16 h-16 rounded-lg border-2 border-dashed border-[#c9a84c]/40 hover:border-[#c9a84c] bg-[#c9a84c]/5 hover:bg-[#c9a84c]/10 flex flex-col items-center justify-center cursor-pointer transition-colors gap-0.5">
-                      <svg className="w-5 h-5 text-[#c9a84c]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                      </svg>
-                      <span className="text-[9px] text-[#c9a84c] font-medium">Add</span>
-                      <input
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp,image/gif"
-                        multiple
-                        className="hidden"
-                        onChange={(e) => {
-                          if (e.target.files) {
-                            const newFiles = Array.from(e.target.files).slice(0, MAX_IMAGES - imageFiles.length);
-                            const newPreviews = newFiles.map((f) => URL.createObjectURL(f));
-                            setImageFiles((prev) => [...prev, ...newFiles]);
-                            setImagePreviews((prev) => [...prev, ...newPreviews]);
-                          }
-                          e.target.value = "";
-                        }}
-                      />
+                  {/* Title */}
+                  <div>
+                    <label className="block text-xs font-medium text-foreground-muted mb-1.5">
+                      Title <span className="text-red-400">*</span>
                     </label>
-                  )}
-                </div>
+                    <input
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      placeholder="Give your meme a title..."
+                      className="w-full bg-background-elevated border border-border-hover rounded-lg px-3 py-2.5 text-sm text-foreground placeholder-foreground-subtle focus:outline-none focus:border-[#c9a84c]/50 transition-colors"
+                      maxLength={100}
+                    />
+                  </div>
 
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-foreground-subtle">
-                    {imageFiles.length}/{MAX_IMAGES} images
-                  </p>
-                  <button
-                    onClick={handleClearAll}
-                    className="text-xs text-red-400 hover:text-red-300 transition-colors"
-                  >
-                    Clear all
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        )}
+                  {/* Collapsible description for memes */}
+                  <div>
+                    {!showMemeDescriptionField && bodyText.length === 0 ? (
+                      <button
+                        type="button"
+                        onClick={() => setShowMemeDescriptionField(true)}
+                        className="flex items-center gap-2 text-xs font-medium text-foreground-subtle hover:text-foreground-muted transition-colors"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        Add description (optional)
+                      </button>
+                    ) : (
+                      <>
+                        <label className="block text-xs font-medium text-foreground-subtle mb-1.5">
+                          Description (optional)
+                        </label>
+                        <textarea
+                          value={bodyText}
+                          onChange={(e) => setBodyText(e.target.value)}
+                          placeholder="Add context or a caption..."
+                          rows={2}
+                          className="w-full bg-background-elevated border border-border-hover rounded-lg px-3 py-2 text-sm text-foreground placeholder-foreground-subtle focus:outline-none focus:border-[#c9a84c]/50 transition-colors resize-none"
+                          maxLength={5000}
+                        />
+                      </>
+                    )}
+                  </div>
 
-        {/* Right: Form (full width for text-only, half width for image posts) */}
-        <div className="space-y-4">
+                  {renderLanguageSelect()}
+                  {renderCategorySelect()}
+                  {renderTagsInput()}
+                  {renderTranslationPreview()}
+                  {renderPublishButton()}
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ===== COMMUNITY FLOW ===== */}
+      {!isMeme && (
+        <div className="max-w-2xl mx-auto">
           <div className="bg-background-surface border border-border rounded-xl p-6 space-y-5">
             <div>
               <h2 className="text-lg font-semibold text-foreground mb-1">Post Details</h2>
               <p className="text-xs text-foreground-subtle">
-                {isTextOnly
-                  ? "Your text post will be auto-translated to all 7 languages."
-                  : hasGif && imageFiles.length === 1
-                    ? "GIF files will be posted without translation."
-                    : "We'll auto-translate to all 7 languages after you publish."}
+                Your text post will be auto-translated to all 7 languages.
               </p>
             </div>
 
@@ -659,26 +865,22 @@ export default function UploadStudio() {
               <input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder={postType === "community" ? "What's on your mind?" : "Give your meme a title..."}
+                placeholder="What's on your mind?"
                 className="w-full bg-background-elevated border border-border-hover rounded-lg px-3 py-2.5 text-sm text-foreground placeholder-foreground-subtle focus:outline-none focus:border-[#c9a84c]/50 transition-colors"
                 maxLength={100}
               />
             </div>
 
-            {/* Body/Content textarea */}
+            {/* Content textarea - primary for community posts */}
             <div>
               <label className="block text-xs font-medium text-foreground-muted mb-1.5">
-                Content {isTextOnly ? "" : "(optional)"}
+                Content
               </label>
               <textarea
                 value={bodyText}
                 onChange={(e) => setBodyText(e.target.value)}
-                placeholder={
-                  postType === "community"
-                    ? "Share your thoughts..."
-                    : "Add a description (optional)..."
-                }
-                rows={isTextOnly ? 6 : 3}
+                placeholder="Share your thoughts..."
+                rows={6}
                 className="w-full bg-background-elevated border border-border-hover rounded-lg px-3 py-2.5 text-sm text-foreground placeholder-foreground-subtle focus:outline-none focus:border-[#c9a84c]/50 transition-colors resize-none"
                 maxLength={5000}
               />
@@ -687,8 +889,8 @@ export default function UploadStudio() {
               </div>
             </div>
 
-            {/* Collapsible image uploader for text-only posts */}
-            {isTextOnly && (
+            {/* Collapsible image uploader for community posts */}
+            {!hasImages ? (
               <div>
                 <button
                   type="button"
@@ -711,154 +913,16 @@ export default function UploadStudio() {
                   </div>
                 )}
               </div>
-            )}
-
-            {/* Source Language */}
-            <div>
-              <label className="block text-xs font-medium text-foreground-muted mb-1.5">
-                {isTextOnly ? "Post Language" : "Meme Language"} <span className="text-red-400">*</span>
-              </label>
-              <select
-                value={sourceLanguage}
-                onChange={(e) => setSourceLanguage(e.target.value)}
-                className="w-full bg-background-elevated border border-border-hover rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-[#c9a84c]/50 transition-colors"
-              >
-                {ALL_LANGUAGES.map((lang) => (
-                  <option key={lang.code} value={lang.code}>
-                    {lang.icon} {lang.label}
-                  </option>
-                ))}
-              </select>
-              <p className="text-[10px] text-foreground-subtle mt-1">
-                {isTextOnly
-                  ? "The language you're writing in"
-                  : "The language of the text in the meme image"}
-              </p>
-            </div>
-
-            {/* Category */}
-            <div>
-              <label className="block text-xs font-medium text-foreground-muted mb-1.5">Category</label>
-              <div className="flex flex-wrap gap-2">
-                {CATEGORIES.map((cat) => (
-                  <button
-                    key={cat.value}
-                    type="button"
-                    onClick={() => setCategory(category === cat.value ? "" : cat.value)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                      category === cat.value
-                        ? "bg-[#c9a84c] text-black"
-                        : "bg-background-elevated border border-border-hover text-foreground-muted hover:border-border-active"
-                    }`}
-                  >
-                    {cat.emoji} {cat.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Tags */}
-            <div>
-              <label className="block text-xs font-medium text-foreground-muted mb-1.5">Tags</label>
-              {/* Selected tags */}
-              {tags.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mb-2">
-                  {tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-[#c9a84c]/15 text-[#c9a84c] text-xs"
-                    >
-                      #{tag}
-                      <button
-                        type="button"
-                        onClick={() => setTags(tags.filter((t) => t !== tag))}
-                        className="hover:text-white transition-colors"
-                      >
-                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
-              {/* Tag input */}
-              <div className="flex gap-2">
-                <input
-                  value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if ((e.key === "Enter" || e.key === ",") && tagInput.trim()) {
-                      e.preventDefault();
-                      const newTag = tagInput.trim().toLowerCase().replace(/,/g, "");
-                      if (newTag && !tags.includes(newTag) && tags.length < 10) {
-                        setTags([...tags, newTag]);
-                      }
-                      setTagInput("");
-                    }
-                  }}
-                  placeholder={tags.length >= 10 ? "Max 10 tags" : "Type and press Enter..."}
-                  disabled={tags.length >= 10}
-                  className="flex-1 bg-background-elevated border border-border-hover rounded-lg px-3 py-2 text-xs text-foreground placeholder-foreground-subtle focus:outline-none focus:border-[#c9a84c]/50 transition-colors disabled:opacity-50"
-                />
-              </div>
-              {/* Popular tags */}
-              {tags.length < 10 && (
-                <div className="flex flex-wrap gap-1.5 mt-2">
-                  {POPULAR_TAGS.filter((t) => !tags.includes(t)).slice(0, 8).map((tag) => (
-                    <button
-                      key={tag}
-                      type="button"
-                      onClick={() => {
-                        if (tags.length < 10) setTags([...tags, tag]);
-                      }}
-                      className="px-2 py-0.5 rounded text-[11px] text-foreground-subtle border border-border hover:border-[#c9a84c]/40 hover:text-[#c9a84c] transition-colors"
-                    >
-                      +{tag}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Translation preview */}
-            {hasGif && imageFiles.length === 1 ? (
-              <div className="bg-background-elevated rounded-lg p-3 border border-border">
-                <p className="text-xs text-foreground-subtle">GIF will be published as-is without AI translation.</p>
-              </div>
             ) : (
-              <div className="bg-background-elevated rounded-lg p-3 border border-border">
-                <p className="text-xs text-foreground-subtle mb-2">Auto-translating to:</p>
-                <div className="flex flex-wrap gap-2">
-                  {ALL_LANGUAGES.filter((l) => l.code !== sourceLanguage).map((lang) => (
-                    <span key={lang.code} className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-background-overlay text-xs text-foreground-muted">
-                      {lang.icon} {lang.label}
-                    </span>
-                  ))}
-                </div>
-              </div>
+              renderImagePreview()
             )}
 
-            {/* Publish */}
-            <Button
-              onClick={handlePublish}
-              disabled={!title.trim() || isPublishing}
-              className="w-full"
-            >
-              {hasGif && imageFiles.length === 1
-                ? "Publish GIF"
-                : isTextOnly
-                  ? "Publish"
-                  : "Publish & Translate"}
-            </Button>
+            {renderLanguageSelect()}
+            {renderCategorySelect()}
+            {renderTagsInput()}
+            {renderTranslationPreview()}
+            {renderPublishButton()}
           </div>
-        </div>
-      </div>
-
-      {/* Full-width image uploader when no images exist and meme type selected */}
-      {!hasImages && postType === "meme" && (
-        <div className="mt-6">
-          <ImageUploader onImagesSelected={handleImagesSelected} maxFiles={MAX_IMAGES} />
         </div>
       )}
     </div>
