@@ -533,6 +533,23 @@ const en = {
   "rank.diamond": "Diamond",
   "rank.master": "Master",
   "rank.challenger": "Challenger",
+
+  // ── Country Race Widget ────────────────────────────────────────────────────
+  "countryRace.leading": "Your country is LEADING!",
+  "countryRace.pointsAhead": "{points} points ahead of {country}",
+  "countryRace.pointsBehind": "{points} points behind {country}",
+  "countryRace.closeGap": "Upload to close the gap!",
+  "countryRace.keepLead": "Keep the lead!",
+  "countryRace.uploadHelp": "Upload to help your country",
+  "countryRace.vs": "vs",
+
+  // ── Rank Change Notifications ─────────────────────────────────────────────
+  "rankChange.movedUp": "Your country moved up to #{rank}!",
+  "rankChange.movedDown": "Your country dropped to #{rank} — time to post!",
+  "rankChange.overtook": "{country1} just overtook {country2}!",
+
+  // ── Country Champion Badge ────────────────────────────────────────────────
+  "countryChampion.badge": "Member of the #1 ranked country",
 } as const;
 
 export type TranslationKeys = keyof typeof en;

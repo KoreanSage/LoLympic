@@ -529,6 +529,23 @@ const hi: Record<TranslationKeys, string> = {
   "rank.diamond": "डायमंड",
   "rank.master": "मास्टर",
   "rank.challenger": "चैलेंजर",
+
+  // ── Country Race Widget ────────────────────────────────────────────────────
+  "countryRace.leading": "आपका देश आगे है!",
+  "countryRace.pointsAhead": "{country} से {points} अंक आगे",
+  "countryRace.pointsBehind": "{country} से {points} अंक पीछे",
+  "countryRace.closeGap": "अंतर कम करने के लिए मीम अपलोड करें!",
+  "countryRace.keepLead": "बढ़त बनाए रखें!",
+  "countryRace.uploadHelp": "देश के लिए मीम अपलोड करें",
+  "countryRace.vs": "vs",
+
+  // ── Rank Change Notifications ─────────────────────────────────────────────
+  "rankChange.movedUp": "आपका देश #{rank} पर पहुंच गया! 🎉",
+  "rankChange.movedDown": "आपका देश #{rank} पर गिर गया — पोस्ट करने का समय!",
+  "rankChange.overtook": "{country1} ने {country2} को पीछे छोड़ दिया!",
+
+  // ── Country Champion Badge ────────────────────────────────────────────────
+  "countryChampion.badge": "#1 देश का सदस्य",
 } as const;
 
 export default hi;

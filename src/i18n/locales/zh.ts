@@ -525,6 +525,23 @@ const zh: Record<TranslationKeys, string> = {
   "rank.diamond": "钻石",
   "rank.master": "大师",
   "rank.challenger": "王者",
+
+  // ── Country Race Widget ────────────────────────────────────────────────────
+  "countryRace.leading": "你的国家正在领先！",
+  "countryRace.pointsAhead": "领先{country} {points}分",
+  "countryRace.pointsBehind": "落后{country} {points}分",
+  "countryRace.closeGap": "上传梗图缩小差距！",
+  "countryRace.keepLead": "保持领先！",
+  "countryRace.uploadHelp": "为国家上传梗图",
+  "countryRace.vs": "vs",
+
+  // ── Rank Change Notifications ─────────────────────────────────────────────
+  "rankChange.movedUp": "你的国家上升到第{rank}名！🎉",
+  "rankChange.movedDown": "你的国家下降到第{rank}名 — 该发帖了！",
+  "rankChange.overtook": "{country1}超越了{country2}！",
+
+  // ── Country Champion Badge ────────────────────────────────────────────────
+  "countryChampion.badge": "排名第1国家的成员",
 };
 
 export default zh;

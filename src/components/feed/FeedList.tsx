@@ -3,6 +3,7 @@
 import React from "react";
 import { useEffect, useRef, useState, useCallback } from "react";
 import FeedCard from "./FeedCard";
+import CountryRaceWidget from "./CountryRaceWidget";
 import BattleCard from "@/components/battle/BattleCard";
 import AdSlot from "@/components/ads/AdSlot";
 import { CardSkeleton } from "@/components/ui/Skeleton";
@@ -269,6 +270,8 @@ export default function FeedList({
             {...post}
             onDelete={(deletedId) => setPosts((prev) => prev.filter((p) => p.id !== deletedId))}
           />
+          {/* Country Race Widget after 2nd post */}
+          {index === 1 && <CountryRaceWidget />}
           {/* Ad slot insertion at configurable intervals */}
           {(index + 1) % AD_SLOT_INTERVAL === 0 && (
             <AdSlot slot={`feed-${Math.floor((index + 1) / AD_SLOT_INTERVAL)}`} />

@@ -9,6 +9,7 @@ interface AvatarProps {
   size?: "xs" | "sm" | "md" | "lg" | "xl";
   countryFlag?: string;
   isChampion?: boolean;
+  isTopCountry?: boolean;
   tier?: string;
   className?: string;
 }
@@ -51,6 +52,7 @@ export default function Avatar({
   size = "md",
   countryFlag,
   isChampion = false,
+  isTopCountry = false,
   tier,
   className = "",
 }: AvatarProps) {
@@ -68,11 +70,21 @@ export default function Avatar({
     : "";
 
   const ringClass = isChampion ? championRing : tierRing;
-  const ringStyle = tierColor && !isChampion
-    ? {
+
+  // Top country golden shimmer (different from champion individual glow)
+  const topCountryGlow =
+    isTopCountry && !isChampion
+      ? { boxShadow: "0 0 10px 2px rgba(201, 168, 76, 0.25), 0 0 4px 1px rgba(201, 168, 76, 0.15)" }
+      : {};
+
+  const ringStyle: React.CSSProperties | undefined = tierColor && !isChampion
+    ? ({
         "--tw-ring-color": tierColor,
         ...(showTierGlow ? { boxShadow: `0 0 8px 2px ${tierColor}40` } : {}),
-      } as React.CSSProperties
+        ...topCountryGlow,
+      } as unknown as React.CSSProperties)
+    : isTopCountry && !isChampion
+    ? (topCountryGlow as React.CSSProperties)
     : undefined;
 
   return (

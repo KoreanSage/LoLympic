@@ -529,6 +529,23 @@ const ar: Record<TranslationKeys, string> = {
   "rank.diamond": "ألماس",
   "rank.master": "ماستر",
   "rank.challenger": "تشالنجر",
+
+  // ── Country Race Widget ────────────────────────────────────────────────────
+  "countryRace.leading": "!بلدك في الصدارة",
+  "countryRace.pointsAhead": "متقدم بـ {points} نقطة على {country}",
+  "countryRace.pointsBehind": "متأخر بـ {points} نقطة عن {country}",
+  "countryRace.closeGap": "!ارفع ميمات لتقليص الفارق",
+  "countryRace.keepLead": "!حافظ على الصدارة",
+  "countryRace.uploadHelp": "ارفع ميمات لبلدك",
+  "countryRace.vs": "ضد",
+
+  // ── Rank Change Notifications ─────────────────────────────────────────────
+  "rankChange.movedUp": "!🎉 بلدك صعد للمركز #{rank}",
+  "rankChange.movedDown": "!بلدك نزل للمركز #{rank} — وقت النشر",
+  "rankChange.overtook": "!{country1} تجاوز {country2}",
+
+  // ── Country Champion Badge ────────────────────────────────────────────────
+  "countryChampion.badge": "عضو في البلد الأول",
 } as const;
 
 export default ar;

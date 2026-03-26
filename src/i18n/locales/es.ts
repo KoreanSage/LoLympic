@@ -525,6 +525,23 @@ const es: Record<TranslationKeys, string> = {
   "rank.diamond": "Diamante",
   "rank.master": "Maestro",
   "rank.challenger": "Retador",
+
+  // ── Country Race Widget ────────────────────────────────────────────────────
+  "countryRace.leading": "\u00A1Tu pa\u00EDs est\u00E1 LIDERANDO!",
+  "countryRace.pointsAhead": "{points} puntos por delante de {country}",
+  "countryRace.pointsBehind": "{points} puntos detr\u00E1s de {country}",
+  "countryRace.closeGap": "\u00A1Sube memes para cerrar la brecha!",
+  "countryRace.keepLead": "\u00A1Mant\u00E9n la ventaja!",
+  "countryRace.uploadHelp": "Sube memes por tu pa\u00EDs",
+  "countryRace.vs": "vs",
+
+  // ── Rank Change Notifications ─────────────────────────────────────────────
+  "rankChange.movedUp": "\u00A1Tu pa\u00EDs subi\u00F3 al puesto #{rank}! \uD83C\uDF89",
+  "rankChange.movedDown": "Tu pa\u00EDs baj\u00F3 al puesto #{rank} \u2014 \u00A1hora de publicar!",
+  "rankChange.overtook": "\u00A1{country1} super\u00F3 a {country2}!",
+
+  // ── Country Champion Badge ────────────────────────────────────────────────
+  "countryChampion.badge": "Miembro del pa\u00EDs #1",
 };
 
 export default es;

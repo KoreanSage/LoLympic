@@ -525,6 +525,23 @@ const ja: Record<TranslationKeys, string> = {
   "rank.diamond": "ダイヤモンド",
   "rank.master": "マスター",
   "rank.challenger": "チャレンジャー",
+
+  // ── Country Race Widget ────────────────────────────────────────────────────
+  "countryRace.leading": "あなたの国がリードしています！",
+  "countryRace.pointsAhead": "{country}より{points}ポイント先行中",
+  "countryRace.pointsBehind": "{country}より{points}ポイント遅れています",
+  "countryRace.closeGap": "ミームを投稿して差を縮めよう！",
+  "countryRace.keepLead": "リードを維持しよう！",
+  "countryRace.uploadHelp": "国のためにミームを投稿",
+  "countryRace.vs": "vs",
+
+  // ── Rank Change Notifications ─────────────────────────────────────────────
+  "rankChange.movedUp": "あなたの国が{rank}位に上昇！🎉",
+  "rankChange.movedDown": "あなたの国が{rank}位に下落 — 投稿の時間！",
+  "rankChange.overtook": "{country1}が{country2}を追い抜きました！",
+
+  // ── Country Champion Badge ────────────────────────────────────────────────
+  "countryChampion.badge": "1位の国のメンバー",
 };
 
 export default ja;

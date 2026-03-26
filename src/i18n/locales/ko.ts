@@ -531,6 +531,23 @@ const ko: Record<TranslationKeys, string> = {
   "rank.diamond": "다이아몬드",
   "rank.master": "마스터",
   "rank.challenger": "챌린저",
+
+  // ── Country Race Widget ────────────────────────────────────────────────────
+  "countryRace.leading": "당신의 나라가 1위입니다!",
+  "countryRace.pointsAhead": "{country}보다 {points}점 앞서고 있어요",
+  "countryRace.pointsBehind": "{country}보다 {points}점 뒤처져 있어요",
+  "countryRace.closeGap": "밈을 올려서 격차를 줄이세요!",
+  "countryRace.keepLead": "1위를 유지하세요!",
+  "countryRace.uploadHelp": "나라를 위해 밈 올리기",
+  "countryRace.vs": "vs",
+
+  // ── Rank Change Notifications ─────────────────────────────────────────────
+  "rankChange.movedUp": "당신의 나라가 {rank}위로 올랐어요! 🎉",
+  "rankChange.movedDown": "당신의 나라가 {rank}위로 떨어졌어요 — 밈을 올릴 시간!",
+  "rankChange.overtook": "{country1}이(가) {country2}을(를) 추월했어요!",
+
+  // ── Country Champion Badge ────────────────────────────────────────────────
+  "countryChampion.badge": "1위 국가의 멤버",
 };
 
 export default ko;

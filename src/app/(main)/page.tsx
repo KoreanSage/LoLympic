@@ -8,6 +8,7 @@ import FeedList from "@/components/feed/FeedList";
 import MonthlyWinnerBanner from "@/components/competition/MonthlyWinnerBanner";
 import WinnerPopup from "@/components/competition/WinnerPopup";
 import HeroBanner from "@/components/feed/HeroBanner";
+import RankChangeToast from "@/components/feed/RankChangeToast";
 
 export default function HomePage() {
   const { data: session } = useSession();
@@ -46,6 +47,7 @@ export default function HomePage() {
   return (
     <MainLayout>
       <WinnerPopup />
+      <RankChangeToast />
       <div className="space-y-0">
         <HeroBanner />
         <MonthlyWinnerBanner />

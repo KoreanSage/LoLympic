@@ -10,6 +10,8 @@ import { useTranslation } from "@/i18n";
 // Types
 // ---------------------------------------------------------------------------
 
+const SIDEBAR_RANK_CACHE_KEY = "lolympic_sidebar_country_ranks";
+
 interface CountryRanking {
   rank: number;
   flag: string;
@@ -17,6 +19,7 @@ interface CountryRanking {
   score: number;
   totalPosts: number;
   medal?: "GOLD" | "SILVER" | "BRONZE";
+  rankChange?: "up" | "down" | "same";
 }
 
 interface TopCreator {
@@ -130,7 +133,7 @@ export default function Sidebar() {
   const [loadingTags, setLoadingTags] = useState(true);
 
   useEffect(() => {
-    // Fetch country rankings
+    // Fetch country rankings with rank change detection
     fetch("/api/leaderboard?type=country&limit=5")
       .then((res) => res.json())
       .then((data) => {
@@ -141,16 +144,41 @@ export default function Sidebar() {
           score: number;
           totalPosts: number;
         }>;
-        setRankings(
-          entries.map((e) => ({
+
+        // Load previous rankings from localStorage for rank change indicators
+        let prevRanks: Record<string, number> = {};
+        try {
+          const cached = localStorage.getItem(SIDEBAR_RANK_CACHE_KEY);
+          if (cached) prevRanks = JSON.parse(cached);
+        } catch {}
+
+        const mapped = entries.map((e) => {
+          const prevRank = prevRanks[e.country.nameEn];
+          let rankChange: "up" | "down" | "same" = "same";
+          if (prevRank !== undefined && prevRank !== e.rank) {
+            rankChange = e.rank < prevRank ? "up" : "down";
+          }
+          return {
             rank: e.rank,
             flag: e.country.flagEmoji,
             name: e.country.nameEn,
             score: e.score,
             totalPosts: e.totalPosts ?? 0,
             medal: e.medal ?? undefined,
-          }))
-        );
+            rankChange,
+          };
+        });
+
+        setRankings(mapped);
+
+        // Save current ranks to localStorage
+        const newRanks: Record<string, number> = {};
+        entries.forEach((e) => {
+          newRanks[e.country.nameEn] = e.rank;
+        });
+        try {
+          localStorage.setItem(SIDEBAR_RANK_CACHE_KEY, JSON.stringify(newRanks));
+        } catch {}
       })
       .catch((err) => console.error("Failed to fetch country rankings:", err))
       .finally(() => setLoadingRankings(false));
@@ -255,13 +283,27 @@ export default function Sidebar() {
         ) : (
           <div className="space-y-1.5">
             {rankings.map((c) => (
-              <div key={c.rank} className="group">
-                <div className="flex items-center gap-1.5">
+              <div
+                key={c.rank}
+                className={`group rounded-lg px-1 -mx-1 ${
+                  c.rank === 1
+                    ? "bg-[#c9a84c]/10 border border-[#c9a84c]/20"
+                    : ""
+                }`}
+              >
+                <div className="flex items-center gap-1.5 py-0.5">
                   <RankBadge rank={c.rank} />
                   <span className="text-sm">{c.flag}</span>
                   <span className="text-xs text-foreground-muted flex-1 truncate">
-                    {c.name}
+                    {c.rank === 1 && "👑 "}{c.name}
                   </span>
+                  {/* Rank change indicator */}
+                  {c.rankChange === "up" && (
+                    <span className="text-[10px] text-emerald-400 font-bold">▲</span>
+                  )}
+                  {c.rankChange === "down" && (
+                    <span className="text-[10px] text-red-400 font-bold">▼</span>
+                  )}
                   <span className="text-[10px] text-foreground-subtle">
                     {c.totalPosts}p
                   </span>
