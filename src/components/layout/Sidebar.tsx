@@ -286,7 +286,7 @@ export default function Sidebar() {
           <div className="space-y-1.5">
             {rankings.map((c) => (
               <Link
-                key={c.rank}
+                key={c.id}
                 href={`/?country=${c.id}`}
                 className={`group block rounded-lg px-1 -mx-1 hover:bg-background-elevated transition-colors cursor-pointer ${
                   c.rank === 1

@@ -67,11 +67,12 @@ export default function ScoringExplanationModal({
       <div
         role="dialog"
         aria-modal="true"
+        aria-labelledby="scoring-modal-title"
         className="relative w-full max-w-md bg-background-surface border border-border rounded-2xl p-6 space-y-5 animate-in zoom-in-95 fade-in duration-200 max-h-[85vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <h2 className="text-lg font-bold text-[#c9a84c] text-center">
+        <h2 id="scoring-modal-title" className="text-lg font-bold text-[#c9a84c] text-center">
           {t("scoring.howItWorks")}
         </h2>
 

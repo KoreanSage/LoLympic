@@ -116,7 +116,7 @@ function FeedCardInner({
   const router = useRouter();
   const { data: session } = useSession();
   const { t } = useTranslation();
-  const preferredLang = (session?.user as any)?.preferredLanguage || "en";
+  const preferredLang = session?.user?.preferredLanguage || "en";
 
   // Auto-enable translation overlay when segments with bounding boxes exist or pre-rendered image available
   const hasOverlaySegments = useMemo(
@@ -148,10 +148,11 @@ function FeedCardInner({
   const [votePending, setVotePending] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const isOwnPost = (session?.user as any)?.username === author.username;
+  const isOwnPost = session?.user?.username === author.username;
 
-  // Load vote state
+  // Load vote state (only for authenticated users)
   useEffect(() => {
+    if (!session?.user) return;
     fetch(`/api/posts/${id}/vote`)
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
@@ -161,7 +162,7 @@ function FeedCardInner({
         }
       })
       .catch((e) => { console.error("Failed to fetch vote state:", e); });
-  }, [id]);
+  }, [id, session?.user]);
 
   // Close menu on outside click
   useEffect(() => {

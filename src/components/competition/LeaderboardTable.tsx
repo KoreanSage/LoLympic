@@ -106,7 +106,7 @@ const CountryTable = React.memo(function CountryTable({ entries }: { entries: Co
       {entries.map((entry) => (
         <Link
           key={entry.countryId}
-          href={`/search?q=${encodeURIComponent(entry.name)}`}
+          href={`/?country=${entry.countryId}`}
           className={`
             flex items-center gap-3 px-4 py-3 rounded-lg transition-colors cursor-pointer
             ${

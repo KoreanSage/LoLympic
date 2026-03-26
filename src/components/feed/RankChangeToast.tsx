@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useTranslation } from "@/i18n";
 
@@ -21,10 +21,11 @@ export default function RankChangeToast() {
     type: "up" | "down";
   } | null>(null);
   const [visible, setVisible] = useState(false);
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   useEffect(() => {
     if (!session?.user) return;
-    const userCountryId = (session.user as any).countryId;
+    const userCountryId = session.user.countryId;
     if (!userCountryId) return;
 
     fetch("/api/leaderboard?type=country&limit=50")
@@ -81,15 +82,22 @@ export default function RankChangeToast() {
         }
 
         // Show with animation
-        setTimeout(() => setVisible(true), 100);
+        timersRef.current.push(setTimeout(() => setVisible(true), 100));
 
         // Auto-dismiss after 5 seconds
-        setTimeout(() => {
-          setVisible(false);
-          setTimeout(() => setToast(null), 400);
-        }, 5000);
+        timersRef.current.push(
+          setTimeout(() => {
+            setVisible(false);
+            timersRef.current.push(setTimeout(() => setToast(null), 400));
+          }, 5000)
+        );
       })
       .catch(() => {});
+
+    return () => {
+      timersRef.current.forEach(clearTimeout);
+      timersRef.current = [];
+    };
   }, [session?.user, t]);
 
   if (!toast) return null;
