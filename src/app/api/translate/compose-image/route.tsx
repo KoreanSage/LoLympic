@@ -3,133 +3,73 @@ import { NextRequest } from "next/server";
 
 export const runtime = "edge";
 
-// ---------------------------------------------------------------------------
-// Font family mapping per language
-// ---------------------------------------------------------------------------
+// ----------------------------------------------------------------------
+// Font family mapping per language (Google Fonts URL format)
+// ----------------------------------------------------------------------
 function getFontFamily(lang: string): string {
-  const map: Record<string, string> = {
-    ko: "Noto+Sans+KR",
-    ja: "Noto+Sans+JP",
-    zh: "Noto+Sans+SC",
-    ar: "Noto+Sans+Arabic",
-    hi: "Noto+Sans+Devanagari",
-    en: "Noto+Sans",
-    es: "Noto+Sans",
-  };
-  return map[lang] || "Noto+Sans";
+  switch (lang) {
+    case "ko": return "Noto+Sans+KR";
+    case "ja": return "Noto+Sans+JP";
+    case "zh": return "Noto+Sans+SC";
+    case "ar": return "Noto+Sans+Arabic";
+    case "hi": return "Noto+Sans+Devanagari";
+    default:   return "Noto+Sans"; // en, es, etc.
+  }
 }
 
-// Display name for CSS font-family (without URL encoding)
-function getFontDisplayName(lang: string): string {
-  const map: Record<string, string> = {
-    ko: "Noto Sans KR",
-    ja: "Noto Sans JP",
-    zh: "Noto Sans SC",
-    ar: "Noto Sans Arabic",
-    hi: "Noto Sans Devanagari",
-    en: "Noto Sans",
-    es: "Noto Sans",
-  };
-  return map[lang] || "Noto Sans";
-}
-
-// Google Fonts CSS URL — family already URL-encoded from getFontFamily()
-function getGoogleFontUrl(family: string, weight: number, text: string): string {
-  // Deduplicate characters to minimize font subset size
-  const uniqueChars = Array.from(new Set(text.split(""))).join("");
-  const encodedText = encodeURIComponent(uniqueChars);
-  return `https://fonts.googleapis.com/css2?family=${family}:wght@${weight}&text=${encodedText}&display=swap`;
-}
-
-// ---------------------------------------------------------------------------
-// Fetch Google Font binary with text subsetting (only glyphs used)
-// ---------------------------------------------------------------------------
+// ----------------------------------------------------------------------
+// Fetch Google Font with text subsetting (only needed glyphs)
+// ----------------------------------------------------------------------
 async function fetchGoogleFont(
-  family: string,
-  weight: number,
-  text: string
+  fontFamily: string,
+  textToRender: string
 ): Promise<ArrayBuffer> {
-  const url = getGoogleFontUrl(family, weight, text);
+  // Deduplicate characters for minimal font subset
+  const uniqueChars = Array.from(new Set(textToRender.split(""))).join("");
 
-  const cssRes = await fetch(url, {
+  const url = `https://fonts.googleapis.com/css2?family=${fontFamily}:wght@900&text=${encodeURIComponent(uniqueChars)}`;
+
+  // Safari 5 User-Agent to get woff format (most compatible with Satori)
+  const css = await fetch(url, {
     headers: {
-      // Pretend to be a browser so Google returns woff2/truetype
       "User-Agent":
         "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10_6_8; de-at) AppleWebKit/533.21.1 (KHTML, like Gecko) Version/5.0.5 Safari/533.21.1",
     },
-  });
+  }).then((res) => res.text());
 
-  if (!cssRes.ok) {
-    throw new Error(`Failed to fetch Google Fonts CSS for ${family}: ${cssRes.status}`);
+  // Extract font file URL from CSS
+  const resource = css.match(
+    /src: url\((.+)\) format\('(woff|woff2|truetype)'\)/
+  );
+  if (!resource) {
+    throw new Error(`Google Font download failed for ${fontFamily}`);
   }
 
-  const css = await cssRes.text();
-  // Extract ALL font URLs — use the last one (most complete for CJK subsetting)
-  const matches = Array.from(css.matchAll(/src:\s*url\(([^)]+)\)/g));
-  if (matches.length === 0) {
-    throw new Error(`No font URL found in CSS for ${family}`);
-  }
-  // Last match is typically the most complete subset for CJK
-  const fontUrl = matches[matches.length - 1][1];
-
-  const fontRes = await fetch(fontUrl);
-  if (!fontRes.ok) {
-    throw new Error(`Failed to fetch font binary for ${family}: ${fontRes.status}`);
-  }
-
-  return fontRes.arrayBuffer();
+  const fontResponse = await fetch(resource[1]);
+  return fontResponse.arrayBuffer();
 }
 
-// ---------------------------------------------------------------------------
-// Segment type from DB
-// ---------------------------------------------------------------------------
-interface ComposeSegment {
-  translatedText: string;
-  semanticRole: string;
-  boxX: number;
-  boxY: number;
-  boxWidth: number;
-  boxHeight: number;
-  color?: string;
-  strokeColor?: string;
-  fontSizePixels?: number;
-  fontWeight?: number;
-  fontFamily?: string;
-  textAlign?: string;
-  isUppercase?: boolean;
-  rotation?: number;
-}
-
-interface ComposeRequest {
-  cleanUrl: string;
-  segments: ComposeSegment[];
-  width: number;
-  height: number;
-  targetLanguage: string;
-}
-
-// ---------------------------------------------------------------------------
+// ----------------------------------------------------------------------
 // POST /api/translate/compose-image
-// ---------------------------------------------------------------------------
+// ----------------------------------------------------------------------
 export async function POST(req: NextRequest) {
   try {
-    const body = (await req.json()) as ComposeRequest;
-    const { cleanUrl, segments: rawSegments, width, height, targetLanguage } = body;
+    const { cleanUrl, segments, width, height, targetLanguage } =
+      await req.json();
 
-    if (!cleanUrl || !rawSegments || !width || !height) {
-      return new Response(JSON.stringify({ error: "Missing required fields" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+    if (!cleanUrl || !segments || !width || !height) {
+      return new Response(
+        JSON.stringify({ error: "Missing required fields" }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
     }
 
     // Filter out WATERMARK segments
-    const segments = rawSegments.filter(
-      (s) => s.semanticRole !== "WATERMARK"
+    const visibleSegments = (segments as any[]).filter(
+      (s) => s.semanticRole !== "WATERMARK" && s.translatedText?.trim()
     );
 
-    if (segments.length === 0) {
-      // No segments to render — just proxy the clean image
+    if (visibleSegments.length === 0) {
       const imgRes = await fetch(cleanUrl);
       return new Response(imgRes.body, {
         headers: {
@@ -139,192 +79,119 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Determine the normalization factor for box coordinates
-    // Segments may use 0-1 range or 0-1000 range (Gemini)
+    // Determine coordinate normalization (0-1 vs 0-1000)
     const maxCoord = Math.max(
-      ...segments.map((s) =>
-        Math.max(s.boxX, s.boxY, s.boxX + s.boxWidth, s.boxY + s.boxHeight)
+      ...visibleSegments.map((s: any) =>
+        Math.max(
+          s.boxX ?? s.box?.x ?? 0,
+          s.boxY ?? s.box?.y ?? 0,
+          (s.boxX ?? s.box?.x ?? 0) + (s.boxWidth ?? s.box?.width ?? 0),
+          (s.boxY ?? s.box?.y ?? 0) + (s.boxHeight ?? s.box?.height ?? 0)
+        )
       )
     );
-    const normFactor = maxCoord > 1.5 ? (maxCoord > 100 ? 1000 : maxCoord) : 1;
+    const norm = maxCoord > 1.5 ? (maxCoord > 100 ? 1000 : maxCoord) : 1;
 
-    // Collect all translated text to determine which glyphs we need
-    const allText = segments.map((s) => s.translatedText).join("");
+    // 1. Collect ALL translated text for font subsetting
+    const fullText = visibleSegments
+      .map((seg: any) => seg.translatedText)
+      .join("");
 
-    // Guard: if no actual text to render, just return clean image
-    if (!allText.trim()) {
-      const imgRes = await fetch(cleanUrl);
-      return new Response(imgRes.body, {
-        headers: {
-          "Content-Type": imgRes.headers.get("Content-Type") || "image/png",
-          "Cache-Control": "public, max-age=31536000, immutable",
-        },
-      });
-    }
+    // 2. Download optimized font
+    const fontFamily = getFontFamily(targetLanguage || "en");
+    const fontBuffer = await fetchGoogleFont(fontFamily, fullText);
 
-    // Cap dimensions to prevent Satori memory issues
-    const safeWidth = Math.min(width, 2048);
-    const safeHeight = Math.min(height, 2048);
-
-    const fontUrlName = getFontFamily(targetLanguage);
-    const fontDisplayName = getFontDisplayName(targetLanguage);
-    const defaultWeight = 700;
-
-    // Fetch fonts — we need unique weight variants
-    const weightSet = new Set<number>();
-    weightSet.add(defaultWeight);
-    for (const seg of segments) {
-      if (seg.fontWeight) weightSet.add(seg.fontWeight);
-    }
-
-    const fontDataArr: { name: string; data: ArrayBuffer; weight: number; style: string }[] = [];
-
-    // Fetch fonts in parallel
-    const fontPromises = Array.from(weightSet).map(async (w) => {
-      try {
-        const data = await fetchGoogleFont(fontUrlName, w, allText);
-        fontDataArr.push({
-          name: fontDisplayName,
-          data,
-          weight: w as any,
-          style: "normal" as any,
-        });
-      } catch (err) {
-        console.warn(`Font fetch failed for ${fontUrlName}@${w}:`, err);
-        // Try Inter as fallback
-        if (fontUrlName !== "Noto+Sans") {
-          try {
-            const data = await fetchGoogleFont("Noto+Sans", w, allText);
-            fontDataArr.push({
-              name: fontDisplayName, // Keep same name so Satori uses it
-              data,
-              weight: w as any,
-              style: "normal" as any,
-            });
-          } catch {
-            // Skip
-          }
-        }
-      }
-    });
-
-    await Promise.all(fontPromises);
-
+    // 3. Cap dimensions for Satori memory safety
+    const safeW = Math.min(width, 2048);
+    const safeH = Math.min(height, 2048);
     const isRTL = targetLanguage === "ar";
 
-    // Build JSX for Satori
-    const jsx = (
-      <div
-        style={{
-          display: "flex",
-          position: "relative",
-          width: `${safeWidth}px`,
-          height: `${safeHeight}px`,
-          direction: isRTL ? "rtl" : "ltr",
-        }}
-      >
-        {/* Background: clean image */}
-        <img
-          src={cleanUrl}
-          width={safeWidth}
-          height={safeHeight}
+    // 4. Compose with Satori
+    return new ImageResponse(
+      (
+        <div
           style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: `${safeWidth}px`,
-            height: `${safeHeight}px`,
-            objectFit: "cover",
+            display: "flex",
+            width: "100%",
+            height: "100%",
+            position: "relative",
+            direction: isRTL ? "rtl" : "ltr",
           }}
-        />
+        >
+          {/* Clean background image (text removed by LaMa) */}
+          <img
+            src={cleanUrl}
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+            }}
+          />
 
-        {/* Overlay: translated text segments */}
-        {segments.map((seg, i) => {
-          const text = seg.isUppercase
-            ? seg.translatedText.toUpperCase()
-            : seg.translatedText;
+          {/* Translated text segments */}
+          {visibleSegments.map((seg: any, i: number) => {
+            // Support both DB format (boxX) and API format (box.x)
+            const x = (seg.boxX ?? seg.box?.x ?? 0) / norm;
+            const y = (seg.boxY ?? seg.box?.y ?? 0) / norm;
+            const w = (seg.boxWidth ?? seg.box?.width ?? 0) / norm;
+            const h = (seg.boxHeight ?? seg.box?.height ?? 0) / norm;
 
-          // Normalize coordinates to pixel values
-          const bx = (seg.boxX / normFactor) * safeWidth;
-          const by = (seg.boxY / normFactor) * safeHeight;
-          const bw = (seg.boxWidth / normFactor) * safeWidth;
-          const bh = (seg.boxHeight / normFactor) * safeHeight;
+            // Auto-calculate font size: 25% of box height, min 14px
+            const fontSize = Math.max(
+              14,
+              h * safeH * 0.25
+            );
 
-          // Font size: use provided or auto-scale to fit box
-          const fontSize = seg.fontSizePixels
-            ? Math.min(seg.fontSizePixels, bh * 0.9)
-            : Math.max(10, Math.min(bh * 0.65, bw / Math.max(text.length * 0.6, 1)));
-
-          const weight = seg.fontWeight || defaultWeight;
-          const color = seg.color || "#FFFFFF";
-          const strokeColor = seg.strokeColor || "rgba(0,0,0,0.8)";
-          const align = (seg.textAlign || "CENTER").toLowerCase() as
-            | "left"
-            | "center"
-            | "right";
-
-          return (
-            <div
-              key={i}
-              style={{
-                display: "flex",
-                position: "absolute",
-                left: `${bx}px`,
-                top: `${by}px`,
-                width: `${bw}px`,
-                height: `${bh}px`,
-                alignItems: "center",
-                justifyContent:
-                  align === "left"
-                    ? "flex-start"
-                    : align === "right"
-                    ? "flex-end"
-                    : "center",
-                padding: "2px 4px",
-                overflow: "hidden",
-                ...(seg.rotation
-                  ? { transform: `rotate(${seg.rotation}deg)` }
-                  : {}),
-              }}
-            >
-              <span
+            return (
+              <div
+                key={i}
                 style={{
-                  fontFamily: `"${fontDisplayName}", sans-serif`,
+                  position: "absolute",
+                  left: `${x * 100}%`,
+                  top: `${y * 100}%`,
+                  width: `${w * 100}%`,
+                  height: `${h * 100}%`,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  textAlign: "center",
+                  fontFamily: '"Noto Sans"',
                   fontSize: `${fontSize}px`,
-                  fontWeight: weight,
-                  color,
-                  textAlign: align,
+                  color: seg.color || "white",
+                  textShadow:
+                    "-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000",
                   lineHeight: 1.2,
-                  textShadow: `1px 1px 2px ${strokeColor}, -1px -1px 2px ${strokeColor}, 1px -1px 2px ${strokeColor}, -1px 1px 2px ${strokeColor}`,
-                  wordBreak: "break-word" as const,
+                  wordBreak: "keep-all" as const,
                   overflowWrap: "break-word" as const,
-                  maxWidth: "100%",
                 }}
               >
-                {text}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-    );
-
-    // Render via Satori -> PNG
-    const imageResponse = new ImageResponse(jsx, {
-      width: safeWidth,
-      height: safeHeight,
-      fonts: fontDataArr.length > 0 ? fontDataArr as any : undefined,
-    });
-
-    return imageResponse;
-  } catch (err) {
-    console.error("compose-image error:", err);
-    return new Response(
-      JSON.stringify({ error: "Failed to compose image", details: String(err) }),
+                {seg.translatedText}
+              </div>
+            );
+          })}
+        </div>
+      ),
       {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
+        width: safeW,
+        height: safeH,
+        fonts: [
+          {
+            name: "Noto Sans",
+            data: fontBuffer,
+            style: "normal" as const,
+            weight: 900 as const,
+          },
+        ],
       }
+    );
+  } catch (e: any) {
+    console.error("compose-image error:", e);
+    return new Response(
+      JSON.stringify({ error: "Image generation failed", details: String(e) }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
 }
