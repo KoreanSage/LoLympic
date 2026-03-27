@@ -463,6 +463,9 @@ export default function MemeRenderer({
   }, [image, cleanImage, segments, displaySize, showTranslation]);
 
   useEffect(() => {
+    // Skip canvas rendering when pre-rendered image is available
+    if (usePreRendered) return;
+
     // Wait for fonts to load before rendering translated text on canvas
     if (showTranslation && segments.length > 0) {
       // Collect actual text per font so browser fetches correct unicode-range subsets
@@ -494,7 +497,7 @@ export default function MemeRenderer({
     } else {
       render();
     }
-  }, [render, showTranslation, segments]);
+  }, [render, showTranslation, segments, usePreRendered]);
 
   // Re-render on resize
   useEffect(() => {

@@ -64,13 +64,15 @@ async function fetchGoogleFont(
   }
 
   const css = await cssRes.text();
-  // Extract the font URL from the CSS @font-face src
-  const match = css.match(/src:\s*url\(([^)]+)\)/);
-  if (!match?.[1]) {
+  // Extract ALL font URLs — use the last one (most complete for CJK subsetting)
+  const matches = Array.from(css.matchAll(/src:\s*url\(([^)]+)\)/g));
+  if (matches.length === 0) {
     throw new Error(`No font URL found in CSS for ${family}`);
   }
+  // Last match is typically the most complete subset for CJK
+  const fontUrl = matches[matches.length - 1][1];
 
-  const fontRes = await fetch(match[1]);
+  const fontRes = await fetch(fontUrl);
   if (!fontRes.ok) {
     throw new Error(`Failed to fetch font binary for ${family}: ${fontRes.status}`);
   }
@@ -148,6 +150,22 @@ export async function POST(req: NextRequest) {
 
     // Collect all translated text to determine which glyphs we need
     const allText = segments.map((s) => s.translatedText).join("");
+
+    // Guard: if no actual text to render, just return clean image
+    if (!allText.trim()) {
+      const imgRes = await fetch(cleanUrl);
+      return new Response(imgRes.body, {
+        headers: {
+          "Content-Type": imgRes.headers.get("Content-Type") || "image/png",
+          "Cache-Control": "public, max-age=31536000, immutable",
+        },
+      });
+    }
+
+    // Cap dimensions to prevent Satori memory issues
+    const safeWidth = Math.min(width, 2048);
+    const safeHeight = Math.min(height, 2048);
+
     const fontUrlName = getFontFamily(targetLanguage);
     const fontDisplayName = getFontDisplayName(targetLanguage);
     const defaultWeight = 700;
@@ -192,27 +210,30 @@ export async function POST(req: NextRequest) {
 
     await Promise.all(fontPromises);
 
+    const isRTL = targetLanguage === "ar";
+
     // Build JSX for Satori
     const jsx = (
       <div
         style={{
           display: "flex",
           position: "relative",
-          width: `${width}px`,
-          height: `${height}px`,
+          width: `${safeWidth}px`,
+          height: `${safeHeight}px`,
+          direction: isRTL ? "rtl" : "ltr",
         }}
       >
         {/* Background: clean image */}
         <img
           src={cleanUrl}
-          width={width}
-          height={height}
+          width={safeWidth}
+          height={safeHeight}
           style={{
             position: "absolute",
             top: 0,
             left: 0,
-            width: `${width}px`,
-            height: `${height}px`,
+            width: `${safeWidth}px`,
+            height: `${safeHeight}px`,
             objectFit: "cover",
           }}
         />
@@ -224,10 +245,10 @@ export async function POST(req: NextRequest) {
             : seg.translatedText;
 
           // Normalize coordinates to pixel values
-          const bx = (seg.boxX / normFactor) * width;
-          const by = (seg.boxY / normFactor) * height;
-          const bw = (seg.boxWidth / normFactor) * width;
-          const bh = (seg.boxHeight / normFactor) * height;
+          const bx = (seg.boxX / normFactor) * safeWidth;
+          const by = (seg.boxY / normFactor) * safeHeight;
+          const bw = (seg.boxWidth / normFactor) * safeWidth;
+          const bh = (seg.boxHeight / normFactor) * safeHeight;
 
           // Font size: use provided or auto-scale to fit box
           const fontSize = seg.fontSizePixels
@@ -290,8 +311,8 @@ export async function POST(req: NextRequest) {
 
     // Render via Satori -> PNG
     const imageResponse = new ImageResponse(jsx, {
-      width,
-      height,
+      width: safeWidth,
+      height: safeHeight,
       fonts: fontDataArr.length > 0 ? fontDataArr as any : undefined,
     });
 
