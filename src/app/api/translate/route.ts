@@ -556,28 +556,28 @@ async function generateTranslatedImageForPayload(
       }
     }
 
-    if (!cleanUrl) {
-      // No clean image available — cannot compose translated image.
-      // Frontend will use MemeRenderer canvas as client-side fallback.
-      console.warn(`[Satori] No clean image for post ${postId}, skipping translated image generation`);
+    // 2. Use ORIGINAL image as background (preserves original quality/design)
+    // Translated text will be overlaid with opaque background to cover original text
+    const originalUrl = postImage.originalUrl;
+    if (!originalUrl) {
+      console.warn(`[Satori] No original image for post ${postId}, skipping`);
       return;
     }
 
-    // 2. Resolve the clean image URL to an absolute URL
     const appUrl = process.env.NEXT_PUBLIC_APP_URL
       || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
       || (process.env.NEXTAUTH_URL)
       || "http://localhost:3000";
 
-    const resolvedCleanUrl = cleanUrl.startsWith("http")
-      ? cleanUrl
-      : `${appUrl}${cleanUrl}`;
+    const resolvedOriginalUrl = originalUrl.startsWith("http")
+      ? originalUrl
+      : `${appUrl}${originalUrl}`;
 
     // 3. Get image dimensions via Sharp
-    const cleanRes = await fetch(resolvedCleanUrl);
-    if (!cleanRes.ok) throw new Error(`Failed to fetch clean image: ${cleanRes.status}`);
-    const cleanBuffer = Buffer.from(await cleanRes.arrayBuffer());
-    const metadata = await sharp(cleanBuffer).metadata();
+    const origRes = await fetch(resolvedOriginalUrl);
+    if (!origRes.ok) throw new Error(`Failed to fetch original image: ${origRes.status}`);
+    const origBuffer = Buffer.from(await origRes.arrayBuffer());
+    const metadata = await sharp(origBuffer).metadata();
     const imgWidth = metadata.width || 800;
     const imgHeight = metadata.height || 800;
 
@@ -603,10 +603,10 @@ async function generateTranslatedImageForPayload(
     const safeW = Math.min(imgWidth, 2048);
     const safeH = Math.min(imgHeight, 2048);
 
-    // Convert clean image to base64 data URI for Satori embedding
-    const cleanBase64 = cleanBuffer.toString("base64");
-    const cleanMime = metadata.format === "png" ? "image/png" : "image/jpeg";
-    const cleanDataUri = `data:${cleanMime};base64,${cleanBase64}`;
+    // Convert original image to base64 data URI for Satori embedding
+    const origBase64 = origBuffer.toString("base64");
+    const origMime = metadata.format === "png" ? "image/png" : "image/jpeg";
+    const origDataUri = `data:${origMime};base64,${origBase64}`;
 
     // Build React-like element tree for Satori
     const element = {
@@ -622,7 +622,7 @@ async function generateTranslatedImageForPayload(
           {
             type: "img",
             props: {
-              src: cleanDataUri,
+              src: origDataUri,
               style: {
                 position: "absolute" as const,
                 top: 0,
@@ -656,11 +656,12 @@ async function generateTranslatedImageForPayload(
                   fontFamily: "Noto Sans",
                   fontSize: `${fontSize}px`,
                   color: "#FFFFFF",
+                  backgroundColor: "rgba(0, 0, 0, 0.75)",
+                  padding: "4px 8px",
+                  borderRadius: "4px",
                   textShadow:
-                    "-3px -3px 0 #000, 3px -3px 0 #000, -3px 3px 0 #000, 3px 3px 0 #000, " +
-                    "-2px 0 0 #000, 2px 0 0 #000, 0 -2px 0 #000, 0 2px 0 #000, " +
-                    "0 0 8px rgba(0,0,0,0.8)",
-                  lineHeight: 1.2,
+                    "-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000",
+                  lineHeight: 1.3,
                   wordBreak: "keep-all" as const,
                   overflowWrap: "break-word" as const,
                 },
