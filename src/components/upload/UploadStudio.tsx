@@ -94,6 +94,9 @@ export default function UploadStudio() {
   const [showImageUploader, setShowImageUploader] = useState(false);
   const [showMemeDescriptionField, setShowMemeDescriptionField] = useState(false);
 
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
   const hasImages = imageFiles.length > 0;
   const hasGif = imageFiles.some((f) => f.type === "image/gif");
   const isTextOnly = !hasImages;
@@ -119,6 +122,18 @@ export default function UploadStudio() {
     imagePreviews.forEach((url) => URL.revokeObjectURL(url));
     setImageFiles([]);
     setImagePreviews([]);
+  };
+
+  const handleReorder = (fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex) return;
+    const reorder = <T,>(arr: T[]): T[] => {
+      const result = [...arr];
+      const [moved] = result.splice(fromIndex, 1);
+      result.splice(toIndex, 0, moved);
+      return result;
+    };
+    setImageFiles(reorder);
+    setImagePreviews(reorder);
   };
 
   const handlePublish = async () => {
@@ -658,11 +673,11 @@ export default function UploadStudio() {
       <div className="rounded-xl overflow-hidden border border-border bg-background-surface">
         <ImageCarousel>
           {imagePreviews.map((preview, i) => (
-            <div key={i} className="relative bg-black/5 dark:bg-black/20 flex items-center justify-center">
+            <div key={i} className="relative bg-black/5 dark:bg-black/20 flex items-center justify-center h-[500px]">
               <img
                 src={preview}
                 alt={`Preview ${i + 1}`}
-                className="w-full object-contain max-h-[600px]"
+                className="max-w-full max-h-full object-contain"
               />
               <button
                 onClick={() => handleRemoveImage(i)}
@@ -680,8 +695,40 @@ export default function UploadStudio() {
       {/* Thumbnail strip */}
       <div className="flex gap-2 overflow-x-auto pb-1">
         {imagePreviews.map((preview, i) => (
-          <div key={i} className="relative shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 border-border">
-            <img src={preview} alt="" className="w-full h-full object-cover" />
+          <div
+            key={i}
+            draggable
+            onDragStart={(e) => {
+              setDragIndex(i);
+              e.dataTransfer.effectAllowed = "move";
+            }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = "move";
+              setDragOverIndex(i);
+            }}
+            onDragLeave={() => {
+              setDragOverIndex((prev) => (prev === i ? null : prev));
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              if (dragIndex !== null) handleReorder(dragIndex, i);
+              setDragIndex(null);
+              setDragOverIndex(null);
+            }}
+            onDragEnd={() => {
+              setDragIndex(null);
+              setDragOverIndex(null);
+            }}
+            className={`relative shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 cursor-grab active:cursor-grabbing transition-all ${
+              dragIndex === i
+                ? "opacity-40 border-border"
+                : dragOverIndex === i
+                  ? "border-[#c9a84c] scale-105"
+                  : "border-border"
+            }`}
+          >
+            <img src={preview} alt="" className="w-full h-full object-cover pointer-events-none" />
             <button
               onClick={() => handleRemoveImage(i)}
               className="absolute inset-0 bg-black/0 hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 hover:opacity-100"
