@@ -556,11 +556,10 @@ async function generateTranslatedImageForPayload(
       }
     }
 
-    // 2. Use ORIGINAL image as background (preserves original quality/design)
-    // Translated text will be overlaid with opaque background to cover original text
-    const originalUrl = postImage.originalUrl;
-    if (!originalUrl) {
-      console.warn(`[Satori] No original image for post ${postId}, skipping`);
+    // 2. Use LaMa clean image (text removed) as background
+    const satoriCleanUrl = postImage.cleanUrl;
+    if (!satoriCleanUrl) {
+      console.warn(`[Satori] No clean image for post ${postId}, skipping translated image generation`);
       return;
     }
 
@@ -569,15 +568,15 @@ async function generateTranslatedImageForPayload(
       || (process.env.NEXTAUTH_URL)
       || "http://localhost:3000";
 
-    const resolvedOriginalUrl = originalUrl.startsWith("http")
-      ? originalUrl
-      : `${appUrl}${originalUrl}`;
+    const resolvedCleanUrl = satoriCleanUrl.startsWith("http")
+      ? satoriCleanUrl
+      : `${appUrl}${satoriCleanUrl}`;
 
     // 3. Get image dimensions via Sharp
-    const origRes = await fetch(resolvedOriginalUrl);
-    if (!origRes.ok) throw new Error(`Failed to fetch original image: ${origRes.status}`);
-    const origBuffer = Buffer.from(await origRes.arrayBuffer());
-    const metadata = await sharp(origBuffer).metadata();
+    const cleanRes = await fetch(resolvedCleanUrl);
+    if (!cleanRes.ok) throw new Error(`Failed to fetch clean image: ${cleanRes.status}`);
+    const cleanBuffer = Buffer.from(await cleanRes.arrayBuffer());
+    const metadata = await sharp(cleanBuffer).metadata();
     const imgWidth = metadata.width || 800;
     const imgHeight = metadata.height || 800;
 
@@ -603,10 +602,10 @@ async function generateTranslatedImageForPayload(
     const safeW = Math.min(imgWidth, 2048);
     const safeH = Math.min(imgHeight, 2048);
 
-    // Convert original image to base64 data URI for Satori embedding
-    const origBase64 = origBuffer.toString("base64");
-    const origMime = metadata.format === "png" ? "image/png" : "image/jpeg";
-    const origDataUri = `data:${origMime};base64,${origBase64}`;
+    // Convert clean image to base64 data URI for Satori embedding
+    const cleanBase64 = cleanBuffer.toString("base64");
+    const cleanMime = metadata.format === "png" ? "image/png" : "image/jpeg";
+    const cleanDataUri = `data:${cleanMime};base64,${cleanBase64}`;
 
     // Build React-like element tree for Satori
     const element = {
@@ -622,7 +621,7 @@ async function generateTranslatedImageForPayload(
           {
             type: "img",
             props: {
-              src: origDataUri,
+              src: cleanDataUri,
               style: {
                 position: "absolute" as const,
                 top: 0,
@@ -638,7 +637,36 @@ async function generateTranslatedImageForPayload(
             const y = seg.boxY / norm;
             const w = seg.boxWidth / norm;
             const h = seg.boxHeight / norm;
-            const fontSize = Math.max(14, h * safeH * 0.25);
+
+            // Smart font size: use original fontSizePixels if available,
+            // otherwise calculate from box height
+            const boxHeightPx = h * safeH;
+            let fontSize: number;
+            if (seg.fontSizePixels && seg.fontSizePixels > 8) {
+              // Scale original font size proportionally
+              fontSize = Math.max(12, Math.min(seg.fontSizePixels * 1.1, boxHeightPx * 0.85));
+            } else {
+              // Auto-calculate: fill ~70% of box height, adjust for text length
+              const baseSize = boxHeightPx * 0.7;
+              const boxWidthPx = w * safeW;
+              const charsPerLine = Math.max(1, Math.floor(boxWidthPx / (baseSize * 0.55)));
+              const textLen = seg.translatedText?.length || 1;
+              const lines = Math.ceil(textLen / charsPerLine);
+              fontSize = lines > 1
+                ? Math.max(12, boxHeightPx / (lines * 1.3))
+                : Math.max(12, Math.min(baseSize, 72));
+            }
+
+            // Use original text color if available, default to white with stroke
+            const textColor = seg.color || "#FFFFFF";
+            const isLight = textColor.toLowerCase() === "#ffffff" || textColor.toLowerCase() === "#fff" || textColor === "white";
+            const strokeShadow = isLight
+              ? "-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, " +
+                "-1px 0 0 #000, 1px 0 0 #000, 0 -1px 0 #000, 0 1px 0 #000"
+              : "-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff";
+
+            // Use original background color if available
+            const bgColor = (seg as any).backgroundColor || "transparent";
 
             return {
               type: "div",
@@ -651,17 +679,16 @@ async function generateTranslatedImageForPayload(
                   height: `${h * 100}%`,
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "center",
+                  justifyContent: seg.textAlign === "LEFT" ? "flex-start" : seg.textAlign === "RIGHT" ? "flex-end" : "center",
                   textAlign: "center" as const,
                   fontFamily: "Noto Sans",
                   fontSize: `${fontSize}px`,
-                  color: "#FFFFFF",
-                  backgroundColor: "rgba(0, 0, 0, 0.75)",
-                  padding: "4px 8px",
-                  borderRadius: "4px",
-                  textShadow:
-                    "-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000",
-                  lineHeight: 1.3,
+                  fontWeight: 900,
+                  color: textColor,
+                  backgroundColor: bgColor,
+                  textShadow: strokeShadow,
+                  lineHeight: 1.2,
+                  padding: bgColor !== "transparent" ? "2px 6px" : "0",
                   wordBreak: "keep-all" as const,
                   overflowWrap: "break-word" as const,
                 },
