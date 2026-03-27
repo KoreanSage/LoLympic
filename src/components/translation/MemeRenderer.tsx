@@ -450,22 +450,32 @@ export default function MemeRenderer({
   useEffect(() => {
     // Wait for fonts to load before rendering translated text on canvas
     if (showTranslation && segments.length > 0) {
-      const fontsNeeded = segments.map(s => resolveFont(s));
-      const uniqueFonts = Array.from(new Set(fontsNeeded));
+      // Collect actual text per font so browser fetches correct unicode-range subsets
+      const fontTextMap = new Map<string, string>();
+      segments.forEach(s => {
+        const font = resolveFont(s);
+        const existing = fontTextMap.get(font) || "";
+        fontTextMap.set(font, existing + s.translatedText);
+      });
 
-      // Load fonts explicitly if needed
-      const loadPromises = uniqueFonts.map(font => {
+      // Load fonts with actual text — this triggers correct CJK subset downloads
+      const loadPromises = Array.from(fontTextMap.entries()).map(([font, text]) => {
         try {
-          return document.fonts.load(`700 48px "${font}"`);
+          return document.fonts.load(`700 48px "${font}"`, text);
         } catch {
-          return Promise.resolve([]);
+          return Promise.resolve([] as FontFace[]);
         }
       });
 
       Promise.all(loadPromises)
         .then(() => document.fonts.ready)
         .then(() => render())
-        .catch(() => render()); // Render anyway on error
+        .catch(() => render());
+
+      // Also re-render when any font finishes loading (catches late-arriving subsets)
+      const onFontLoad = () => render();
+      document.fonts.addEventListener("loadingdone", onFontLoad);
+      return () => document.fonts.removeEventListener("loadingdone", onFontLoad);
     } else {
       render();
     }
