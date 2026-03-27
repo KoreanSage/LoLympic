@@ -55,6 +55,7 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: "10mb",
     },
+    serverComponentsExternalPackages: ["@resvg/resvg-js", "satori"],
   },
 };
 
