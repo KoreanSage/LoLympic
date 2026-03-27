@@ -135,7 +135,7 @@ const hi: Record<TranslationKeys, string> = {
 
   // ── Post Detail ────────────────────────────────────────────────────────────
   "post.comments": "Comments",
-  "post.discussion": "Discussion",
+  "post.discussion": "अनुवाद सुझाएं",
   "post.cultureNote": "Culture Note",
   "post.sharePost": "Post Share करें",
   "post.reportPost": "Post Report करें",
@@ -147,13 +147,14 @@ const hi: Record<TranslationKeys, string> = {
   "feed.save": "सेव करें",
 
   // ── Discussion / Suggestion ────────────────────────────────────────────────
-  "discussion.placeholder": "अपने विचार share करें...",
-  "discussion.post": "Post",
-  "discussion.posting": "Post हो रहा है...",
-  "discussion.empty": "अभी तक कोई discussion नहीं। अपनी बात रखो!",
+  "discussion.description": "क्या आप इस meme का बेहतर अनुवाद कर सकते हैं? अपना version सुझाएं!",
+  "discussion.placeholder": "अपना अनुवाद सुझाव लिखें...",
+  "discussion.post": "जमा करें",
+  "discussion.posting": "जमा हो रहा है...",
+  "discussion.empty": "अभी तक कोई अनुवाद सुझाव नहीं। पहले बेहतर अनुवाद सुझाने वाले बनें!",
   "discussion.translate": "Translate",
   "discussion.original": "Original",
-  "discussion.loginToPost": "Discussion में join करने के लिए login करें।",
+  "discussion.loginToPost": "अनुवाद सुझाने के लिए login करें।",
 
   // ── Settings ───────────────────────────────────────────────────────────────
   "settings.title": "Settings",

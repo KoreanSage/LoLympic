@@ -135,7 +135,7 @@ const zh: Record<TranslationKeys, string> = {
 
   // ── Post Detail ────────────────────────────────────────────────────────────
   "post.comments": "评论",
-  "post.discussion": "讨论",
+  "post.discussion": "翻译建议",
   "post.cultureNote": "文化注释",
   "post.sharePost": "分享帖子",
   "post.reportPost": "举报帖子",
@@ -147,13 +147,14 @@ const zh: Record<TranslationKeys, string> = {
   "feed.save": "收藏",
 
   // ── Discussion / Suggestion ────────────────────────────────────────────────
-  "discussion.placeholder": "分享你的想法...",
-  "discussion.post": "发布",
-  "discussion.posting": "正在发布...",
-  "discussion.empty": "暂无讨论。来分享你的观点吧！",
+  "discussion.description": "觉得这个梗可以翻译得更好？来提交你的版本吧！",
+  "discussion.placeholder": "输入你的翻译建议...",
+  "discussion.post": "提交",
+  "discussion.posting": "正在提交...",
+  "discussion.empty": "暂无翻译建议。来做第一个提出更好翻译的人吧！",
   "discussion.translate": "翻译",
   "discussion.original": "原文",
-  "discussion.loginToPost": "登录后即可参与讨论。",
+  "discussion.loginToPost": "登录后即可提交翻译建议。",
 
   // ── Settings ───────────────────────────────────────────────────────────────
   "settings.title": "设置",

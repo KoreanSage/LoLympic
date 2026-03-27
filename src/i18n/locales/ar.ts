@@ -135,7 +135,7 @@ const ar: Record<TranslationKeys, string> = {
 
   // ── Post Detail ────────────────────────────────────────────────────────────
   "post.comments": "التعليقات",
-  "post.discussion": "نقاش",
+  "post.discussion": "اقتراح ترجمة",
   "post.cultureNote": "ملاحظة ثقافية",
   "post.sharePost": "شارك البوست",
   "post.reportPost": "بلّغ عن البوست",
@@ -147,13 +147,14 @@ const ar: Record<TranslationKeys, string> = {
   "feed.save": "حفظ",
 
   // ── Discussion / Suggestion ────────────────────────────────────────────────
-  "discussion.placeholder": "شاركنا رأيك...",
-  "discussion.post": "انشر",
-  "discussion.posting": "بيتنشر...",
-  "discussion.empty": "مفيش نقاشات لسه. شاركنا وجهة نظرك!",
+  "discussion.description": "تقدر تترجم الميم ده أحسن؟ اقترح نسختك!",
+  "discussion.placeholder": "اكتب اقتراح الترجمة...",
+  "discussion.post": "إرسال",
+  "discussion.posting": "بيترسل...",
+  "discussion.empty": "مفيش اقتراحات ترجمة لسه. كن أول واحد يقترح ترجمة أحسن!",
   "discussion.translate": "ترجم",
   "discussion.original": "الأصلي",
-  "discussion.loginToPost": "سجّل دخول عشان تشارك في النقاش.",
+  "discussion.loginToPost": "سجّل دخول عشان تقترح ترجمة.",
 
   // ── Settings ───────────────────────────────────────────────────────────────
   "settings.title": "الإعدادات",

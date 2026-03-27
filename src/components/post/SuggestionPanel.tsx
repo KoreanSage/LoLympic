@@ -131,8 +131,13 @@ export default function SuggestionPanel({
 
   return (
     <div className={`space-y-4 ${className}`}>
+      {/* Description */}
+      <p className="text-sm text-foreground-muted">
+        {t("discussion.description")}
+      </p>
+
       {/* Input */}
-      {session && (
+      {session ? (
         <div className="flex gap-3">
           <textarea
             value={body}
@@ -152,6 +157,10 @@ export default function SuggestionPanel({
             {isSubmitting ? t("discussion.posting") : t("discussion.post")}
           </button>
         </div>
+      ) : (
+        <p className="text-sm text-foreground-subtle text-center py-2">
+          {t("discussion.loginToPost")}
+        </p>
       )}
 
       {/* List */}

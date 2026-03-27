@@ -135,7 +135,7 @@ const ko: Record<TranslationKeys, string> = {
 
   // ── Post Detail ────────────────────────────────────────────────────────────
   "post.comments": "댓글",
-  "post.discussion": "토론",
+  "post.discussion": "번역 제안",
   "post.cultureNote": "문화 노트",
   "post.sharePost": "게시물 공유",
   "post.reportPost": "게시물 신고",
@@ -147,13 +147,14 @@ const ko: Record<TranslationKeys, string> = {
   "feed.save": "저장",
 
   // ── Discussion / Suggestion ────────────────────────────────────────────────
-  "discussion.placeholder": "의견을 남겨보세요...",
-  "discussion.post": "게시",
-  "discussion.posting": "게시 중...",
-  "discussion.empty": "아직 토론이 없습니다. 의견을 공유해보세요!",
+  "discussion.description": "이 밈을 더 잘 번역할 수 있나요? 여러분의 번역을 제안해주세요!",
+  "discussion.placeholder": "번역 제안을 입력하세요...",
+  "discussion.post": "제출",
+  "discussion.posting": "제출 중...",
+  "discussion.empty": "아직 번역 제안이 없습니다. 첫 번째로 더 나은 번역을 제안해보세요!",
   "discussion.translate": "번역",
   "discussion.original": "원문",
-  "discussion.loginToPost": "토론에 참여하려면 로그인하세요.",
+  "discussion.loginToPost": "번역을 제안하려면 로그인하세요.",
 
   // ── Settings ───────────────────────────────────────────────────────────────
   "settings.title": "설정",

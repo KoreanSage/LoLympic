@@ -135,7 +135,7 @@ const es: Record<TranslationKeys, string> = {
 
   // ── Post Detail ────────────────────────────────────────────────────────────
   "post.comments": "Comentarios",
-  "post.discussion": "Discusión",
+  "post.discussion": "Sugerir traducción",
   "post.cultureNote": "Nota cultural",
   "post.sharePost": "Compartir publicación",
   "post.reportPost": "Reportar publicación",
@@ -147,13 +147,14 @@ const es: Record<TranslationKeys, string> = {
   "feed.save": "Guardar",
 
   // ── Discussion / Suggestion ────────────────────────────────────────────────
-  "discussion.placeholder": "Comparte tu opinión...",
-  "discussion.post": "Publicar",
-  "discussion.posting": "Publicando...",
-  "discussion.empty": "Aún no hay discusiones. ¡Comparte tu perspectiva!",
+  "discussion.description": "¿Crees que puedes traducir mejor este meme? ¡Sugiere tu versión!",
+  "discussion.placeholder": "Escribe tu sugerencia de traducción...",
+  "discussion.post": "Enviar",
+  "discussion.posting": "Enviando...",
+  "discussion.empty": "Aún no hay sugerencias de traducción. ¡Sé el primero en sugerir una mejor traducción!",
   "discussion.translate": "Traducir",
   "discussion.original": "Original",
-  "discussion.loginToPost": "Inicia sesión para unirte a la discusión.",
+  "discussion.loginToPost": "Inicia sesión para sugerir una traducción.",
 
   // ── Settings ───────────────────────────────────────────────────────────────
   "settings.title": "Configuración",

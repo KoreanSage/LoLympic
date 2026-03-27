@@ -133,7 +133,7 @@ const en = {
 
   // ── Post Detail ────────────────────────────────────────────────────────────
   "post.comments": "Comments",
-  "post.discussion": "Discussion",
+  "post.discussion": "Suggest Translation",
   "post.cultureNote": "Culture Note",
   "post.sharePost": "Share Post",
   "post.reportPost": "Report Post",
@@ -145,13 +145,14 @@ const en = {
   "feed.save": "Save",
 
   // ── Discussion / Suggestion ────────────────────────────────────────────────
-  "discussion.placeholder": "Share your thoughts...",
-  "discussion.post": "Post",
-  "discussion.posting": "Posting...",
-  "discussion.empty": "No discussions yet. Share your perspective!",
+  "discussion.description": "Think you can translate this meme better? Suggest your version!",
+  "discussion.placeholder": "Type your translation suggestion...",
+  "discussion.post": "Submit",
+  "discussion.posting": "Submitting...",
+  "discussion.empty": "No translation suggestions yet. Be the first to suggest a better translation!",
   "discussion.translate": "Translate",
   "discussion.original": "Original",
-  "discussion.loginToPost": "Log in to join the discussion.",
+  "discussion.loginToPost": "Log in to suggest a translation.",
 
   // ── Settings ───────────────────────────────────────────────────────────────
   "settings.title": "Settings",

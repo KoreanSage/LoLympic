@@ -135,7 +135,7 @@ const ja: Record<TranslationKeys, string> = {
 
   // ── Post Detail ────────────────────────────────────────────────────────────
   "post.comments": "コメント",
-  "post.discussion": "ディスカッション",
+  "post.discussion": "翻訳を提案",
   "post.cultureNote": "カルチャーノート",
   "post.sharePost": "投稿をシェア",
   "post.reportPost": "投稿を報告",
@@ -147,13 +147,14 @@ const ja: Record<TranslationKeys, string> = {
   "feed.save": "保存",
 
   // ── Discussion / Suggestion ────────────────────────────────────────────────
-  "discussion.placeholder": "あなたの意見をシェア...",
-  "discussion.post": "投稿",
-  "discussion.posting": "投稿中...",
-  "discussion.empty": "ディスカッションはまだありません。あなたの視点をシェアしよう！",
+  "discussion.description": "このミームをもっと上手に翻訳できますか？あなたのバージョンを提案してください！",
+  "discussion.placeholder": "翻訳の提案を入力...",
+  "discussion.post": "送信",
+  "discussion.posting": "送信中...",
+  "discussion.empty": "翻訳の提案はまだありません。最初に提案してみましょう！",
   "discussion.translate": "翻訳",
   "discussion.original": "原文",
-  "discussion.loginToPost": "ディスカッションに参加するにはログインしてください。",
+  "discussion.loginToPost": "翻訳を提案するにはログインしてください。",
 
   // ── Settings ───────────────────────────────────────────────────────────────
   "settings.title": "設定",
