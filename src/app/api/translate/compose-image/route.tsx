@@ -160,9 +160,11 @@ export async function POST(req: NextRequest) {
                   textAlign: "center",
                   fontFamily: '"Noto Sans"',
                   fontSize: `${fontSize}px`,
-                  color: seg.color || "white",
+                  color: "#FFFFFF",
                   textShadow:
-                    "-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000",
+                    "-3px -3px 0 #000, 3px -3px 0 #000, -3px 3px 0 #000, 3px 3px 0 #000, " +
+                    "-2px 0 0 #000, 2px 0 0 #000, 0 -2px 0 #000, 0 2px 0 #000, " +
+                    "0 0 8px rgba(0,0,0,0.8)",
                   lineHeight: 1.2,
                   wordBreak: "keep-all" as const,
                   overflowWrap: "break-word" as const,
