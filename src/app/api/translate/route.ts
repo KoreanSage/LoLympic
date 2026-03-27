@@ -1031,31 +1031,32 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Fire-and-forget: generate clean images (text removed) in background
-    // This enables higher quality rendering on subsequent views
-    fireAndForget(
-      generateCleanImagesForPost(postId, imageDataList, imageUrls)
+    // Generate clean images FIRST (must complete before compose)
+    await generateCleanImagesForPost(postId, imageDataList, imageUrls).catch(
+      (e) => console.error("Clean image generation failed:", e)
     );
 
-    // Fire-and-forget: generate translated images for each language
-    // Uses Clean Image + Sharp SVG overlay for deterministic, pixel-perfect results
+    // Generate translated images for each language (parallel, awaited)
+    const composePromises: Promise<void>[] = [];
     for (const targetLang of targetLanguages) {
       const langResult = results[targetLang];
       const payloadId = langResult?.payloadId;
       if (payloadId) {
         const langSegments = allSegmentsByLang[targetLang] || [];
         if (langSegments.length > 0) {
-          fireAndForget(
+          composePromises.push(
             generateTranslatedImageForPayload(
               payloadId,
               postId,
               langSegments,
               targetLang
-            )
+            ).catch((e) => console.error(`Compose failed for ${targetLang}:`, e))
           );
         }
       }
     }
+    // Wait for all compose tasks (parallel) — critical for Vercel Hobby
+    await Promise.all(composePromises);
 
     // Update ranking score after translations complete
     updateRankingScore(postId).catch((e) => { console.error("Failed to update ranking score:", e); });
