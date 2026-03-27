@@ -607,10 +607,16 @@ async function generateTranslatedImageForPayload(
       return;
     }
 
-    // 2. Resolve the clean image URL to an absolute URL
+    // 2. Resolve base URL for internal API calls
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL
+      || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
+      || (process.env.NEXTAUTH_URL)
+      || "http://localhost:3000";
+
+    // Resolve the clean image URL to an absolute URL
     const resolvedCleanUrl = cleanUrl.startsWith("http")
       ? cleanUrl
-      : `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}${cleanUrl}`;
+      : `${appUrl}${cleanUrl}`;
 
     // 3. Get image dimensions via Sharp
     const cleanRes = await fetch(resolvedCleanUrl);
@@ -621,7 +627,6 @@ async function generateTranslatedImageForPayload(
     const imgHeight = metadata.height || 800;
 
     // 4. Call the Satori compose endpoint
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
     const composeRes = await fetch(`${appUrl}/api/translate/compose-image`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
