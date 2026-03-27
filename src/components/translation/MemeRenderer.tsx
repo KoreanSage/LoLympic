@@ -27,16 +27,31 @@ function isRTL(text: string): boolean {
   return /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\u0590-\u05FF]/.test(text);
 }
 
+// Web-safe font names that are actually available via Google Fonts CSS import
+const WEB_SAFE_FONTS = new Set([
+  "Noto Sans KR", "Noto Sans JP", "Noto Sans SC",
+  "Noto Sans Devanagari", "Noto Sans Arabic",
+  "Impact", "Inter", "JetBrains Mono",
+]);
+
 function resolveFont(segment: TranslationSegmentData): string {
-  if (segment.fontFamily) return segment.fontFamily;
+  // 1. Always detect language from actual translated text first (most reliable)
+  const lang = detectLanguageFromText(segment.translatedText);
+  if (lang && LANGUAGE_FONT_DEFAULTS[lang]) return LANGUAGE_FONT_DEFAULTS[lang];
+
+  // 2. If fontFamily from DB is a known web-safe font, use it
+  if (segment.fontFamily && WEB_SAFE_FONTS.has(segment.fontFamily)) {
+    return segment.fontFamily;
+  }
+
+  // 3. Try fontHint
   if (segment.fontHint) {
     const hint = segment.fontHint.toLowerCase();
     for (const [, font] of Object.entries(LANGUAGE_FONT_DEFAULTS)) {
       if (font.toLowerCase().includes(hint)) return font;
     }
   }
-  const lang = detectLanguageFromText(segment.translatedText);
-  if (lang && LANGUAGE_FONT_DEFAULTS[lang]) return LANGUAGE_FONT_DEFAULTS[lang];
+
   return "Impact";
 }
 
