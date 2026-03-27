@@ -460,75 +460,9 @@ Replace each removed text area with the background that would naturally be behin
 // ---------------------------------------------------------------------------
 // Generate translated image — replace original text with translated text
 // ---------------------------------------------------------------------------
-async function generateTranslatedImage(
-  imageBase64: string,
-  mimeType: string,
-  segments: Array<{ sourceText: string; translatedText: string }>,
-  targetLanguage: string
-): Promise<string | null> {
-  if (segments.length === 0) return null;
-
-  try {
-    const replacements = segments
-      .map((s, i) => `${i + 1}. "${s.sourceText}" → "${s.translatedText}"`)
-      .join("\n");
-
-    const response = await genAI2.models.generateContent({
-      model: "gemini-2.5-flash-image",
-      contents: [
-        {
-          role: "user",
-          parts: [
-            {
-              text: `Replace ALL the specified text in this image with the translated versions below. Keep the image layout, colors, fonts, and style exactly the same.
-
-Text replacements:
-${replacements}
-
-Rules:
-- Replace each original text with its translation IN THE SAME POSITION
-- Match the original font style, size, weight, and color as closely as possible
-- If translated text is longer, scale the font size down slightly to fit the same area
-- The result should look like the image was originally created in ${targetLanguage}
-- Keep all non-text elements (images, icons, profile pictures, UI chrome, timestamps) untouched
-- Preserve the overall visual layout — do not rearrange anything
-
-Output only the modified image.`,
-            },
-            {
-              inlineData: {
-                mimeType,
-                data: imageBase64,
-              },
-            },
-          ],
-        },
-      ],
-      config: {
-        responseModalities: ["TEXT", "IMAGE"],
-      },
-    });
-
-    const parts = response?.candidates?.[0]?.content?.parts;
-    if (!parts) return null;
-
-    for (const part of parts) {
-      if (part.inlineData?.data) {
-        const imgBuffer = Buffer.from(part.inlineData.data, "base64");
-        const ext = part.inlineData.mimeType?.includes("png") ? ".png" : ".jpg";
-        return await saveGeneratedImage(imgBuffer, `translated_${targetLanguage}`, ext);
-      }
-    }
-
-    return null;
-  } catch (err) {
-    console.error(`Translated image generation failed for ${targetLanguage}:`, err);
-    return null;
-  }
-}
-
 // ---------------------------------------------------------------------------
 // Generate translated image for a payload using Satori-based compose endpoint
+// Pipeline: LaMa clean image + Satori text overlay → final translated image
 // Strategy: Get the clean image (text removed) → POST to /api/translate/compose-image
 // Fallback: Gemini image editing if compose fails
 // ---------------------------------------------------------------------------
@@ -586,24 +520,9 @@ async function generateTranslatedImageForPayload(
     }
 
     if (!cleanUrl) {
-      // Fallback: try Gemini image editing if no clean image available
-      console.warn(`No clean image for post ${postId}, falling back to Gemini`);
-      const simpleSegments = segments.map((s) => ({
-        sourceText: s.sourceText,
-        translatedText: s.translatedText,
-      }));
-      const geminiUrl = await generateTranslatedImage(
-        await fetchAsBase64(postImage.originalUrl),
-        postImage.mimeType || "image/jpeg",
-        simpleSegments,
-        targetLanguage,
-      );
-      if (geminiUrl) {
-        await prisma.translationPayload.update({
-          where: { id: payloadId },
-          data: { translatedImageUrl: geminiUrl },
-        });
-      }
+      // No clean image available — cannot compose translated image.
+      // Frontend will use MemeRenderer canvas as client-side fallback.
+      console.warn(`[Satori] No clean image for post ${postId}, skipping translated image generation`);
       return;
     }
 
@@ -655,45 +574,10 @@ async function generateTranslatedImageForPayload(
     });
     console.log(`Translated image (Satori) saved for payload ${payloadId}: ${url}`);
   } catch (err) {
-    console.error(`Satori compose failed for payload ${payloadId}, trying Gemini fallback:`, err);
-
-    // Gemini fallback
-    try {
-      const postImage = await prisma.postImage.findFirst({
-        where: { postId },
-        orderBy: { orderIndex: "asc" },
-        select: { originalUrl: true, mimeType: true },
-      });
-      if (postImage) {
-        const simpleSegments = segments.map((s) => ({
-          sourceText: s.sourceText,
-          translatedText: s.translatedText,
-        }));
-        const geminiUrl = await generateTranslatedImage(
-          await fetchAsBase64(postImage.originalUrl),
-          postImage.mimeType || "image/jpeg",
-          simpleSegments,
-          targetLanguage,
-        );
-        if (geminiUrl) {
-          await prisma.translationPayload.update({
-            where: { id: payloadId },
-            data: { translatedImageUrl: geminiUrl },
-          });
-          console.log(`Translated image (Gemini fallback) saved for payload ${payloadId}: ${geminiUrl}`);
-        }
-      }
-    } catch (fallbackErr) {
-      console.error(`Gemini fallback also failed for payload ${payloadId}:`, fallbackErr);
-    }
+    console.error(`[Satori] Compose failed for payload ${payloadId}:`, err);
+    // No fallback — Satori + LaMa is the only pipeline.
+    // Frontend will use MemeRenderer canvas as client-side fallback.
   }
-}
-
-/** Helper: fetch a URL and return base64 string */
-async function fetchAsBase64(url: string): Promise<string> {
-  const res = await fetch(url);
-  const buf = Buffer.from(await res.arrayBuffer());
-  return buf.toString("base64");
 }
 
 // ---------------------------------------------------------------------------
