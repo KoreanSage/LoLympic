@@ -451,7 +451,7 @@ export default function MemeRenderer({
     // Wait for fonts to load before rendering translated text on canvas
     if (showTranslation && segments.length > 0) {
       const fontsNeeded = segments.map(s => resolveFont(s));
-      const uniqueFonts = [...new Set(fontsNeeded)];
+      const uniqueFonts = Array.from(new Set(fontsNeeded));
 
       // Load fonts explicitly if needed
       const loadPromises = uniqueFonts.map(font => {
