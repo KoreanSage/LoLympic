@@ -658,7 +658,7 @@ export default function UploadStudio() {
       <div className="rounded-xl overflow-hidden border border-border bg-background-surface">
         <ImageCarousel>
           {imagePreviews.map((preview, i) => (
-            <div key={i} className="relative">
+            <div key={i} className="relative bg-black/5 dark:bg-black/20 flex items-center justify-center">
               <img
                 src={preview}
                 alt={`Preview ${i + 1}`}

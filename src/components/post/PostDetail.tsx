@@ -547,17 +547,20 @@ export default function PostDetail({
               {images.map((img, i) => {
                 const imgIsGif = img.mimeType === "image/gif";
                 const imgSegments = segments.filter((s: any) => (s.imageIndex ?? 0) === i);
-                return imgIsGif ? (
-                  <Image key={i} src={img.originalUrl} alt={title} width={800} height={800} className="w-full h-full object-contain" unoptimized />
-                ) : (
-                  <MemeRenderer
-                    key={i}
-                    imageUrl={img.originalUrl}
-                    cleanImageUrl={img.cleanUrl || undefined}
-                    translatedImageUrl={i === 0 ? translatedImageUrl : undefined}
-                    segments={imgSegments}
-                    showTranslation={showTranslation}
-                  />
+                return (
+                  <div key={i} className="flex items-center justify-center bg-black/5 dark:bg-black/20">
+                    {imgIsGif ? (
+                      <Image src={img.originalUrl} alt={title} width={800} height={800} className="w-full h-auto object-contain" unoptimized />
+                    ) : (
+                      <MemeRenderer
+                        imageUrl={img.originalUrl}
+                        cleanImageUrl={img.cleanUrl || undefined}
+                        translatedImageUrl={i === 0 ? translatedImageUrl : undefined}
+                        segments={imgSegments}
+                        showTranslation={showTranslation}
+                      />
+                    )}
+                  </div>
                 );
               })}
             </ImageCarousel>
