@@ -165,10 +165,10 @@ export default function MemeRenderer({
   const [translatedImageError, setTranslatedImageError] = useState(false);
   const [canvasRenderError, setCanvasRenderError] = useState(false);
 
-  // Prefer canvas rendering (clean image + text overlay) for accuracy
-  // Only fall back to pre-rendered Gemini image if we have no clean image AND no segments
-  const usePreRendered = showTranslation && !!translatedImageUrl && !translatedImageError
-    && (!cleanImageUrl || segments.length === 0);
+  // When translatedImageUrl (Satori-composed or Gemini) is available and translation is on,
+  // skip ALL canvas rendering and show the pre-rendered image directly.
+  // Only fall back to canvas rendering when translatedImageUrl is falsy or errored.
+  const usePreRendered = showTranslation && !!translatedImageUrl && !translatedImageError;
 
   // Load original image
   useEffect(() => {

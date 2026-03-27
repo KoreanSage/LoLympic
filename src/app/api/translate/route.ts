@@ -528,8 +528,9 @@ Output only the modified image.`,
 }
 
 // ---------------------------------------------------------------------------
-// Generate translated image for a payload using Clean Image + Sharp overlay
-// Strategy: Get the clean image (text removed) → overlay translated text via SVG
+// Generate translated image for a payload using Satori-based compose endpoint
+// Strategy: Get the clean image (text removed) → POST to /api/translate/compose-image
+// Fallback: Gemini image editing if compose fails
 // ---------------------------------------------------------------------------
 async function generateTranslatedImageForPayload(
   payloadId: string,
@@ -554,11 +555,11 @@ async function generateTranslatedImageForPayload(
   targetLanguage: string
 ): Promise<void> {
   try {
-    // 1. Find the clean image for this post
+    // 1. Find the image for this post (need dimensions + clean URL)
     const postImage = await prisma.postImage.findFirst({
       where: { postId },
       orderBy: { orderIndex: "asc" },
-      select: { cleanUrl: true, originalUrl: true },
+      select: { cleanUrl: true, originalUrl: true, mimeType: true },
     });
 
     if (!postImage) {
@@ -566,7 +567,7 @@ async function generateTranslatedImageForPayload(
       return;
     }
 
-    // Wait a bit for clean image generation to complete (it runs in parallel)
+    // Wait for clean image generation to complete (it runs in parallel)
     let cleanUrl = postImage.cleanUrl;
     if (!cleanUrl) {
       // Wait up to 30s for clean image to be generated
@@ -587,52 +588,99 @@ async function generateTranslatedImageForPayload(
     if (!cleanUrl) {
       // Fallback: try Gemini image editing if no clean image available
       console.warn(`No clean image for post ${postId}, falling back to Gemini`);
-      const originalImage = await prisma.postImage.findFirst({
-        where: { postId },
-        orderBy: { orderIndex: "asc" },
-        select: { originalUrl: true, mimeType: true },
-      });
-      if (originalImage) {
-        const simpleSegments = segments.map((s) => ({
-          sourceText: s.sourceText,
-          translatedText: s.translatedText,
-        }));
-        const url = await generateTranslatedImage(
-          await fetchAsBase64(originalImage.originalUrl),
-          originalImage.mimeType || "image/jpeg",
-          simpleSegments,
-          targetLanguage,
-        );
-        if (url) {
-          await prisma.translationPayload.update({
-            where: { id: payloadId },
-            data: { translatedImageUrl: url },
-          });
-        }
+      const simpleSegments = segments.map((s) => ({
+        sourceText: s.sourceText,
+        translatedText: s.translatedText,
+      }));
+      const geminiUrl = await generateTranslatedImage(
+        await fetchAsBase64(postImage.originalUrl),
+        postImage.mimeType || "image/jpeg",
+        simpleSegments,
+        targetLanguage,
+      );
+      if (geminiUrl) {
+        await prisma.translationPayload.update({
+          where: { id: payloadId },
+          data: { translatedImageUrl: geminiUrl },
+        });
       }
       return;
     }
 
-    // 2. Fetch clean image as buffer
-    const { composeTranslatedImage } = await import("@/lib/image-composer");
-    const cleanBuffer = Buffer.from(
-      await (await fetch(cleanUrl.startsWith("http") ? cleanUrl : `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}${cleanUrl}`)).arrayBuffer()
-    );
+    // 2. Resolve the clean image URL to an absolute URL
+    const resolvedCleanUrl = cleanUrl.startsWith("http")
+      ? cleanUrl
+      : `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}${cleanUrl}`;
 
-    // 3. Compose: clean image + translated text overlay via Sharp
-    const composedBuffer = await composeTranslatedImage(cleanBuffer, segments);
+    // 3. Get image dimensions via Sharp
+    const cleanRes = await fetch(resolvedCleanUrl);
+    if (!cleanRes.ok) throw new Error(`Failed to fetch clean image: ${cleanRes.status}`);
+    const cleanBuffer = Buffer.from(await cleanRes.arrayBuffer());
+    const metadata = await sharp(cleanBuffer).metadata();
+    const imgWidth = metadata.width || 800;
+    const imgHeight = metadata.height || 800;
 
-    // 4. Save the composed image
-    const url = await saveGeneratedImage(composedBuffer, `translated_${targetLanguage}`, ".png");
+    // 4. Call the Satori compose endpoint
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const composeRes = await fetch(`${appUrl}/api/translate/compose-image`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        cleanUrl: resolvedCleanUrl,
+        segments,
+        width: imgWidth,
+        height: imgHeight,
+        targetLanguage,
+      }),
+    });
 
-    // 5. Update DB
+    if (!composeRes.ok) {
+      const errText = await composeRes.text().catch(() => "unknown");
+      throw new Error(`Compose endpoint failed (${composeRes.status}): ${errText}`);
+    }
+
+    // 5. Save the composed image to Blob storage
+    const composedBuffer = Buffer.from(await composeRes.arrayBuffer());
+    const url = await saveGeneratedImage(composedBuffer, `translated_satori_${targetLanguage}`, ".png");
+
+    // 6. Update DB
     await prisma.translationPayload.update({
       where: { id: payloadId },
       data: { translatedImageUrl: url },
     });
-    console.log(`Translated image (Sharp) saved for payload ${payloadId}: ${url}`);
+    console.log(`Translated image (Satori) saved for payload ${payloadId}: ${url}`);
   } catch (err) {
-    console.error(`Failed to generate translated image for payload ${payloadId}:`, err);
+    console.error(`Satori compose failed for payload ${payloadId}, trying Gemini fallback:`, err);
+
+    // Gemini fallback
+    try {
+      const postImage = await prisma.postImage.findFirst({
+        where: { postId },
+        orderBy: { orderIndex: "asc" },
+        select: { originalUrl: true, mimeType: true },
+      });
+      if (postImage) {
+        const simpleSegments = segments.map((s) => ({
+          sourceText: s.sourceText,
+          translatedText: s.translatedText,
+        }));
+        const geminiUrl = await generateTranslatedImage(
+          await fetchAsBase64(postImage.originalUrl),
+          postImage.mimeType || "image/jpeg",
+          simpleSegments,
+          targetLanguage,
+        );
+        if (geminiUrl) {
+          await prisma.translationPayload.update({
+            where: { id: payloadId },
+            data: { translatedImageUrl: geminiUrl },
+          });
+          console.log(`Translated image (Gemini fallback) saved for payload ${payloadId}: ${geminiUrl}`);
+        }
+      }
+    } catch (fallbackErr) {
+      console.error(`Gemini fallback also failed for payload ${payloadId}:`, fallbackErr);
+    }
   }
 }
 

@@ -495,11 +495,12 @@ function FeedCardInner({
         <Link href={`/post/${id}`} className="block">
           <div className="px-4 pb-2">
             <div className={`overflow-hidden border border-border flex items-center justify-center bg-black/5 ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-lg border-t-0" : "rounded-lg"}`}>
-              {isTypeB && segments.length > 0 ? (
-                /* Type B: translatedImageUrl (pre-rendered) > ScreenshotRenderer > original */
-                showTranslation && translatedImageUrl ? (
-                  <Image src={translatedImageUrl} alt={title} width={800} height={800} className="w-full h-auto object-contain" sizes="(max-width: 768px) 100vw, 600px" unoptimized />
-                ) : showTranslation ? (
+              {/* Priority 1: translatedImageUrl takes precedence for ALL meme types */}
+              {showTranslation && translatedImageUrl ? (
+                <Image src={translatedImageUrl} alt={title} width={800} height={800} className="w-full h-auto object-contain" sizes="(max-width: 768px) 100vw, 600px" unoptimized />
+              ) : isTypeB && segments.length > 0 ? (
+                /* Type B without translatedImageUrl: ScreenshotRenderer > original */
+                showTranslation ? (
                   <ScreenshotRenderer
                     segments={segments}
                     showTranslation={showTranslation}
