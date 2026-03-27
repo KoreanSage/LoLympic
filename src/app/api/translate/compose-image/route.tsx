@@ -8,22 +8,37 @@ export const runtime = "edge";
 // ---------------------------------------------------------------------------
 function getFontFamily(lang: string): string {
   const map: Record<string, string> = {
+    ko: "Noto+Sans+KR",
+    ja: "Noto+Sans+JP",
+    zh: "Noto+Sans+SC",
+    ar: "Noto+Sans+Arabic",
+    hi: "Noto+Sans+Devanagari",
+    en: "Noto+Sans",
+    es: "Noto+Sans",
+  };
+  return map[lang] || "Noto+Sans";
+}
+
+// Display name for CSS font-family (without URL encoding)
+function getFontDisplayName(lang: string): string {
+  const map: Record<string, string> = {
     ko: "Noto Sans KR",
     ja: "Noto Sans JP",
     zh: "Noto Sans SC",
     ar: "Noto Sans Arabic",
     hi: "Noto Sans Devanagari",
-    en: "Impact",
-    es: "Inter",
+    en: "Noto Sans",
+    es: "Noto Sans",
   };
-  return map[lang] || "Inter";
+  return map[lang] || "Noto Sans";
 }
 
-// Google Fonts CSS URL mapping
+// Google Fonts CSS URL — family already URL-encoded from getFontFamily()
 function getGoogleFontUrl(family: string, weight: number, text: string): string {
-  const encodedFamily = encodeURIComponent(family);
-  const encodedText = encodeURIComponent(text);
-  return `https://fonts.googleapis.com/css2?family=${encodedFamily}:wght@${weight}&text=${encodedText}&display=swap`;
+  // Deduplicate characters to minimize font subset size
+  const uniqueChars = Array.from(new Set(text.split(""))).join("");
+  const encodedText = encodeURIComponent(uniqueChars);
+  return `https://fonts.googleapis.com/css2?family=${family}:wght@${weight}&text=${encodedText}&display=swap`;
 }
 
 // ---------------------------------------------------------------------------
@@ -133,7 +148,8 @@ export async function POST(req: NextRequest) {
 
     // Collect all translated text to determine which glyphs we need
     const allText = segments.map((s) => s.translatedText).join("");
-    const fontFamily = getFontFamily(targetLanguage);
+    const fontUrlName = getFontFamily(targetLanguage);
+    const fontDisplayName = getFontDisplayName(targetLanguage);
     const defaultWeight = 700;
 
     // Fetch fonts — we need unique weight variants
@@ -148,21 +164,21 @@ export async function POST(req: NextRequest) {
     // Fetch fonts in parallel
     const fontPromises = Array.from(weightSet).map(async (w) => {
       try {
-        const data = await fetchGoogleFont(fontFamily, w, allText);
+        const data = await fetchGoogleFont(fontUrlName, w, allText);
         fontDataArr.push({
-          name: fontFamily,
+          name: fontDisplayName,
           data,
           weight: w as any,
           style: "normal" as any,
         });
       } catch (err) {
-        console.warn(`Font fetch failed for ${fontFamily}@${w}:`, err);
+        console.warn(`Font fetch failed for ${fontUrlName}@${w}:`, err);
         // Try Inter as fallback
-        if (fontFamily !== "Inter") {
+        if (fontUrlName !== "Noto+Sans") {
           try {
-            const data = await fetchGoogleFont("Inter", w, allText);
+            const data = await fetchGoogleFont("Noto+Sans", w, allText);
             fontDataArr.push({
-              name: fontFamily, // Keep same name so Satori uses it
+              name: fontDisplayName, // Keep same name so Satori uses it
               data,
               weight: w as any,
               style: "normal" as any,
@@ -252,7 +268,7 @@ export async function POST(req: NextRequest) {
             >
               <span
                 style={{
-                  fontFamily: `"${fontFamily}", sans-serif`,
+                  fontFamily: `"${fontDisplayName}", sans-serif`,
                   fontSize: `${fontSize}px`,
                   fontWeight: weight,
                   color,
