@@ -11,6 +11,8 @@ import { updateRankingScore } from "@/lib/ranking";
 import { runLamaInpainting } from "@/lib/replicate";
 import { generateInpaintingMask } from "@/lib/mask-generator";
 import sharp from "sharp";
+import satori from "satori";
+import { Resvg } from "@resvg/resvg-js";
 
 const TRANSLATE_LANGUAGES = ["ko", "en", "ja", "zh", "es", "hi", "ar"] as const;
 
@@ -458,10 +460,45 @@ Replace each removed text area with the background that would naturally be behin
 }
 
 // ---------------------------------------------------------------------------
+// Google Font fetcher for Satori (returns font ArrayBuffer)
+// ---------------------------------------------------------------------------
+async function fetchGoogleFont(fontFamily: string, text: string): Promise<ArrayBuffer> {
+  const uniqueChars = Array.from(new Set(text.split(""))).join("");
+  const cssUrl = `https://fonts.googleapis.com/css2?family=${fontFamily}:wght@900&text=${encodeURIComponent(uniqueChars)}`;
+  const cssRes = await fetch(cssUrl, {
+    headers: {
+      // Use Safari 5 UA to get woff format (widely compatible)
+      "User-Agent": "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10_6_8; de-at) AppleWebKit/533.21.1 (KHTML, like Gecko) Version/5.0.5 Safari/533.21.1",
+    },
+  });
+  if (!cssRes.ok) throw new Error(`Failed to fetch Google Font CSS: ${cssRes.status}`);
+  const css = await cssRes.text();
+  const match = css.match(/src: url\((.+)\) format\('(woff|woff2|truetype)'\)/);
+  if (!match || !match[1]) throw new Error("Could not extract font URL from Google Fonts CSS");
+  const fontRes = await fetch(match[1]);
+  if (!fontRes.ok) throw new Error(`Failed to fetch font file: ${fontRes.status}`);
+  return fontRes.arrayBuffer();
+}
+
+// ---------------------------------------------------------------------------
+// Map language code to Noto Sans font family for Google Fonts
+// ---------------------------------------------------------------------------
+function getFontFamilyForLang(lang: string): string {
+  switch (lang) {
+    case "ko": return "Noto+Sans+KR";
+    case "ja": return "Noto+Sans+JP";
+    case "zh": return "Noto+Sans+SC";
+    case "ar": return "Noto+Sans+Arabic";
+    case "hi": return "Noto+Sans+Devanagari";
+    default: return "Noto+Sans";
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Generate translated image — replace original text with translated text
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
-// Generate translated image for a payload using Satori-based compose endpoint
+// Generate translated image for a payload using inline Satori rendering
 // Pipeline: LaMa clean image + Satori text overlay → final translated image
 // Strategy: Get the clean image (text removed) → POST to /api/translate/compose-image
 // Fallback: Gemini image editing if compose fails
@@ -526,13 +563,12 @@ async function generateTranslatedImageForPayload(
       return;
     }
 
-    // 2. Resolve base URL for internal API calls
+    // 2. Resolve the clean image URL to an absolute URL
     const appUrl = process.env.NEXT_PUBLIC_APP_URL
       || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
       || (process.env.NEXTAUTH_URL)
       || "http://localhost:3000";
 
-    // Resolve the clean image URL to an absolute URL
     const resolvedCleanUrl = cleanUrl.startsWith("http")
       ? cleanUrl
       : `${appUrl}${cleanUrl}`;
@@ -545,26 +581,114 @@ async function generateTranslatedImageForPayload(
     const imgWidth = metadata.width || 800;
     const imgHeight = metadata.height || 800;
 
-    // 4. Call the Satori compose endpoint
-    const composeRes = await fetch(`${appUrl}/api/translate/compose-image`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        cleanUrl: resolvedCleanUrl,
-        segments,
-        width: imgWidth,
-        height: imgHeight,
-        targetLanguage,
-      }),
+    // 4. Inline Satori rendering (replaces self-fetch to /api/translate/compose-image)
+    const visibleSegments = segments.filter(
+      (s) => s.semanticRole !== "WATERMARK" && s.translatedText?.trim()
+    );
+
+    if (visibleSegments.length === 0) return;
+
+    const fullText = visibleSegments.map((s) => s.translatedText).join("");
+    const fontFamily = getFontFamilyForLang(targetLanguage);
+    const fontBuffer = await fetchGoogleFont(fontFamily, fullText);
+
+    // Determine coordinate normalization
+    const maxCoord = Math.max(
+      ...visibleSegments.map((s) =>
+        Math.max(s.boxX + s.boxWidth, s.boxY + s.boxHeight)
+      )
+    );
+    const norm = maxCoord > 1.5 ? (maxCoord > 100 ? 1000 : maxCoord) : 1;
+
+    const safeW = Math.min(imgWidth, 2048);
+    const safeH = Math.min(imgHeight, 2048);
+
+    // Convert clean image to base64 data URI for Satori embedding
+    const cleanBase64 = cleanBuffer.toString("base64");
+    const cleanMime = metadata.format === "png" ? "image/png" : "image/jpeg";
+    const cleanDataUri = `data:${cleanMime};base64,${cleanBase64}`;
+
+    // Build React-like element tree for Satori
+    const element = {
+      type: "div",
+      props: {
+        style: {
+          display: "flex",
+          width: "100%",
+          height: "100%",
+          position: "relative" as const,
+        },
+        children: [
+          {
+            type: "img",
+            props: {
+              src: cleanDataUri,
+              style: {
+                position: "absolute" as const,
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: "100%",
+                objectFit: "cover" as const,
+              },
+            },
+          },
+          ...visibleSegments.map((seg) => {
+            const x = seg.boxX / norm;
+            const y = seg.boxY / norm;
+            const w = seg.boxWidth / norm;
+            const h = seg.boxHeight / norm;
+            const fontSize = Math.max(14, h * safeH * 0.25);
+
+            return {
+              type: "div",
+              props: {
+                style: {
+                  position: "absolute" as const,
+                  left: `${x * 100}%`,
+                  top: `${y * 100}%`,
+                  width: `${w * 100}%`,
+                  height: `${h * 100}%`,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  textAlign: "center" as const,
+                  fontFamily: "Noto Sans",
+                  fontSize: `${fontSize}px`,
+                  color: seg.color || "white",
+                  textShadow:
+                    "-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000",
+                  lineHeight: 1.2,
+                  wordBreak: "keep-all" as const,
+                  overflowWrap: "break-word" as const,
+                },
+                children: seg.translatedText,
+              },
+            };
+          }),
+        ],
+      },
+    };
+
+    const svg = await satori(element as React.ReactNode, {
+      width: safeW,
+      height: safeH,
+      fonts: [
+        {
+          name: "Noto Sans",
+          data: Buffer.from(fontBuffer),
+          style: "normal" as const,
+          weight: 900,
+        },
+      ],
     });
 
-    if (!composeRes.ok) {
-      const errText = await composeRes.text().catch(() => "unknown");
-      throw new Error(`Compose endpoint failed (${composeRes.status}): ${errText}`);
-    }
+    const resvg = new Resvg(svg, {
+      fitTo: { mode: "width" as const, value: safeW },
+    });
+    const composedBuffer = Buffer.from(resvg.render().asPng());
 
     // 5. Save the composed image to Blob storage
-    const composedBuffer = Buffer.from(await composeRes.arrayBuffer());
     const url = await saveGeneratedImage(composedBuffer, `translated_satori_${targetLanguage}`, ".png");
 
     // 6. Update DB

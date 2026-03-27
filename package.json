@@ -21,6 +21,7 @@
     "@google/genai": "^1.45.0",
     "@google/generative-ai": "^0.24.1",
     "@prisma/client": "^5.22.0",
+    "@resvg/resvg-js": "^2.6.2",
     "@types/bcryptjs": "^2.4.6",
     "@vercel/blob": "^2.3.1",
     "bcryptjs": "^3.0.3",
@@ -32,6 +33,7 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "replicate": "^1.4.0",
+    "satori": "^0.26.0",
     "sharp": "^0.33.5",
     "tailwind-merge": "^2.5.5",
     "zod": "^3.23.8"
