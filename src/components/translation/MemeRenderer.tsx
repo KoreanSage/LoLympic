@@ -448,8 +448,28 @@ export default function MemeRenderer({
   }, [image, cleanImage, segments, displaySize, showTranslation]);
 
   useEffect(() => {
-    render();
-  }, [render]);
+    // Wait for fonts to load before rendering translated text on canvas
+    if (showTranslation && segments.length > 0) {
+      const fontsNeeded = segments.map(s => resolveFont(s));
+      const uniqueFonts = [...new Set(fontsNeeded)];
+
+      // Load fonts explicitly if needed
+      const loadPromises = uniqueFonts.map(font => {
+        try {
+          return document.fonts.load(`700 48px "${font}"`);
+        } catch {
+          return Promise.resolve([]);
+        }
+      });
+
+      Promise.all(loadPromises)
+        .then(() => document.fonts.ready)
+        .then(() => render())
+        .catch(() => render()); // Render anyway on error
+    } else {
+      render();
+    }
+  }, [render, showTranslation, segments]);
 
   // Re-render on resize
   useEffect(() => {
