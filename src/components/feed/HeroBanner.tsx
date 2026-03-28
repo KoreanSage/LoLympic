@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useTranslation } from "@/i18n";
 
-const DISMISS_KEY = "lolympic_hero_dismissed";
+const DISMISS_KEY = "mimzy_hero_dismissed";
 
 export default function HeroBanner() {
   const { t } = useTranslation();

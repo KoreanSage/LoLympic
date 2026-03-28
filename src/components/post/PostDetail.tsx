@@ -159,7 +159,7 @@ export default function PostDetail({
   useEffect(() => {
     // Load bookmark from localStorage first (instant)
     try {
-      const raw = localStorage.getItem("lolympic_bookmarks");
+      const raw = localStorage.getItem("mimzy_bookmarks");
       const bookmarks: string[] = raw ? JSON.parse(raw) : [];
       setSaved(bookmarks.includes(id));
     } catch (e) {
@@ -684,14 +684,14 @@ export default function PostDetail({
             const willSave = !saved;
             // localStorage update
             try {
-              const raw = localStorage.getItem("lolympic_bookmarks");
+              const raw = localStorage.getItem("mimzy_bookmarks");
               const bookmarks: string[] = raw ? JSON.parse(raw) : [];
               if (saved) {
                 const filtered = bookmarks.filter((bid) => bid !== id);
-                localStorage.setItem("lolympic_bookmarks", JSON.stringify(filtered));
+                localStorage.setItem("mimzy_bookmarks", JSON.stringify(filtered));
               } else {
                 if (!bookmarks.includes(id)) bookmarks.push(id);
-                localStorage.setItem("lolympic_bookmarks", JSON.stringify(bookmarks));
+                localStorage.setItem("mimzy_bookmarks", JSON.stringify(bookmarks));
               }
             } catch (e) {
               console.error("Failed to update bookmarks in localStorage:", e);

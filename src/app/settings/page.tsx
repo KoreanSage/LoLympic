@@ -192,7 +192,7 @@ export default function SettingsPage() {
         setLocale(uiLanguage as any);
       } else if (activeTab === "notifications") {
         // Notification preferences are stored locally for now
-        localStorage.setItem("lolympic_notif_prefs", JSON.stringify({
+        localStorage.setItem("mimzy_notif_prefs", JSON.stringify({
           notifReactions, notifComments, notifFollows, notifSuggestions, notifSeason,
         }));
         toast(t("settings.saved"), "success");
@@ -213,7 +213,7 @@ export default function SettingsPage() {
       await updateSession();
       // Also store preferredLanguage in localStorage for immediate availability
       if (activeTab === "language") {
-        localStorage.setItem("lolympic_preferredLanguage", preferredLang);
+        localStorage.setItem("mimzy_preferredLanguage", preferredLang);
       }
       toast(t("settings.saved"), "success");
     } catch (err: any) {
@@ -640,8 +640,8 @@ export default function SettingsPage() {
                 <div className="bg-background-surface border border-border rounded-xl p-6 space-y-4">
                   <div className="flex items-center gap-3">
                     <h2 className="text-xl font-bold">
-                      <span className="text-[#c9a84c]">LoL</span>
-                      <span className="text-foreground">ympic</span>
+                      <span className="text-[#c9a84c]">mi</span>
+                      <span className="text-foreground">mzy</span>
                     </h2>
                     <span className="text-xs px-2 py-0.5 rounded-full bg-background-elevated text-foreground-subtle">v0.1.0 Beta</span>
                   </div>

@@ -74,7 +74,7 @@ interface FeedCardProps {
 function getBookmarks(): Set<string> {
   if (typeof window === "undefined") return new Set();
   try {
-    const raw = localStorage.getItem("lolympic_bookmarks");
+    const raw = localStorage.getItem("mimzy_bookmarks");
     return raw ? new Set(JSON.parse(raw)) : new Set();
   } catch {
     return new Set();
@@ -83,7 +83,7 @@ function getBookmarks(): Set<string> {
 
 function saveBookmarks(ids: Set<string>) {
   if (typeof window === "undefined") return;
-  localStorage.setItem("lolympic_bookmarks", JSON.stringify(Array.from(ids)));
+  localStorage.setItem("mimzy_bookmarks", JSON.stringify(Array.from(ids)));
 }
 
 function FeedCardInner({

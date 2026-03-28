@@ -24,14 +24,14 @@ export default function PostPageClient() {
   // Use a synchronous initial value from localStorage to avoid double-fetch
   const [preferredLang, setPreferredLang] = useState<string>(() => {
     if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("lolympic_preferredLanguage");
+      const stored = localStorage.getItem("mimzy_preferredLanguage");
       if (stored) return stored;
     }
     return (session?.user as any)?.preferredLanguage || "en";
   });
   const [langReady, setLangReady] = useState(() => {
     if (typeof window !== "undefined") {
-      return !!localStorage.getItem("lolympic_preferredLanguage");
+      return !!localStorage.getItem("mimzy_preferredLanguage");
     }
     return false;
   });
@@ -47,7 +47,7 @@ export default function PostPageClient() {
       .then((data) => {
         if (data?.preferredLanguage) {
           setPreferredLang(data.preferredLanguage);
-          localStorage.setItem("lolympic_preferredLanguage", data.preferredLanguage);
+          localStorage.setItem("mimzy_preferredLanguage", data.preferredLanguage);
         }
       })
       .catch((e) => { console.error("Failed to fetch user language preference:", e); })
