@@ -513,12 +513,6 @@ const ar: Record<TranslationKeys, string> = {
   "onboarding.step2Upload": "ارفع الميم الخاص بك",
   "onboarding.step2Translate": "الذكاء الاصطناعي يترجمه إلى 7 لغات",
   "onboarding.step2Compete": "تنافس ضد العالم",
-  "onboarding.step3Title": "اكسب نقاطًا لبلدك \uD83C\uDFC6",
-  "onboarding.step3Desc": "كل تفاعل وتعليق ومشاركة تكسب نقاطًا",
-  "onboarding.step3Detail": "!كلما زاد التفاعل على ميماتك، ارتفع ترتيب بلدك",
-  "onboarding.step4Title": "مستعد للتمثيل؟ \uD83D\uDE80",
-  "onboarding.step4Cta": "ارفع أول ميم لك",
-  "onboarding.step4Browse": "تصفح أولاً",
 
   // ── Rank / Level System ─────────────────────────────────────────────────────
   "rank.level": "المستوى",
@@ -550,6 +544,31 @@ const ar: Record<TranslationKeys, string> = {
 
   // ── Country Champion Badge ────────────────────────────────────────────────
   "countryChampion.badge": "عضو في البلد الأول",
+
+  "onboarding.step3BattleTitle": "معركة الميمات ⚔️",
+  "onboarding.step3BattleDesc": "صوّت للميم الأكثر مرحًا! تصويتك يساعد في ترتيب أفضل الميمات وكسب نقاط لبلدك.",
+  "onboarding.step4TranslationTitle": "تبديل الترجمة 🔄",
+  "onboarding.step4TranslationDesc": "بدّل بين العرض الأصلي والمترجم. شاهد الميمات بلغتك مع الحفاظ على الفكاهة الأصلية.",
+  "onboarding.step5RankTitle": "نظام الرتب 🏆",
+  "onboarding.step5RankDesc": "اكسب XP من الرفع والتفاعلات والمعارك. تسلق من الحديد إلى المتحدي — تمامًا كألعابك المفضلة!",
+  "onboarding.step6Title": "اكسب نقاطًا لبلدك 🏆",
+  "onboarding.step6Desc": "كل تفاعل وتعليق ومشاركة تكسب نقاطًا",
+  "onboarding.step6Detail": "كلما زاد التفاعل على ميماتك، ارتفع ترتيب بلدك!",
+  "onboarding.step7Title": "مستعد للتمثيل؟ 🚀",
+  "onboarding.step7Cta": "ارفع أول ميم لك",
+  "onboarding.step7Browse": "تصفح أولاً",
+  "nav.battle": "معركة",
+  "sidebar.yourCountry": "بلدك: {flag} {name} — المركز #{rank} — النقاط: {score}",
+  "sidebar.uploadToClimb": "ارفع ميمات لتتسلق الترتيب!",
+  "filter.myCountry": "بلدي",
+  "feed.report": "إبلاغ",
+  "feed.reportTitle": "الإبلاغ عن منشور",
+  "feed.reportSubmitted": "تم إرسال البلاغ",
+  "feed.reportFailed": "فشل إرسال البلاغ",
+  "feed.reportSpam": "سبام",
+  "feed.reportInappropriate": "غير لائق",
+  "feed.reportCopyright": "حقوق النشر",
+  "feed.reportOther": "أخرى",
 } as const;
 
 export default ar;

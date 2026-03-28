@@ -509,12 +509,6 @@ const zh: Record<TranslationKeys, string> = {
   "onboarding.step2Upload": "上传你的梗图",
   "onboarding.step2Translate": "AI翻译成7种语言",
   "onboarding.step2Compete": "与全世界竞争",
-  "onboarding.step3Title": "为国家赢得积分 \uD83C\uDFC6",
-  "onboarding.step3Desc": "每个反应、评论和分享都能赚取积分",
-  "onboarding.step3Detail": "梗图获得的互动越多，国家排名越高！",
-  "onboarding.step4Title": "准备好了吗？\uD83D\uDE80",
-  "onboarding.step4Cta": "上传第一个梗图",
-  "onboarding.step4Browse": "先看看",
 
   // ── Rank / Level System ─────────────────────────────────────────────────────
   "rank.level": "等级",
@@ -546,6 +540,31 @@ const zh: Record<TranslationKeys, string> = {
 
   // ── Country Champion Badge ────────────────────────────────────────────────
   "countryChampion.badge": "排名第1国家的成员",
+
+  "onboarding.step3BattleTitle": "表情包大战 ⚔️",
+  "onboarding.step3BattleDesc": "投票选出更好笑的表情包！你的投票帮助排名最佳表情包并为你的国家赚取积分。",
+  "onboarding.step4TranslationTitle": "翻译切换 🔄",
+  "onboarding.step4TranslationDesc": "在原文和翻译之间切换。用你的语言看表情包，同时保留原始幽默。",
+  "onboarding.step5RankTitle": "段位晋升系统 🏆",
+  "onboarding.step5RankDesc": "通过上传、反应和对战获得XP。从黑铁升到王者——就像你最爱的游戏！",
+  "onboarding.step6Title": "为国家赢得积分 🏆",
+  "onboarding.step6Desc": "每个反应、评论和分享都能赚取积分",
+  "onboarding.step6Detail": "梗图获得的互动越多，国家排名越高！",
+  "onboarding.step7Title": "准备好了吗？🚀",
+  "onboarding.step7Cta": "上传第一个梗图",
+  "onboarding.step7Browse": "先看看",
+  "nav.battle": "对战",
+  "sidebar.yourCountry": "你的国家: {flag} {name} — 排名 #{rank} — 分数: {score}",
+  "sidebar.uploadToClimb": "上传梗图来提升排名！",
+  "filter.myCountry": "我的国家",
+  "feed.report": "举报",
+  "feed.reportTitle": "举报帖子",
+  "feed.reportSubmitted": "举报已提交",
+  "feed.reportFailed": "举报提交失败",
+  "feed.reportSpam": "垃圾信息",
+  "feed.reportInappropriate": "不适当内容",
+  "feed.reportCopyright": "版权问题",
+  "feed.reportOther": "其他",
 };
 
 export default zh;

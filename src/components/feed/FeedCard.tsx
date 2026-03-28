@@ -143,6 +143,8 @@ function FeedCardInner({
   const [menuOpen, setMenuOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletePending, setDeletePending] = useState(false);
+  const [showReportDialog, setShowReportDialog] = useState(false);
+  const [reportPending, setReportPending] = useState(false);
   const [voteScore, setVoteScore] = useState(0);
   const [userVote, setUserVote] = useState(0);
   const [votePending, setVotePending] = useState(false);
@@ -175,6 +177,28 @@ function FeedCardInner({
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, [menuOpen]);
+
+  const handleReport = useCallback(async (reason: string) => {
+    if (reportPending) return;
+    setReportPending(true);
+    try {
+      const res = await fetch("/api/reports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetType: "POST", targetId: id, reason }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed");
+      }
+      toast(t("feed.reportSubmitted"), "success");
+      setShowReportDialog(false);
+    } catch {
+      toast(t("feed.reportFailed"), "error");
+    } finally {
+      setReportPending(false);
+    }
+  }, [id, reportPending, toast, t]);
 
   const handleDelete = useCallback(async () => {
     if (deletePending) return;
@@ -319,8 +343,8 @@ function FeedCardInner({
           </div>
         </div>
 
-        {/* Three-dot menu for own posts */}
-        {isOwnPost && (
+        {/* Three-dot menu */}
+        {session?.user && (
           <div className="relative" ref={menuRef}>
             <button
               aria-label="Post options"
@@ -337,19 +361,34 @@ function FeedCardInner({
             </button>
             {menuOpen && (
               <div className="absolute right-0 top-full mt-1 w-40 bg-background-surface border border-border rounded-lg shadow-lg z-50 overflow-hidden">
-                <button
-                  onClick={() => {
-                    setMenuOpen(false);
-                    setShowDeleteConfirm(true);
-                  }}
-                  aria-label="Delete post"
-                  className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-background-elevated transition-colors flex items-center gap-2"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                  {t("feed.deletePost")}
-                </button>
+                {isOwnPost && (
+                  <button
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setShowDeleteConfirm(true);
+                    }}
+                    aria-label="Delete post"
+                    className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-background-elevated transition-colors flex items-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    {t("feed.deletePost")}
+                  </button>
+                )}
+                {!isOwnPost && (
+                  <button
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setShowReportDialog(true);
+                    }}
+                    aria-label="Report post"
+                    className="w-full text-left px-3 py-2 text-sm text-foreground-muted hover:bg-background-elevated transition-colors flex items-center gap-2"
+                  >
+                    <span className="text-sm">{"\uD83D\uDEA9"}</span>
+                    {t("feed.report")}
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -381,6 +420,46 @@ function FeedCardInner({
                 className="px-3 py-1.5 rounded-lg text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition-colors disabled:opacity-50"
               >
                 {deletePending ? t("feed.deleting") : t("common.delete")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Report dialog */}
+      {showReportDialog && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50" onClick={() => setShowReportDialog(false)}>
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="report-dialog-title"
+            className="bg-background-surface border border-border rounded-xl p-5 mx-4 max-w-sm w-full shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 id="report-dialog-title" className="text-base font-semibold text-foreground mb-3">{t("feed.reportTitle")}</h3>
+            <div className="space-y-2">
+              {([
+                { reason: "SPAM", label: t("feed.reportSpam") },
+                { reason: "SEXUAL_CONTENT", label: t("feed.reportInappropriate") },
+                { reason: "COPYRIGHT", label: t("feed.reportCopyright") },
+                { reason: "OTHER", label: t("feed.reportOther") },
+              ] as const).map(({ reason, label }) => (
+                <button
+                  key={reason}
+                  onClick={() => handleReport(reason)}
+                  disabled={reportPending}
+                  className="w-full text-left px-3 py-2.5 rounded-lg text-sm text-foreground-muted hover:bg-background-elevated transition-colors border border-border disabled:opacity-50"
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div className="mt-3 flex justify-end">
+              <button
+                onClick={() => setShowReportDialog(false)}
+                className="px-3 py-1.5 rounded-lg text-sm font-medium text-foreground-muted border border-border hover:bg-background-elevated transition-colors"
+              >
+                {t("common.cancel")}
               </button>
             </div>
           </div>

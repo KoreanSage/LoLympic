@@ -517,12 +517,18 @@ const en = {
   "onboarding.step2Upload": "Upload your meme",
   "onboarding.step2Translate": "AI translates it to 7 languages",
   "onboarding.step2Compete": "Compete against the world",
-  "onboarding.step3Title": "Score Points for Your Country \uD83C\uDFC6",
-  "onboarding.step3Desc": "Every reaction, comment, and share earns points",
-  "onboarding.step3Detail": "The more engagement your memes get, the higher your country ranks!",
-  "onboarding.step4Title": "Ready to Represent? \uD83D\uDE80",
-  "onboarding.step4Cta": "Upload Your First Meme",
-  "onboarding.step4Browse": "Browse First",
+  "onboarding.step3BattleTitle": "Meme Battle \u2694\uFE0F",
+  "onboarding.step3BattleDesc": "Vote on which meme is funnier! Your votes help rank the best memes and earn points for your country.",
+  "onboarding.step4TranslationTitle": "Translation Toggle \uD83D\uDD04",
+  "onboarding.step4TranslationDesc": "Switch between Original and Translated views. See memes in your language while preserving the original humor.",
+  "onboarding.step5RankTitle": "Rank Up System \uD83C\uDFC6",
+  "onboarding.step5RankDesc": "Earn XP from uploads, reactions, and battles. Climb from Iron to Challenger \u2014 just like your favorite games!",
+  "onboarding.step6Title": "Score Points for Your Country \uD83C\uDFC6",
+  "onboarding.step6Desc": "Every reaction, comment, and share earns points",
+  "onboarding.step6Detail": "The more engagement your memes get, the higher your country ranks!",
+  "onboarding.step7Title": "Ready to Represent? \uD83D\uDE80",
+  "onboarding.step7Cta": "Upload Your First Meme",
+  "onboarding.step7Browse": "Browse First",
 
   // ── Rank / Level System ─────────────────────────────────────────────────────
   "rank.level": "Level",
@@ -554,6 +560,24 @@ const en = {
 
   // ── Country Champion Badge ────────────────────────────────────────────────
   "countryChampion.badge": "Member of the #1 ranked country",
+
+  // ── Navigation (battle) ─────────────────────────────────────────────────
+  "nav.battle": "Battle",
+
+  // ── Sidebar (my country) ────────────────────────────────────────────────
+  "sidebar.yourCountry": "Your country: {flag} {name} \u2014 Rank #{rank} \u2014 Score: {score}",
+  "sidebar.uploadToClimb": "Upload memes to climb the ranks!",
+
+  // ── Feed (my country filter + report) ───────────────────────────────────
+  "filter.myCountry": "My Country",
+  "feed.report": "Report",
+  "feed.reportTitle": "Report Post",
+  "feed.reportSubmitted": "Report submitted",
+  "feed.reportFailed": "Failed to submit report",
+  "feed.reportSpam": "Spam",
+  "feed.reportInappropriate": "Inappropriate",
+  "feed.reportCopyright": "Copyright",
+  "feed.reportOther": "Other",
 } as const;
 
 export type TranslationKeys = keyof typeof en;

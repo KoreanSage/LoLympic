@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
+import TierBadge from "@/components/ui/TierBadge";
 import { useTranslation } from "@/i18n";
 
 // ---------------------------------------------------------------------------
@@ -31,6 +33,7 @@ interface TopCreator {
   flag: string;
   score: number;
   totalPosts: number;
+  tier?: string;
 }
 
 interface HotMeme {
@@ -124,6 +127,7 @@ function ScoreBar({ score, maxScore }: { score: number; maxScore: number }) {
 
 export default function Sidebar() {
   const { t } = useTranslation();
+  const { data: session } = useSession();
   const [rankings, setRankings] = useState<CountryRanking[]>([]);
   const [creators, setCreators] = useState<TopCreator[]>([]);
   const [hotMemes, setHotMemes] = useState<HotMeme[]>([]);
@@ -135,6 +139,8 @@ export default function Sidebar() {
   const [errorRankings, setErrorRankings] = useState(false);
   const [errorCreators, setErrorCreators] = useState(false);
   const [errorMemes, setErrorMemes] = useState(false);
+  const [myCountry, setMyCountry] = useState<{ flag: string; name: string; rank: number; score: number } | null>(null);
+  const [myCountryInTop5, setMyCountryInTop5] = useState(false);
 
   useEffect(() => {
     // Fetch country rankings with rank change detection
@@ -197,7 +203,7 @@ export default function Sidebar() {
       .then((data) => {
         const entries = (data.entries ?? []) as Array<{
           rank: number;
-          user: { username: string; displayName: string | null; avatarUrl: string | null };
+          user: { username: string; displayName: string | null; avatarUrl: string | null; tier?: string };
           country: { flagEmoji: string } | null;
           score: number;
           totalPosts: number;
@@ -211,6 +217,7 @@ export default function Sidebar() {
             flag: e.country?.flagEmoji ?? "",
             score: e.score,
             totalPosts: e.totalPosts ?? 0,
+            tier: e.user.tier,
           }))
         );
       })
@@ -269,6 +276,47 @@ export default function Sidebar() {
       .catch((err) => console.error("Failed to fetch trending tags:", err))
       .finally(() => setLoadingTags(false));
   }, []);
+
+  // Fetch user's country standing
+  useEffect(() => {
+    if (!session?.user) return;
+    fetch("/api/users/me")
+      .then((r) => r.ok ? r.json() : null)
+      .then((userData) => {
+        if (!userData?.countryId) return;
+        const countryId = userData.countryId;
+        const countryFlag = userData.country?.flagEmoji || "";
+        const countryName = userData.country?.nameEn || "";
+
+        // Check if user's country is in top 5
+        const inTop5 = rankings.some((r) => r.id === countryId);
+        setMyCountryInTop5(inTop5);
+
+        if (!inTop5) {
+          // Fetch full country leaderboard to find rank
+          fetch("/api/leaderboard?type=country&limit=100")
+            .then((r) => r.ok ? r.json() : null)
+            .then((data) => {
+              const entries = (data?.entries ?? []) as Array<{
+                rank: number;
+                country: { id: string; nameEn: string; flagEmoji: string };
+                score: number;
+              }>;
+              const myEntry = entries.find((e) => e.country.id === countryId);
+              if (myEntry) {
+                setMyCountry({
+                  flag: myEntry.country.flagEmoji || countryFlag,
+                  name: myEntry.country.nameEn || countryName,
+                  rank: myEntry.rank,
+                  score: myEntry.score,
+                });
+              }
+            })
+            .catch(() => {});
+        }
+      })
+      .catch(() => {});
+  }, [session?.user, rankings]);
 
   const maxCountryScore = rankings[0]?.score ?? 0;
   const maxCreatorScore = creators[0]?.score ?? 0;
@@ -336,6 +384,25 @@ export default function Sidebar() {
           </div>
         )}
       </Card>
+
+      {/* My Country Standing (only if logged in and country NOT in top 5) */}
+      {session?.user && myCountry && !myCountryInTop5 && (
+        <Card>
+          <div className="text-center space-y-1.5">
+            <p className="text-xs text-foreground-muted">
+              {t("sidebar.yourCountry", {
+                flag: myCountry.flag,
+                name: myCountry.name,
+                rank: String(myCountry.rank),
+                score: myCountry.score.toLocaleString(),
+              })}
+            </p>
+            <p className="text-[10px] text-[#c9a84c]">
+              {t("sidebar.uploadToClimb")}
+            </p>
+          </div>
+        </Card>
+      )}
 
       {/* Hot Memes */}
       <Card>
@@ -419,9 +486,12 @@ export default function Sidebar() {
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <span className="text-xs text-foreground-muted truncate block group-hover:text-foreground transition-colors">
-                    {creator.displayName || `@${creator.username}`}
-                  </span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-foreground-muted truncate group-hover:text-foreground transition-colors">
+                      {creator.displayName || `@${creator.username}`}
+                    </span>
+                    {creator.tier && <TierBadge tier={creator.tier} size="xs" />}
+                  </div>
                 </div>
                 <span className="text-[10px] text-foreground-subtle">
                   {creator.totalPosts}p

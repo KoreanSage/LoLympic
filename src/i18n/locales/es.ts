@@ -509,12 +509,6 @@ const es: Record<TranslationKeys, string> = {
   "onboarding.step2Upload": "Sube tu meme",
   "onboarding.step2Translate": "La IA lo traduce a 7 idiomas",
   "onboarding.step2Compete": "Compite contra el mundo",
-  "onboarding.step3Title": "Gana Puntos para tu Pa\u00EDs \uD83C\uDFC6",
-  "onboarding.step3Desc": "Cada reacci\u00F3n, comentario y compartido suma puntos",
-  "onboarding.step3Detail": "\u00A1Cuanto m\u00E1s engagement tengan tus memes, m\u00E1s sube tu pa\u00EDs en el ranking!",
-  "onboarding.step4Title": "\u00BFListo para Representar? \uD83D\uDE80",
-  "onboarding.step4Cta": "Sube tu Primer Meme",
-  "onboarding.step4Browse": "Explorar Primero",
 
   // ── Rank / Level System ─────────────────────────────────────────────────────
   "rank.level": "Nivel",
@@ -546,6 +540,31 @@ const es: Record<TranslationKeys, string> = {
 
   // ── Country Champion Badge ────────────────────────────────────────────────
   "countryChampion.badge": "Miembro del pa\u00EDs #1",
+
+  "onboarding.step3BattleTitle": "Batalla de Memes ⚔️",
+  "onboarding.step3BattleDesc": "¡Vota cuál meme es más gracioso! Tus votos ayudan a clasificar los mejores memes y ganar puntos para tu país.",
+  "onboarding.step4TranslationTitle": "Alternar Traducción 🔄",
+  "onboarding.step4TranslationDesc": "Cambia entre la vista Original y Traducida. Ve los memes en tu idioma manteniendo el humor original.",
+  "onboarding.step5RankTitle": "Sistema de Rangos 🏆",
+  "onboarding.step5RankDesc": "Gana XP subiendo memes, reacciones y batallas. Sube de Hierro a Retador — ¡como en tus juegos favoritos!",
+  "onboarding.step6Title": "Gana Puntos para tu País 🏆",
+  "onboarding.step6Desc": "Cada reacción, comentario y compartido suma puntos",
+  "onboarding.step6Detail": "¡Cuanto más engagement tengan tus memes, más sube tu país en el ranking!",
+  "onboarding.step7Title": "¿Listo para Representar? 🚀",
+  "onboarding.step7Cta": "Sube tu Primer Meme",
+  "onboarding.step7Browse": "Explorar Primero",
+  "nav.battle": "Batalla",
+  "sidebar.yourCountry": "Tu país: {flag} {name} — Puesto #{rank} — Puntos: {score}",
+  "sidebar.uploadToClimb": "¡Sube memes para escalar posiciones!",
+  "filter.myCountry": "Mi País",
+  "feed.report": "Reportar",
+  "feed.reportTitle": "Reportar Publicación",
+  "feed.reportSubmitted": "Reporte enviado",
+  "feed.reportFailed": "Error al enviar el reporte",
+  "feed.reportSpam": "Spam",
+  "feed.reportInappropriate": "Inapropiado",
+  "feed.reportCopyright": "Derechos de autor",
+  "feed.reportOther": "Otro",
 };
 
 export default es;

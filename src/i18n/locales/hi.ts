@@ -513,12 +513,6 @@ const hi: Record<TranslationKeys, string> = {
   "onboarding.step2Upload": "अपना मीम अपलोड करें",
   "onboarding.step2Translate": "AI 7 भाषाओं में अनुवाद करता है",
   "onboarding.step2Compete": "दुनिया से मुकाबला करें",
-  "onboarding.step3Title": "अपने देश के लिए अंक कमाएं \uD83C\uDFC6",
-  "onboarding.step3Desc": "हर रिएक्शन, कमेंट और शेयर से अंक मिलते हैं",
-  "onboarding.step3Detail": "आपके मीम्स को जितना ज़्यादा एंगेजमेंट मिलेगा, आपके देश की रैंकिंग उतनी ऊपर जाएगी!",
-  "onboarding.step4Title": "प्रतिनिधित्व के लिए तैयार? \uD83D\uDE80",
-  "onboarding.step4Cta": "अपना पहला मीम अपलोड करें",
-  "onboarding.step4Browse": "पहले देखें",
 
   // ── Rank / Level System ─────────────────────────────────────────────────────
   "rank.level": "स्तर",
@@ -550,6 +544,31 @@ const hi: Record<TranslationKeys, string> = {
 
   // ── Country Champion Badge ────────────────────────────────────────────────
   "countryChampion.badge": "#1 देश का सदस्य",
+
+  "onboarding.step3BattleTitle": "मीम बैटल ⚔️",
+  "onboarding.step3BattleDesc": "कौन सा मीम ज़्यादा मज़ेदार है, वोट करें! आपके वोट बेस्ट मीम्स को रैंक करने और देश के लिए पॉइंट कमाने में मदद करते हैं।",
+  "onboarding.step4TranslationTitle": "अनुवाद टॉगल 🔄",
+  "onboarding.step4TranslationDesc": "मूल और अनुवादित व्यू के बीच स्विच करें। मूल हास्य को बनाए रखते हुए अपनी भाषा में मीम देखें।",
+  "onboarding.step5RankTitle": "रैंक अप सिस्टम 🏆",
+  "onboarding.step5RankDesc": "अपलोड, रिएक्शन और बैटल से XP कमाएं। आयरन से चैलेंजर तक — अपने पसंदीदा गेम की तरह!",
+  "onboarding.step6Title": "अपने देश के लिए अंक कमाएं 🏆",
+  "onboarding.step6Desc": "हर रिएक्शन, कमेंट और शेयर से अंक मिलते हैं",
+  "onboarding.step6Detail": "आपके मीम्स को जितना ज़्यादा एंगेजमेंट मिलेगा, आपके देश की रैंकिंग उतनी ऊपर जाएगी!",
+  "onboarding.step7Title": "प्रतिनिधित्व के लिए तैयार? 🚀",
+  "onboarding.step7Cta": "अपना पहला मीम अपलोड करें",
+  "onboarding.step7Browse": "पहले देखें",
+  "nav.battle": "बैटल",
+  "sidebar.yourCountry": "आपका देश: {flag} {name} — रैंक #{rank} — स्कोर: {score}",
+  "sidebar.uploadToClimb": "रैंक चढ़ने के लिए मीम अपलोड करें!",
+  "filter.myCountry": "मेरा देश",
+  "feed.report": "रिपोर्ट",
+  "feed.reportTitle": "पोस्ट रिपोर्ट करें",
+  "feed.reportSubmitted": "रिपोर्ट सबमिट हो गई",
+  "feed.reportFailed": "रिपोर्ट सबमिट करने में विफल",
+  "feed.reportSpam": "स्पैम",
+  "feed.reportInappropriate": "अनुचित",
+  "feed.reportCopyright": "कॉपीराइट",
+  "feed.reportOther": "अन्य",
 } as const;
 
 export default hi;

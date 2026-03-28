@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import { useTranslation } from "@/i18n";
 
 interface FilterOption {
@@ -24,13 +25,30 @@ export default function FeedFilters({
   className = "",
 }: FeedFiltersProps) {
   const { t } = useTranslation();
+  const { data: session } = useSession();
   const [sort, setSort] = useState("trending");
   const [postType, setPostType] = useState("");
   const [country, setCountry] = useState("");
   const [language, setLanguage] = useState("");
   const [category, setCategory] = useState("");
   const [showRightFade, setShowRightFade] = useState(false);
+  const [userCountryId, setUserCountryId] = useState<string | null>(null);
+  const [userCountryFlag, setUserCountryFlag] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Fetch user's country
+  useEffect(() => {
+    if (!session?.user) return;
+    fetch("/api/users/me")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data?.countryId) {
+          setUserCountryId(data.countryId);
+          setUserCountryFlag(data.country?.flagEmoji || null);
+        }
+      })
+      .catch(() => {});
+  }, [session?.user]);
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -190,6 +208,20 @@ export default function FeedFilters({
           options={CATEGORY_OPTIONS}
           onChange={(v) => handleChange("category", v)}
         />
+
+        {/* My Country quick filter */}
+        {userCountryId && (
+          <button
+            onClick={() => handleChange("country", country === userCountryId ? "" : userCountryId)}
+            className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-all whitespace-nowrap shrink-0 ${
+              country === userCountryId
+                ? "border-[#c9a84c] bg-[#c9a84c]/10 text-[#c9a84c]"
+                : "border-[#c9a84c]/40 text-[#c9a84c]/80 hover:border-[#c9a84c] hover:text-[#c9a84c]"
+            }`}
+          >
+            {userCountryFlag || "\uD83C\uDFF3\uFE0F"} {t("filter.myCountry")}
+          </button>
+        )}
       </div>
       {showRightFade && (
         <div className="absolute right-0 top-0 bottom-0 w-8 pointer-events-none bg-gradient-to-l from-background to-transparent" />

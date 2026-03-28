@@ -515,12 +515,6 @@ const ko: Record<TranslationKeys, string> = {
   "onboarding.step2Upload": "밈 업로드",
   "onboarding.step2Translate": "AI가 7개 언어로 번역",
   "onboarding.step2Compete": "전 세계와 경쟁",
-  "onboarding.step3Title": "국가를 위해 점수를 쌓으세요 \uD83C\uDFC6",
-  "onboarding.step3Desc": "모든 리액션, 댓글, 공유가 점수가 됩니다",
-  "onboarding.step3Detail": "밈이 받는 참여가 많을수록 국가 순위가 올라갑니다!",
-  "onboarding.step4Title": "대표할 준비 됐나요? \uD83D\uDE80",
-  "onboarding.step4Cta": "첫 밈 올리기",
-  "onboarding.step4Browse": "둘러보기",
 
   // ── Rank / Level System ─────────────────────────────────────────────────────
   "rank.level": "레벨",
@@ -552,6 +546,31 @@ const ko: Record<TranslationKeys, string> = {
 
   // ── Country Champion Badge ────────────────────────────────────────────────
   "countryChampion.badge": "1위 국가의 멤버",
+
+  "onboarding.step3BattleTitle": "밈 배틀 ⚔️",
+  "onboarding.step3BattleDesc": "어떤 밈이 더 웃긴지 투표하세요! 투표로 최고의 밈을 선정하고 나라를 위한 포인트를 획득하세요.",
+  "onboarding.step4TranslationTitle": "번역 토글 🔄",
+  "onboarding.step4TranslationDesc": "원본과 번역 보기를 전환하세요. 원래 유머를 유지하면서 당신의 언어로 밈을 즐기세요.",
+  "onboarding.step5RankTitle": "랭크 업 시스템 🏆",
+  "onboarding.step5RankDesc": "업로드, 리액션, 배틀로 XP를 획득하세요. 아이언에서 챌린저까지 — 게임처럼!",
+  "onboarding.step6Title": "국가를 위해 점수를 쌓으세요 🏆",
+  "onboarding.step6Desc": "모든 리액션, 댓글, 공유가 점수가 됩니다",
+  "onboarding.step6Detail": "밈이 받는 참여가 많을수록 국가 순위가 올라갑니다!",
+  "onboarding.step7Title": "대표할 준비 됐나요? 🚀",
+  "onboarding.step7Cta": "첫 밈 올리기",
+  "onboarding.step7Browse": "둘러보기",
+  "nav.battle": "배틀",
+  "sidebar.yourCountry": "당신의 나라: {flag} {name} — 순위 #{rank} — 점수: {score}",
+  "sidebar.uploadToClimb": "밈을 올려서 순위를 올리세요!",
+  "filter.myCountry": "내 나라",
+  "feed.report": "신고",
+  "feed.reportTitle": "게시물 신고",
+  "feed.reportSubmitted": "신고가 접수되었습니다",
+  "feed.reportFailed": "신고 접수에 실패했습니다",
+  "feed.reportSpam": "스팸",
+  "feed.reportInappropriate": "부적절한 콘텐츠",
+  "feed.reportCopyright": "저작권",
+  "feed.reportOther": "기타",
 };
 
 export default ko;

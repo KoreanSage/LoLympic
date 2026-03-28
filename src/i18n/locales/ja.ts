@@ -509,12 +509,6 @@ const ja: Record<TranslationKeys, string> = {
   "onboarding.step2Upload": "ミームをアップロード",
   "onboarding.step2Translate": "AIが7言語に翻訳",
   "onboarding.step2Compete": "世界と競争",
-  "onboarding.step3Title": "国のためにポイントを稼ごう \uD83C\uDFC6",
-  "onboarding.step3Desc": "すべてのリアクション、コメント、シェアがポイントに",
-  "onboarding.step3Detail": "ミームへのエンゲージメントが多いほど国のランキングが上がる！",
-  "onboarding.step4Title": "代表する準備はできた？\uD83D\uDE80",
-  "onboarding.step4Cta": "最初のミームを投稿",
-  "onboarding.step4Browse": "まず見てみる",
 
   // ── Rank / Level System ─────────────────────────────────────────────────────
   "rank.level": "レベル",
@@ -546,6 +540,31 @@ const ja: Record<TranslationKeys, string> = {
 
   // ── Country Champion Badge ────────────────────────────────────────────────
   "countryChampion.badge": "1位の国のメンバー",
+
+  "onboarding.step3BattleTitle": "ミームバトル ⚔️",
+  "onboarding.step3BattleDesc": "どっちのミームが面白いか投票しよう！投票でベストミームをランク付けし、国のポイントを稼ごう。",
+  "onboarding.step4TranslationTitle": "翻訳トグル 🔄",
+  "onboarding.step4TranslationDesc": "オリジナルと翻訳の表示を切り替え。元のユーモアを保ちながら自分の言語でミームを楽しもう。",
+  "onboarding.step5RankTitle": "ランクアップシステム 🏆",
+  "onboarding.step5RankDesc": "アップロード、リアクション、バトルでXPを獲得。アイアンからチャレンジャーまで — ゲームのように！",
+  "onboarding.step6Title": "国のためにポイントを稼ごう 🏆",
+  "onboarding.step6Desc": "すべてのリアクション、コメント、シェアがポイントに",
+  "onboarding.step6Detail": "ミームへのエンゲージメントが多いほど国のランキングが上がる！",
+  "onboarding.step7Title": "代表する準備はできた？🚀",
+  "onboarding.step7Cta": "最初のミームを投稿",
+  "onboarding.step7Browse": "まず見てみる",
+  "nav.battle": "バトル",
+  "sidebar.yourCountry": "あなたの国: {flag} {name} — ランク #{rank} — スコア: {score}",
+  "sidebar.uploadToClimb": "ミームを投稿してランクを上げよう！",
+  "filter.myCountry": "自分の国",
+  "feed.report": "報告",
+  "feed.reportTitle": "投稿を報告",
+  "feed.reportSubmitted": "報告が送信されました",
+  "feed.reportFailed": "報告の送信に失敗しました",
+  "feed.reportSpam": "スパム",
+  "feed.reportInappropriate": "不適切",
+  "feed.reportCopyright": "著作権",
+  "feed.reportOther": "その他",
 };
 
 export default ja;
