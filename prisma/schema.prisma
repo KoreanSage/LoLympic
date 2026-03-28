@@ -372,7 +372,6 @@ model PostImage {
   height          Int?
   fileSizeBytes   Int?
   mimeType        String?
-  duration        Float?  // Video/GIF duration in seconds
   altText         String?
   orderIndex      Int    @default(0)
 
