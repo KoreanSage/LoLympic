@@ -587,18 +587,6 @@ function FeedCardInner({
                   playsInline
                   preload="metadata"
                 />
-              ) : showTranslation && translatedImageUrl ? (
-                <Image src={translatedImageUrl} alt={title} width={800} height={800} className="w-full h-auto object-contain" sizes="(max-width: 768px) 100vw, 600px" unoptimized />
-              ) : isTypeB && segments.length > 0 ? (
-                showTranslation ? (
-                  <ScreenshotRenderer
-                    segments={segments}
-                    showTranslation={showTranslation}
-                    originalImageUrl={imageUrl}
-                  />
-                ) : (
-                  <Image src={imageUrl} alt={title} width={800} height={800} className="w-full h-auto object-contain" sizes="(max-width: 768px) 100vw, 600px" unoptimized />
-                )
               ) : images && images.length > 1 ? (
                 <ImageCarousel>
                   {images.map((img, i) => {
@@ -633,6 +621,18 @@ function FeedCardInner({
                     );
                   })}
                 </ImageCarousel>
+              ) : showTranslation && translatedImageUrl ? (
+                <Image src={translatedImageUrl} alt={title} width={800} height={800} className="w-full h-auto object-contain" sizes="(max-width: 768px) 100vw, 600px" unoptimized />
+              ) : isTypeB && segments.length > 0 ? (
+                showTranslation ? (
+                  <ScreenshotRenderer
+                    segments={segments}
+                    showTranslation={showTranslation}
+                    originalImageUrl={imageUrl}
+                  />
+                ) : (
+                  <Image src={imageUrl} alt={title} width={800} height={800} className="w-full h-auto object-contain" sizes="(max-width: 768px) 100vw, 600px" unoptimized />
+                )
               ) : isGif ? (
                 <Image src={imageUrl} alt={title} width={800} height={800} className="w-full h-auto object-contain" sizes="(max-width: 768px) 100vw, 600px" unoptimized />
               ) : (
