@@ -438,6 +438,16 @@ const ar: Record<TranslationKeys, string> = {
   "dashboard.viewLeaderboard": "شوف الترتيب الكامل",
   "dashboard.viewTournament": "شوف البطولة",
 
+  // ── Monthly Voting ─────────────────────────────────────────────────────
+  "monthly.votingStatus": "التصويت الشهري",
+  "monthly.daysLeft": "{days} يوم متبقي",
+  "monthly.totalVotesThisMonth": "إجمالي {count} تفاعل هذا الشهر",
+  "monthly.viewFullRankings": "الترتيب الكامل",
+  "monthly.winnersTitle": "أبطال الشهر",
+  "monthly.winnersSubtitle": "أفضل الميمات المختارة كل شهر",
+  "monthly.noWinnersYet": "لا يوجد فائزين شهريين بعد",
+  "monthly.reactions": "تفاعلات",
+
   "bookmarks.subtitle": "الميمز المحفوظة",
   "bookmarks.explore": "استكشف الميمز",
 

@@ -434,6 +434,16 @@ const ja: Record<TranslationKeys, string> = {
   "dashboard.viewLeaderboard": "ランキング全体を見る",
   "dashboard.viewTournament": "トーナメントを見る",
 
+  // ── Monthly Voting ─────────────────────────────────────────────────────
+  "monthly.votingStatus": "月間投票",
+  "monthly.daysLeft": "残り{days}日",
+  "monthly.totalVotesThisMonth": "今月の総リアクション {count}件",
+  "monthly.viewFullRankings": "全ランキング",
+  "monthly.winnersTitle": "月間チャンピオン",
+  "monthly.winnersSubtitle": "毎月選ばれたベストミーム",
+  "monthly.noWinnersYet": "まだ月間優勝者はいません",
+  "monthly.reactions": "リアクション",
+
   "bookmarks.subtitle": "保存したミーム",
   "bookmarks.explore": "ミームを探す",
 

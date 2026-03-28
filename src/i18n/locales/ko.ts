@@ -434,6 +434,16 @@ const ko: Record<TranslationKeys, string> = {
   "dashboard.viewLeaderboard": "전체 리더보드 보기",
   "dashboard.viewTournament": "토너먼트 보기",
 
+  // ── Monthly Voting ─────────────────────────────────────────────────────
+  "monthly.votingStatus": "월간 투표",
+  "monthly.daysLeft": "{days}일 남음",
+  "monthly.totalVotesThisMonth": "이번 달 총 {count}개 반응",
+  "monthly.viewFullRankings": "전체 순위",
+  "monthly.winnersTitle": "월간 챔피언",
+  "monthly.winnersSubtitle": "매달 선정된 최고의 밈",
+  "monthly.noWinnersYet": "아직 월간 우승자가 없습니다",
+  "monthly.reactions": "반응",
+
   // ── Bookmarks (extra) ────────────────────────────────────────────────────
   "bookmarks.subtitle": "저장한 밈",
   "bookmarks.explore": "밈 둘러보기",

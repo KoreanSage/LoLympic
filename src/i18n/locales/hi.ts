@@ -438,6 +438,16 @@ const hi: Record<TranslationKeys, string> = {
   "dashboard.viewLeaderboard": "पूरा Leaderboard देखें",
   "dashboard.viewTournament": "Tournament देखें",
 
+  // ── Monthly Voting ─────────────────────────────────────────────────────
+  "monthly.votingStatus": "Monthly Voting",
+  "monthly.daysLeft": "{days}d left",
+  "monthly.totalVotesThisMonth": "{count} total reactions this month",
+  "monthly.viewFullRankings": "Full Rankings",
+  "monthly.winnersTitle": "Monthly Champions",
+  "monthly.winnersSubtitle": "Best memes chosen each month",
+  "monthly.noWinnersYet": "No monthly winners yet",
+  "monthly.reactions": "reactions",
+
   "bookmarks.subtitle": "आपके सहेजे गए मीम्स",
   "bookmarks.explore": "मीम्स खोजें",
 

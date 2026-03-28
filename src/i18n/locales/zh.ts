@@ -434,6 +434,16 @@ const zh: Record<TranslationKeys, string> = {
   "dashboard.viewLeaderboard": "查看完整排行榜",
   "dashboard.viewTournament": "查看锦标赛",
 
+  // ── Monthly Voting ─────────────────────────────────────────────────────
+  "monthly.votingStatus": "月度投票",
+  "monthly.daysLeft": "还剩{days}天",
+  "monthly.totalVotesThisMonth": "本月共{count}个反应",
+  "monthly.viewFullRankings": "完整排名",
+  "monthly.winnersTitle": "月度冠军",
+  "monthly.winnersSubtitle": "每月评选最佳表情包",
+  "monthly.noWinnersYet": "暂无月度冠军",
+  "monthly.reactions": "反应",
+
   "bookmarks.subtitle": "你保存的梗图",
   "bookmarks.explore": "探索梗图",
 
