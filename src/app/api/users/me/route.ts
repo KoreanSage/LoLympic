@@ -123,6 +123,8 @@ export async function PATCH(request: NextRequest) {
         avatarUrl: true,
         bio: true,
         countryId: true,
+        preferredLanguage: true,
+        uiLanguage: true,
       },
     });
 
