@@ -322,7 +322,7 @@ export default function TopNav() {
         {/* Left: Logo + nav links */}
         <div className="flex items-center gap-8">
           <Link href="/" className="flex items-center gap-2">
-            <span className="text-xl font-bold tracking-tight">
+            <span className="text-2xl font-bold tracking-tight">
               <span className="text-[#c9a84c]">mi</span>
               <span className="text-foreground">mzy</span>
             </span>
@@ -331,8 +331,6 @@ export default function TopNav() {
           <div className="hidden md:flex items-center gap-1">
             <NavLink href="/" label={t("nav.explore")} />
             <NavLink href="/leaderboard" label={t("nav.leaderboard")} />
-            <NavLink href="/" label={`\u2694\uFE0F ${t("nav.battle")}`} />
-            <NavLink href="/dashboard" label={t("nav.dashboard")} />
             <NavLink href="/seasons" label={t("nav.season")} />
             <NavLink href="/upload" label={t("nav.upload")} />
             {isAdmin && <NavLink href="/admin" label={t("nav.admin")} />}
@@ -547,8 +545,6 @@ export default function TopNav() {
         <div className="border-t border-border bg-background/95 backdrop-blur-xl px-4 py-3 space-y-1">
           <MobileNavLink href="/" label={t("nav.explore")} active={pathname === "/"} />
           <MobileNavLink href="/leaderboard" label={t("nav.leaderboard")} active={pathname === "/leaderboard"} />
-          <MobileNavLink href="/" label={`\u2694\uFE0F ${t("nav.battle")}`} active={false} />
-          <MobileNavLink href="/dashboard" label={t("nav.dashboard")} active={pathname === "/dashboard"} />
           <MobileNavLink href="/seasons" label={t("nav.season")} active={pathname?.startsWith("/seasons")} />
           <MobileNavLink href="/upload" label={t("nav.upload")} active={pathname === "/upload"} />
           <MobileNavLink href="/bookmarks" label={t("nav.bookmarks")} active={pathname === "/bookmarks"} />

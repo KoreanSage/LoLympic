@@ -3,13 +3,19 @@ import { getSessionUser } from "@/lib/auth";
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 import crypto from "crypto";
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50MB
+
 const ALLOWED_MIME_TYPES = [
   "image/jpeg",
   "image/png",
   "image/webp",
   "image/gif",
+  "video/mp4",
+  "video/webm",
 ];
+
+const VIDEO_MIME_TYPES = ["video/mp4", "video/webm"];
 
 // Check if Vercel Blob is available
 const USE_BLOB = !!process.env.BLOB_READ_WRITE_TOKEN;
@@ -46,26 +52,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (file.size > MAX_FILE_SIZE) {
+    const isVideo = VIDEO_MIME_TYPES.includes(file.type);
+    const maxSize = isVideo ? MAX_VIDEO_SIZE : MAX_IMAGE_SIZE;
+
+    if (file.size > maxSize) {
       return NextResponse.json(
-        { error: `File too large. Maximum size is ${MAX_FILE_SIZE / 1024 / 1024}MB.` },
+        { error: `File too large. Maximum size is ${maxSize / 1024 / 1024}MB.` },
         { status: 400 }
       );
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    // Get image dimensions using sharp
+    // Get image dimensions using sharp (skip for videos)
     let width: number | null = null;
     let height: number | null = null;
 
-    try {
-      const sharp = (await import("sharp")).default;
-      const metadata = await sharp(buffer).metadata();
-      width = metadata.width ?? null;
-      height = metadata.height ?? null;
-    } catch {
-      console.warn("Could not read image metadata with sharp");
+    if (!isVideo) {
+      try {
+        const sharp = (await import("sharp")).default;
+        const metadata = await sharp(buffer).metadata();
+        width = metadata.width ?? null;
+        height = metadata.height ?? null;
+      } catch {
+        console.warn("Could not read image metadata with sharp");
+      }
     }
 
     // Generate unique filename
@@ -119,6 +130,8 @@ function mimeToExt(mime: string): string {
     "image/png": ".png",
     "image/webp": ".webp",
     "image/gif": ".gif",
+    "video/mp4": ".mp4",
+    "video/webm": ".webm",
   };
   return map[mime] || ".bin";
 }

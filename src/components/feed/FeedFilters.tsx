@@ -150,11 +150,10 @@ export default function FeedFilters({
 
   return (
     <div
-      className={`border-b border-border py-3 -mx-4 px-4 ${className}`}
+      className={`border-b border-border py-3 -mx-4 px-4 space-y-2 ${className}`}
     >
-      <div className="relative">
-      <div ref={scrollRef} className="flex items-center gap-3 overflow-x-auto scrollbar-hide">
-        {/* Sort tabs */}
+      {/* Row 1: Sort + Post Type */}
+      <div className="flex items-center gap-3">
         <div className="flex items-center gap-0.5 bg-background-surface rounded-lg p-0.5 border border-border shrink-0">
           {SORT_OPTIONS.map((opt) => (
             <button
@@ -171,9 +170,6 @@ export default function FeedFilters({
           ))}
         </div>
 
-        <span className="text-foreground-subtle">|</span>
-
-        {/* Post type pills */}
         <div className="flex items-center gap-0.5 bg-background-surface rounded-lg p-0.5 border border-border shrink-0">
           {POST_TYPE_OPTIONS.map((opt) => (
             <button
@@ -189,43 +185,43 @@ export default function FeedFilters({
             </button>
           ))}
         </div>
-
-        <span className="text-foreground-subtle">|</span>
-
-        {/* Dropdown filters */}
-        <FilterSelect
-          value={country}
-          options={COUNTRY_OPTIONS}
-          onChange={(v) => handleChange("country", v)}
-        />
-        <FilterSelect
-          value={language}
-          options={LANGUAGE_OPTIONS}
-          onChange={(v) => handleChange("language", v)}
-        />
-        <FilterSelect
-          value={category}
-          options={CATEGORY_OPTIONS}
-          onChange={(v) => handleChange("category", v)}
-        />
-
-        {/* My Country quick filter */}
-        {userCountryId && (
-          <button
-            onClick={() => handleChange("country", country === userCountryId ? "" : userCountryId)}
-            className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-all whitespace-nowrap shrink-0 ${
-              country === userCountryId
-                ? "border-[#c9a84c] bg-[#c9a84c]/10 text-[#c9a84c]"
-                : "border-[#c9a84c]/40 text-[#c9a84c]/80 hover:border-[#c9a84c] hover:text-[#c9a84c]"
-            }`}
-          >
-            {userCountryFlag || "\uD83C\uDFF3\uFE0F"} {t("filter.myCountry")}
-          </button>
-        )}
       </div>
-      {showRightFade && (
-        <div className="absolute right-0 top-0 bottom-0 w-8 pointer-events-none bg-gradient-to-l from-background to-transparent" />
-      )}
+
+      {/* Row 2: Dropdown filters + My Country */}
+      <div className="relative">
+        <div ref={scrollRef} className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
+          <FilterSelect
+            value={country}
+            options={COUNTRY_OPTIONS}
+            onChange={(v) => handleChange("country", v)}
+          />
+          <FilterSelect
+            value={language}
+            options={LANGUAGE_OPTIONS}
+            onChange={(v) => handleChange("language", v)}
+          />
+          <FilterSelect
+            value={category}
+            options={CATEGORY_OPTIONS}
+            onChange={(v) => handleChange("category", v)}
+          />
+
+          {userCountryId && (
+            <button
+              onClick={() => handleChange("country", country === userCountryId ? "" : userCountryId)}
+              className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-all whitespace-nowrap shrink-0 ${
+                country === userCountryId
+                  ? "border-[#c9a84c] bg-[#c9a84c]/10 text-[#c9a84c]"
+                  : "border-[#c9a84c]/40 text-[#c9a84c]/80 hover:border-[#c9a84c] hover:text-[#c9a84c]"
+              }`}
+            >
+              {userCountryFlag || "\uD83C\uDFF3\uFE0F"} {t("filter.myCountry")}
+            </button>
+          )}
+        </div>
+        {showRightFade && (
+          <div className="absolute right-0 top-0 bottom-0 w-8 pointer-events-none bg-gradient-to-l from-background to-transparent" />
+        )}
       </div>
     </div>
   );

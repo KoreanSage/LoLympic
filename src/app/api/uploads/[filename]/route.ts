@@ -8,12 +8,14 @@ const MIME_TYPES: Record<string, string> = {
   ".jpeg": "image/jpeg",
   ".webp": "image/webp",
   ".gif": "image/gif",
+  ".mp4": "video/mp4",
+  ".webm": "video/webm",
 };
 
 /**
  * GET /api/uploads/[filename]
  * Serves static files from the uploads directory.
- * Only allows image files with safe filenames.
+ * Only allows image/video files with safe filenames.
  */
 export async function GET(
   _request: NextRequest,

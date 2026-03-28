@@ -28,6 +28,7 @@ const createPostSchema = z.object({
         height: z.number().int().positive().optional(),
         mimeType: z.string().max(100).optional(),
         fileSizeBytes: z.number().int().nonnegative().optional(),
+        duration: z.number().nonnegative().optional(),
         altText: z.string().max(300).optional(),
       })
     )
@@ -262,6 +263,7 @@ export async function POST(request: NextRequest) {
                 height: img.height ?? null,
                 mimeType: img.mimeType ?? null,
                 fileSizeBytes: img.fileSizeBytes ?? null,
+                duration: img.duration ?? null,
                 altText: img.altText ?? null,
                 orderIndex: index,
               })),
