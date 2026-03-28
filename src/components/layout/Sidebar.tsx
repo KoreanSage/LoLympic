@@ -346,7 +346,7 @@ export default function Sidebar() {
   const maxCreatorScore = creators[0]?.score ?? 0;
 
   return (
-    <aside className="sticky top-[7.5rem] space-y-4">
+    <aside className="sticky top-[7.5rem] max-h-[calc(100vh-8.5rem)] overflow-y-auto space-y-4 scrollbar-hide pr-0.5">
       {/* Country Rankings */}
       <Card>
         <div className="flex items-center justify-between mb-3">
