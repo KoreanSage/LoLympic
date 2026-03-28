@@ -69,7 +69,7 @@ export default function ImageCarousel({ children, className = "" }: ImageCarouse
           {children.map((child, i) => (
             <div
               key={i}
-              className="w-full flex-shrink-0 bg-black/10 dark:bg-black/30"
+              className="w-full flex-shrink-0 bg-black/10 dark:bg-black/30 flex items-center justify-center"
               role="group"
               aria-roledescription="slide"
               aria-label={`Image ${i + 1} of ${total}`}
