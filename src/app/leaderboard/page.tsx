@@ -2,10 +2,10 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useTranslation } from "@/i18n";
 import MainLayout from "@/components/layout/MainLayout";
 import LeaderboardTable from "@/components/competition/LeaderboardTable";
-import SeasonBar from "@/components/competition/SeasonBar";
 import ErrorState from "@/components/ui/ErrorState";
 import ScoringExplanationModal from "@/components/competition/ScoringExplanationModal";
 
@@ -57,6 +57,30 @@ interface ApiLeaderboardResponse {
   message?: string;
 }
 
+interface DashboardData {
+  season: { id: string; name: string; status: string } | null;
+  stats: {
+    totalPosts: number;
+    totalReactions: number;
+    totalCountries: number;
+    topMeme: {
+      id: string;
+      title: string;
+      reactionCount: number;
+      images: { originalUrl: string }[];
+      author: { username: string; displayName: string | null };
+      country: { flagEmoji: string | null; nameEn: string } | null;
+    } | null;
+  };
+  monthlyLeaders: {
+    month: number;
+    year: number;
+    country: { flagEmoji: string | null; nameEn: string } | null;
+    postTitle: string;
+    score: number;
+  }[];
+}
+
 // ---------------------------------------------------------------------------
 // Mappers: API response -> LeaderboardTable prop format
 // ---------------------------------------------------------------------------
@@ -102,6 +126,11 @@ function mapMemes(entries: ApiMemeEntry[]) {
   }));
 }
 
+const MONTH_NAMES = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+
 // ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
@@ -118,6 +147,7 @@ export default function LeaderboardPage() {
   const [empty, setEmpty] = useState(false);
   const [error, setError] = useState(false);
   const [isRealtime, setIsRealtime] = useState(false);
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [battleMemes, setBattleMemes] = useState<
     Array<{
       id: string;
@@ -130,21 +160,25 @@ export default function LeaderboardPage() {
     }>
   >([]);
 
+  const currentMonth = new Date().getMonth() + 1;
+
   const fetchAll = useCallback(async () => {
     setLoading(true);
     setError(false);
     try {
-      const [countryRes, creatorRes, memeRes, battleRes] = await Promise.all([
+      const [countryRes, creatorRes, memeRes, battleRes, dashRes] = await Promise.all([
         fetch("/api/leaderboard?type=country"),
         fetch("/api/leaderboard?type=creator"),
         fetch("/api/leaderboard?type=meme"),
         fetch("/api/leaderboard?type=battle&limit=5"),
+        fetch("/api/dashboard"),
       ]);
 
       const countryData: ApiLeaderboardResponse = await countryRes.json();
       const creatorData: ApiLeaderboardResponse = await creatorRes.json();
       const memeData: ApiLeaderboardResponse = await memeRes.json();
       const battleData = await battleRes.json().catch(() => ({ entries: [] }));
+      const dashData: DashboardData = dashRes.ok ? await dashRes.json() : null;
 
       // Check if data is from realtime fallback
       if ((countryData as any).source === "realtime") {
@@ -164,6 +198,7 @@ export default function LeaderboardPage() {
       setCountries(mappedCountries);
       setCreators(mappedCreators);
       setMemes(mappedMemes);
+      setDashboardData(dashData);
       if (battleData.entries?.length > 0) {
         setBattleMemes(battleData.entries);
       }
@@ -201,7 +236,9 @@ export default function LeaderboardPage() {
             {t("leaderboard.title")}
           </h1>
           <p className="text-sm text-foreground-subtle">
-            {isRealtime ? t("leaderboard.allTimeRankings") : t("leaderboard.seasonRankings")}
+            {dashboardData?.season
+              ? `${isRealtime ? t("leaderboard.allTimeRankings") : t("leaderboard.seasonRankings")} — ${dashboardData.season.name}`
+              : isRealtime ? t("leaderboard.allTimeRankings") : t("leaderboard.seasonRankings")}
           </p>
           <button
             onClick={() => setShowScoring(true)}
@@ -217,7 +254,7 @@ export default function LeaderboardPage() {
         {isRealtime && !loading && !empty && (
           <div className="mx-auto max-w-md bg-[#c9a84c]/10 border border-[#c9a84c]/20 rounded-xl px-4 py-2.5 text-center">
             <p className="text-xs text-[#c9a84c]">
-              📊 {t("leaderboard.realtimeNotice")}
+              {t("leaderboard.realtimeNotice")}
             </p>
           </div>
         )}
@@ -228,34 +265,89 @@ export default function LeaderboardPage() {
           </div>
         ) : empty ? (
           <div className="text-center py-20">
-            <p className="text-lg mb-2">🎮</p>
             <p className="text-sm text-foreground-subtle">{t("leaderboard.noActivity")}</p>
           </div>
         ) : (
           <>
+          {/* Stats Overview (from Dashboard) */}
+          {dashboardData && (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="bg-background-surface border border-border rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-lg">{"\u{1F30D}"}</span>
+                  <span className="text-xs text-foreground-subtle">{t("dashboard.activeCountries")}</span>
+                </div>
+                <p className="text-xl sm:text-2xl font-bold text-foreground tabular-nums">
+                  {dashboardData.stats.totalCountries.toLocaleString()}
+                </p>
+              </div>
+              <div className="bg-background-surface border border-border rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-lg">{"\u{1F5BC}\uFE0F"}</span>
+                  <span className="text-xs text-foreground-subtle">{t("dashboard.totalPosts")}</span>
+                </div>
+                <p className="text-xl sm:text-2xl font-bold text-foreground tabular-nums">
+                  {dashboardData.stats.totalPosts.toLocaleString()}
+                </p>
+              </div>
+              <div className="bg-background-surface border border-border rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-lg">{"\u{1F525}"}</span>
+                  <span className="text-xs text-foreground-subtle">{t("dashboard.totalReactions")}</span>
+                </div>
+                <p className="text-xl sm:text-2xl font-bold text-foreground tabular-nums">
+                  {dashboardData.stats.totalReactions.toLocaleString()}
+                </p>
+              </div>
+              {dashboardData.stats.topMeme ? (
+                <Link href={`/post/${dashboardData.stats.topMeme.id}`} className="block">
+                  <div className="bg-background-surface border border-border rounded-xl p-4 hover:border-[#c9a84c]/40 transition-colors h-full">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-lg">{"\u{1F3C6}"}</span>
+                      <span className="text-xs text-foreground-subtle">{t("dashboard.topMeme")}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {dashboardData.stats.topMeme.images[0] && (
+                        <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-background-elevated">
+                          <Image
+                            src={dashboardData.stats.topMeme.images[0].originalUrl}
+                            alt={dashboardData.stats.topMeme.title}
+                            width={40}
+                            height={40}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-foreground truncate">
+                          {dashboardData.stats.topMeme.title}
+                        </p>
+                        <p className="text-xs text-foreground-subtle">
+                          {dashboardData.stats.topMeme.reactionCount} {"\u{1F525}"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              ) : (
+                <div className="bg-background-surface border border-border rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-lg">{"\u{1F3C6}"}</span>
+                    <span className="text-xs text-foreground-subtle">{t("dashboard.topMeme")}</span>
+                  </div>
+                  <p className="text-xl sm:text-2xl font-bold text-foreground tabular-nums">-</p>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Country Competition Dashboard */}
           {countries.length >= 3 && (
             <div className="space-y-6">
               {/* Section Header */}
               <div className="flex items-center gap-2">
-                <span className="text-lg">📊</span>
+                <span className="text-lg">{"\u{1F4CA}"}</span>
                 <h2 className="text-lg font-bold text-foreground">{t("leaderboard.countryCompetition")}</h2>
-              </div>
-
-              {/* Live Stats Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="bg-background-surface border border-border rounded-xl p-3 text-center">
-                  <div className="text-xl font-bold text-[#c9a84c]">{memes.length > 0 ? memes.reduce((sum, m) => sum + (m.reactionCount || 0), 0).toLocaleString() : '0'}</div>
-                  <div className="text-[10px] text-foreground-subtle mt-0.5">{t("leaderboard.totalReactions")}</div>
-                </div>
-                <div className="bg-background-surface border border-border rounded-xl p-3 text-center">
-                  <div className="text-xl font-bold text-[#c9a84c]">{countries.length}</div>
-                  <div className="text-[10px] text-foreground-subtle mt-0.5">{t("leaderboard.countriesActive")}</div>
-                </div>
-                <div className="bg-background-surface border border-border rounded-xl p-3 text-center">
-                  <div className="text-xl font-bold text-[#c9a84c]">{countries[0]?.flagEmoji}</div>
-                  <div className="text-[10px] text-foreground-subtle mt-0.5 truncate">#1 {countries[0]?.name}</div>
-                </div>
               </div>
 
               {/* Podium */}
@@ -314,6 +406,60 @@ export default function LeaderboardPage() {
                   );
                 })}
               </div>
+
+              {/* Monthly Trend (from Dashboard) */}
+              {dashboardData && dashboardData.monthlyLeaders.length > 0 && (
+                <div className="bg-background-surface border border-border rounded-xl p-5 sm:p-6">
+                  <h3 className="text-sm font-semibold text-foreground-muted mb-4 flex items-center gap-2">
+                    <span>{"\u{1F4C5}"}</span>
+                    {t("dashboard.monthlyTrend")}
+                  </h3>
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-12 gap-2">
+                    {MONTH_NAMES.map((name, i) => {
+                      const monthNum = i + 1;
+                      const leader = dashboardData.monthlyLeaders.find((l) => l.month === monthNum);
+                      const isCurrent = monthNum === currentMonth;
+                      const isFuture = monthNum > currentMonth;
+
+                      return (
+                        <div
+                          key={name}
+                          className={`rounded-lg p-2 text-center border transition-colors ${
+                            isCurrent
+                              ? "border-[#c9a84c]/60 bg-[#c9a84c]/5"
+                              : isFuture
+                              ? "border-border/40 bg-background-elevated/30 opacity-40"
+                              : "border-border bg-background-elevated/50"
+                          }`}
+                        >
+                          <div
+                            className={`text-[10px] font-medium mb-1 ${
+                              isCurrent ? "text-[#c9a84c]" : "text-foreground-subtle"
+                            }`}
+                          >
+                            {name}
+                            {isCurrent && (
+                              <span className="ml-0.5 inline-block w-1 h-1 rounded-full bg-[#c9a84c] animate-pulse" />
+                            )}
+                          </div>
+                          {leader ? (
+                            <>
+                              <div className="text-base">
+                                {leader.country?.flagEmoji || "\u{1F3F3}\uFE0F"}
+                              </div>
+                              <div className="text-[9px] text-foreground-subtle mt-0.5 truncate">
+                                {leader.score.toLocaleString()}
+                              </div>
+                            </>
+                          ) : (
+                            <div className="text-base opacity-20">{"\u2014"}</div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -327,10 +473,10 @@ export default function LeaderboardPage() {
           {battleMemes.length > 0 && (
             <div className="mt-6">
               <h2 className="text-sm font-bold text-[#c9a84c] mb-3 flex items-center gap-2">
-                <span>⚔️</span> {t("battle.hotBattle")}
+                <span>{"\u2694\uFE0F"}</span> {t("battle.hotBattle")}
               </h2>
               <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-                {battleMemes.map((meme: any, i: number) => (
+                {battleMemes.map((meme: any) => (
                   <Link
                     key={meme.id}
                     href={`/post/${meme.id}`}
@@ -352,7 +498,7 @@ export default function LeaderboardPage() {
                         </span>
                       </div>
                       <div className="text-[10px] text-[#c9a84c] font-medium">
-                        ⚔️ {meme.battleWins}W / {meme.battleLosses}L
+                        {"\u2694\uFE0F"} {meme.battleWins}W / {meme.battleLosses}L
                       </div>
                     </div>
                   </Link>

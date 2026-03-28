@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import Image from "next/image";
+import { useSession } from "next-auth/react";
 import Card from "@/components/ui/Card";
 import { useTranslation } from "@/i18n";
 import { trackEvent } from "@/lib/analytics";
@@ -54,6 +55,8 @@ function getStreakMessage(streak: number, t: (key: any) => string): string {
 
 function BattleCardInner({ onDismiss }: BattleCardProps) {
   const { t } = useTranslation();
+  const { data: session } = useSession();
+  const userLang = session?.user?.preferredLanguage || (typeof window !== "undefined" ? localStorage.getItem("preferredLanguage") : null) || "en";
   const [left, setLeft] = useState<BattlePost | null>(null);
   const [right, setRight] = useState<BattlePost | null>(null);
   const [loading, setLoading] = useState(true);
@@ -75,7 +78,7 @@ function BattleCardInner({ onDismiss }: BattleCardProps) {
   const fetchBattle = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/battle");
+      const res = await fetch(`/api/battle?lang=${userLang}`);
       const data = await res.json();
       if (data.noBattle) {
         setNoBattle(true);
@@ -89,7 +92,7 @@ function BattleCardInner({ onDismiss }: BattleCardProps) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [userLang]);
 
   useEffect(() => {
     fetchBattle();
@@ -113,6 +116,7 @@ function BattleCardInner({ onDismiss }: BattleCardProps) {
             leftPostId: left.id,
             rightPostId: right.id,
             chosenPostId,
+            lang: userLang,
           }),
         });
         const data = await res.json();
