@@ -591,10 +591,9 @@ export default function UploadStudio() {
               </ImageCarousel>
             </div>
 
-            {/* Thumbnail strip */}
-            {imageFiles.length > 1 && (
-              <div className="flex gap-1.5 overflow-x-auto pb-1">
-                {imagePreviews.map((preview, i) => (
+            {/* Thumbnail strip + Add more */}
+            <div className="flex gap-1.5 overflow-x-auto pb-1">
+              {imagePreviews.map((preview, i) => (
                   <div
                     key={i}
                     draggable
@@ -639,8 +638,7 @@ export default function UploadStudio() {
                     />
                   </label>
                 )}
-              </div>
-            )}
+            </div>
 
             <div className="flex items-center justify-between">
               <p className="text-[11px] text-foreground-subtle">
