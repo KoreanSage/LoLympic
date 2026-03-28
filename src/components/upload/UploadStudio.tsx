@@ -79,7 +79,6 @@ export default function UploadStudio() {
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [title, setTitle] = useState("");
   const [bodyText, setBodyText] = useState("");
-  const [postType] = useState<PostType>("meme");
   const [sourceLanguage, setSourceLanguage] = useState("ko");
   const [category, setCategory] = useState("");
   const [tags, setTags] = useState<string[]>([]);
@@ -93,9 +92,9 @@ export default function UploadStudio() {
   const hasImages = imageFiles.length > 0;
   const hasGif = imageFiles.some((f) => f.type === "image/gif");
   const hasVideo = imageFiles.some((f) => f.type.startsWith("video/"));
-  const hasMediaOnly = hasGif || hasVideo; // Media that skips image translation
-  const allMediaOnly = imageFiles.length > 0 && imageFiles.every((f) => f.type === "image/gif" || f.type.startsWith("video/"));
+  const allMediaOnly = hasImages && imageFiles.every((f) => f.type === "image/gif" || f.type.startsWith("video/"));
   const isTextOnly = !hasImages;
+  const effectivePostType: PostType = hasImages ? "meme" : "community";
 
   const handleImagesSelected = (files: File[], previewUrls: string[]) => {
     const combined = [...imageFiles, ...files].slice(0, MAX_IMAGES);
@@ -559,9 +558,6 @@ export default function UploadStudio() {
   }
 
   const [showOptions, setShowOptions] = useState(false);
-
-  // Auto-detect post type: has media → meme, text only → community
-  const effectivePostType = hasImages ? "meme" : "community";
 
   // Main form — single unified flow
   return (

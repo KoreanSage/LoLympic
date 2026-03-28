@@ -11,21 +11,13 @@ async function getRandomPair(excludePostIds: string[], userId?: string, userLang
   const where: any = {
     status: "PUBLISHED",
     visibility: "PUBLIC",
-    // Must have at least one image that is NOT a video (battle is for image memes)
+    // Must have at least one translatable image (not video, not GIF)
     images: {
       some: {
         OR: [
-          { mimeType: { not: { startsWith: "video/" } } },
+          { mimeType: { notIn: ["video/mp4", "video/webm", "image/gif"] } },
           { mimeType: null }, // legacy posts without mimeType
         ],
-      },
-    },
-    // Exclude posts that ONLY have video/GIF (no translatable images)
-    NOT: {
-      images: {
-        every: {
-          mimeType: { in: ["video/mp4", "video/webm", "image/gif"] },
-        },
       },
     },
   };
