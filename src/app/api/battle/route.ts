@@ -62,18 +62,17 @@ async function getRandomPair(excludePostIds: string[], userId?: string, userLang
   let offset2 = Math.floor(Math.random() * (count - 1));
   if (offset2 >= offset1) offset2 += 1;
 
-  const select = {
+  const select: any = {
     id: true,
     title: true,
     reactionCount: true,
     battleWins: true,
     battleLosses: true,
-    sourceLanguage: true,
     _count: { select: { images: true } },
     images: {
       orderBy: { orderIndex: "asc" as const },
       take: 1,
-      select: { originalUrl: true, mimeType: true },
+      select: { originalUrl: true },
     },
     author: {
       select: {
@@ -89,24 +88,23 @@ async function getRandomPair(excludePostIds: string[], userId?: string, userLang
         nameEn: true,
       },
     },
-    // Include translation for user's language if available
-    ...(userLanguage
-      ? {
-          translationPayloads: {
-            where: {
-              targetLanguage: userLanguage,
-              status: { in: ["COMPLETED", "APPROVED"] },
-            },
-            orderBy: { version: "desc" as const },
-            take: 1,
-            select: {
-              translatedTitle: true,
-              translatedImageUrl: true,
-            },
-          },
-        }
-      : {}),
   };
+
+  // Include translation for user's language if available
+  if (userLanguage) {
+    select.translationPayloads = {
+      where: {
+        targetLanguage: userLanguage,
+        status: { in: ["COMPLETED", "APPROVED"] },
+      },
+      orderBy: { version: "desc" as const },
+      take: 1,
+      select: {
+        translatedTitle: true,
+        translatedImageUrl: true,
+      },
+    };
+  }
 
   const [left, right] = await Promise.all([
     prisma.post.findFirst({ where, skip: offset1, select }),
