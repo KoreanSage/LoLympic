@@ -44,6 +44,13 @@ interface HotMeme {
   reactionCount: number;
 }
 
+interface MonthlyContender {
+  id: string;
+  title: string;
+  imageUrl: string | null;
+  reactionCount: number;
+}
+
 // ---------------------------------------------------------------------------
 // Skeleton loaders
 // ---------------------------------------------------------------------------
@@ -132,6 +139,8 @@ export default function Sidebar() {
   const [creators, setCreators] = useState<TopCreator[]>([]);
   const [hotMemes, setHotMemes] = useState<HotMeme[]>([]);
   const [trendingTags, setTrendingTags] = useState<string[]>([]);
+  const [monthlyContenders, setMonthlyContenders] = useState<MonthlyContender[]>([]);
+  const [monthlyDaysLeft, setMonthlyDaysLeft] = useState(0);
   const [loadingRankings, setLoadingRankings] = useState(true);
   const [loadingCreators, setLoadingCreators] = useState(true);
   const [loadingMemes, setLoadingMemes] = useState(true);
@@ -240,13 +249,20 @@ export default function Sidebar() {
             reactionCount: number;
           };
         }>;
-        setHotMemes(
-          entries.map((e) => ({
-            id: e.post.id,
-            title: e.post.title,
-            thumbnailUrl: e.post.images?.[0]?.originalUrl,
-            authorUsername: e.post.author.username,
-            reactionCount: e.post.reactionCount ?? 0,
+        const mapped = entries.map((e) => ({
+          id: e.post.id,
+          title: e.post.title,
+          thumbnailUrl: e.post.images?.[0]?.originalUrl,
+          authorUsername: e.post.author.username,
+          reactionCount: e.post.reactionCount ?? 0,
+        }));
+        setHotMemes(mapped);
+        setMonthlyContenders(
+          mapped.slice(0, 3).map((m) => ({
+            id: m.id,
+            title: m.title,
+            imageUrl: m.thumbnailUrl || null,
+            reactionCount: m.reactionCount,
           }))
         );
       })
@@ -255,6 +271,14 @@ export default function Sidebar() {
         setErrorMemes(true);
       })
       .finally(() => setLoadingMemes(false));
+
+    // Calculate monthly days left & fetch top contenders from meme leaderboard
+    const now = new Date();
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    setMonthlyDaysLeft(lastDay - now.getDate());
+
+    // Reuse meme leaderboard data for monthly contenders (already fetched above for hotMemes)
+    // We set monthlyContenders from the same meme fetch result above — see hotMemes fetch
 
     // Fetch trending posts and extract unique tags
     fetch("/api/posts?limit=20&sort=trending")
@@ -449,6 +473,71 @@ export default function Sidebar() {
           </div>
         )}
       </Card>
+
+      {/* Monthly Voting */}
+      {monthlyContenders.length > 0 && (
+        <Card>
+          <div className="flex items-center justify-between mb-2.5">
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+              <span>{"\u{1F4CA}"}</span> {t("monthly.votingStatus")}
+            </h3>
+            {monthlyDaysLeft > 0 && (
+              <span className="text-[10px] text-foreground-subtle flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                {t("monthly.daysLeft", { days: monthlyDaysLeft })}
+              </span>
+            )}
+          </div>
+          <div className="space-y-1.5">
+            {monthlyContenders.map((post, i) => {
+              const maxScore = monthlyContenders[0]?.reactionCount || 1;
+              const pct = Math.max(8, (post.reactionCount / maxScore) * 100);
+              const medals = ["\u{1F947}", "\u{1F948}", "\u{1F949}"];
+              const barColors = ["#c9a84c", "#c0c0c0", "#CD7F32"];
+              return (
+                <Link
+                  key={post.id}
+                  href={`/post/${post.id}`}
+                  className="block rounded-lg p-1 -mx-1 hover:bg-background-elevated transition-colors group"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm w-5 text-center flex-shrink-0">{medals[i]}</span>
+                    {post.imageUrl && (
+                      <img
+                        src={post.imageUrl}
+                        alt={post.title}
+                        className="w-7 h-7 rounded object-cover flex-shrink-0"
+                      />
+                    )}
+                    <span className="text-xs text-foreground-muted truncate flex-1 group-hover:text-foreground transition-colors">
+                      {post.title}
+                    </span>
+                    <span className="text-[10px] text-foreground-subtle tabular-nums flex-shrink-0">
+                      {"\u{1F525}"} {post.reactionCount}
+                    </span>
+                  </div>
+                  <div className="ml-[26px] mt-0.5">
+                    <div className="h-1 bg-background-overlay rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full"
+                        style={{ width: `${pct}%`, backgroundColor: barColors[i] }}
+                      />
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+          <div className="mt-2 pt-2 border-t border-border flex justify-end">
+            <Link
+              href="/leaderboard"
+              className="text-[10px] text-[#c9a84c] hover:text-[#d4b65c] transition-colors"
+            >
+              {t("monthly.viewFullRankings")} {"\u2192"}
+            </Link>
+          </div>
+        </Card>
+      )}
 
       {/* Top Creators */}
       <Card>

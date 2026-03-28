@@ -434,6 +434,16 @@ const es: Record<TranslationKeys, string> = {
   "dashboard.viewLeaderboard": "Ver Clasificación Completa",
   "dashboard.viewTournament": "Ver Torneo",
 
+  // ── Monthly Voting ─────────────────────────────────────────────────────
+  "monthly.votingStatus": "Votación Mensual",
+  "monthly.daysLeft": "{days}d restantes",
+  "monthly.totalVotesThisMonth": "{count} reacciones totales este mes",
+  "monthly.viewFullRankings": "Rankings Completos",
+  "monthly.winnersTitle": "Campeones Mensuales",
+  "monthly.winnersSubtitle": "Los mejores memes elegidos cada mes",
+  "monthly.noWinnersYet": "Aún no hay ganadores mensuales",
+  "monthly.reactions": "reacciones",
+
   "bookmarks.subtitle": "Tus memes guardados",
   "bookmarks.explore": "Explorar Memes",
 

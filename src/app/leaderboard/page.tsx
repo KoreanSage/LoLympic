@@ -57,6 +57,23 @@ interface ApiLeaderboardResponse {
   message?: string;
 }
 
+interface MonthlyWinnerEntry {
+  month: number;
+  year: number;
+  likeCount: number;
+  post: {
+    id: string;
+    title: string;
+    images: { originalUrl: string }[];
+  };
+  author: {
+    username: string;
+    displayName: string | null;
+    avatarUrl: string | null;
+  };
+  country: { flagEmoji: string; nameEn: string } | null;
+}
+
 interface DashboardData {
   season: { id: string; name: string; status: string } | null;
   stats: {
@@ -148,6 +165,7 @@ export default function LeaderboardPage() {
   const [error, setError] = useState(false);
   const [isRealtime, setIsRealtime] = useState(false);
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [monthlyWinners, setMonthlyWinners] = useState<MonthlyWinnerEntry[]>([]);
   const [battleMemes, setBattleMemes] = useState<
     Array<{
       id: string;
@@ -166,12 +184,13 @@ export default function LeaderboardPage() {
     setLoading(true);
     setError(false);
     try {
-      const [countryRes, creatorRes, memeRes, battleRes, dashRes] = await Promise.all([
+      const [countryRes, creatorRes, memeRes, battleRes, dashRes, monthlyRes] = await Promise.all([
         fetch("/api/leaderboard?type=country"),
         fetch("/api/leaderboard?type=creator"),
         fetch("/api/leaderboard?type=meme"),
         fetch("/api/leaderboard?type=battle&limit=5"),
         fetch("/api/dashboard"),
+        fetch("/api/seasons/monthly-winner"),
       ]);
 
       const countryData: ApiLeaderboardResponse = await countryRes.json();
@@ -179,6 +198,7 @@ export default function LeaderboardPage() {
       const memeData: ApiLeaderboardResponse = await memeRes.json();
       const battleData = await battleRes.json().catch(() => ({ entries: [] }));
       const dashData: DashboardData = dashRes.ok ? await dashRes.json() : null;
+      const monthlyData = await monthlyRes.json().catch(() => ({ winners: [] }));
 
       // Check if data is from realtime fallback
       if ((countryData as any).source === "realtime") {
@@ -201,6 +221,9 @@ export default function LeaderboardPage() {
       setDashboardData(dashData);
       if (battleData.entries?.length > 0) {
         setBattleMemes(battleData.entries);
+      }
+      if (monthlyData.winners?.length > 0) {
+        setMonthlyWinners(monthlyData.winners);
       }
 
       if (
@@ -460,6 +483,77 @@ export default function LeaderboardPage() {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Monthly Champions */}
+          {monthlyWinners.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">{"\u{1F4C5}"}</span>
+                <h2 className="text-lg font-bold text-foreground">{t("monthly.winnersTitle")}</h2>
+              </div>
+              <p className="text-xs text-foreground-subtle -mt-1">{t("monthly.winnersSubtitle")}</p>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                {monthlyWinners.map((winner) => {
+                  const isCurrent = winner.month === currentMonth && winner.year === new Date().getFullYear();
+
+                  return (
+                    <Link
+                      key={`${winner.year}-${winner.month}`}
+                      href={`/post/${winner.post.id}`}
+                      className={`rounded-xl p-3 border transition-all hover:border-[#c9a84c]/50 group ${
+                        isCurrent
+                          ? "border-[#c9a84c]/60 bg-[#c9a84c]/5"
+                          : "border-border bg-background-surface"
+                      }`}
+                    >
+                      {/* Month label */}
+                      <div className={`text-xs font-medium mb-2 flex items-center gap-1 ${
+                        isCurrent ? "text-[#c9a84c]" : "text-foreground-subtle"
+                      }`}>
+                        {MONTH_NAMES[winner.month - 1]} {winner.year}
+                        {isCurrent && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#c9a84c] animate-pulse" />
+                        )}
+                      </div>
+
+                      {/* Meme thumbnail */}
+                      {winner.post.images?.[0]?.originalUrl && (
+                        <div className="w-full aspect-square rounded-lg overflow-hidden mb-2 border border-border/50 group-hover:border-[#c9a84c]/30 transition-colors">
+                          <Image
+                            src={winner.post.images[0].originalUrl}
+                            alt={winner.post.title}
+                            width={160}
+                            height={160}
+                            className="w-full h-full object-cover"
+                            unoptimized
+                          />
+                        </div>
+                      )}
+
+                      {/* Info */}
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium text-foreground truncate group-hover:text-[#c9a84c] transition-colors">
+                          {winner.post.title}
+                        </p>
+                        <div className="flex items-center gap-1">
+                          {winner.country && (
+                            <span className="text-xs">{winner.country.flagEmoji}</span>
+                          )}
+                          <span className="text-[10px] text-foreground-subtle truncate">
+                            {winner.author.displayName || winner.author.username}
+                          </span>
+                        </div>
+                        <div className="text-[10px] text-[#c9a84c] font-medium">
+                          {"\u{1F525}"} {winner.likeCount.toLocaleString()} {t("monthly.reactions")}
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
             </div>
           )}
 

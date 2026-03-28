@@ -436,6 +436,16 @@ const en = {
   "dashboard.viewLeaderboard": "View Full Leaderboard",
   "dashboard.viewTournament": "View Tournament",
 
+  // ── Monthly Voting ─────────────────────────────────────────────────────
+  "monthly.votingStatus": "Monthly Voting",
+  "monthly.daysLeft": "{days}d left",
+  "monthly.totalVotesThisMonth": "{count} total reactions this month",
+  "monthly.viewFullRankings": "Full Rankings",
+  "monthly.winnersTitle": "Monthly Champions",
+  "monthly.winnersSubtitle": "Best memes chosen each month",
+  "monthly.noWinnersYet": "No monthly winners yet",
+  "monthly.reactions": "reactions",
+
   // ── Bookmarks (extra) ────────────────────────────────────────────────────
   "bookmarks.subtitle": "Your saved memes",
   "bookmarks.explore": "Explore Memes",
