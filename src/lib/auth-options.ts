@@ -155,8 +155,24 @@ export const authOptions: NextAuthOptions = {
           token.uiLanguage = dbUser.uiLanguage;
           token.role = dbUser.role;
           token.needsSetup = false;
+        } else {
+          // User was deleted from DB — invalidate session
+          token.id = undefined;
+          token.invalidated = true;
         }
         return token;
+      }
+
+      // Periodically verify user still exists in DB (on existing sessions)
+      if (token.id && !user && !account) {
+        const exists = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { id: true },
+        });
+        if (!exists) {
+          token.id = undefined;
+          token.invalidated = true;
+        }
       }
 
       if (user) {
@@ -192,6 +208,11 @@ export const authOptions: NextAuthOptions = {
     },
 
     async session({ session, token }) {
+      // If token was invalidated (user deleted from DB), clear session
+      if (token.invalidated || !token.id) {
+        session.user = undefined as any;
+        return session;
+      }
       if (session.user) {
         session.user.id = token.id as string;
         session.user.username = token.username as string;
