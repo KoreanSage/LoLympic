@@ -68,7 +68,7 @@ async function generateCultureNotes(
     generationConfig: { temperature: 0.5, maxOutputTokens: 2048 },
   });
 
-  const prompt = `You are a culture expert for LoLympic, a global meme translation platform.
+  const prompt = `You are a culture expert for mimzy, a global meme translation platform.
 
 Generate a culture note for the following meme post, explaining cultural context to a ${LANG_NAMES[targetLanguage] || targetLanguage} audience.
 

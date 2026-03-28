@@ -1,5 +1,5 @@
 // ============================================================================
-// LoLympic — Component-level types (flat segment for rendering)
+// mimzy — Component-level types (flat segment for rendering)
 // ============================================================================
 
 export interface TranslationSegmentData {

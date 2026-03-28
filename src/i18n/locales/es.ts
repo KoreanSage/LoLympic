@@ -52,7 +52,7 @@ const es: Record<TranslationKeys, string> = {
   "footer.cookies": "Política de cookies",
   "footer.rules": "Reglas de la comunidad",
   "footer.copyright": "Derechos de autor / DMCA",
-  "footer.allRights": "© {year} LoLympic. Todos los derechos reservados.",
+  "footer.allRights": "© {year} mimzy. Todos los derechos reservados.",
 
   // ── Feed ───────────────────────────────────────────────────────────────────
   "feed.empty": "Aún no hay publicaciones. ¡Sé el primero en compartir un meme!",
@@ -197,7 +197,7 @@ const es: Record<TranslationKeys, string> = {
   "settings.autoTranslation": "Mostrar traducciones automáticamente",
   "settings.autoTranslationDesc": "Mostrar automáticamente el texto traducido en las imágenes de memes",
   "settings.savePrefs": "Guardar preferencias",
-  "settings.aboutTitle": "Acerca de LoLympic",
+  "settings.aboutTitle": "Acerca de mimzy",
   "settings.version": "Versión",
   "settings.aboutDesc": "Plataforma de traducción global de memes con IA y competencia olímpica entre países.",
 
@@ -334,7 +334,7 @@ const es: Record<TranslationKeys, string> = {
   "bookmarks.empty": "Aún no hay guardados. ¡Guarda memes para verlos aquí!",
 
   // ── Admin ──────────────────────────────────────────────────────────────────
-  "admin.title": "LoLympic Admin",
+  "admin.title": "mimzy Admin",
   "admin.dashboard": "Panel",
   "admin.users": "Usuarios",
   "admin.posts": "Publicaciones",
@@ -357,7 +357,7 @@ const es: Record<TranslationKeys, string> = {
   "cultureNote.aiGenerated": "Contexto cultural generado por IA",
 
   // ── Welcome ────────────────────────────────────────────────────────────────
-  "welcome.title": "¡Bienvenido a LoLympic!",
+  "welcome.title": "¡Bienvenido a mimzy!",
   "welcome.subtitle": "Configura tu perfil para comenzar",
 
   // ── User Profile ───────────────────────────────────────────────────────────
@@ -502,7 +502,7 @@ const es: Record<TranslationKeys, string> = {
   "onboarding.skip": "Saltar",
   "onboarding.next": "Siguiente",
   "onboarding.back": "Atr\u00E1s",
-  "onboarding.step1Title": "\u00A1Bienvenido a LoLympic! \uD83C\uDF0D",
+  "onboarding.step1Title": "\u00A1Bienvenido a mimzy! \uD83C\uDF0D",
   "onboarding.step1Desc": "La primera plataforma global de competencia de memes",
   "onboarding.step1Detail": "Los memes trascienden el idioma. Aqu\u00ED, unen pa\u00EDses.",
   "onboarding.step2Title": "C\u00F3mo Funciona",

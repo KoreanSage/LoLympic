@@ -28,14 +28,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const authorName = post.author?.displayName || post.author?.username || "Unknown";
     const description = post.body
       ? post.body.substring(0, 160)
-      : `Meme by ${authorName}${post.country ? ` ${post.country.flagEmoji}` : ""} on LoLympic`;
+      : `Meme by ${authorName}${post.country ? ` ${post.country.flagEmoji}` : ""} on mimzy`;
     const imageUrl = post.images[0]?.originalUrl;
 
     return {
       title: post.title,
       description,
       openGraph: {
-        title: `${post.title} — LoLympic`,
+        title: `${post.title} — mimzy`,
         description,
         type: "article",
         ...(imageUrl && {
@@ -44,13 +44,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       },
       twitter: {
         card: imageUrl ? "summary_large_image" : "summary",
-        title: `${post.title} — LoLympic`,
+        title: `${post.title} — mimzy`,
         description,
         ...(imageUrl && { images: [imageUrl] }),
       },
     };
   } catch {
-    return { title: "LoLympic" };
+    return { title: "mimzy" };
   }
 }
 

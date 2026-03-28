@@ -153,7 +153,7 @@ async function translateTitle(
   const sourceLang = LANGUAGE_INSTRUCTIONS[sourceLanguage] || sourceLanguage;
   const targetLang = LANGUAGE_INSTRUCTIONS[targetLanguage] || targetLanguage;
 
-  const prompt = `You are translating a meme post on LoLympic, a global meme translation platform.
+  const prompt = `You are translating a meme post on mimzy, a global meme translation platform.
 Translate naturally — match the tone and style of the original.
 If it's casual, keep it casual. If it's a question, keep the question format.
 
@@ -198,7 +198,7 @@ async function translateImage(
   const sourceLang = LANGUAGE_INSTRUCTIONS[sourceLanguage] || sourceLanguage;
   const targetLang = LANGUAGE_INSTRUCTIONS[targetLanguage] || targetLanguage;
 
-  const systemPrompt = `You are a world-class meme translator for LoLympic, a global meme translation platform.
+  const systemPrompt = `You are a world-class meme translator for mimzy, a global meme translation platform.
 
 Your mission: Create TRANSCENDENT translations — not literal word-for-word conversions, but culturally adapted versions that hit just as hard in the target language.
 

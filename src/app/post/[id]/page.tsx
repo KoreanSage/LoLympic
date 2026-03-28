@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
     const description = post.body
       ? post.body.slice(0, 160)
-      : `Check out this meme on LoLympic!`;
+      : `Check out this meme on mimzy!`;
     const imageUrl = post.images[0]?.originalUrl;
 
     return {
@@ -43,7 +43,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       },
     };
   } catch {
-    return { title: "LoLympic" };
+    return { title: "mimzy" };
   }
 }
 

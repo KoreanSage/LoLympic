@@ -1,5 +1,5 @@
 // ============================================================================
-// LoLympic — TypeScript Types
+// mimzy — TypeScript Types
 // Mirrors prisma/schema.prisma enums and models
 // ============================================================================
 

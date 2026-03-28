@@ -125,7 +125,7 @@ export const MAX_PAGE_SIZE = 100;
 // App Metadata
 // ============================================================================
 
-export const APP_NAME = "LoLympic";
+export const APP_NAME = "mimzy";
 export const APP_DESCRIPTION =
   "AI-powered global meme translation and Olympic-style country competition";
 export const APP_URL =

@@ -88,12 +88,12 @@ const legalEN: LegalContent = {
         {
           title: "1. Acceptance of Terms",
           content:
-            'By accessing or using LoLympic ("the Service"), you agree to be bound by these Terms of Service. If you do not agree, do not use the Service.',
+            'By accessing or using mimzy ("the Service"), you agree to be bound by these Terms of Service. If you do not agree, do not use the Service.',
         },
         {
           title: "2. Eligibility",
           content:
-            "You must be at least 13 years old to use LoLympic. If you are under 18, you must have parental or guardian consent. By using the Service, you represent that you meet these requirements.",
+            "You must be at least 13 years old to use mimzy. If you are under 18, you must have parental or guardian consent. By using the Service, you represent that you meet these requirements.",
         },
         {
           title: "3. User Accounts",
@@ -103,12 +103,12 @@ const legalEN: LegalContent = {
         {
           title: "4. User Content",
           content:
-            "You retain ownership of content you upload. By posting content, you grant LoLympic a worldwide, non-exclusive, royalty-free license to use, display, reproduce, and distribute your content on the platform. You represent that you have the right to share any content you upload.",
+            "You retain ownership of content you upload. By posting content, you grant mimzy a worldwide, non-exclusive, royalty-free license to use, display, reproduce, and distribute your content on the platform. You represent that you have the right to share any content you upload.",
         },
         {
           title: "5. AI Translation",
           content:
-            "LoLympic uses AI to automatically translate meme content across languages. Translations are provided as-is and may not perfectly capture cultural nuances. Community members may suggest improved translations. LoLympic is not responsible for inaccuracies in AI-generated translations.",
+            "mimzy uses AI to automatically translate meme content across languages. Translations are provided as-is and may not perfectly capture cultural nuances. Community members may suggest improved translations. mimzy is not responsible for inaccuracies in AI-generated translations.",
         },
         {
           title: "6. Prohibited Conduct",
@@ -133,7 +133,7 @@ const legalEN: LegalContent = {
         {
           title: "10. Age Restriction",
           content:
-            "You must be at least 13 years old to use LoLympic. By using our platform, you confirm that you meet this age requirement.",
+            "You must be at least 13 years old to use mimzy. By using our platform, you confirm that you meet this age requirement.",
         },
         {
           title: "11. Governing Law",
@@ -188,20 +188,20 @@ const legalEN: LegalContent = {
         {
           title: "1. Intellectual Property",
           content:
-            "LoLympic respects intellectual property rights. Users retain copyright over their original content. AI-generated translations are provided as a service and do not transfer copyright.",
+            "mimzy respects intellectual property rights. Users retain copyright over their original content. AI-generated translations are provided as a service and do not transfer copyright.",
         },
         {
           title: "2. Meme Fair Use",
           content:
-            "Many memes incorporate copyrighted images used transformatively for commentary, parody, or criticism. LoLympic supports the fair use doctrine but cannot provide legal advice on individual cases. Users are responsible for ensuring their uploads comply with applicable copyright law.",
+            "Many memes incorporate copyrighted images used transformatively for commentary, parody, or criticism. mimzy supports the fair use doctrine but cannot provide legal advice on individual cases. Users are responsible for ensuring their uploads comply with applicable copyright law.",
         },
         {
           title: "3. DMCA Takedown Process",
           content:
-            "If you believe content on LoLympic infringes your copyright, submit a DMCA takedown notice to lolympic.app@gmail.com including:",
+            "If you believe content on mimzy infringes your copyright, submit a DMCA takedown notice to lolympic.app@gmail.com including:",
           list: [
             "Identification of the copyrighted work",
-            "URL of the infringing content on LoLympic",
+            "URL of the infringing content on mimzy",
             "Your contact information",
             "A statement of good faith belief that the use is not authorized",
             "A statement under penalty of perjury that the information is accurate",
@@ -265,7 +265,7 @@ const legalEN: LegalContent = {
 const rulesEN: RulesContent = {
   pageTitle: "Community Rules",
   subtitle:
-    "LoLympic is a global platform for sharing and translating memes across languages and cultures. These rules help keep our community fun, safe, and welcoming for everyone.",
+    "mimzy is a global platform for sharing and translating memes across languages and cultures. These rules help keep our community fun, safe, and welcoming for everyone.",
   rules: [
     {
       title: "Be Respectful",
@@ -345,12 +345,12 @@ const legalKO: LegalContent = {
         {
           title: "1. 약관 동의",
           content:
-            'LoLympic("서비스")에 접속하거나 이용함으로써 귀하는 본 이용약관에 동의하게 됩니다. 동의하지 않으시는 경우 서비스를 이용하지 마십시오.',
+            'mimzy("서비스")에 접속하거나 이용함으로써 귀하는 본 이용약관에 동의하게 됩니다. 동의하지 않으시는 경우 서비스를 이용하지 마십시오.',
         },
         {
           title: "2. 이용 자격",
           content:
-            "LoLympic을 이용하려면 만 13세 이상이어야 합니다. 만 18세 미만인 경우 부모 또는 보호자의 동의가 필요합니다. 서비스를 이용함으로써 귀하는 이러한 요건을 충족함을 보증합니다.",
+            "mimzy을 이용하려면 만 13세 이상이어야 합니다. 만 18세 미만인 경우 부모 또는 보호자의 동의가 필요합니다. 서비스를 이용함으로써 귀하는 이러한 요건을 충족함을 보증합니다.",
         },
         {
           title: "3. 사용자 계정",
@@ -360,12 +360,12 @@ const legalKO: LegalContent = {
         {
           title: "4. 사용자 콘텐츠",
           content:
-            "귀하가 업로드한 콘텐츠의 소유권은 귀하에게 있습니다. 콘텐츠를 게시함으로써 귀하는 LoLympic에 플랫폼에서 해당 콘텐츠를 사용, 표시, 복제 및 배포할 수 있는 전 세계적, 비독점적, 무상의 라이선스를 부여합니다. 귀하는 업로드하는 모든 콘텐츠를 공유할 권리가 있음을 보증합니다.",
+            "귀하가 업로드한 콘텐츠의 소유권은 귀하에게 있습니다. 콘텐츠를 게시함으로써 귀하는 mimzy에 플랫폼에서 해당 콘텐츠를 사용, 표시, 복제 및 배포할 수 있는 전 세계적, 비독점적, 무상의 라이선스를 부여합니다. 귀하는 업로드하는 모든 콘텐츠를 공유할 권리가 있음을 보증합니다.",
         },
         {
           title: "5. AI 번역",
           content:
-            "LoLympic은 AI를 사용하여 밈 콘텐츠를 여러 언어로 자동 번역합니다. 번역은 있는 그대로 제공되며 문화적 뉘앙스를 완벽하게 포착하지 못할 수 있습니다. 커뮤니티 회원은 개선된 번역을 제안할 수 있습니다. LoLympic은 AI 생성 번역의 부정확성에 대해 책임지지 않습니다.",
+            "mimzy은 AI를 사용하여 밈 콘텐츠를 여러 언어로 자동 번역합니다. 번역은 있는 그대로 제공되며 문화적 뉘앙스를 완벽하게 포착하지 못할 수 있습니다. 커뮤니티 회원은 개선된 번역을 제안할 수 있습니다. mimzy은 AI 생성 번역의 부정확성에 대해 책임지지 않습니다.",
         },
         {
           title: "6. 금지 행위",
@@ -390,7 +390,7 @@ const legalKO: LegalContent = {
         {
           title: "10. 연령 제한",
           content:
-            "LoLympic을 이용하려면 만 13세 이상이어야 합니다. 플랫폼을 이용함으로써 귀하는 이 연령 요건을 충족함을 확인합니다.",
+            "mimzy을 이용하려면 만 13세 이상이어야 합니다. 플랫폼을 이용함으로써 귀하는 이 연령 요건을 충족함을 확인합니다.",
         },
         {
           title: "11. 준거법",
@@ -445,20 +445,20 @@ const legalKO: LegalContent = {
         {
           title: "1. 지적 재산권",
           content:
-            "LoLympic은 지적 재산권을 존중합니다. 사용자는 자신의 원본 콘텐츠에 대한 저작권을 보유합니다. AI 생성 번역은 서비스로 제공되며 저작권을 이전하지 않습니다.",
+            "mimzy은 지적 재산권을 존중합니다. 사용자는 자신의 원본 콘텐츠에 대한 저작권을 보유합니다. AI 생성 번역은 서비스로 제공되며 저작권을 이전하지 않습니다.",
         },
         {
           title: "2. 밈의 공정 이용",
           content:
-            "많은 밈은 논평, 패러디 또는 비평을 위해 변형적으로 사용된 저작권 이미지를 포함합니다. LoLympic은 공정 이용 원칙을 지지하지만 개별 사례에 대한 법적 조언을 제공할 수 없습니다. 사용자는 업로드한 콘텐츠가 해당 저작권법을 준수하는지 확인할 책임이 있습니다.",
+            "많은 밈은 논평, 패러디 또는 비평을 위해 변형적으로 사용된 저작권 이미지를 포함합니다. mimzy은 공정 이용 원칙을 지지하지만 개별 사례에 대한 법적 조언을 제공할 수 없습니다. 사용자는 업로드한 콘텐츠가 해당 저작권법을 준수하는지 확인할 책임이 있습니다.",
         },
         {
           title: "3. DMCA 삭제 절차",
           content:
-            "LoLympic의 콘텐츠가 귀하의 저작권을 침해한다고 판단되는 경우, 다음을 포함하여 lolympic.app@gmail.com으로 DMCA 삭제 통지를 제출해 주십시오:",
+            "mimzy의 콘텐츠가 귀하의 저작권을 침해한다고 판단되는 경우, 다음을 포함하여 lolympic.app@gmail.com으로 DMCA 삭제 통지를 제출해 주십시오:",
           list: [
             "저작권이 있는 저작물의 식별",
-            "LoLympic에서 침해 콘텐츠의 URL",
+            "mimzy에서 침해 콘텐츠의 URL",
             "귀하의 연락처 정보",
             "해당 이용이 허가되지 않았다는 선의의 진술",
             "정보가 정확하다는 위증 처벌 하의 진술",
@@ -522,7 +522,7 @@ const legalKO: LegalContent = {
 const rulesKO: RulesContent = {
   pageTitle: "커뮤니티 규칙",
   subtitle:
-    "LoLympic은 다양한 언어와 문화를 넘어 밈을 공유하고 번역하는 글로벌 플랫폼입니다. 이 규칙은 모든 사람에게 재미있고 안전하며 환영받는 커뮤니티를 유지하는 데 도움이 됩니다.",
+    "mimzy은 다양한 언어와 문화를 넘어 밈을 공유하고 번역하는 글로벌 플랫폼입니다. 이 규칙은 모든 사람에게 재미있고 안전하며 환영받는 커뮤니티를 유지하는 데 도움이 됩니다.",
   rules: [
     {
       title: "서로 존중하기",
@@ -602,12 +602,12 @@ const legalJA: LegalContent = {
         {
           title: "1. 規約への同意",
           content:
-            'LoLympic（「本サービス」）にアクセスまたは使用することにより、お客様はこの利用規約に拘束されることに同意するものとします。同意されない場合は、本サービスを使用しないでください。',
+            'mimzy（「本サービス」）にアクセスまたは使用することにより、お客様はこの利用規約に拘束されることに同意するものとします。同意されない場合は、本サービスを使用しないでください。',
         },
         {
           title: "2. 利用資格",
           content:
-            "LoLympicを使用するには13歳以上である必要があります。18歳未満の場合は、保護者の同意が必要です。本サービスを使用することにより、お客様はこれらの要件を満たしていることを表明するものとします。",
+            "mimzyを使用するには13歳以上である必要があります。18歳未満の場合は、保護者の同意が必要です。本サービスを使用することにより、お客様はこれらの要件を満たしていることを表明するものとします。",
         },
         {
           title: "3. ユーザーアカウント",
@@ -617,12 +617,12 @@ const legalJA: LegalContent = {
         {
           title: "4. ユーザーコンテンツ",
           content:
-            "お客様がアップロードしたコンテンツの所有権はお客様に帰属します。コンテンツを投稿することにより、お客様はLoLympicに対し、プラットフォーム上でコンテンツを使用、表示、複製、配布するための全世界的、非独占的、無償のライセンスを付与するものとします。お客様はアップロードするすべてのコンテンツを共有する権利を有していることを表明するものとします。",
+            "お客様がアップロードしたコンテンツの所有権はお客様に帰属します。コンテンツを投稿することにより、お客様はmimzyに対し、プラットフォーム上でコンテンツを使用、表示、複製、配布するための全世界的、非独占的、無償のライセンスを付与するものとします。お客様はアップロードするすべてのコンテンツを共有する権利を有していることを表明するものとします。",
         },
         {
           title: "5. AI翻訳",
           content:
-            "LoLympicはAIを使用してミームコンテンツを複数の言語に自動翻訳します。翻訳は現状のまま提供され、文化的なニュアンスを完全に捉えられない場合があります。コミュニティメンバーは改善された翻訳を提案することができます。LoLympicはAI生成翻訳の不正確さについて責任を負いません。",
+            "mimzyはAIを使用してミームコンテンツを複数の言語に自動翻訳します。翻訳は現状のまま提供され、文化的なニュアンスを完全に捉えられない場合があります。コミュニティメンバーは改善された翻訳を提案することができます。mimzyはAI生成翻訳の不正確さについて責任を負いません。",
         },
         {
           title: "6. 禁止行為",
@@ -647,7 +647,7 @@ const legalJA: LegalContent = {
         {
           title: "10. 年齢制限",
           content:
-            "LoLympicを使用するには13歳以上である必要があります。当プラットフォームを使用することにより、お客様はこの年齢要件を満たしていることを確認するものとします。",
+            "mimzyを使用するには13歳以上である必要があります。当プラットフォームを使用することにより、お客様はこの年齢要件を満たしていることを確認するものとします。",
         },
         {
           title: "11. 準拠法",
@@ -702,20 +702,20 @@ const legalJA: LegalContent = {
         {
           title: "1. 知的財産権",
           content:
-            "LoLympicは知的財産権を尊重します。ユーザーはオリジナルコンテンツの著作権を保持します。AI生成翻訳はサービスとして提供され、著作権は移転されません。",
+            "mimzyは知的財産権を尊重します。ユーザーはオリジナルコンテンツの著作権を保持します。AI生成翻訳はサービスとして提供され、著作権は移転されません。",
         },
         {
           title: "2. ミームのフェアユース",
           content:
-            "多くのミームは、論評、パロディ、または批評のために変形的に使用された著作権画像を含みます。LoLympicはフェアユースの原則を支持しますが、個別のケースについて法的助言を提供することはできません。アップロードするコンテンツが該当する著作権法に準拠していることを確認する責任はユーザーにあります。",
+            "多くのミームは、論評、パロディ、または批評のために変形的に使用された著作権画像を含みます。mimzyはフェアユースの原則を支持しますが、個別のケースについて法的助言を提供することはできません。アップロードするコンテンツが該当する著作権法に準拠していることを確認する責任はユーザーにあります。",
         },
         {
           title: "3. DMCA削除手続き",
           content:
-            "LoLympic上のコンテンツがお客様の著作権を侵害していると思われる場合は、以下を含むDMCA削除通知をlolympic.app@gmail.comに提出してください：",
+            "mimzy上のコンテンツがお客様の著作権を侵害していると思われる場合は、以下を含むDMCA削除通知をlolympic.app@gmail.comに提出してください：",
           list: [
             "著作権のある著作物の特定",
-            "LoLympic上の侵害コンテンツのURL",
+            "mimzy上の侵害コンテンツのURL",
             "お客様の連絡先情報",
             "使用が許可されていないという誠実な信念の声明",
             "情報が正確であるという偽証罪に基づく声明",
@@ -779,7 +779,7 @@ const legalJA: LegalContent = {
 const rulesJA: RulesContent = {
   pageTitle: "コミュニティルール",
   subtitle:
-    "LoLympicは、言語と文化を超えてミームを共有し翻訳するグローバルプラットフォームです。これらのルールは、すべての人にとって楽しく安全で歓迎されるコミュニティを維持するのに役立ちます。",
+    "mimzyは、言語と文化を超えてミームを共有し翻訳するグローバルプラットフォームです。これらのルールは、すべての人にとって楽しく安全で歓迎されるコミュニティを維持するのに役立ちます。",
   rules: [
     {
       title: "敬意を持って接する",
@@ -859,12 +859,12 @@ const legalZH: LegalContent = {
         {
           title: "1. 条款接受",
           content:
-            '访问或使用LoLympic（"本服务"），即表示您同意受本服务条款的约束。如果您不同意，请勿使用本服务。',
+            '访问或使用mimzy（"本服务"），即表示您同意受本服务条款的约束。如果您不同意，请勿使用本服务。',
         },
         {
           title: "2. 使用资格",
           content:
-            "您必须年满13周岁才能使用LoLympic。如果您未满18周岁，必须获得父母或监护人的同意。使用本服务即表示您声明满足这些要求。",
+            "您必须年满13周岁才能使用mimzy。如果您未满18周岁，必须获得父母或监护人的同意。使用本服务即表示您声明满足这些要求。",
         },
         {
           title: "3. 用户账户",
@@ -874,12 +874,12 @@ const legalZH: LegalContent = {
         {
           title: "4. 用户内容",
           content:
-            "您保留所上传内容的所有权。发布内容即表示您授予LoLympic在平台上使用、展示、复制和分发您内容的全球性、非排他性、免版税的许可。您声明有权分享您上传的所有内容。",
+            "您保留所上传内容的所有权。发布内容即表示您授予mimzy在平台上使用、展示、复制和分发您内容的全球性、非排他性、免版税的许可。您声明有权分享您上传的所有内容。",
         },
         {
           title: "5. AI翻译",
           content:
-            "LoLympic使用AI自动翻译表情包内容。翻译按原样提供，可能无法完全捕捉文化细微差别。社区成员可以建议改进翻译。LoLympic对AI生成翻译的不准确性不承担责任。",
+            "mimzy使用AI自动翻译表情包内容。翻译按原样提供，可能无法完全捕捉文化细微差别。社区成员可以建议改进翻译。mimzy对AI生成翻译的不准确性不承担责任。",
         },
         {
           title: "6. 禁止行为",
@@ -904,7 +904,7 @@ const legalZH: LegalContent = {
         {
           title: "10. 年龄限制",
           content:
-            "您必须年满13周岁才能使用LoLympic。使用我们的平台即表示您确认满足此年龄要求。",
+            "您必须年满13周岁才能使用mimzy。使用我们的平台即表示您确认满足此年龄要求。",
         },
         {
           title: "11. 适用法律",
@@ -959,20 +959,20 @@ const legalZH: LegalContent = {
         {
           title: "1. 知识产权",
           content:
-            "LoLympic尊重知识产权。用户保留其原创内容的版权。AI生成的翻译作为服务提供，不转让版权。",
+            "mimzy尊重知识产权。用户保留其原创内容的版权。AI生成的翻译作为服务提供，不转让版权。",
         },
         {
           title: "2. 表情包合理使用",
           content:
-            "许多表情包包含以评论、恶搞或批评为目的进行变形使用的受版权保护的图像。LoLympic支持合理使用原则，但无法就个别案例提供法律建议。用户有责任确保其上传内容符合适用的版权法。",
+            "许多表情包包含以评论、恶搞或批评为目的进行变形使用的受版权保护的图像。mimzy支持合理使用原则，但无法就个别案例提供法律建议。用户有责任确保其上传内容符合适用的版权法。",
         },
         {
           title: "3. DMCA删除流程",
           content:
-            "如果您认为LoLympic上的内容侵犯了您的版权，请向lolympic.app@gmail.com提交DMCA删除通知，包括：",
+            "如果您认为mimzy上的内容侵犯了您的版权，请向lolympic.app@gmail.com提交DMCA删除通知，包括：",
           list: [
             "受版权保护作品的标识",
-            "LoLympic上侵权内容的URL",
+            "mimzy上侵权内容的URL",
             "您的联系信息",
             "善意相信该使用未经授权的声明",
             "在伪证罪处罚下信息准确的声明",
@@ -1036,7 +1036,7 @@ const legalZH: LegalContent = {
 const rulesZH: RulesContent = {
   pageTitle: "社区规则",
   subtitle:
-    "LoLympic是一个跨语言和文化分享与翻译表情包的全球平台。这些规则有助于保持我们的社区有趣、安全、对所有人友好。",
+    "mimzy是一个跨语言和文化分享与翻译表情包的全球平台。这些规则有助于保持我们的社区有趣、安全、对所有人友好。",
   rules: [
     {
       title: "尊重他人",
@@ -1116,12 +1116,12 @@ const legalES: LegalContent = {
         {
           title: "1. Aceptación de los Términos",
           content:
-            'Al acceder o utilizar LoLympic ("el Servicio"), usted acepta estar sujeto a estos Términos de Servicio. Si no está de acuerdo, no utilice el Servicio.',
+            'Al acceder o utilizar mimzy ("el Servicio"), usted acepta estar sujeto a estos Términos de Servicio. Si no está de acuerdo, no utilice el Servicio.',
         },
         {
           title: "2. Elegibilidad",
           content:
-            "Debe tener al menos 13 años para usar LoLympic. Si es menor de 18 años, debe contar con el consentimiento de un padre o tutor. Al utilizar el Servicio, usted declara que cumple con estos requisitos.",
+            "Debe tener al menos 13 años para usar mimzy. Si es menor de 18 años, debe contar con el consentimiento de un padre o tutor. Al utilizar el Servicio, usted declara que cumple con estos requisitos.",
         },
         {
           title: "3. Cuentas de Usuario",
@@ -1131,12 +1131,12 @@ const legalES: LegalContent = {
         {
           title: "4. Contenido del Usuario",
           content:
-            "Usted conserva la propiedad del contenido que sube. Al publicar contenido, otorga a LoLympic una licencia mundial, no exclusiva y libre de regalías para usar, mostrar, reproducir y distribuir su contenido en la plataforma. Usted declara que tiene derecho a compartir cualquier contenido que suba.",
+            "Usted conserva la propiedad del contenido que sube. Al publicar contenido, otorga a mimzy una licencia mundial, no exclusiva y libre de regalías para usar, mostrar, reproducir y distribuir su contenido en la plataforma. Usted declara que tiene derecho a compartir cualquier contenido que suba.",
         },
         {
           title: "5. Traducción con IA",
           content:
-            "LoLympic utiliza IA para traducir automáticamente el contenido de los memes a diferentes idiomas. Las traducciones se proporcionan tal cual y pueden no captar perfectamente los matices culturales. Los miembros de la comunidad pueden sugerir traducciones mejoradas. LoLympic no es responsable de las imprecisiones en las traducciones generadas por IA.",
+            "mimzy utiliza IA para traducir automáticamente el contenido de los memes a diferentes idiomas. Las traducciones se proporcionan tal cual y pueden no captar perfectamente los matices culturales. Los miembros de la comunidad pueden sugerir traducciones mejoradas. mimzy no es responsable de las imprecisiones en las traducciones generadas por IA.",
         },
         {
           title: "6. Conducta Prohibida",
@@ -1161,7 +1161,7 @@ const legalES: LegalContent = {
         {
           title: "10. Restricción de Edad",
           content:
-            "Debe tener al menos 13 años para usar LoLympic. Al usar nuestra plataforma, confirma que cumple con este requisito de edad.",
+            "Debe tener al menos 13 años para usar mimzy. Al usar nuestra plataforma, confirma que cumple con este requisito de edad.",
         },
         {
           title: "11. Ley Aplicable",
@@ -1216,20 +1216,20 @@ const legalES: LegalContent = {
         {
           title: "1. Propiedad Intelectual",
           content:
-            "LoLympic respeta los derechos de propiedad intelectual. Los usuarios conservan los derechos de autor sobre su contenido original. Las traducciones generadas por IA se proporcionan como un servicio y no transfieren derechos de autor.",
+            "mimzy respeta los derechos de propiedad intelectual. Los usuarios conservan los derechos de autor sobre su contenido original. Las traducciones generadas por IA se proporcionan como un servicio y no transfieren derechos de autor.",
         },
         {
           title: "2. Uso Legítimo de Memes",
           content:
-            "Muchos memes incorporan imágenes con derechos de autor utilizadas de manera transformadora para comentarios, parodia o crítica. LoLympic apoya la doctrina del uso legítimo pero no puede proporcionar asesoramiento legal sobre casos individuales. Los usuarios son responsables de garantizar que sus cargas cumplan con la ley de derechos de autor aplicable.",
+            "Muchos memes incorporan imágenes con derechos de autor utilizadas de manera transformadora para comentarios, parodia o crítica. mimzy apoya la doctrina del uso legítimo pero no puede proporcionar asesoramiento legal sobre casos individuales. Los usuarios son responsables de garantizar que sus cargas cumplan con la ley de derechos de autor aplicable.",
         },
         {
           title: "3. Proceso de Eliminación DMCA",
           content:
-            "Si cree que el contenido en LoLympic infringe sus derechos de autor, envíe un aviso de eliminación DMCA a lolympic.app@gmail.com incluyendo:",
+            "Si cree que el contenido en mimzy infringe sus derechos de autor, envíe un aviso de eliminación DMCA a lolympic.app@gmail.com incluyendo:",
           list: [
             "Identificación de la obra protegida por derechos de autor",
-            "URL del contenido infractor en LoLympic",
+            "URL del contenido infractor en mimzy",
             "Su información de contacto",
             "Una declaración de buena fe de que el uso no está autorizado",
             "Una declaración bajo pena de perjurio de que la información es precisa",
@@ -1293,7 +1293,7 @@ const legalES: LegalContent = {
 const rulesES: RulesContent = {
   pageTitle: "Reglas de la Comunidad",
   subtitle:
-    "LoLympic es una plataforma global para compartir y traducir memes a través de idiomas y culturas. Estas reglas ayudan a mantener nuestra comunidad divertida, segura y acogedora para todos.",
+    "mimzy es una plataforma global para compartir y traducir memes a través de idiomas y culturas. Estas reglas ayudan a mantener nuestra comunidad divertida, segura y acogedora para todos.",
   rules: [
     {
       title: "Sea Respetuoso",
@@ -1373,12 +1373,12 @@ const legalHI: LegalContent = {
         {
           title: "1. शर्तों की स्वीकृति",
           content:
-            'LoLympic ("सेवा") तक पहुँचने या उसका उपयोग करने से, आप इन सेवा शर्तों से बाध्य होने के लिए सहमत होते हैं। यदि आप सहमत नहीं हैं, तो सेवा का उपयोग न करें।',
+            'mimzy ("सेवा") तक पहुँचने या उसका उपयोग करने से, आप इन सेवा शर्तों से बाध्य होने के लिए सहमत होते हैं। यदि आप सहमत नहीं हैं, तो सेवा का उपयोग न करें।',
         },
         {
           title: "2. पात्रता",
           content:
-            "LoLympic का उपयोग करने के लिए आपकी आयु कम से कम 13 वर्ष होनी चाहिए। यदि आपकी आयु 18 वर्ष से कम है, तो आपके पास माता-पिता या अभिभावक की सहमति होनी चाहिए। सेवा का उपयोग करके, आप प्रतिनिधित्व करते हैं कि आप इन आवश्यकताओं को पूरा करते हैं।",
+            "mimzy का उपयोग करने के लिए आपकी आयु कम से कम 13 वर्ष होनी चाहिए। यदि आपकी आयु 18 वर्ष से कम है, तो आपके पास माता-पिता या अभिभावक की सहमति होनी चाहिए। सेवा का उपयोग करके, आप प्रतिनिधित्व करते हैं कि आप इन आवश्यकताओं को पूरा करते हैं।",
         },
         {
           title: "3. उपयोगकर्ता खाते",
@@ -1388,12 +1388,12 @@ const legalHI: LegalContent = {
         {
           title: "4. उपयोगकर्ता सामग्री",
           content:
-            "आपके द्वारा अपलोड की गई सामग्री का स्वामित्व आपके पास रहता है। सामग्री पोस्ट करके, आप LoLympic को प्लेटफ़ॉर्म पर आपकी सामग्री का उपयोग, प्रदर्शन, पुनरुत्पादन और वितरण करने के लिए विश्वव्यापी, गैर-विशिष्ट, रॉयल्टी-मुक्त लाइसेंस प्रदान करते हैं। आप प्रतिनिधित्व करते हैं कि आपके पास अपलोड की गई किसी भी सामग्री को साझा करने का अधिकार है।",
+            "आपके द्वारा अपलोड की गई सामग्री का स्वामित्व आपके पास रहता है। सामग्री पोस्ट करके, आप mimzy को प्लेटफ़ॉर्म पर आपकी सामग्री का उपयोग, प्रदर्शन, पुनरुत्पादन और वितरण करने के लिए विश्वव्यापी, गैर-विशिष्ट, रॉयल्टी-मुक्त लाइसेंस प्रदान करते हैं। आप प्रतिनिधित्व करते हैं कि आपके पास अपलोड की गई किसी भी सामग्री को साझा करने का अधिकार है।",
         },
         {
           title: "5. AI अनुवाद",
           content:
-            "LoLympic मीम सामग्री को विभिन्न भाषाओं में स्वचालित रूप से अनुवाद करने के लिए AI का उपयोग करता है। अनुवाद जैसा है वैसा प्रदान किया जाता है और सांस्कृतिक बारीकियों को पूरी तरह से नहीं पकड़ सकता। समुदाय के सदस्य बेहतर अनुवाद सुझाव दे सकते हैं। LoLympic AI-जनित अनुवादों में अशुद्धियों के लिए जिम्मेदार नहीं है।",
+            "mimzy मीम सामग्री को विभिन्न भाषाओं में स्वचालित रूप से अनुवाद करने के लिए AI का उपयोग करता है। अनुवाद जैसा है वैसा प्रदान किया जाता है और सांस्कृतिक बारीकियों को पूरी तरह से नहीं पकड़ सकता। समुदाय के सदस्य बेहतर अनुवाद सुझाव दे सकते हैं। mimzy AI-जनित अनुवादों में अशुद्धियों के लिए जिम्मेदार नहीं है।",
         },
         {
           title: "6. निषिद्ध आचरण",
@@ -1418,7 +1418,7 @@ const legalHI: LegalContent = {
         {
           title: "10. आयु प्रतिबंध",
           content:
-            "LoLympic का उपयोग करने के लिए आपकी आयु कम से कम 13 वर्ष होनी चाहिए। हमारे प्लेटफ़ॉर्म का उपयोग करके, आप पुष्टि करते हैं कि आप इस आयु आवश्यकता को पूरा करते हैं।",
+            "mimzy का उपयोग करने के लिए आपकी आयु कम से कम 13 वर्ष होनी चाहिए। हमारे प्लेटफ़ॉर्म का उपयोग करके, आप पुष्टि करते हैं कि आप इस आयु आवश्यकता को पूरा करते हैं।",
         },
         {
           title: "11. शासी कानून",
@@ -1473,20 +1473,20 @@ const legalHI: LegalContent = {
         {
           title: "1. बौद्धिक संपदा",
           content:
-            "LoLympic बौद्धिक संपदा अधिकारों का सम्मान करता है। उपयोगकर्ता अपनी मौलिक सामग्री पर कॉपीराइट बनाए रखते हैं। AI-जनित अनुवाद एक सेवा के रूप में प्रदान किए जाते हैं और कॉपीराइट हस्तांतरित नहीं करते।",
+            "mimzy बौद्धिक संपदा अधिकारों का सम्मान करता है। उपयोगकर्ता अपनी मौलिक सामग्री पर कॉपीराइट बनाए रखते हैं। AI-जनित अनुवाद एक सेवा के रूप में प्रदान किए जाते हैं और कॉपीराइट हस्तांतरित नहीं करते।",
         },
         {
           title: "2. मीम का उचित उपयोग",
           content:
-            "कई मीम में टिप्पणी, पैरोडी या आलोचना के लिए परिवर्तनात्मक रूप से उपयोग की गई कॉपीराइट छवियाँ शामिल होती हैं। LoLympic उचित उपयोग सिद्धांत का समर्थन करता है लेकिन व्यक्तिगत मामलों पर कानूनी सलाह प्रदान नहीं कर सकता। उपयोगकर्ता यह सुनिश्चित करने के लिए जिम्मेदार हैं कि उनके अपलोड लागू कॉपीराइट कानून का अनुपालन करते हैं।",
+            "कई मीम में टिप्पणी, पैरोडी या आलोचना के लिए परिवर्तनात्मक रूप से उपयोग की गई कॉपीराइट छवियाँ शामिल होती हैं। mimzy उचित उपयोग सिद्धांत का समर्थन करता है लेकिन व्यक्तिगत मामलों पर कानूनी सलाह प्रदान नहीं कर सकता। उपयोगकर्ता यह सुनिश्चित करने के लिए जिम्मेदार हैं कि उनके अपलोड लागू कॉपीराइट कानून का अनुपालन करते हैं।",
         },
         {
           title: "3. DMCA हटाने की प्रक्रिया",
           content:
-            "यदि आपको लगता है कि LoLympic पर सामग्री आपके कॉपीराइट का उल्लंघन करती है, तो निम्नलिखित सहित lolympic.app@gmail.com पर DMCA हटाने की सूचना जमा करें:",
+            "यदि आपको लगता है कि mimzy पर सामग्री आपके कॉपीराइट का उल्लंघन करती है, तो निम्नलिखित सहित lolympic.app@gmail.com पर DMCA हटाने की सूचना जमा करें:",
           list: [
             "कॉपीराइट कार्य की पहचान",
-            "LoLympic पर उल्लंघनकारी सामग्री का URL",
+            "mimzy पर उल्लंघनकारी सामग्री का URL",
             "आपकी संपर्क जानकारी",
             "उपयोग अधिकृत नहीं होने का सद्भावना बयान",
             "झूठी गवाही के दंड के तहत जानकारी सटीक होने का बयान",
@@ -1550,7 +1550,7 @@ const legalHI: LegalContent = {
 const rulesHI: RulesContent = {
   pageTitle: "सामुदायिक नियम",
   subtitle:
-    "LoLympic भाषाओं और संस्कृतियों में मीम साझा करने और अनुवाद करने के लिए एक वैश्विक मंच है। ये नियम हमारे समुदाय को सभी के लिए मज़ेदार, सुरक्षित और स्वागत योग्य बनाए रखने में मदद करते हैं।",
+    "mimzy भाषाओं और संस्कृतियों में मीम साझा करने और अनुवाद करने के लिए एक वैश्विक मंच है। ये नियम हमारे समुदाय को सभी के लिए मज़ेदार, सुरक्षित और स्वागत योग्य बनाए रखने में मदद करते हैं।",
   rules: [
     {
       title: "सम्मानजनक रहें",
@@ -1630,12 +1630,12 @@ const legalAR: LegalContent = {
         {
           title: "1. قبول الشروط",
           content:
-            'بالوصول إلى LoLympic ("الخدمة") أو استخدامها، فإنك توافق على الالتزام بشروط الخدمة هذه. إذا كنت لا توافق، فلا تستخدم الخدمة.',
+            'بالوصول إلى mimzy ("الخدمة") أو استخدامها، فإنك توافق على الالتزام بشروط الخدمة هذه. إذا كنت لا توافق، فلا تستخدم الخدمة.',
         },
         {
           title: "2. الأهلية",
           content:
-            "يجب أن يكون عمرك 13 عامًا على الأقل لاستخدام LoLympic. إذا كان عمرك أقل من 18 عامًا، يجب أن تحصل على موافقة أحد الوالدين أو الوصي. باستخدام الخدمة، فإنك تقر بأنك تستوفي هذه المتطلبات.",
+            "يجب أن يكون عمرك 13 عامًا على الأقل لاستخدام mimzy. إذا كان عمرك أقل من 18 عامًا، يجب أن تحصل على موافقة أحد الوالدين أو الوصي. باستخدام الخدمة، فإنك تقر بأنك تستوفي هذه المتطلبات.",
         },
         {
           title: "3. حسابات المستخدمين",
@@ -1645,12 +1645,12 @@ const legalAR: LegalContent = {
         {
           title: "4. محتوى المستخدم",
           content:
-            "تحتفظ بملكية المحتوى الذي تقوم بتحميله. بنشر المحتوى، فإنك تمنح LoLympic ترخيصًا عالميًا وغير حصري وخاليًا من حقوق الملكية لاستخدام وعرض واستنساخ وتوزيع محتواك على المنصة. أنت تقر بأن لديك الحق في مشاركة أي محتوى تقوم بتحميله.",
+            "تحتفظ بملكية المحتوى الذي تقوم بتحميله. بنشر المحتوى، فإنك تمنح mimzy ترخيصًا عالميًا وغير حصري وخاليًا من حقوق الملكية لاستخدام وعرض واستنساخ وتوزيع محتواك على المنصة. أنت تقر بأن لديك الحق في مشاركة أي محتوى تقوم بتحميله.",
         },
         {
           title: "5. الترجمة بالذكاء الاصطناعي",
           content:
-            "يستخدم LoLympic الذكاء الاصطناعي لترجمة محتوى الميمات تلقائيًا عبر اللغات. يتم تقديم الترجمات كما هي وقد لا تلتقط الفروق الثقافية بشكل كامل. يمكن لأعضاء المجتمع اقتراح ترجمات محسنة. LoLympic ليس مسؤولاً عن عدم الدقة في الترجمات المولدة بالذكاء الاصطناعي.",
+            "يستخدم mimzy الذكاء الاصطناعي لترجمة محتوى الميمات تلقائيًا عبر اللغات. يتم تقديم الترجمات كما هي وقد لا تلتقط الفروق الثقافية بشكل كامل. يمكن لأعضاء المجتمع اقتراح ترجمات محسنة. mimzy ليس مسؤولاً عن عدم الدقة في الترجمات المولدة بالذكاء الاصطناعي.",
         },
         {
           title: "6. السلوك المحظور",
@@ -1675,7 +1675,7 @@ const legalAR: LegalContent = {
         {
           title: "10. قيود العمر",
           content:
-            "يجب أن يكون عمرك 13 عامًا على الأقل لاستخدام LoLympic. باستخدام منصتنا، فإنك تؤكد أنك تستوفي هذا الشرط العمري.",
+            "يجب أن يكون عمرك 13 عامًا على الأقل لاستخدام mimzy. باستخدام منصتنا، فإنك تؤكد أنك تستوفي هذا الشرط العمري.",
         },
         {
           title: "11. القانون الحاكم",
@@ -1730,20 +1730,20 @@ const legalAR: LegalContent = {
         {
           title: "1. الملكية الفكرية",
           content:
-            "يحترم LoLympic حقوق الملكية الفكرية. يحتفظ المستخدمون بحقوق النشر على محتواهم الأصلي. يتم تقديم الترجمات المولدة بالذكاء الاصطناعي كخدمة ولا تنقل حقوق النشر.",
+            "يحترم mimzy حقوق الملكية الفكرية. يحتفظ المستخدمون بحقوق النشر على محتواهم الأصلي. يتم تقديم الترجمات المولدة بالذكاء الاصطناعي كخدمة ولا تنقل حقوق النشر.",
         },
         {
           title: "2. الاستخدام العادل للميمات",
           content:
-            "تتضمن العديد من الميمات صورًا محمية بحقوق النشر تُستخدم بشكل تحويلي للتعليق أو المحاكاة أو النقد. يدعم LoLympic مبدأ الاستخدام العادل لكنه لا يستطيع تقديم مشورة قانونية حول الحالات الفردية. يتحمل المستخدمون مسؤولية ضمان امتثال تحميلاتهم لقانون حقوق النشر المعمول به.",
+            "تتضمن العديد من الميمات صورًا محمية بحقوق النشر تُستخدم بشكل تحويلي للتعليق أو المحاكاة أو النقد. يدعم mimzy مبدأ الاستخدام العادل لكنه لا يستطيع تقديم مشورة قانونية حول الحالات الفردية. يتحمل المستخدمون مسؤولية ضمان امتثال تحميلاتهم لقانون حقوق النشر المعمول به.",
         },
         {
           title: "3. إجراءات إزالة DMCA",
           content:
-            "إذا كنت تعتقد أن المحتوى على LoLympic ينتهك حقوق النشر الخاصة بك، فقدم إشعار إزالة DMCA إلى lolympic.app@gmail.com متضمنًا:",
+            "إذا كنت تعتقد أن المحتوى على mimzy ينتهك حقوق النشر الخاصة بك، فقدم إشعار إزالة DMCA إلى lolympic.app@gmail.com متضمنًا:",
           list: [
             "تحديد العمل المحمي بحقوق النشر",
-            "عنوان URL للمحتوى المخالف على LoLympic",
+            "عنوان URL للمحتوى المخالف على mimzy",
             "معلومات الاتصال الخاصة بك",
             "بيان حسن النية بأن الاستخدام غير مصرح به",
             "بيان تحت طائلة عقوبة الحنث باليمين بأن المعلومات دقيقة",
@@ -1807,7 +1807,7 @@ const legalAR: LegalContent = {
 const rulesAR: RulesContent = {
   pageTitle: "قواعد المجتمع",
   subtitle:
-    "LoLympic هي منصة عالمية لمشاركة وترجمة الميمات عبر اللغات والثقافات. تساعد هذه القواعد في الحفاظ على مجتمعنا ممتعًا وآمنًا ومرحبًا للجميع.",
+    "mimzy هي منصة عالمية لمشاركة وترجمة الميمات عبر اللغات والثقافات. تساعد هذه القواعد في الحفاظ على مجتمعنا ممتعًا وآمنًا ومرحبًا للجميع.",
   rules: [
     {
       title: "كن محترمًا",

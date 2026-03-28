@@ -50,7 +50,7 @@ function buildTextTranslationPrompt(
   const targetLangInstruction =
     LANGUAGE_INSTRUCTIONS[targetLanguage] || `Target language: ${targetLanguage}`;
 
-  return `You are translating a community post on LoLympic, a global meme translation platform.
+  return `You are translating a community post on mimzy, a global meme translation platform.
 Translate naturally — match the tone and style of the original.
 If it's casual, keep it casual. If it's a question, keep the question format.
 

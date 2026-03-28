@@ -52,7 +52,7 @@ const ja: Record<TranslationKeys, string> = {
   "footer.cookies": "Cookieポリシー",
   "footer.rules": "コミュニティルール",
   "footer.copyright": "著作権 / DMCA",
-  "footer.allRights": "© {year} LoLympic. All rights reserved.",
+  "footer.allRights": "© {year} mimzy. All rights reserved.",
 
   // ── Feed ───────────────────────────────────────────────────────────────────
   "feed.empty": "まだ投稿がありません。最初のミームをシェアしよう！",
@@ -197,7 +197,7 @@ const ja: Record<TranslationKeys, string> = {
   "settings.autoTranslation": "翻訳を自動表示",
   "settings.autoTranslationDesc": "ミーム画像に翻訳テキストを自動的に表示する",
   "settings.savePrefs": "設定を保存",
-  "settings.aboutTitle": "LoLympicについて",
+  "settings.aboutTitle": "mimzyについて",
   "settings.version": "バージョン",
   "settings.aboutDesc": "AIを活用したグローバルミーム翻訳＆オリンピックスタイルの国別対抗プラットフォーム。",
 
@@ -334,7 +334,7 @@ const ja: Record<TranslationKeys, string> = {
   "bookmarks.empty": "ブックマークはまだありません。ミームを保存してここで見よう！",
 
   // ── Admin ──────────────────────────────────────────────────────────────────
-  "admin.title": "LoLympic 管理画面",
+  "admin.title": "mimzy 管理画面",
   "admin.dashboard": "ダッシュボード",
   "admin.users": "ユーザー",
   "admin.posts": "投稿",
@@ -357,7 +357,7 @@ const ja: Record<TranslationKeys, string> = {
   "cultureNote.aiGenerated": "AIが生成した文化的背景情報",
 
   // ── Welcome ────────────────────────────────────────────────────────────────
-  "welcome.title": "LoLympicへようこそ！",
+  "welcome.title": "mimzyへようこそ！",
   "welcome.subtitle": "プロフィールを設定して始めよう",
 
   // ── User Profile ───────────────────────────────────────────────────────────
@@ -502,7 +502,7 @@ const ja: Record<TranslationKeys, string> = {
   "onboarding.skip": "スキップ",
   "onboarding.next": "次へ",
   "onboarding.back": "戻る",
-  "onboarding.step1Title": "LoLympicへようこそ！\uD83C\uDF0D",
+  "onboarding.step1Title": "mimzyへようこそ！\uD83C\uDF0D",
   "onboarding.step1Desc": "世界初のグローバルミームコンペティション",
   "onboarding.step1Detail": "ミームは言語を超える。ここでは国をつなぐ。",
   "onboarding.step2Title": "使い方",

@@ -65,7 +65,7 @@ function buildTranslationSystemPrompt(
   const targetLangInstruction =
     LANGUAGE_INSTRUCTIONS[targetLanguage] || `Target language: ${targetLanguage}`;
 
-  return `You are a world-class meme translator for LoLympic, a global meme translation platform.
+  return `You are a world-class meme translator for mimzy, a global meme translation platform.
 
 Your mission: Create TRANSCENDENT translations — not literal word-for-word conversions, but culturally adapted versions that hit just as hard in the target language.
 

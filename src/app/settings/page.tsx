@@ -700,7 +700,7 @@ export default function SettingsPage() {
 
                 <div className="text-center py-4">
                   <p className="text-xs text-foreground-subtle">
-                    Made with memes and AI. &copy; 2026 LoLympic. All rights reserved.
+                    Made with memes and AI. &copy; 2026 mimzy. All rights reserved.
                   </p>
                 </div>
               </div>

@@ -1,5 +1,5 @@
 // ============================================================================
-// LoLympic — User Level & Tier System (LoL-style ranks)
+// mimzy — User Level & Tier System (LoL-style ranks)
 // ============================================================================
 
 export const TIERS = [

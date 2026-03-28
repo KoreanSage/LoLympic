@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Community Rules | LoLympic",
+  title: "Community Rules | mimzy",
   description:
-    "LoLympic community rules and guidelines. Learn about our standards for respectful, fun, and safe meme sharing across cultures.",
+    "mimzy community rules and guidelines. Learn about our standards for respectful, fun, and safe meme sharing across cultures.",
   openGraph: {
-    title: "Community Rules | LoLympic",
+    title: "Community Rules | mimzy",
     description:
-      "LoLympic community rules and guidelines for respectful meme sharing across cultures.",
+      "mimzy community rules and guidelines for respectful meme sharing across cultures.",
   },
 };
 

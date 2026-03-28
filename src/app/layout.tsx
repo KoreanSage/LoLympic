@@ -8,8 +8,8 @@ import CookieConsent from "@/components/legal/CookieConsent";
 
 export const metadata: Metadata = {
   title: {
-    default: "LoLympic",
-    template: "%s | LoLympic",
+    default: "mimzy",
+    template: "%s | mimzy",
   },
   description:
     "AI-powered global meme translation and Olympic-style country competition",
@@ -22,18 +22,18 @@ export const metadata: Metadata = {
     "comedy",
     "culture",
   ],
-  authors: [{ name: "LoLympic" }],
+  authors: [{ name: "mimzy" }],
   openGraph: {
     type: "website",
     locale: "en_US",
-    siteName: "LoLympic",
-    title: "LoLympic",
+    siteName: "mimzy",
+    title: "mimzy",
     description:
       "AI-powered global meme translation and Olympic-style country competition",
   },
   twitter: {
     card: "summary_large_image",
-    title: "LoLympic",
+    title: "mimzy",
     description:
       "AI-powered global meme translation and Olympic-style country competition",
   },

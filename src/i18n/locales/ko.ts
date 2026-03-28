@@ -52,7 +52,7 @@ const ko: Record<TranslationKeys, string> = {
   "footer.cookies": "쿠키 정책",
   "footer.rules": "커뮤니티 규칙",
   "footer.copyright": "저작권 / DMCA",
-  "footer.allRights": "© {year} LoLympic. All rights reserved.",
+  "footer.allRights": "© {year} mimzy. All rights reserved.",
 
   // ── Feed ───────────────────────────────────────────────────────────────────
   "feed.empty": "아직 게시물이 없습니다. 첫 번째 밈을 공유해보세요!",
@@ -197,7 +197,7 @@ const ko: Record<TranslationKeys, string> = {
   "settings.autoTranslation": "번역 자동 표시",
   "settings.autoTranslationDesc": "밈 이미지에 번역된 텍스트를 자동으로 표시",
   "settings.savePrefs": "환경설정 저장",
-  "settings.aboutTitle": "LoLympic 소개",
+  "settings.aboutTitle": "mimzy 소개",
   "settings.version": "버전",
   "settings.aboutDesc": "AI 기반 글로벌 밈 번역 및 올림픽 스타일 국가 대항전 플랫폼.",
 
@@ -334,7 +334,7 @@ const ko: Record<TranslationKeys, string> = {
   "bookmarks.empty": "아직 북마크가 없습니다. 밈을 저장해서 여기에서 확인하세요!",
 
   // ── Admin ──────────────────────────────────────────────────────────────────
-  "admin.title": "LoLympic 관리자",
+  "admin.title": "mimzy 관리자",
   "admin.dashboard": "대시보드",
   "admin.users": "사용자",
   "admin.posts": "게시물",
@@ -357,7 +357,7 @@ const ko: Record<TranslationKeys, string> = {
   "cultureNote.aiGenerated": "AI가 생성한 문화적 맥락",
 
   // ── Welcome ────────────────────────────────────────────────────────────────
-  "welcome.title": "LoLympic에 오신 것을 환영합니다!",
+  "welcome.title": "mimzy에 오신 것을 환영합니다!",
   "welcome.subtitle": "시작하려면 프로필을 설정하세요",
 
   // ── User Profile ───────────────────────────────────────────────────────────
@@ -508,7 +508,7 @@ const ko: Record<TranslationKeys, string> = {
   "onboarding.skip": "건너뛰기",
   "onboarding.next": "다음",
   "onboarding.back": "이전",
-  "onboarding.step1Title": "LoLympic에 오신 걸 환영합니다! \uD83C\uDF0D",
+  "onboarding.step1Title": "mimzy에 오신 걸 환영합니다! \uD83C\uDF0D",
   "onboarding.step1Desc": "세계 최초 글로벌 밈 경쟁 플랫폼",
   "onboarding.step1Detail": "밈은 언어를 초월합니다. 여기서는 국가를 하나로 만듭니다.",
   "onboarding.step2Title": "이용 방법",

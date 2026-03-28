@@ -52,7 +52,7 @@ const ar: Record<TranslationKeys, string> = {
   "footer.cookies": "سياسة الكوكيز",
   "footer.rules": "قواعد المجتمع",
   "footer.copyright": "حقوق النشر / DMCA",
-  "footer.allRights": "© {year} LoLympic. جميع الحقوق محفوظة.",
+  "footer.allRights": "© {year} mimzy. جميع الحقوق محفوظة.",
 
   // ── Feed ───────────────────────────────────────────────────────────────────
   "feed.empty": "مفيش بوستات لسه. كن أول واحد يشارك ميم!",
@@ -197,7 +197,7 @@ const ar: Record<TranslationKeys, string> = {
   "settings.autoTranslation": "إظهار الترجمة تلقائياً",
   "settings.autoTranslationDesc": "عرض النص المترجم على صور الميمز تلقائياً",
   "settings.savePrefs": "احفظ التفضيلات",
-  "settings.aboutTitle": "عن LoLympic",
+  "settings.aboutTitle": "عن mimzy",
   "settings.version": "الإصدار",
   "settings.aboutDesc": "منصة ترجمة ميمز عالمية بالذكاء الاصطناعي ومنافسة أولمبية بين الدول.",
 
@@ -334,7 +334,7 @@ const ar: Record<TranslationKeys, string> = {
   "bookmarks.empty": "مفيش محفوظات لسه. احفظ ميمز عشان تشوفهم هنا!",
 
   // ── Admin ──────────────────────────────────────────────────────────────────
-  "admin.title": "إدارة LoLympic",
+  "admin.title": "إدارة mimzy",
   "admin.dashboard": "لوحة التحكم",
   "admin.users": "المستخدمين",
   "admin.posts": "البوستات",
@@ -357,7 +357,7 @@ const ar: Record<TranslationKeys, string> = {
   "cultureNote.aiGenerated": "سياق ثقافي من الذكاء الاصطناعي",
 
   // ── Welcome ────────────────────────────────────────────────────────────────
-  "welcome.title": "أهلاً بيك في LoLympic!",
+  "welcome.title": "أهلاً بيك في mimzy!",
   "welcome.subtitle": "جهّز بروفايلك عشان تبدأ",
 
   // ── User Profile ───────────────────────────────────────────────────────────
@@ -506,7 +506,7 @@ const ar: Record<TranslationKeys, string> = {
   "onboarding.skip": "تخطي",
   "onboarding.next": "التالي",
   "onboarding.back": "السابق",
-  "onboarding.step1Title": "!مرحبًا بك في LoLympic \uD83C\uDF0D",
+  "onboarding.step1Title": "!مرحبًا بك في mimzy \uD83C\uDF0D",
   "onboarding.step1Desc": "أول منصة عالمية لمسابقة الميمات",
   "onboarding.step1Detail": "الميمات تتجاوز اللغة. هنا، توحد البلدان.",
   "onboarding.step2Title": "كيف يعمل",

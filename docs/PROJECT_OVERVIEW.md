@@ -1,8 +1,8 @@
-# LoLympic - Technical Documentation
+# mimzy - Technical Documentation
 
 ## 1. Project Overview
 
-**LoLympic**은 AI 기반 글로벌 밈 번역 및 경쟁 플랫폼입니다.
+**mimzy**은 AI 기반 글로벌 밈 번역 및 경쟁 플랫폼입니다.
 각 나라의 밈을 7개 언어로 AI 번역하고, 국가별 리더보드에서 경쟁합니다.
 
 ### Tech Stack
@@ -339,7 +339,7 @@ BLOB_READ_WRITE_TOKEN=<vercel-blob-token>
 CRON_SECRET=<bearer-token-for-cron>
 
 # App
-NEXT_PUBLIC_APP_NAME=LoLympic
+NEXT_PUBLIC_APP_NAME=mimzy
 NEXT_PUBLIC_APP_URL=https://lolympic.app
 UPLOAD_DIR=./uploads  # dev only
 ```

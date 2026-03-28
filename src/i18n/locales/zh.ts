@@ -52,7 +52,7 @@ const zh: Record<TranslationKeys, string> = {
   "footer.cookies": "Cookie 政策",
   "footer.rules": "社区规则",
   "footer.copyright": "版权 / DMCA",
-  "footer.allRights": "© {year} LoLympic. 保留所有权利。",
+  "footer.allRights": "© {year} mimzy. 保留所有权利。",
 
   // ── Feed ───────────────────────────────────────────────────────────────────
   "feed.empty": "还没有帖子。快来分享第一个表情包吧！",
@@ -197,7 +197,7 @@ const zh: Record<TranslationKeys, string> = {
   "settings.autoTranslation": "自动显示翻译",
   "settings.autoTranslationDesc": "自动在表情包图片上显示翻译文字",
   "settings.savePrefs": "保存偏好设置",
-  "settings.aboutTitle": "关于 LoLympic",
+  "settings.aboutTitle": "关于 mimzy",
   "settings.version": "版本",
   "settings.aboutDesc": "AI 驱动的全球表情包翻译和奥运风格国家竞赛平台。",
 
@@ -334,7 +334,7 @@ const zh: Record<TranslationKeys, string> = {
   "bookmarks.empty": "暂无收藏。收藏表情包后可在此查看！",
 
   // ── Admin ──────────────────────────────────────────────────────────────────
-  "admin.title": "LoLympic 管理后台",
+  "admin.title": "mimzy 管理后台",
   "admin.dashboard": "仪表盘",
   "admin.users": "用户",
   "admin.posts": "帖子",
@@ -357,7 +357,7 @@ const zh: Record<TranslationKeys, string> = {
   "cultureNote.aiGenerated": "AI 生成的文化背景",
 
   // ── Welcome ────────────────────────────────────────────────────────────────
-  "welcome.title": "欢迎来到 LoLympic！",
+  "welcome.title": "欢迎来到 mimzy！",
   "welcome.subtitle": "设置你的个人资料以开始使用",
 
   // ── User Profile ───────────────────────────────────────────────────────────
@@ -502,7 +502,7 @@ const zh: Record<TranslationKeys, string> = {
   "onboarding.skip": "跳过",
   "onboarding.next": "下一步",
   "onboarding.back": "上一步",
-  "onboarding.step1Title": "欢迎来到 LoLympic！\uD83C\uDF0D",
+  "onboarding.step1Title": "欢迎来到 mimzy！\uD83C\uDF0D",
   "onboarding.step1Desc": "全球首个梗图竞赛平台",
   "onboarding.step1Detail": "梗图超越语言。在这里，它们连接国家。",
   "onboarding.step2Title": "使用方法",

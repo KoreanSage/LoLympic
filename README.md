@@ -1,8 +1,8 @@
-# LoLympic 🏆
+# mimzy 🏆
 
 AI-powered global meme translation platform where countries compete through humor.
 
-## What is LoLympic?
+## What is mimzy?
 
 Upload memes in your language, and AI automatically translates them into 7 languages — preserving cultural context and humor. Countries compete on leaderboards to crown the funniest nation.
 

@@ -1,6 +1,6 @@
 {
-  "name": "LoLympic - Global Meme Translation",
-  "short_name": "LoLympic",
+  "name": "mimzy - Global Meme Translation",
+  "short_name": "mimzy",
   "description": "Translate memes across 7 languages. Vote, battle, and compete!",
   "start_url": "/",
   "display": "standalone",

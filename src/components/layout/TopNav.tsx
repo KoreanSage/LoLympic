@@ -323,8 +323,8 @@ export default function TopNav() {
         <div className="flex items-center gap-8">
           <Link href="/" className="flex items-center gap-2">
             <span className="text-xl font-bold tracking-tight">
-              <span className="text-[#c9a84c]">LoL</span>
-              <span className="text-foreground">ympic</span>
+              <span className="text-[#c9a84c]">mi</span>
+              <span className="text-foreground">mzy</span>
             </span>
           </Link>
 

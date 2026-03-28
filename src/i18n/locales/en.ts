@@ -50,7 +50,7 @@ const en = {
   "footer.cookies": "Cookie Policy",
   "footer.rules": "Community Rules",
   "footer.copyright": "Copyright / DMCA",
-  "footer.allRights": "© {year} LoLympic. All rights reserved.",
+  "footer.allRights": "© {year} mimzy. All rights reserved.",
 
   // ── Feed ───────────────────────────────────────────────────────────────────
   "feed.empty": "No posts yet. Be the first to share a meme!",
@@ -195,7 +195,7 @@ const en = {
   "settings.autoTranslation": "Auto-show translations",
   "settings.autoTranslationDesc": "Automatically show translated text on meme images",
   "settings.savePrefs": "Save Preferences",
-  "settings.aboutTitle": "About LoLympic",
+  "settings.aboutTitle": "About mimzy",
   "settings.version": "Version",
   "settings.aboutDesc": "AI-powered global meme translation and Olympic-style country competition platform.",
 
@@ -332,7 +332,7 @@ const en = {
   "bookmarks.empty": "No bookmarks yet. Save memes to view them here!",
 
   // ── Admin ──────────────────────────────────────────────────────────────────
-  "admin.title": "LoLympic Admin",
+  "admin.title": "mimzy Admin",
   "admin.dashboard": "Dashboard",
   "admin.users": "Users",
   "admin.posts": "Posts",
@@ -355,7 +355,7 @@ const en = {
   "cultureNote.aiGenerated": "AI-generated cultural context",
 
   // ── Welcome ────────────────────────────────────────────────────────────────
-  "welcome.title": "Welcome to LoLympic!",
+  "welcome.title": "Welcome to mimzy!",
   "welcome.subtitle": "Set up your profile to get started",
 
   // ── User Profile ───────────────────────────────────────────────────────────
@@ -510,7 +510,7 @@ const en = {
   "onboarding.skip": "Skip",
   "onboarding.next": "Next",
   "onboarding.back": "Back",
-  "onboarding.step1Title": "Welcome to LoLympic! \uD83C\uDF0D",
+  "onboarding.step1Title": "Welcome to mimzy! \uD83C\uDF0D",
   "onboarding.step1Desc": "The world's first global meme competition platform",
   "onboarding.step1Detail": "Memes transcend language. Here, they unite countries.",
   "onboarding.step2Title": "How It Works",

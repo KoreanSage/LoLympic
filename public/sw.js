@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lolympic-v1';
+const CACHE_NAME = 'mimzy-v1';
 const STATIC_ASSETS = ['/', '/offline'];
 
 self.addEventListener('install', (event) => {

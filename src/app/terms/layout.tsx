@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Legal - Terms, Privacy & Copyright | LoLympic",
+  title: "Legal - Terms, Privacy & Copyright | mimzy",
   description:
-    "LoLympic Terms of Service, Privacy Policy, Copyright & DMCA Policy, and Cookie Policy. Learn how we handle your data and your rights as a user.",
+    "mimzy Terms of Service, Privacy Policy, Copyright & DMCA Policy, and Cookie Policy. Learn how we handle your data and your rights as a user.",
   openGraph: {
-    title: "Legal - Terms, Privacy & Copyright | LoLympic",
+    title: "Legal - Terms, Privacy & Copyright | mimzy",
     description:
-      "LoLympic Terms of Service, Privacy Policy, Copyright & DMCA Policy, and Cookie Policy.",
+      "mimzy Terms of Service, Privacy Policy, Copyright & DMCA Policy, and Cookie Policy.",
   },
 };
 

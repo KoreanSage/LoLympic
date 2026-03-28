@@ -52,7 +52,7 @@ const hi: Record<TranslationKeys, string> = {
   "footer.cookies": "Cookie Policy",
   "footer.rules": "Community Rules",
   "footer.copyright": "Copyright / DMCA",
-  "footer.allRights": "© {year} LoLympic. सर्वाधिकार सुरक्षित।",
+  "footer.allRights": "© {year} mimzy. सर्वाधिकार सुरक्षित।",
 
   // ── Feed ───────────────────────────────────────────────────────────────────
   "feed.empty": "अभी तक कोई post नहीं है। पहला meme share करो!",
@@ -197,7 +197,7 @@ const hi: Record<TranslationKeys, string> = {
   "settings.autoTranslation": "Auto-translate दिखाएं",
   "settings.autoTranslationDesc": "Meme images पर translated text अपने आप दिखाएं",
   "settings.savePrefs": "Preferences Save करें",
-  "settings.aboutTitle": "LoLympic के बारे में",
+  "settings.aboutTitle": "mimzy के बारे में",
   "settings.version": "Version",
   "settings.aboutDesc": "AI-powered global meme translation और Olympic-style country competition platform।",
 
@@ -334,7 +334,7 @@ const hi: Record<TranslationKeys, string> = {
   "bookmarks.empty": "अभी तक कोई bookmark नहीं। Memes save करो और यहाँ देखो!",
 
   // ── Admin ──────────────────────────────────────────────────────────────────
-  "admin.title": "LoLympic Admin",
+  "admin.title": "mimzy Admin",
   "admin.dashboard": "Dashboard",
   "admin.users": "Users",
   "admin.posts": "Posts",
@@ -357,7 +357,7 @@ const hi: Record<TranslationKeys, string> = {
   "cultureNote.aiGenerated": "AI-generated cultural context",
 
   // ── Welcome ────────────────────────────────────────────────────────────────
-  "welcome.title": "LoLympic में आपका स्वागत है!",
+  "welcome.title": "mimzy में आपका स्वागत है!",
   "welcome.subtitle": "शुरू करने के लिए अपनी profile set up करें",
 
   // ── User Profile ───────────────────────────────────────────────────────────
@@ -506,7 +506,7 @@ const hi: Record<TranslationKeys, string> = {
   "onboarding.skip": "छोड़ें",
   "onboarding.next": "अगला",
   "onboarding.back": "पीछे",
-  "onboarding.step1Title": "LoLympic में आपका स्वागत है! \uD83C\uDF0D",
+  "onboarding.step1Title": "mimzy में आपका स्वागत है! \uD83C\uDF0D",
   "onboarding.step1Desc": "दुनिया का पहला वैश्विक मीम प्रतियोगिता मंच",
   "onboarding.step1Detail": "मीम्स भाषा से परे हैं। यहां, वे देशों को जोड़ते हैं।",
   "onboarding.step2Title": "यह कैसे काम करता है",
