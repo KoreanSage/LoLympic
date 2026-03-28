@@ -88,6 +88,7 @@ export default function UploadStudio() {
 
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [showOptions, setShowOptions] = useState(false);
 
   const hasImages = imageFiles.length > 0;
   const hasGif = imageFiles.some((f) => f.type === "image/gif");
@@ -556,8 +557,6 @@ export default function UploadStudio() {
       </div>
     );
   }
-
-  const [showOptions, setShowOptions] = useState(false);
 
   // Main form — single unified flow
   return (
