@@ -100,16 +100,16 @@ export default function RulesPage() {
         {/* Footer links */}
         <div className="text-center text-xs text-foreground-subtle space-y-2">
           <p>
-            {content.footer.questionsText.includes("support@mimzy.app") ? (
+            {content.footer.questionsText.includes("dkdnel95@gmail.com") ? (
               <>
-                {content.footer.questionsText.split("support@mimzy.app")[0]}
-                <span className="text-[#c9a84c]">support@mimzy.app</span>
-                {content.footer.questionsText.split("support@mimzy.app")[1]}
+                {content.footer.questionsText.split("dkdnel95@gmail.com")[0]}
+                <span className="text-[#c9a84c]">dkdnel95@gmail.com</span>
+                {content.footer.questionsText.split("dkdnel95@gmail.com")[1]}
               </>
             ) : (
               <>
                 {content.footer.questionsText}{" "}
-                <span className="text-[#c9a84c]">support@mimzy.app</span>
+                <span className="text-[#c9a84c]">dkdnel95@gmail.com</span>
               </>
             )}
           </p>
