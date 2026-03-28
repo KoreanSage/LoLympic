@@ -307,12 +307,8 @@ async function withRetry<T>(
 // ---------------------------------------------------------------------------
 // Fire-and-forget: runs a promise in background, logs errors silently
 // ---------------------------------------------------------------------------
-function fireAndForget(promise: Promise<unknown>) {
-  promise.catch((err) => console.error("Background task failed:", err));
-}
-
 // ---------------------------------------------------------------------------
-// Generate clean images for all post images (fire-and-forget after translation)
+// Generate clean images for all post images
 // Uses LaMa inpainting (primary) with Gemini fallback
 // ---------------------------------------------------------------------------
 async function generateCleanImagesForPost(
@@ -557,7 +553,7 @@ async function generateTranslatedImageForPayload(
     }
 
     // 2. Use LaMa clean image (text removed) as background
-    const satoriCleanUrl = postImage.cleanUrl;
+    const satoriCleanUrl = cleanUrl;
     if (!satoriCleanUrl) {
       console.warn(`[Satori] No clean image for post ${postId}, skipping translated image generation`);
       return;
