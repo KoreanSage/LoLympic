@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useTranslation } from "@/i18n";
 
-const CACHE_KEY = "lolympic_country_rankings_cache";
+const CACHE_KEY = "mimzy_country_rankings_cache";
 
 interface CachedRanking {
   countryId: string;

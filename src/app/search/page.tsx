@@ -58,7 +58,7 @@ export default function SearchPageWrapper() {
   );
 }
 
-const RECENT_SEARCHES_KEY = "lolympic_recent_searches";
+const RECENT_SEARCHES_KEY = "mimzy_recent_searches";
 const MAX_RECENT_SEARCHES = 5;
 
 function getRecentSearches(): string[] {

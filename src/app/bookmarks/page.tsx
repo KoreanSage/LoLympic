@@ -33,7 +33,7 @@ interface BookmarkedPost {
 function getBookmarkIds(): string[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = localStorage.getItem("lolympic_bookmarks");
+    const raw = localStorage.getItem("mimzy_bookmarks");
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];

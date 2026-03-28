@@ -93,15 +93,15 @@ export default function TermsPage() {
           <div className="bg-background-surface border border-border rounded-xl p-5 space-y-3">
             <div className="flex items-start gap-3 text-sm">
               <span className="text-foreground-muted w-32 flex-shrink-0 font-medium">{content.contact.legalInquiries}</span>
-              <span className="text-[#c9a84c]">lolympic.app@gmail.com</span>
+              <span className="text-[#c9a84c]">support@mimzy.app</span>
             </div>
             <div className="flex items-start gap-3 text-sm">
               <span className="text-foreground-muted w-32 flex-shrink-0 font-medium">{content.contact.dmcaNotices}</span>
-              <span className="text-[#c9a84c]">lolympic.app@gmail.com</span>
+              <span className="text-[#c9a84c]">support@mimzy.app</span>
             </div>
             <div className="flex items-start gap-3 text-sm">
               <span className="text-foreground-muted w-32 flex-shrink-0 font-medium">{content.contact.generalSupport}</span>
-              <span className="text-[#c9a84c]">lolympic.app@gmail.com</span>
+              <span className="text-[#c9a84c]">support@mimzy.app</span>
             </div>
           </div>
         </section>

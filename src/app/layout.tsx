@@ -12,15 +12,15 @@ export const metadata: Metadata = {
     template: "%s | mimzy",
   },
   description:
-    "AI-powered global meme translation and Olympic-style country competition",
+    "Your Memes. 7 Languages. One Global Stage.",
   keywords: [
     "meme",
     "translation",
     "AI",
-    "competition",
     "global",
     "comedy",
     "culture",
+    "mimzy",
   ],
   authors: [{ name: "mimzy" }],
   openGraph: {
@@ -29,13 +29,13 @@ export const metadata: Metadata = {
     siteName: "mimzy",
     title: "mimzy",
     description:
-      "AI-powered global meme translation and Olympic-style country competition",
+      "Your Memes. 7 Languages. One Global Stage.",
   },
   twitter: {
     card: "summary_large_image",
     title: "mimzy",
     description:
-      "AI-powered global meme translation and Olympic-style country competition",
+      "Your Memes. 7 Languages. One Global Stage.",
   },
   icons: {
     icon: "/icon.svg",

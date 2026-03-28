@@ -1,7 +1,7 @@
 import { MetadataRoute } from "next";
 import prisma from "@/lib/prisma";
 
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://lolympic.app";
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://mimzy.app";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Static pages

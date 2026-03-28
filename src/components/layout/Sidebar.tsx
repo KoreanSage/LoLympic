@@ -12,7 +12,7 @@ import { useTranslation } from "@/i18n";
 // Types
 // ---------------------------------------------------------------------------
 
-const SIDEBAR_RANK_CACHE_KEY = "lolympic_sidebar_country_ranks";
+const SIDEBAR_RANK_CACHE_KEY = "mimzy_sidebar_country_ranks";
 
 interface CountryRanking {
   rank: number;

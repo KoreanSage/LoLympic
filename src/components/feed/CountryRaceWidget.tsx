@@ -11,7 +11,7 @@ interface CountryEntry {
   score: number;
 }
 
-const DISMISS_KEY = "lolympic_country_race_dismissed";
+const DISMISS_KEY = "mimzy_country_race_dismissed";
 const REFRESH_INTERVAL = 60_000; // 60 seconds
 
 export default function CountryRaceWidget() {

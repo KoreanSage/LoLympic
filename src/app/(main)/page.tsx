@@ -24,7 +24,7 @@ export default function HomePage() {
   useEffect(() => {
     // Check localStorage first (set by settings page on save)
     if (typeof window === "undefined") return;
-    const stored = localStorage.getItem("lolympic_preferredLanguage");
+    const stored = localStorage.getItem("mimzy_preferredLanguage");
     if (stored) {
       setFreshLang(stored);
     }
@@ -35,7 +35,7 @@ export default function HomePage() {
       .then((data) => {
         if (data?.preferredLanguage) {
           setFreshLang(data.preferredLanguage);
-          localStorage.setItem("lolympic_preferredLanguage", data.preferredLanguage);
+          localStorage.setItem("mimzy_preferredLanguage", data.preferredLanguage);
         }
       })
       .catch((e) => { console.error("Failed to fetch user language preference:", e); });
