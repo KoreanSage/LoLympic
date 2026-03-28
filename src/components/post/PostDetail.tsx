@@ -523,25 +523,7 @@ export default function PostDetail({
         )}
 
         {/* Image(s) */}
-        {/* Priority 1: translatedImageUrl takes precedence for ALL meme types */}
-        {showTranslation && translatedImageUrl ? (
-          <div className={`overflow-hidden border border-border flex items-center justify-center bg-black/5 ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-xl border-t-0" : "rounded-xl"}`}>
-            <Image src={translatedImageUrl} alt={title} width={800} height={800} className="w-full h-full object-contain" unoptimized />
-          </div>
-        ) : isTypeB && segments.length > 0 ? (
-          /* Type B without translatedImageUrl: ScreenshotRenderer > original */
-          <div className={`overflow-hidden border border-border flex items-center justify-center bg-black/5 ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-xl border-t-0" : "rounded-xl"}`}>
-            {showTranslation ? (
-              <ScreenshotRenderer
-                segments={segments}
-                showTranslation={showTranslation}
-                originalImageUrl={imageUrl}
-              />
-            ) : (
-              <Image src={imageUrl} alt={title} width={800} height={800} className="w-full h-full object-contain" unoptimized />
-            )}
-          </div>
-        ) : images && images.length > 1 ? (
+        {images && images.length > 1 ? (
           <div className={`overflow-hidden border border-border ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-xl border-t-0" : "rounded-xl"}`}>
             <ImageCarousel>
               {images.map((img, i) => {
@@ -564,6 +546,22 @@ export default function PostDetail({
                 );
               })}
             </ImageCarousel>
+          </div>
+        ) : showTranslation && translatedImageUrl ? (
+          <div className={`overflow-hidden border border-border flex items-center justify-center bg-black/5 ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-xl border-t-0" : "rounded-xl"}`}>
+            <Image src={translatedImageUrl} alt={title} width={800} height={800} className="w-full h-full object-contain" unoptimized />
+          </div>
+        ) : isTypeB && segments.length > 0 ? (
+          <div className={`overflow-hidden border border-border flex items-center justify-center bg-black/5 ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-xl border-t-0" : "rounded-xl"}`}>
+            {showTranslation ? (
+              <ScreenshotRenderer
+                segments={segments}
+                showTranslation={showTranslation}
+                originalImageUrl={imageUrl}
+              />
+            ) : (
+              <Image src={imageUrl} alt={title} width={800} height={800} className="w-full h-full object-contain" unoptimized />
+            )}
           </div>
         ) : isGif ? (
           <div className={`overflow-hidden border border-border flex items-center justify-center bg-black/5 ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-xl border-t-0" : "rounded-xl"}`}>
