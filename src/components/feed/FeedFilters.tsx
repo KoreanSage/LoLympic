@@ -148,48 +148,51 @@ export default function FeedFilters({
     onFilterChange?.(newFilters);
   };
 
+  const hasActiveFilter = country || language || category;
+
   return (
     <div
-      className={`border-b border-border py-3 -mx-4 px-4 space-y-2 ${className}`}
+      className={`border-b border-border py-2.5 -mx-4 px-4 ${className}`}
     >
-      {/* Row 1: Sort + Post Type */}
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-0.5 bg-background-surface rounded-lg p-0.5 border border-border shrink-0">
-          {SORT_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              onClick={() => handleChange("sort", opt.value)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
-                sort === opt.value
-                  ? "bg-background-overlay text-foreground"
-                  : "text-foreground-subtle hover:text-foreground-muted"
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex items-center gap-0.5 bg-background-surface rounded-lg p-0.5 border border-border shrink-0">
-          {POST_TYPE_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              onClick={() => handleChange("postType", opt.value)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all whitespace-nowrap ${
-                postType === opt.value
-                  ? "bg-background-overlay text-foreground"
-                  : "text-foreground-subtle hover:text-foreground-muted"
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Row 2: Dropdown filters + My Country */}
       <div className="relative">
         <div ref={scrollRef} className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
+          {/* Sort tabs */}
+          <div className="flex items-center gap-0.5 bg-background-surface rounded-lg p-0.5 border border-border shrink-0">
+            {SORT_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => handleChange("sort", opt.value)}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                  sort === opt.value
+                    ? "bg-background-overlay text-foreground"
+                    : "text-foreground-subtle hover:text-foreground-muted"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+
+          <span className="text-border shrink-0">|</span>
+
+          {/* Post type pills */}
+          {POST_TYPE_OPTIONS.filter((o) => o.value !== "").map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => handleChange("postType", postType === opt.value ? "" : opt.value)}
+              className={`px-2.5 py-1 text-xs font-medium rounded-full transition-all whitespace-nowrap shrink-0 ${
+                postType === opt.value
+                  ? "bg-[#c9a84c]/15 text-[#c9a84c] border border-[#c9a84c]/30"
+                  : "text-foreground-subtle hover:text-foreground-muted border border-transparent"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+
+          <span className="text-border shrink-0">|</span>
+
+          {/* Dropdown filters */}
           <FilterSelect
             value={country}
             options={COUNTRY_OPTIONS}
@@ -206,16 +209,31 @@ export default function FeedFilters({
             onChange={(v) => handleChange("category", v)}
           />
 
+          {/* My Country quick filter */}
           {userCountryId && (
             <button
               onClick={() => handleChange("country", country === userCountryId ? "" : userCountryId)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-all whitespace-nowrap shrink-0 ${
+              className={`px-2.5 py-1 text-xs font-medium rounded-full border transition-all whitespace-nowrap shrink-0 ${
                 country === userCountryId
-                  ? "border-[#c9a84c] bg-[#c9a84c]/10 text-[#c9a84c]"
-                  : "border-[#c9a84c]/40 text-[#c9a84c]/80 hover:border-[#c9a84c] hover:text-[#c9a84c]"
+                  ? "border-[#c9a84c] bg-[#c9a84c]/15 text-[#c9a84c]"
+                  : "border-[#c9a84c]/30 text-[#c9a84c]/70 hover:border-[#c9a84c] hover:text-[#c9a84c]"
               }`}
             >
               {userCountryFlag || "\uD83C\uDFF3\uFE0F"} {t("filter.myCountry")}
+            </button>
+          )}
+
+          {/* Clear filters */}
+          {hasActiveFilter && (
+            <button
+              onClick={() => {
+                handleChange("country", "");
+                handleChange("language", "");
+                handleChange("category", "");
+              }}
+              className="px-2 py-1 text-[10px] text-foreground-subtle hover:text-foreground-muted transition-colors shrink-0"
+            >
+              Clear
             </button>
           )}
         </div>
