@@ -572,11 +572,11 @@ function FeedCardInner({
 
       {/* Meme image(s) — only for posts with images */}
       {!isTextOnly && (
-        <div className="block">
+        <Link href={`/post/${id}`} className="block" onClick={isVideo ? (e: any) => e.preventDefault() : undefined}>
           <div className="px-4 pb-2">
             <div className={`overflow-hidden border border-border flex items-center justify-center bg-black/5 ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-lg border-t-0" : "rounded-lg"}`}>
               {/* Video playback */}
-              {mimeType?.startsWith("video/") ? (
+              {isVideo ? (
                 <video
                   src={imageUrl}
                   className="w-full h-auto max-h-[600px] object-contain"
@@ -588,21 +588,17 @@ function FeedCardInner({
                   preload="metadata"
                 />
               ) : showTranslation && translatedImageUrl ? (
-                <Link href={`/post/${id}`}>
-                  <Image src={translatedImageUrl} alt={title} width={800} height={800} className="w-full h-auto object-contain" sizes="(max-width: 768px) 100vw, 600px" unoptimized />
-                </Link>
+                <Image src={translatedImageUrl} alt={title} width={800} height={800} className="w-full h-auto object-contain" sizes="(max-width: 768px) 100vw, 600px" unoptimized />
               ) : isTypeB && segments.length > 0 ? (
-                <Link href={`/post/${id}`}>
-                  {showTranslation ? (
-                    <ScreenshotRenderer
-                      segments={segments}
-                      showTranslation={showTranslation}
-                      originalImageUrl={imageUrl}
-                    />
-                  ) : (
-                    <Image src={imageUrl} alt={title} width={800} height={800} className="w-full h-auto object-contain" sizes="(max-width: 768px) 100vw, 600px" unoptimized />
-                  )}
-                </Link>
+                showTranslation ? (
+                  <ScreenshotRenderer
+                    segments={segments}
+                    showTranslation={showTranslation}
+                    originalImageUrl={imageUrl}
+                  />
+                ) : (
+                  <Image src={imageUrl} alt={title} width={800} height={800} className="w-full h-auto object-contain" sizes="(max-width: 768px) 100vw, 600px" unoptimized />
+                )
               ) : images && images.length > 1 ? (
                 <ImageCarousel>
                   {images.map((img, i) => {
@@ -638,24 +634,20 @@ function FeedCardInner({
                   })}
                 </ImageCarousel>
               ) : isGif ? (
-                <Link href={`/post/${id}`}>
-                  <Image src={imageUrl} alt={title} width={800} height={800} className="w-full h-auto object-contain" sizes="(max-width: 768px) 100vw, 600px" unoptimized />
-                </Link>
+                <Image src={imageUrl} alt={title} width={800} height={800} className="w-full h-auto object-contain" sizes="(max-width: 768px) 100vw, 600px" unoptimized />
               ) : (
-                <Link href={`/post/${id}`}>
-                  <MemeRenderer
-                    imageUrl={imageUrl}
-                    cleanImageUrl={cleanImageUrl}
-                    translatedImageUrl={translatedImageUrl}
-                    segments={segments}
-                    showTranslation={showTranslation}
-                    maxHeight={undefined}
-                  />
-                </Link>
+                <MemeRenderer
+                  imageUrl={imageUrl}
+                  cleanImageUrl={cleanImageUrl}
+                  translatedImageUrl={translatedImageUrl}
+                  segments={segments}
+                  showTranslation={showTranslation}
+                  maxHeight={undefined}
+                />
               )}
             </div>
           </div>
-        </div>
+        </Link>
       )}
 
       {/* (Translation toggle moved above image) */}
