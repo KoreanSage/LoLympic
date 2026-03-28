@@ -113,6 +113,15 @@ export async function PATCH(request: NextRequest) {
       data.uiLanguage = uiLanguage;
     }
 
+    // Verify user still exists in DB before updating
+    const userExists = await prisma.user.findUnique({
+      where: { id: sessionUser.id },
+      select: { id: true },
+    });
+    if (!userExists) {
+      return NextResponse.json({ error: "User not found. Please log out and log in again." }, { status: 401 });
+    }
+
     const updated = await prisma.user.update({
       where: { id: sessionUser.id },
       data,
