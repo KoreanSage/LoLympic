@@ -365,7 +365,7 @@ export default function LeaderboardPage() {
           )}
 
           {/* Country Competition Dashboard */}
-          {countries.length >= 3 && (
+          {countries.length >= 1 && (
             <div className="space-y-6">
               {/* Section Header */}
               <div className="flex items-center gap-2">
@@ -373,7 +373,8 @@ export default function LeaderboardPage() {
                 <h2 className="text-lg font-bold text-foreground">{t("leaderboard.countryCompetition")}</h2>
               </div>
 
-              {/* Podium */}
+              {/* Podium — only show if 3+ countries */}
+              {countries.length >= 3 && (
               <div className="bg-background-surface border border-border rounded-xl p-6">
                 <div className="flex items-end justify-center gap-3 mb-4">
                   {/* 2nd Place */}
@@ -405,6 +406,7 @@ export default function LeaderboardPage() {
                   </Link>
                 </div>
               </div>
+              )}
 
               {/* Country Score Bars */}
               <div className="bg-background-surface border border-border rounded-xl p-4 space-y-2.5">
@@ -486,99 +488,51 @@ export default function LeaderboardPage() {
             </div>
           )}
 
-          {/* Monthly Hall of Fame — always show 12-month gallery frame */}
-          <div className="bg-background-surface border border-border rounded-xl p-5 sm:p-6">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-lg">{"\u{1F3C6}"}</span>
-              <h2 className="text-lg font-bold text-foreground">{t("monthly.winnersTitle")}</h2>
+          {/* Monthly Champions — link to Season page */}
+          <Link
+            href="/seasons"
+            className="block bg-background-surface border border-border rounded-xl p-5 sm:p-6 hover:border-[#c9a84c]/40 transition-colors group"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">{"\u{1F3C6}"}</span>
+                <h2 className="text-lg font-bold text-foreground">{t("monthly.winnersTitle")}</h2>
+              </div>
+              <span className="text-xs text-[#c9a84c] group-hover:text-[#d4b65c] transition-colors flex items-center gap-1">
+                View Season
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+              </span>
             </div>
-            <p className="text-xs text-foreground-subtle mb-4">{t("monthly.winnersSubtitle")}</p>
-
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
-              {MONTH_NAMES.slice(0, Math.max(currentMonth, 6)).map((name, i) => {
-                const monthNum = i + 1;
-                const winner = monthlyWinners.find(w => w.month === monthNum);
-                const isCurrent = monthNum === currentMonth;
-                const isFuture = monthNum > currentMonth;
-
-                if (winner) {
-                  // Has a winner — show framed card
-                  return (
-                    <Link
-                      key={name}
-                      href={`/post/${winner.post.id}`}
-                      className={`rounded-xl overflow-hidden border-2 transition-all hover:border-[#c9a84c]/60 group ${
-                        isCurrent ? "border-[#c9a84c]/60 shadow-[0_0_12px_rgba(201,168,76,0.15)]" : "border-[#c9a84c]/30"
-                      }`}
-                    >
-                      {/* Thumbnail */}
-                      {winner.post.images?.[0]?.originalUrl ? (
-                        <div className="w-full aspect-square overflow-hidden">
-                          <Image
-                            src={winner.post.images[0].originalUrl}
-                            alt={winner.post.title}
-                            width={160}
-                            height={160}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                            unoptimized
-                          />
-                        </div>
-                      ) : (
-                        <div className="w-full aspect-square bg-[#c9a84c]/10 flex items-center justify-center">
-                          <span className="text-2xl">{"\u{1F3C6}"}</span>
-                        </div>
-                      )}
-                      {/* Info bar */}
-                      <div className="p-1.5 bg-background-elevated/50">
-                        <div className="text-[10px] font-bold text-[#c9a84c] text-center">{name}</div>
-                        <p className="text-[9px] text-foreground-subtle truncate text-center">
-                          {winner.country?.flagEmoji} {winner.author.displayName || winner.author.username}
-                        </p>
-                        <div className="text-[9px] text-[#c9a84c]/70 text-center">
-                          {"\u{1F525}"} {winner.likeCount.toLocaleString()}
-                        </div>
+            {monthlyWinners.length > 0 ? (
+              <div className="flex gap-2 overflow-hidden">
+                {monthlyWinners.slice(0, 6).map((winner) => (
+                  <div key={`${winner.year}-${winner.month}`} className="flex-shrink-0 w-16">
+                    {winner.post.images?.[0]?.originalUrl ? (
+                      <div className="w-16 h-16 rounded-lg overflow-hidden border-2 border-[#c9a84c]/30">
+                        <Image src={winner.post.images[0].originalUrl} alt={winner.post.title} width={64} height={64} className="w-full h-full object-cover" unoptimized />
                       </div>
-                    </Link>
-                  );
-                }
-
-                // No winner — empty frame
-                return (
-                  <div
-                    key={name}
-                    className={`rounded-xl border-2 border-dashed transition-colors ${
-                      isCurrent
-                        ? "border-[#c9a84c]/40 bg-[#c9a84c]/5"
-                        : isFuture
-                        ? "border-border/30 opacity-30"
-                        : "border-border/50 bg-background-elevated/30"
-                    }`}
-                  >
-                    <div className="w-full aspect-square flex flex-col items-center justify-center gap-1">
-                      {isCurrent ? (
-                        <>
-                          <span className="text-lg animate-pulse">{"\u{1F525}"}</span>
-                          <span className="text-[9px] text-[#c9a84c] font-medium">Voting</span>
-                        </>
-                      ) : isFuture ? (
-                        <span className="text-lg opacity-30">{"\u{1F512}"}</span>
-                      ) : (
-                        <span className="text-lg opacity-20">{"\u{1F3BC}"}</span>
-                      )}
-                    </div>
-                    <div className="p-1.5">
-                      <div className={`text-[10px] font-medium text-center ${
-                        isCurrent ? "text-[#c9a84c]" : "text-foreground-subtle"
-                      }`}>
-                        {name}
-                        {isCurrent && <span className="ml-0.5 inline-block w-1 h-1 rounded-full bg-[#c9a84c] animate-pulse" />}
+                    ) : (
+                      <div className="w-16 h-16 rounded-lg bg-[#c9a84c]/10 flex items-center justify-center border-2 border-[#c9a84c]/30">
+                        <span>{"\u{1F3C6}"}</span>
                       </div>
-                    </div>
+                    )}
+                    <div className="text-[9px] text-foreground-subtle text-center mt-1">{MONTH_NAMES[winner.month - 1]}</div>
                   </div>
-                );
-              })}
-            </div>
-          </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex items-center gap-3">
+                <div className="flex -space-x-1">
+                  {["\u{1F525}", "\u{1F3C6}", "\u2B50"].map((emoji, i) => (
+                    <span key={i} className="text-xl">{emoji}</span>
+                  ))}
+                </div>
+                <p className="text-sm text-foreground-subtle">
+                  Monthly winners will appear here. Post memes to compete!
+                </p>
+              </div>
+            )}
+          </Link>
 
           <LeaderboardTable
             countries={countries}
