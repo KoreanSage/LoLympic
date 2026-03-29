@@ -33,6 +33,8 @@ interface FeedImage {
   originalUrl: string;
   cleanUrl?: string | null;
   mimeType?: string | null;
+  width?: number | null;
+  height?: number | null;
 }
 
 interface FeedCardProps {
@@ -606,7 +608,7 @@ function FeedCardInner({
                             preload="metadata"
                           />
                         ) : imgIsGif ? (
-                          <Image src={img.originalUrl} alt={title} width={800} height={800} className="w-full h-auto object-contain" sizes="(max-width: 768px) 100vw, 600px" unoptimized />
+                          <Image src={img.originalUrl} alt={title} width={img.width || 800} height={img.height || 800} className="w-full h-auto object-contain max-h-[700px]" sizes="(max-width: 768px) 100vw, 600px" unoptimized />
                         ) : (
                           <MemeRenderer
                             imageUrl={img.originalUrl}
@@ -614,7 +616,7 @@ function FeedCardInner({
                             translatedImageUrl={i === 0 ? translatedImageUrl : undefined}
                             segments={imgSegments}
                             showTranslation={showTranslation}
-                            maxHeight={undefined}
+                            maxHeight={700}
                           />
                         )}
                       </div>

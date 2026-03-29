@@ -335,11 +335,8 @@ export default function TopNav() {
   // Hide season bar on scroll
   const [hideSeasonBar, setHideSeasonBar] = useState(false);
   useEffect(() => {
-    let lastY = 0;
     const onScroll = () => {
-      const y = window.scrollY;
-      setHideSeasonBar(y > 40);
-      lastY = y;
+      setHideSeasonBar(window.scrollY > 40);
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
