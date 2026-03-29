@@ -31,15 +31,18 @@ function getFontFamily(lang: string): string {
 
 async function fetchFont(family: string, text: string): Promise<ArrayBuffer> {
   const chars = Array.from(new Set(text.split(""))).join("");
-  const cssUrl = `https://fonts.googleapis.com/css2?family=${family}:wght@700;900&text=${encodeURIComponent(chars)}`;
+  // Use wght@400 to avoid OpenType substFormat:3 errors in Satori
+  const cssUrl = `https://fonts.googleapis.com/css2?family=${family}:wght@400&text=${encodeURIComponent(chars)}`;
   const cssRes = await fetch(cssUrl, {
     headers: { "User-Agent": "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10_6_8) AppleWebKit/533.21.1 Safari/533.21.1" },
   });
   if (!cssRes.ok) throw new Error(`Font CSS fetch failed: ${cssRes.status}`);
   const css = await cssRes.text();
-  const match = css.match(/src: url\((.+?)\) format/);
-  if (!match?.[1]) throw new Error("No font URL in CSS");
-  const fontRes = await fetch(match[1]);
+  // Get all font URLs (multiple subsets for CJK)
+  const urls = [...css.matchAll(/src: url\((.+?)\) format/g)].map(m => m[1]);
+  if (urls.length === 0) throw new Error("No font URL in CSS");
+  // Fetch first font file (covers most characters)
+  const fontRes = await fetch(urls[0]);
   if (!fontRes.ok) throw new Error(`Font file fetch failed: ${fontRes.status}`);
   return fontRes.arrayBuffer();
 }
@@ -163,7 +166,7 @@ async function composeImage(
   const svg = await satori(element as any, {
     width: safeW,
     height: safeH,
-    fonts: [{ name: fontFamily.replace(/\+/g, " "), data: fontBuffer, weight: 700, style: "normal" as const }],
+    fonts: [{ name: fontFamily.replace(/\+/g, " "), data: fontBuffer, weight: 400, style: "normal" as const }],
   });
 
   const resvg = new Resvg(svg, { fitTo: { mode: "width" as const, value: safeW } });
