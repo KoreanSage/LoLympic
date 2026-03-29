@@ -302,7 +302,7 @@ export default function PostPageClient() {
         }
         imageUrl={image?.originalUrl || ""}
         cleanImageUrl={image?.cleanUrl || undefined}
-        translatedImageUrl={payload?.translatedImageUrl || undefined}
+        translatedImageUrl={(post.images?.length ?? 0) > 1 ? undefined : (payload?.translatedImageUrl || undefined)}
         mimeType={image?.mimeType || undefined}
         segments={segments}
         memeType={payload?.memeType || undefined}
