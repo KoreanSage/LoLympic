@@ -30,6 +30,8 @@ interface FeedImage {
   originalUrl: string;
   cleanUrl?: string | null;
   mimeType?: string | null;
+  width?: number | null;
+  height?: number | null;
 }
 
 interface FeedPost {
@@ -141,6 +143,8 @@ function mapApiPost(post: any): FeedPost {
       originalUrl: img.originalUrl,
       cleanUrl: img.cleanUrl || null,
       mimeType: img.mimeType || null,
+      width: img.width ?? null,
+      height: img.height ?? null,
     })),
     topComments: (post.comments || []).map((c: any) => ({
       id: c.id,
