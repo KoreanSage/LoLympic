@@ -129,7 +129,7 @@ function mapApiPost(post: any): FeedPost {
       : null,
     imageUrl: image?.originalUrl || "",
     cleanImageUrl: image?.cleanUrl || undefined,
-    translatedImageUrl: payload?.translatedImageUrl || undefined,
+    translatedImageUrl: payload?.translatedImageUrl?.startsWith("http") ? payload.translatedImageUrl : undefined,
     mimeType: image?.mimeType || undefined,
     segments,
     reactionCount: post.reactionCount ?? post._count?.reactions ?? 0,

@@ -13,11 +13,8 @@ const USE_BLOB = !!process.env.BLOB_READ_WRITE_TOKEN;
 function isAuthorized(request: NextRequest): boolean {
   const auth = request.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
-  const geminiKey = process.env.GEMINI_API_KEY;
-  return !!(
-    (cronSecret && auth === `Bearer ${cronSecret}`) ||
-    (geminiKey && auth === `Bearer ${geminiKey}`)
-  );
+  if (!cronSecret) return false;
+  return auth === `Bearer ${cronSecret}`;
 }
 
 // ─── Font ─────────────────────────────────────────────────────────────────────

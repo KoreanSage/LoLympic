@@ -149,18 +149,28 @@ export default function TopNav() {
   }, [showNotifications]);
 
   // Real-time notifications via SSE, with polling fallback
+  const eventSourceRef = useRef<EventSource | null>(null);
+
   useEffect(() => {
     if (status !== "authenticated") return;
 
-    let eventSource: EventSource | null = null;
     let pollTimer: ReturnType<typeof setInterval> | null = null;
     let sseConnected = false;
+    let cancelled = false;
 
-    // Try SSE first
-    try {
-      eventSource = new EventSource("/api/notifications/stream");
+    function connectSSE() {
+      // Clean up any existing connection before creating a new one
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
 
-      eventSource.addEventListener("notification", (e) => {
+      if (cancelled) return;
+
+      const es = new EventSource("/api/notifications/stream");
+      eventSourceRef.current = es;
+
+      es.addEventListener("notification", (e) => {
         try {
           const data = JSON.parse(e.data);
           setUnreadCount(data.unreadCount ?? 0);
@@ -169,28 +179,38 @@ export default function TopNav() {
         }
       });
 
-      eventSource.addEventListener("connected", () => {
+      es.addEventListener("connected", () => {
         sseConnected = true;
       });
 
-      eventSource.addEventListener("close", () => {
-        eventSource?.close();
+      es.addEventListener("close", () => {
+        es.close();
+        if (eventSourceRef.current === es) {
+          eventSourceRef.current = null;
+        }
         // Reconnect after timeout
         setTimeout(() => {
-          if (status === "authenticated") {
-            eventSource = new EventSource("/api/notifications/stream");
+          if (!cancelled) {
+            connectSSE();
           }
         }, 2000);
       });
 
-      eventSource.onerror = () => {
+      es.onerror = () => {
         // SSE failed, fall back to polling
-        eventSource?.close();
-        eventSource = null;
+        es.close();
+        if (eventSourceRef.current === es) {
+          eventSourceRef.current = null;
+        }
         if (!sseConnected && !pollTimer) {
           startPolling();
         }
       };
+    }
+
+    // Try SSE first
+    try {
+      connectSSE();
     } catch {
       // EventSource not supported, fall back to polling
       startPolling();
@@ -224,7 +244,11 @@ export default function TopNav() {
       .catch((e) => { console.error("Failed to fetch DM unread count:", e); });
 
     return () => {
-      eventSource?.close();
+      cancelled = true;
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
       if (pollTimer) clearInterval(pollTimer);
     };
   }, [status]);

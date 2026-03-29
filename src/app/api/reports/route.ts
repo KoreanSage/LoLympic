@@ -97,6 +97,10 @@ export async function POST(request: NextRequest) {
         );
       }
     } else if (targetType === "USER") {
+      // TODO: The Report schema currently lacks a targetUserId field.
+      // User reports are stored without a direct relation to the reported user,
+      // which means duplicate detection and admin queries for user reports are unreliable.
+      // Add a `targetUserId String?` field to the Report model and relate it to User.
       const targetUser = await prisma.user.findUnique({
         where: { id: targetId },
         select: { id: true },

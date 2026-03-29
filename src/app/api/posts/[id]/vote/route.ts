@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -38,6 +39,15 @@ export async function GET(request: NextRequest, context: RouteContext) {
 // Body: { value: 1 | -1 | 0 }  (0 = remove vote)
 export async function POST(request: NextRequest, context: RouteContext) {
   try {
+    const rlKey = getRateLimitKey(request.headers, "vote");
+    const rl = await checkRateLimit(rlKey, RATE_LIMITS.write);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: "Too many requests" },
+        { status: 429, headers: { "Retry-After": String(rl.retryAfter) } }
+      );
+    }
+
     const user = await getSessionUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -57,43 +67,39 @@ export async function POST(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
 
-    const existing = await prisma.postVote.findUnique({
-      where: { postId_userId: { postId, userId: user.id } },
-    });
+    await prisma.$transaction(async (tx) => {
+      const existing = await tx.postVote.findUnique({
+        where: { postId_userId: { postId, userId: user.id } },
+      });
 
-    if (value === 0) {
-      // Remove vote
-      if (existing) {
-        await prisma.$transaction([
-          prisma.postVote.delete({ where: { id: existing.id } }),
-          prisma.post.update({
+      if (value === 0) {
+        // Remove vote
+        if (existing) {
+          await tx.postVote.delete({ where: { id: existing.id } });
+          await tx.post.update({
             where: { id: postId },
             data: { voteScore: { decrement: existing.value } },
-          }),
-        ]);
-      }
-    } else if (existing) {
-      // Change vote
-      if (existing.value !== value) {
-        const diff = value - existing.value; // e.g. from -1 to 1 = +2
-        await prisma.$transaction([
-          prisma.postVote.update({ where: { id: existing.id }, data: { value } }),
-          prisma.post.update({
+          });
+        }
+      } else if (existing) {
+        // Change vote
+        if (existing.value !== value) {
+          const diff = value - existing.value; // e.g. from -1 to 1 = +2
+          await tx.postVote.update({ where: { id: existing.id }, data: { value } });
+          await tx.post.update({
             where: { id: postId },
             data: { voteScore: { increment: diff } },
-          }),
-        ]);
-      }
-    } else {
-      // New vote
-      await prisma.$transaction([
-        prisma.postVote.create({ data: { postId, userId: user.id, value } }),
-        prisma.post.update({
+          });
+        }
+      } else {
+        // New vote
+        await tx.postVote.create({ data: { postId, userId: user.id, value } });
+        await tx.post.update({
           where: { id: postId },
           data: { voteScore: { increment: value } },
-        }),
-      ]);
-    }
+        });
+      }
+    });
 
     const updated = await prisma.post.findUnique({
       where: { id: postId },

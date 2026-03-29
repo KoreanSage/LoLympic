@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { VALID_LANGUAGES } from "@/lib/constants";
 
 // GET /api/users/me — Get current user's profile
 export async function GET() {
@@ -105,11 +106,10 @@ export async function PATCH(request: NextRequest) {
       data.avatarUrl = avatarUrl || null;
     }
 
-    const validLangs = ["ko", "en", "ja", "zh", "es", "hi", "ar"];
-    if (preferredLanguage !== undefined && validLangs.includes(preferredLanguage)) {
+    if (preferredLanguage !== undefined && (VALID_LANGUAGES as readonly string[]).includes(preferredLanguage)) {
       data.preferredLanguage = preferredLanguage;
     }
-    if (uiLanguage !== undefined && validLangs.includes(uiLanguage)) {
+    if (uiLanguage !== undefined && (VALID_LANGUAGES as readonly string[]).includes(uiLanguage)) {
       data.uiLanguage = uiLanguage;
     }
 

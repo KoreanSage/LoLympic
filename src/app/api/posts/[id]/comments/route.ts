@@ -177,17 +177,24 @@ export async function POST(
     }
 
     // If replying, verify parent comment exists and belongs to the same post
-    let parentComment: { id: string; authorId: string } | null = null;
+    let parentComment: { id: string; authorId: string; postId: string } | null = null;
     if (parentId) {
       parentComment = await prisma.comment.findUnique({
         where: { id: parentId },
-        select: { id: true, authorId: true },
+        select: { id: true, authorId: true, postId: true },
       });
 
       if (!parentComment) {
         return NextResponse.json(
           { error: "Parent comment not found" },
           { status: 404 }
+        );
+      }
+
+      if (parentComment.postId !== postId) {
+        return NextResponse.json(
+          { error: "Parent comment does not belong to this post" },
+          { status: 400 }
         );
       }
     }
@@ -467,26 +474,21 @@ export async function DELETE(
       );
     }
 
-    // Soft delete and decrement counts
-    await prisma.$transaction([
-      prisma.comment.update({
+    // Soft delete and decrement counts (guard against negative counts)
+    await prisma.$transaction(async (tx) => {
+      await tx.comment.update({
         where: { id: commentId },
         data: { status: "REMOVED" },
-      }),
-      prisma.post.update({
-        where: { id: postId },
-        data: { commentCount: { decrement: 1 } },
-      }),
-      // If it's a reply, decrement parent's reply count
-      ...(existing.parentId
-        ? [
-            prisma.comment.update({
-              where: { id: existing.parentId },
-              data: { replyCount: { decrement: 1 } },
-            }),
-          ]
-        : []),
-    ]);
+      });
+
+      // Use raw SQL to guard against negative comment counts
+      await tx.$executeRaw`UPDATE "Post" SET "commentCount" = GREATEST("commentCount" - 1, 0) WHERE id = ${postId}`;
+
+      // If it's a reply, decrement parent's reply count (guarded)
+      if (existing.parentId) {
+        await tx.$executeRaw`UPDATE "Comment" SET "replyCount" = GREATEST("replyCount" - 1, 0) WHERE id = ${existing.parentId}`;
+      }
+    });
 
     return NextResponse.json({ message: "Comment deleted" });
   } catch (error) {

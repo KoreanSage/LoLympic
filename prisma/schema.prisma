@@ -626,6 +626,7 @@ model PostVote {
 
   @@unique([postId, userId])
   @@index([postId])
+  @@index([userId])
 }
 
 model PostSave {
@@ -640,6 +641,7 @@ model PostSave {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([postId, userId])
+  @@index([userId])
 }
 
 model Follow {
@@ -655,6 +657,7 @@ model Follow {
 
   @@unique([followerId, followingId])
   @@index([followingId])
+  @@index([followerId])
 }
 
 // ============================================================================

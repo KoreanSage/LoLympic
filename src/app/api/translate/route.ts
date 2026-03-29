@@ -3,6 +3,10 @@ import { z } from "zod";
 import { getSessionUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
+// TODO: Both @google/generative-ai and @google/genai are used here.
+// Do NOT remove either — the translate route relies on both SDKs
+// (@google/generative-ai for text generation, @google/genai for image analysis).
+// Consolidate to a single SDK when API parity is achieved.
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GoogleGenAI } from "@google/genai";
 import { LanguageCode } from "@prisma/client";
@@ -364,7 +368,7 @@ async function generateCleanImagesForPost(
             if (cleanRes.ok) {
               const cleanBuffer = Buffer.from(await cleanRes.arrayBuffer());
               cleanUrl = await saveGeneratedImage(cleanBuffer, "clean_lama", ".png");
-              console.log(`[LaMa] Clean image generated for postImage ${dbImage.id}`);
+              console.debug(`[LaMa] Clean image generated for postImage ${dbImage.id}`);
             }
           }
         }
@@ -376,7 +380,7 @@ async function generateCleanImagesForPost(
       if (!cleanUrl) {
         cleanUrl = await generateCleanImage(imgData.base64, imgData.mimeType);
         if (cleanUrl) {
-          console.log(`[Gemini fallback] Clean image generated for postImage ${dbImage.id}`);
+          console.debug(`[Gemini fallback] Clean image generated for postImage ${dbImage.id}`);
         }
       }
 
@@ -722,7 +726,7 @@ async function generateTranslatedImageForPayload(
       where: { id: payloadId },
       data: { translatedImageUrl: url },
     });
-    console.log(`Translated image (Satori) saved for payload ${payloadId}: ${url}`);
+    console.debug(`Translated image (Satori) saved for payload ${payloadId}: ${url}`);
   } catch (err) {
     console.error(`[Satori] Compose failed for payload ${payloadId}:`, err);
     // No fallback — Satori + LaMa is the only pipeline.
@@ -752,7 +756,7 @@ async function getCachedTranslation(
     );
     const data = await res.json();
     if (data.result) {
-      console.log(`[Cache HIT] Translation for ${postId}:${targetLang}`);
+      console.debug(`[Cache HIT] Translation for ${postId}:${targetLang}`);
       return JSON.parse(data.result) as AITranslationResult;
     }
     return null;
@@ -777,7 +781,7 @@ async function setCachedTranslation(
       `${url}/set/${encodeURIComponent(cacheKey)}/${encodeURIComponent(JSON.stringify(result))}/ex/${TRANSLATION_CACHE_TTL}`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
-    console.log(`[Cache SET] Translation for ${postId}:${targetLang}`);
+    console.debug(`[Cache SET] Translation for ${postId}:${targetLang}`);
   } catch (err) {
     console.warn("[Cache] Redis write failed:", err);
   }
@@ -904,7 +908,7 @@ export async function POST(request: NextRequest) {
 
         // If we have a cached result, use it instead of calling Gemini
         if (cachedResult && cachedResult.segments && cachedResult.segments.length > 0) {
-          console.log(`[Cache] Using cached translation for ${postId}:${targetLang}`);
+          console.debug(`[Cache] Using cached translation for ${postId}:${targetLang}`);
           firstParsed = cachedResult;
           for (const seg of cachedResult.segments) {
             allSegments.push({ ...seg, imageIndex: 0 });
