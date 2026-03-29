@@ -628,7 +628,7 @@ function FeedCardInner({
               ) : isTypeB && segments.length > 0 ? (
                 showTranslation ? (
                   <ScreenshotRenderer
-                    segments={segments}
+                    segments={segments.filter((s: any) => (s.imageIndex ?? 0) === 0)}
                     showTranslation={showTranslation}
                     originalImageUrl={imageUrl}
                   />
@@ -642,7 +642,7 @@ function FeedCardInner({
                   imageUrl={imageUrl}
                   cleanImageUrl={cleanImageUrl}
                   translatedImageUrl={translatedImageUrl}
-                  segments={segments}
+                  segments={segments.filter((s: any) => (s.imageIndex ?? 0) === 0)}
                   showTranslation={showTranslation}
                   maxHeight={undefined}
                 />
