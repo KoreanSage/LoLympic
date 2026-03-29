@@ -486,76 +486,99 @@ export default function LeaderboardPage() {
             </div>
           )}
 
-          {/* Monthly Champions */}
-          {monthlyWinners.length > 0 && (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <span className="text-lg">{"\u{1F4C5}"}</span>
-                <h2 className="text-lg font-bold text-foreground">{t("monthly.winnersTitle")}</h2>
-              </div>
-              <p className="text-xs text-foreground-subtle -mt-1">{t("monthly.winnersSubtitle")}</p>
+          {/* Monthly Hall of Fame — always show 12-month gallery frame */}
+          <div className="bg-background-surface border border-border rounded-xl p-5 sm:p-6">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-lg">{"\u{1F3C6}"}</span>
+              <h2 className="text-lg font-bold text-foreground">{t("monthly.winnersTitle")}</h2>
+            </div>
+            <p className="text-xs text-foreground-subtle mb-4">{t("monthly.winnersSubtitle")}</p>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                {monthlyWinners.map((winner) => {
-                  const isCurrent = winner.month === currentMonth && winner.year === new Date().getFullYear();
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+              {MONTH_NAMES.map((name, i) => {
+                const monthNum = i + 1;
+                const winner = monthlyWinners.find(w => w.month === monthNum);
+                const isCurrent = monthNum === currentMonth;
+                const isFuture = monthNum > currentMonth;
 
+                if (winner) {
+                  // Has a winner — show framed card
                   return (
                     <Link
-                      key={`${winner.year}-${winner.month}`}
+                      key={name}
                       href={`/post/${winner.post.id}`}
-                      className={`rounded-xl p-3 border transition-all hover:border-[#c9a84c]/50 group ${
-                        isCurrent
-                          ? "border-[#c9a84c]/60 bg-[#c9a84c]/5"
-                          : "border-border bg-background-surface"
+                      className={`rounded-xl overflow-hidden border-2 transition-all hover:border-[#c9a84c]/60 group ${
+                        isCurrent ? "border-[#c9a84c]/60 shadow-[0_0_12px_rgba(201,168,76,0.15)]" : "border-[#c9a84c]/30"
                       }`}
                     >
-                      {/* Month label */}
-                      <div className={`text-xs font-medium mb-2 flex items-center gap-1 ${
-                        isCurrent ? "text-[#c9a84c]" : "text-foreground-subtle"
-                      }`}>
-                        {MONTH_NAMES[winner.month - 1]} {winner.year}
-                        {isCurrent && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#c9a84c] animate-pulse" />
-                        )}
-                      </div>
-
-                      {/* Meme thumbnail */}
-                      {winner.post.images?.[0]?.originalUrl && (
-                        <div className="w-full aspect-square rounded-lg overflow-hidden mb-2 border border-border/50 group-hover:border-[#c9a84c]/30 transition-colors">
+                      {/* Thumbnail */}
+                      {winner.post.images?.[0]?.originalUrl ? (
+                        <div className="w-full aspect-square overflow-hidden">
                           <Image
                             src={winner.post.images[0].originalUrl}
                             alt={winner.post.title}
                             width={160}
                             height={160}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             unoptimized
                           />
                         </div>
-                      )}
-
-                      {/* Info */}
-                      <div className="space-y-1">
-                        <p className="text-xs font-medium text-foreground truncate group-hover:text-[#c9a84c] transition-colors">
-                          {winner.post.title}
-                        </p>
-                        <div className="flex items-center gap-1">
-                          {winner.country && (
-                            <span className="text-xs">{winner.country.flagEmoji}</span>
-                          )}
-                          <span className="text-[10px] text-foreground-subtle truncate">
-                            {winner.author.displayName || winner.author.username}
-                          </span>
+                      ) : (
+                        <div className="w-full aspect-square bg-[#c9a84c]/10 flex items-center justify-center">
+                          <span className="text-2xl">{"\u{1F3C6}"}</span>
                         </div>
-                        <div className="text-[10px] text-[#c9a84c] font-medium">
-                          {"\u{1F525}"} {winner.likeCount.toLocaleString()} {t("monthly.reactions")}
+                      )}
+                      {/* Info bar */}
+                      <div className="p-1.5 bg-background-elevated/50">
+                        <div className="text-[10px] font-bold text-[#c9a84c] text-center">{name}</div>
+                        <p className="text-[9px] text-foreground-subtle truncate text-center">
+                          {winner.country?.flagEmoji} {winner.author.displayName || winner.author.username}
+                        </p>
+                        <div className="text-[9px] text-[#c9a84c]/70 text-center">
+                          {"\u{1F525}"} {winner.likeCount.toLocaleString()}
                         </div>
                       </div>
                     </Link>
                   );
-                })}
-              </div>
+                }
+
+                // No winner — empty frame
+                return (
+                  <div
+                    key={name}
+                    className={`rounded-xl border-2 border-dashed transition-colors ${
+                      isCurrent
+                        ? "border-[#c9a84c]/40 bg-[#c9a84c]/5"
+                        : isFuture
+                        ? "border-border/30 opacity-30"
+                        : "border-border/50 bg-background-elevated/30"
+                    }`}
+                  >
+                    <div className="w-full aspect-square flex flex-col items-center justify-center gap-1">
+                      {isCurrent ? (
+                        <>
+                          <span className="text-lg animate-pulse">{"\u{1F525}"}</span>
+                          <span className="text-[9px] text-[#c9a84c] font-medium">Voting</span>
+                        </>
+                      ) : isFuture ? (
+                        <span className="text-lg opacity-30">{"\u{1F512}"}</span>
+                      ) : (
+                        <span className="text-lg opacity-20">{"\u{1F3BC}"}</span>
+                      )}
+                    </div>
+                    <div className="p-1.5">
+                      <div className={`text-[10px] font-medium text-center ${
+                        isCurrent ? "text-[#c9a84c]" : "text-foreground-subtle"
+                      }`}>
+                        {name}
+                        {isCurrent && <span className="ml-0.5 inline-block w-1 h-1 rounded-full bg-[#c9a84c] animate-pulse" />}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          )}
+          </div>
 
           <LeaderboardTable
             countries={countries}
