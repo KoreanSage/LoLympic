@@ -140,6 +140,7 @@ export default function PostDetail({
     (s) => s.boxX != null && s.boxY != null && s.boxWidth != null && s.boxHeight != null
   );
   const isGif = mimeType === "image/gif";
+  const isVideo = !!mimeType?.startsWith("video/");
   const isTextOnly = !imageUrl && (!images || images.length === 0);
   const hasTranslation = !isGif && (hasOverlaySegments || !!translatedImageUrl || (isTextOnly && (!!originalTitle || !!originalBody)));
 
@@ -522,16 +523,32 @@ export default function PostDetail({
           </div>
         )}
 
-        {/* Image(s) */}
-        {images && images.length > 1 ? (
+        {/* Video */}
+        {isVideo && imageUrl ? (
+          <div className="overflow-hidden border border-border rounded-xl">
+            <video
+              src={imageUrl}
+              className="w-full h-auto max-h-[600px] object-contain"
+              controls
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="metadata"
+            />
+          </div>
+        ) : images && images.length > 1 ? (
           <div className={`overflow-hidden border border-border ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-xl border-t-0" : "rounded-xl"}`}>
             <ImageCarousel>
               {images.map((img, i) => {
                 const imgIsGif = img.mimeType === "image/gif";
+                const imgIsVideo = img.mimeType?.startsWith("video/");
                 const imgSegments = segments.filter((s: any) => (s.imageIndex ?? 0) === i);
                 return (
                   <div key={i} className="flex items-center justify-center bg-black/5 dark:bg-black/20">
-                    {imgIsGif ? (
+                    {imgIsVideo ? (
+                      <video src={img.originalUrl} className="w-full h-auto max-h-[600px] object-contain" controls muted loop playsInline preload="metadata" />
+                    ) : imgIsGif ? (
                       <Image src={img.originalUrl} alt={title} width={800} height={800} className="w-full h-auto object-contain" unoptimized />
                     ) : (
                       <MemeRenderer
