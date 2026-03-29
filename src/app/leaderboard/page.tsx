@@ -495,7 +495,7 @@ export default function LeaderboardPage() {
             <p className="text-xs text-foreground-subtle mb-4">{t("monthly.winnersSubtitle")}</p>
 
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
-              {MONTH_NAMES.map((name, i) => {
+              {MONTH_NAMES.slice(0, Math.max(currentMonth, 6)).map((name, i) => {
                 const monthNum = i + 1;
                 const winner = monthlyWinners.find(w => w.month === monthNum);
                 const isCurrent = monthNum === currentMonth;
