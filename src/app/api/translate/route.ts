@@ -114,8 +114,7 @@ First determine the meme type, then translate ALL relevant text for that type.
 5. Match the original styling (size, weight, color, position)
 
 ## IMPORTANT: Language for cultureNote
-Write ALL cultureNote fields (summary, explanation, translationNote) in the TARGET language (${targetLanguage}).
-Do NOT write them in English unless the target language IS English.
+Write cultureNote in the TARGET language (${targetLanguage}). Keep it SHORT.
 
 ## Response Format (JSON only, no markdown fences)
 {
@@ -139,9 +138,8 @@ Do NOT write them in English unless the target language IS English.
     }
   ],
   "cultureNote": {
-    "summary": "One-line cultural context (in target language)",
-    "explanation": "Detailed explanation of cultural references, humor mechanics, and why certain choices were made (in target language)",
-    "translationNote": "Specific notes about translation decisions — what was adapted and why (in target language)"
+    "summary": "1-2 sentence: what makes this meme funny and any cultural references (in target language)",
+    "explanation": "1-2 sentence: key translation choices or adaptations made (in target language)"
   },
   "confidence": 0.85
 }`;
