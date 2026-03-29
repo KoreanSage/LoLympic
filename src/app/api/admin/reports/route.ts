@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
       where.status = status;
     }
 
-    const [reports, total] = await Promise.all([
+    const [reports, total, flaggedPosts] = await Promise.all([
       prisma.report.findMany({
         where,
         orderBy: { createdAt: "desc" },
@@ -41,10 +41,30 @@ export async function GET(req: NextRequest) {
         },
       }),
       prisma.report.count({ where }),
+      // Include posts flagged by content moderation
+      prisma.post.findMany({
+        where: {
+          moderationFlag: { in: ["REVIEW", "BLOCKED"] },
+        },
+        orderBy: { updatedAt: "desc" },
+        take: 50,
+        select: {
+          id: true,
+          title: true,
+          status: true,
+          moderationFlag: true,
+          createdAt: true,
+          updatedAt: true,
+          author: {
+            select: { id: true, username: true, displayName: true },
+          },
+        },
+      }),
     ]);
 
     return NextResponse.json({
       reports,
+      flaggedPosts,
       pagination: {
         page,
         limit,

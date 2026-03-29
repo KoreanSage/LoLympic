@@ -284,6 +284,38 @@ function stripMarkdownFences(text: string): string {
 }
 
 // ---------------------------------------------------------------------------
+// Content moderation: check Gemini safety ratings (fire-and-forget)
+// ---------------------------------------------------------------------------
+async function checkContentSafety(postId: string, response: any) {
+  try {
+    const safetyRatings = response?.candidates?.[0]?.safetyRatings;
+    if (!safetyRatings) return;
+
+    const hasHigh = safetyRatings.some((r: any) => r.probability === "HIGH");
+    const hasMedium = safetyRatings.some((r: any) => r.probability === "MEDIUM");
+
+    if (hasHigh) {
+      await prisma.post.update({
+        where: { id: postId },
+        data: { moderationFlag: "BLOCKED", status: "UNDER_REVIEW" },
+      });
+    } else if (hasMedium) {
+      await prisma.post.update({
+        where: { id: postId },
+        data: { moderationFlag: "REVIEW" },
+      });
+    } else {
+      await prisma.post.update({
+        where: { id: postId },
+        data: { moderationFlag: "SAFE" },
+      });
+    }
+  } catch (e) {
+    console.error("Content safety check failed:", e);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Retry helper — retries a function up to `retries` times with delay
 // ---------------------------------------------------------------------------
 async function withRetry<T>(
@@ -936,6 +968,12 @@ export async function POST(request: NextRequest) {
                   },
                 },
               ]);
+
+              // Fire-and-forget content safety check on first image
+              if (imgIdx === 0) {
+                checkContentSafety(postId, result.response).catch(() => {});
+              }
+
               const text = result.response.text();
               if (!text) continue;
 

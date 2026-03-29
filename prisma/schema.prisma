@@ -39,6 +39,7 @@ enum PostStatus {
   PROCESSING    // AI translation in progress
   PUBLISHED
   HIDDEN
+  UNDER_REVIEW  // Flagged by content moderation
   REMOVED
 }
 
@@ -322,6 +323,9 @@ model Post {
   // Battle stats
   battleWins   Int @default(0)
   battleLosses Int @default(0)
+
+  // Content moderation flag (set by AI safety check)
+  moderationFlag String? // "SAFE" | "REVIEW" | "BLOCKED"
 
   // Vote score (upvotes - downvotes)
   voteScore    Int @default(0)
