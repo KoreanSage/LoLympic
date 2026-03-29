@@ -596,7 +596,7 @@ function FeedCardInner({
                     const imgIsVideo = img.mimeType?.startsWith("video/");
                     const imgSegments = segments.filter((s: any) => (s.imageIndex ?? 0) === i);
                     return (
-                      <div key={i} className="flex items-center justify-center bg-black/5 dark:bg-black/20">
+                      <div key={i} className="w-full flex items-center justify-center bg-black/5 dark:bg-black/20">
                         {imgIsVideo ? (
                           <video
                             src={img.originalUrl}
