@@ -24,8 +24,8 @@ const createPostSchema = z.object({
       z.object({
         url: z.string().min(1, "Image url is required"),
         cleanUrl: z.string().url().nullable().optional(),
-        width: z.number().int().positive().optional(),
-        height: z.number().int().positive().optional(),
+        width: z.number().int().positive().nullable().optional(),
+        height: z.number().int().positive().nullable().optional(),
         mimeType: z.string().max(100).optional(),
         fileSizeBytes: z.number().int().nonnegative().optional(),
         altText: z.string().max(300).optional(),
