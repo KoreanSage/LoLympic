@@ -265,101 +265,142 @@ export default function SeasonsPage() {
         </div>
       )}
 
-      {/* Monthly Winners Grid */}
+      {/* Monthly Winners Grid — always shows all season months (Apr-Dec) */}
       <h2 className="text-lg font-semibold text-foreground mb-4">
         {t("season.monthlyWinners")}
       </h2>
-      {winners.length === 0 ? (
-        <div className="text-center py-16">
-          <p className="text-4xl mb-4">🏆</p>
-          <p className="text-foreground-muted">{t("season.noWinners")}</p>
-          <p className="text-sm text-foreground-subtle mt-1">
-            {t("season.winnersDescription")}
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {winners.map((winner) => (
-            <Link
-              key={winner.id}
-              href={`/post/${winner.post.id}`}
-              className="group bg-background-surface border border-border rounded-xl overflow-hidden hover:border-[#c9a84c]/50 transition-colors"
-            >
-              {/* Image */}
-              <div className="aspect-[4/3] relative overflow-hidden bg-background-elevated">
-                {winner.post.images[0]?.originalUrl && (
-                  <img
-                    src={winner.post.images[0].originalUrl}
-                    alt={winner.post.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                )}
-                {/* Month Badge */}
-                <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-sm px-2 py-1 rounded-lg">
-                  <span className="text-xs font-bold text-[#c9a84c]">
-                    {MONTH_NAMES[winner.month - 1]}
-                  </span>
-                </div>
-                {/* Like count */}
-                <div className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-sm px-2 py-1 rounded-lg flex items-center gap-1">
-                  <span className="text-xs">⬆️</span>
-                  <span className="text-xs text-white font-medium">{winner.likeCount}</span>
-                </div>
-              </div>
+      {(() => {
+        // Season runs April (4) through December (12)
+        const seasonStartMonth = season ? new Date(season.startAt).getMonth() + 1 : 4;
+        const seasonEndMonth = season ? new Date(season.endAt).getMonth() + 1 : 12;
+        const seasonMonths = Array.from(
+          { length: seasonEndMonth - seasonStartMonth + 1 },
+          (_, i) => seasonStartMonth + i
+        );
+        const winnerByMonth = new Map(winners.map((w) => [w.month, w]));
 
-              {/* Info */}
-              <div className="p-3">
-                <h3 className="text-sm font-medium text-foreground truncate mb-2">
-                  {winner.post.title}
-                </h3>
-                <div className="flex items-center gap-2">
-                  <Avatar
-                    src={winner.author.avatarUrl}
-                    alt={winner.author.displayName || winner.author.username}
-                    size="sm"
-                    isChampion={winner.author.isChampion}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-foreground-muted truncate">
-                      {winner.author.displayName || winner.author.username}
-                    </p>
-                    {winner.country && (
-                      <p className="text-[10px] text-foreground-subtle">
-                        {winner.country.flagEmoji} {winner.country.nameEn}
+        return (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            {seasonMonths.map((month) => {
+              const winner = winnerByMonth.get(month);
+              const isCurrent = month === currentMonth;
+              const isFuture = month > currentMonth;
+
+              // Winner card — framed thumbnail
+              if (winner) {
+                return (
+                  <Link
+                    key={`month-${month}`}
+                    href={`/post/${winner.post.id}`}
+                    className="group bg-background-surface border-2 border-[#c9a84c]/40 rounded-xl overflow-hidden hover:border-[#c9a84c] transition-colors shadow-[0_0_12px_rgba(201,168,76,0.1)] hover:shadow-[0_0_20px_rgba(201,168,76,0.2)]"
+                  >
+                    <div className="aspect-[4/3] relative overflow-hidden bg-background-elevated">
+                      {winner.post.images[0]?.originalUrl && (
+                        <img
+                          src={winner.post.images[0].originalUrl}
+                          alt={winner.post.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      )}
+                      {/* Month badge */}
+                      <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-sm px-2 py-1 rounded-lg">
+                        <span className="text-xs font-bold text-[#c9a84c]">
+                          {MONTH_ABBREV[month - 1]}
+                        </span>
+                      </div>
+                      {/* Crown overlay */}
+                      <div className="absolute top-2 right-2">
+                        <span className="text-lg drop-shadow-lg">👑</span>
+                      </div>
+                      {/* Vote count */}
+                      <div className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-sm px-2 py-1 rounded-lg flex items-center gap-1">
+                        <span className="text-[10px]">🔥</span>
+                        <span className="text-[10px] text-white font-medium">{winner.likeCount}</span>
+                      </div>
+                    </div>
+                    <div className="p-2.5">
+                      <p className="text-xs font-medium text-foreground truncate mb-1.5">
+                        {winner.post.title}
                       </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </Link>
-          ))}
+                      <div className="flex items-center gap-1.5">
+                        <Avatar
+                          src={winner.author.avatarUrl}
+                          alt={winner.author.displayName || winner.author.username}
+                          size="sm"
+                          isChampion={winner.author.isChampion}
+                        />
+                        <span className="text-[11px] text-foreground-muted truncate">
+                          {winner.author.displayName || winner.author.username}
+                        </span>
+                        {winner.country && (
+                          <span className="text-xs ml-auto">{winner.country.flagEmoji}</span>
+                        )}
+                      </div>
+                    </div>
+                  </Link>
+                );
+              }
 
-          {/* Future month cards with "Coming Soon" and lock icon */}
-          {Array.from({ length: 12 - winners.length }, (_, i) => {
-            const month = winners.length > 0
-              ? winners[winners.length - 1].month + i + 1
-              : i + 1;
-            if (month > 12) return null;
-            return (
-              <div
-                key={`empty-${month}`}
-                className="bg-background-surface border border-border border-dashed rounded-xl flex flex-col items-center justify-center aspect-[4/3] group"
-              >
-                {/* Lock icon */}
-                <div className="w-10 h-10 rounded-full bg-foreground/5 flex items-center justify-center mb-2 group-hover:bg-foreground/10 transition-colors">
-                  <svg className="w-5 h-5 text-foreground-subtle/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-                  </svg>
+              // Current month — voting in progress
+              if (isCurrent) {
+                return (
+                  <div
+                    key={`month-${month}`}
+                    className="bg-background-surface border-2 border-[#c9a84c]/30 border-dashed rounded-xl flex flex-col items-center justify-center aspect-[4/3] relative overflow-hidden"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-b from-[#c9a84c]/5 to-transparent" />
+                    <span className="text-2xl mb-1.5">🔥</span>
+                    <span className="text-sm font-bold text-[#c9a84c]">
+                      {MONTH_NAMES[month - 1]}
+                    </span>
+                    <span className="text-[11px] text-[#c9a84c]/80 font-medium mt-0.5">
+                      Voting
+                    </span>
+                    <div className="absolute top-2 right-2">
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#c9a84c] opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-[#c9a84c]" />
+                      </span>
+                    </div>
+                  </div>
+                );
+              }
+
+              // Future month — locked
+              if (isFuture) {
+                return (
+                  <div
+                    key={`month-${month}`}
+                    className="bg-background-surface border border-border border-dashed rounded-xl flex flex-col items-center justify-center aspect-[4/3] group opacity-50"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-foreground/5 flex items-center justify-center mb-1.5 group-hover:bg-foreground/10 transition-colors">
+                      <svg className="w-4 h-4 text-foreground-subtle/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                      </svg>
+                    </div>
+                    <span className="text-xs font-medium text-foreground-subtle">
+                      {MONTH_NAMES[month - 1]}
+                    </span>
+                  </div>
+                );
+              }
+
+              // Past month with no winner — empty dashed placeholder
+              return (
+                <div
+                  key={`month-${month}`}
+                  className="bg-background-surface border border-border border-dashed rounded-xl flex flex-col items-center justify-center aspect-[4/3]"
+                >
+                  <span className="text-xs font-medium text-foreground-subtle">
+                    {MONTH_NAMES[month - 1]}
+                  </span>
+                  <span className="text-[10px] text-foreground-subtle/60 mt-0.5">No winner</span>
                 </div>
-                <span className="text-xs font-medium text-foreground-subtle">
-                  {MONTH_NAMES[month - 1]}
-                </span>
-                <span className="text-[10px] text-foreground-subtle/60 mt-0.5">Coming Soon</span>
-              </div>
-            );
-          })}
-        </div>
-      )}
+              );
+            })}
+          </div>
+        );
+      })()}
     </div>
   );
 }

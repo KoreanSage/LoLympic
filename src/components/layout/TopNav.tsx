@@ -157,6 +157,10 @@ export default function TopNav() {
     let pollTimer: ReturnType<typeof setInterval> | null = null;
     let sseConnected = false;
     let cancelled = false;
+    let reconnectDelay = 2000;
+    let retryCount = 0;
+    const MAX_RECONNECT_DELAY = 60000;
+    const MAX_RETRIES = 10;
 
     function connectSSE() {
       // Clean up any existing connection before creating a new one
@@ -166,6 +170,11 @@ export default function TopNav() {
       }
 
       if (cancelled) return;
+      if (retryCount >= MAX_RETRIES) {
+        // Max retries reached, fall back to polling
+        if (!pollTimer) startPolling();
+        return;
+      }
 
       const es = new EventSource("/api/notifications/stream");
       eventSourceRef.current = es;
@@ -181,6 +190,9 @@ export default function TopNav() {
 
       es.addEventListener("connected", () => {
         sseConnected = true;
+        // Reset backoff on successful connection
+        reconnectDelay = 2000;
+        retryCount = 0;
       });
 
       es.addEventListener("close", () => {
@@ -188,12 +200,14 @@ export default function TopNav() {
         if (eventSourceRef.current === es) {
           eventSourceRef.current = null;
         }
-        // Reconnect after timeout
+        // Reconnect with exponential backoff
+        retryCount++;
         setTimeout(() => {
           if (!cancelled) {
             connectSSE();
           }
-        }, 2000);
+        }, reconnectDelay);
+        reconnectDelay = Math.min(reconnectDelay * 2, MAX_RECONNECT_DELAY);
       });
 
       es.onerror = () => {
