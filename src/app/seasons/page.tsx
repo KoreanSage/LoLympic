@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "@/i18n";
 import Link from "next/link";
 import Avatar from "@/components/ui/Avatar";
+import MainLayout from "@/components/layout/MainLayout";
 
 interface MonthlyWinnerData {
   id: string;
@@ -87,6 +88,7 @@ export default function SeasonsPage() {
 
   if (loading) {
     return (
+      <MainLayout showSidebar={false}>
       <div className="max-w-4xl mx-auto py-8 px-4">
         <div className="animate-pulse space-y-4">
           <div className="h-8 bg-background-elevated rounded w-64" />
@@ -98,10 +100,12 @@ export default function SeasonsPage() {
           </div>
         </div>
       </div>
+      </MainLayout>
     );
   }
 
   return (
+    <MainLayout showSidebar={false}>
     <div className="max-w-4xl mx-auto py-8 px-4">
       {/* Header */}
       <div className="mb-6">
@@ -402,5 +406,6 @@ export default function SeasonsPage() {
         );
       })()}
     </div>
+    </MainLayout>
   );
 }
