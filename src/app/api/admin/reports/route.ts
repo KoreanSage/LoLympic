@@ -99,20 +99,22 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Report not found" }, { status: 404 });
     }
 
-    // If deleteContent is requested, delete the associated post or comment
+    // If deleteContent is requested, soft-delete the associated post or comment
     if (deleteContent) {
       if (report.postId) {
-        await prisma.post.delete({
+        await prisma.post.update({
           where: { id: report.postId },
+          data: { status: "REMOVED" },
         }).catch(() => {
-          // Post may already be deleted
+          // Post may already be removed
         });
       }
       if (report.commentId) {
-        await prisma.comment.delete({
+        await prisma.comment.update({
           where: { id: report.commentId },
+          data: { status: "REMOVED" },
         }).catch(() => {
-          // Comment may already be deleted
+          // Comment may already be removed
         });
       }
     }

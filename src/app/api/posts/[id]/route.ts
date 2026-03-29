@@ -1,7 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { getSessionUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { backfillSinglePostTitle } from "@/lib/translate-backfill";
+
+const patchPostSchema = z.object({
+  title: z.string().max(200, "Title must be at most 200 characters").optional(),
+  body: z.string().max(5000, "Body must be at most 5000 characters").optional(),
+  category: z.string().optional(),
+  tags: z.array(z.string()).optional(),
+  visibility: z.enum(["PUBLIC", "UNLISTED", "PRIVATE"]).optional(),
+});
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -197,8 +206,16 @@ export async function PATCH(
       );
     }
 
-    const body = await request.json();
-    const { title, body: postBody, category, tags, visibility } = body;
+    const rawBody = await request.json();
+    const parsed = patchPostSchema.safeParse(rawBody);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: parsed.error.errors.map((e) => e.message).join(", ") },
+        { status: 400 }
+      );
+    }
+
+    const { title, body: postBody, category, tags, visibility } = parsed.data;
 
     const updateData: Record<string, unknown> = {};
     if (title !== undefined) updateData.title = title;

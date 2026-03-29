@@ -32,6 +32,9 @@ export const COUNTRY_MAP = new Map(
 // Languages
 // ============================================================================
 
+export const VALID_LANGUAGES = ["ko", "en", "ja", "zh", "es", "hi", "ar"] as const;
+export type LanguageCodeString = typeof VALID_LANGUAGES[number];
+
 export const SUPPORTED_LANGUAGES: LanguageCode[] = [
   LanguageCode.ko,
   LanguageCode.en,
