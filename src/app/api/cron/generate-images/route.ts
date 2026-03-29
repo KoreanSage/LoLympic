@@ -52,10 +52,19 @@ async function composeImage(
   segments: Array<{ translatedText: string; boxX: number; boxY: number; boxWidth: number; boxHeight: number; fontWeight?: number; color?: string; textAlign?: string; semanticRole: string }>,
   targetLanguage: string,
 ): Promise<string | null> {
-  // Fetch original image
-  const imgRes = await fetch(imageUrl);
+  // Fetch original image with timeout
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
+  let imgRes;
+  try {
+    imgRes = await fetch(imageUrl, { signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
   if (!imgRes.ok) return null;
   const imgBuffer = Buffer.from(await imgRes.arrayBuffer());
+  // Skip very large images that would cause timeout
+  if (imgBuffer.length > 2 * 1024 * 1024) return null; // >2MB skip
   const meta = await sharp(imgBuffer).metadata();
   const imgW = meta.width || 800;
   const imgH = meta.height || 800;
@@ -72,7 +81,7 @@ async function composeImage(
   const maxCoord = Math.max(...visible.map(s => Math.max(s.boxX + s.boxWidth, s.boxY + s.boxHeight)));
   const norm = maxCoord > 1.5 ? (maxCoord > 100 ? 1000 : maxCoord) : 1;
 
-  const MAX_DIM = 600;
+  const MAX_DIM = 400;
   let safeW = imgW;
   let safeH = imgH;
   if (safeW > MAX_DIM || safeH > MAX_DIM) {
@@ -205,8 +214,20 @@ export async function GET(request: NextRequest) {
 
       try {
         const url = await composeImage(p.id, imageUrl, p.segments as any, p.targetLanguage);
+        if (!url) {
+          // Mark as skipped (too large, no visible segments, etc.)
+          await prisma.translationPayload.update({
+            where: { id: p.id },
+            data: { translatedImageUrl: "SKIPPED" },
+          }).catch(() => {});
+        }
         results.push({ id: p.id, ok: !!url, url: url || undefined });
       } catch (e: any) {
+        // Mark as skipped so we don't retry forever
+        await prisma.translationPayload.update({
+          where: { id: p.id },
+          data: { translatedImageUrl: "SKIPPED" },
+        }).catch(() => {});
         results.push({ id: p.id, ok: false, error: e.message?.slice(0, 100) });
       }
     }
