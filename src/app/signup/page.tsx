@@ -95,7 +95,7 @@ export default function SignUpPage() {
     if (result?.error) {
       setError(t("auth.signUpSuccessLoginFailed"));
     } else {
-      router.push("/welcome");
+      router.push("/onboarding");
       router.refresh();
     }
   }
@@ -239,7 +239,7 @@ export default function SignUpPage() {
 
           {/* Google Sign Up */}
           <button
-            onClick={() => signIn("google", { callbackUrl: "/welcome" })}
+            onClick={() => signIn("google", { callbackUrl: "/onboarding" })}
             disabled={loading}
             className="w-full flex items-center justify-center gap-2 py-2.5 bg-white hover:bg-gray-100 text-black font-medium rounded-lg transition-colors disabled:opacity-50"
           >
