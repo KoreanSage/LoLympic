@@ -72,7 +72,7 @@ async function composeImage(
   const maxCoord = Math.max(...visible.map(s => Math.max(s.boxX + s.boxWidth, s.boxY + s.boxHeight)));
   const norm = maxCoord > 1.5 ? (maxCoord > 100 ? 1000 : maxCoord) : 1;
 
-  const MAX_DIM = 800;
+  const MAX_DIM = 600;
   let safeW = imgW;
   let safeH = imgH;
   if (safeW > MAX_DIM || safeH > MAX_DIM) {
@@ -178,7 +178,7 @@ export async function GET(request: NextRequest) {
   }
 
   const { searchParams } = new URL(request.url);
-  const limit = Math.min(parseInt(searchParams.get("limit") || "3"), 10);
+  const limit = Math.min(parseInt(searchParams.get("limit") || "1"), 5);
 
   try {
     const payloads = await prisma.translationPayload.findMany({
