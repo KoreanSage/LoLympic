@@ -129,7 +129,10 @@ function FeedCardInner({
   );
   const isGif = mimeType === "image/gif";
   const isVideo = !!mimeType?.startsWith("video/");
-  const hasImageTranslation = !isGif && !isVideo && (hasOverlaySegments || !!translatedImageUrl);
+  const isMultiImage = images && images.length > 1;
+  // For multi-image posts, don't use translatedImageUrl (it contains all segments merged onto one image)
+  const effectiveTranslatedImageUrl = isMultiImage ? undefined : translatedImageUrl;
+  const hasImageTranslation = !isGif && !isVideo && (hasOverlaySegments || !!effectiveTranslatedImageUrl);
   const hasTranslation = hasImageTranslation || !!translatedTitle || !!translatedBody;
   const isTextOnly = !imageUrl && (!images || images.length === 0);
 
@@ -523,7 +526,7 @@ function FeedCardInner({
       )}
 
       {/* Title-only translation toggle for image posts with translated title but no image translation */}
-      {!isTextOnly && (translatedTitle || translatedBody) && !(segments.length > 0 || translatedImageUrl) && (
+      {!isTextOnly && (translatedTitle || translatedBody) && !(segments.length > 0 || effectiveTranslatedImageUrl) && (
         <div className="flex items-center gap-2 px-4 pb-2">
           <TranslationToggle
             showTranslation={showTranslation}
@@ -540,7 +543,7 @@ function FeedCardInner({
       )}
 
       {/* Translation bar above image (meme posts only) */}
-      {!isTextOnly && (segments.length > 0 || translatedImageUrl) && (
+      {!isTextOnly && (segments.length > 0 || effectiveTranslatedImageUrl) && (
         <div className="flex items-center justify-between mx-4 px-3 py-2 bg-background-surface border border-border rounded-t-lg">
           <div className="flex items-center gap-2">
             <TranslationToggle
@@ -576,7 +579,7 @@ function FeedCardInner({
       {!isTextOnly && (
         <Link href={`/post/${id}`} className="block" onClick={isVideo ? (e: any) => e.preventDefault() : undefined}>
           <div className="px-4 pb-2">
-            <div className={`overflow-hidden border border-border flex items-center justify-center bg-black/5 ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-lg border-t-0" : "rounded-lg"}`}>
+            <div className={`overflow-hidden border border-border flex items-center justify-center bg-black/5 ${(segments.length > 0 || effectiveTranslatedImageUrl) ? "rounded-b-lg border-t-0" : "rounded-lg"}`}>
               {/* Video playback */}
               {isVideo ? (
                 <video
@@ -613,7 +616,7 @@ function FeedCardInner({
                           <MemeRenderer
                             imageUrl={img.originalUrl}
                             cleanImageUrl={img.cleanUrl || undefined}
-                            translatedImageUrl={i === 0 ? translatedImageUrl : undefined}
+                            translatedImageUrl={undefined}
                             segments={imgSegments}
                             showTranslation={showTranslation}
                             maxHeight={700}
@@ -623,8 +626,8 @@ function FeedCardInner({
                     );
                   })}
                 </ImageCarousel>
-              ) : showTranslation && translatedImageUrl ? (
-                <Image src={translatedImageUrl} alt={title} width={800} height={800} className="w-full h-auto object-contain" sizes="(max-width: 768px) 100vw, 600px" unoptimized />
+              ) : showTranslation && effectiveTranslatedImageUrl ? (
+                <Image src={effectiveTranslatedImageUrl} alt={title} width={800} height={800} className="w-full h-auto object-contain" sizes="(max-width: 768px) 100vw, 600px" unoptimized />
               ) : isTypeB && segments.length > 0 ? (
                 showTranslation ? (
                   <ScreenshotRenderer
@@ -641,7 +644,7 @@ function FeedCardInner({
                 <MemeRenderer
                   imageUrl={imageUrl}
                   cleanImageUrl={cleanImageUrl}
-                  translatedImageUrl={translatedImageUrl}
+                  translatedImageUrl={effectiveTranslatedImageUrl}
                   segments={segments.filter((s: any) => (s.imageIndex ?? 0) === 0)}
                   showTranslation={showTranslation}
                   maxHeight={undefined}
