@@ -82,12 +82,23 @@ async function composeImage(
   const maxCoord = Math.max(...visible.map(s => Math.max(s.boxX + s.boxWidth, s.boxY + s.boxHeight)));
   const norm = maxCoord > 1.5 ? (maxCoord > 100 ? 1000 : maxCoord) : 1;
 
-  const safeW = Math.min(imgW, 1600);
-  const safeH = Math.min(imgH, 1600);
+  const MAX_DIM = 800;
+  let safeW = imgW;
+  let safeH = imgH;
+  if (safeW > MAX_DIM || safeH > MAX_DIM) {
+    const ratio = Math.min(MAX_DIM / safeW, MAX_DIM / safeH);
+    safeW = Math.round(safeW * ratio);
+    safeH = Math.round(safeH * ratio);
+  }
 
-  // Build base64 data URI for image
-  const imgBase64 = imgBuffer.toString("base64");
-  const imgMime = meta.format === "png" ? "image/png" : "image/jpeg";
+  // Resize image to safe dimensions before embedding
+  const resizedBuffer = await sharp(imgBuffer)
+    .resize(safeW, safeH, { fit: "inside" })
+    .jpeg({ quality: 80 })
+    .toBuffer();
+
+  const imgBase64 = resizedBuffer.toString("base64");
+  const imgMime = "image/jpeg";
 
   // Build Satori element tree
   const element = {
