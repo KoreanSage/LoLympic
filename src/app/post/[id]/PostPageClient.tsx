@@ -244,6 +244,8 @@ export default function PostPageClient() {
   const payload = post.translationPayloads?.[0];
   const translatedTitle = clientTranslatedTitle || payload?.translatedTitle || null;
   const translatedBody = clientTranslatedBody || payload?.translatedBody || null;
+  // Don't show originalBody if it's the same as body (no actual translation)
+  const effectiveTranslatedBody = translatedBody && translatedBody !== post.body ? translatedBody : null;
 
   const segments = (payload?.segments ?? []).map((s: any) => ({
     id: s.id ?? "",
@@ -271,14 +273,17 @@ export default function PostPageClient() {
     fontHint: s.fontHint ?? undefined,
   }));
 
-  const cultureNotes = (post.cultureNotes ?? []).map((n: any) => ({
-    id: n.id,
-    summary: n.summary,
-    explanation: n.explanation,
-    translationNote: n.translationNote,
-    creatorType: n.creatorType,
-    status: n.status,
-  }));
+  // Filter culture notes to show only the user's preferred language
+  const cultureNotes = (post.cultureNotes ?? [])
+    .filter((n: any) => !preferredLang || n.language === preferredLang)
+    .map((n: any) => ({
+      id: n.id,
+      summary: n.summary,
+      explanation: n.explanation,
+      translationNote: n.translationNote,
+      creatorType: n.creatorType,
+      status: n.status,
+    }));
 
   return (
     <MainLayout showSidebar={false}>
@@ -286,8 +291,8 @@ export default function PostPageClient() {
         id={post.id}
         title={translatedTitle || post.title}
         originalTitle={translatedTitle ? post.title : undefined}
-        body={translatedBody || post.body}
-        originalBody={translatedBody ? post.body : undefined}
+        body={effectiveTranslatedBody || post.body}
+        originalBody={effectiveTranslatedBody ? post.body : undefined}
         author={{
           username: post.author?.username || "unknown",
           displayName: post.author?.displayName,
