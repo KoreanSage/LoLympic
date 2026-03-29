@@ -21,29 +21,16 @@ function isAuthorized(request: NextRequest): boolean {
 }
 
 // ─── Font ─────────────────────────────────────────────────────────────────────
-function getFontFamily(lang: string): string {
-  const map: Record<string, string> = {
-    ko: "Noto+Sans+KR", ja: "Noto+Sans+JP", zh: "Noto+Sans+SC",
-    ar: "Noto+Sans+Arabic", hi: "Noto+Sans+Devanagari",
-  };
-  return map[lang] || "Noto+Sans";
+function getFontFamily(_lang: string): string {
+  // Use Inter for all languages — Satori has issues with Noto Sans CJK substFormat
+  return "Inter";
 }
 
-async function fetchFont(family: string, text: string): Promise<ArrayBuffer> {
-  const chars = Array.from(new Set(text.split(""))).join("");
-  // Use wght@400 to avoid OpenType substFormat:3 errors in Satori
-  const cssUrl = `https://fonts.googleapis.com/css2?family=${family}:wght@400&text=${encodeURIComponent(chars)}`;
-  const cssRes = await fetch(cssUrl, {
-    headers: { "User-Agent": "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10_6_8) AppleWebKit/533.21.1 Safari/533.21.1" },
-  });
-  if (!cssRes.ok) throw new Error(`Font CSS fetch failed: ${cssRes.status}`);
-  const css = await cssRes.text();
-  // Get all font URLs (multiple subsets for CJK)
-  const urls = [...css.matchAll(/src: url\((.+?)\) format/g)].map(m => m[1]);
-  if (urls.length === 0) throw new Error("No font URL in CSS");
-  // Fetch first font file (covers most characters)
-  const fontRes = await fetch(urls[0]);
-  if (!fontRes.ok) throw new Error(`Font file fetch failed: ${fontRes.status}`);
+async function fetchFont(_family: string, _text: string): Promise<ArrayBuffer> {
+  // Use a static Inter font from Google Fonts (no CJK substFormat issues)
+  const fontUrl = "https://fonts.gstatic.com/s/inter/v18/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKv0.woff";
+  const fontRes = await fetch(fontUrl);
+  if (!fontRes.ok) throw new Error(`Font fetch failed: ${fontRes.status}`);
   return fontRes.arrayBuffer();
 }
 
