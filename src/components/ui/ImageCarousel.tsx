@@ -9,11 +9,39 @@ interface ImageCarouselProps {
 
 export default function ImageCarousel({ children, className = "" }: ImageCarouselProps) {
   const [current, setCurrent] = useState(0);
+  const [slideHeight, setSlideHeight] = useState<number | undefined>(undefined);
   const trackRef = useRef<HTMLDivElement>(null);
+  const slideRefs = useRef<(HTMLDivElement | null)[]>([]);
   const touchStartX = useRef(0);
   const touchDeltaX = useRef(0);
   const isDragging = useRef(false);
   const total = children.length;
+
+  // Dynamically set container height to match current slide
+  useEffect(() => {
+    const currentSlide = slideRefs.current[current];
+    if (!currentSlide) return;
+
+    const updateHeight = () => {
+      const h = currentSlide.scrollHeight;
+      if (h > 0) setSlideHeight(h);
+    };
+
+    updateHeight();
+
+    // Also update when images inside load
+    const images = currentSlide.querySelectorAll("img, canvas");
+    images.forEach((img) => {
+      if (img instanceof HTMLImageElement && !img.complete) {
+        img.addEventListener("load", updateHeight, { once: true });
+      }
+    });
+
+    // ResizeObserver for dynamic content
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(currentSlide);
+    return () => observer.disconnect();
+  }, [current]);
 
   const goTo = useCallback(
     (index: number) => {
@@ -56,7 +84,8 @@ export default function ImageCarousel({ children, className = "" }: ImageCarouse
     >
       {/* Track */}
       <div
-        className="overflow-hidden"
+        className="overflow-hidden transition-[height] duration-300 ease-out"
+        style={slideHeight ? { height: slideHeight } : undefined}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -69,7 +98,8 @@ export default function ImageCarousel({ children, className = "" }: ImageCarouse
           {children.map((child, i) => (
             <div
               key={i}
-              className="w-full flex-shrink-0 bg-black/10 dark:bg-black/30 flex items-center justify-center"
+              ref={(el) => { slideRefs.current[i] = el; }}
+              className="w-full flex-shrink-0 bg-black/10 dark:bg-black/30"
               role="group"
               aria-roledescription="slide"
               aria-label={`Image ${i + 1} of ${total}`}
