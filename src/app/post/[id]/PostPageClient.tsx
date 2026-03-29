@@ -316,6 +316,8 @@ export default function PostPageClient() {
           originalUrl: img.originalUrl,
           cleanUrl: img.cleanUrl || null,
           mimeType: img.mimeType || null,
+          width: img.width ?? null,
+          height: img.height ?? null,
         }))}
         cultureNotes={cultureNotes}
         suggestions={[]}
