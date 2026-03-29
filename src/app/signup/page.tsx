@@ -95,7 +95,7 @@ export default function SignUpPage() {
     if (result?.error) {
       setError(t("auth.signUpSuccessLoginFailed"));
     } else {
-      router.push("/");
+      router.push("/welcome");
       router.refresh();
     }
   }

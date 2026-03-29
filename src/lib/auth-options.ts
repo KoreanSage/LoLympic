@@ -202,6 +202,8 @@ export const authOptions: NextAuthOptions = {
           token.preferredLanguage = user.preferredLanguage;
           token.uiLanguage = user.uiLanguage;
           token.role = user.role;
+          // Check if credential user needs profile setup (no country selected)
+          token.needsSetup = !user.countryId;
         }
       }
       return token;
