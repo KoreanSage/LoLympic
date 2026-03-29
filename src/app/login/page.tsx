@@ -30,7 +30,13 @@ export default function LoginPage() {
     if (result?.error) {
       setError(t("auth.invalidCredentials"));
     } else {
-      router.push("/");
+      // Check if user needs profile setup (new account without country)
+      const session = await fetch("/api/auth/session").then(r => r.json());
+      if (session?.user?.needsSetup) {
+        router.push("/welcome");
+      } else {
+        router.push("/");
+      }
       router.refresh();
     }
   }
