@@ -330,13 +330,14 @@ export default function MemeRenderer({
       // When using clean image as base, NO backdrop needed (original text already removed)
       // When using original image, use FULLY OPAQUE backdrop to completely hide original text
       if (!usingCleanBase) {
-        const padX = bw * 0.08;
-        const padY = bh * 0.1;
-        const bgX = bx - padX;
-        const bgY = by - padY;
-        const bgW = bw + padX * 2;
-        const bgH = bh + padY * 2;
-        const borderRadius = Math.min(bgH * 0.15, 8);
+        // Generous padding to fully cover original text (15% horizontal, 20% vertical)
+        const padX = bw * 0.15;
+        const padY = bh * 0.2;
+        const bgX = Math.max(0, bx - padX);
+        const bgY = Math.max(0, by - padY);
+        const bgW = Math.min(displayW - bgX, bw + padX * 2);
+        const bgH = Math.min(displayH - bgY, bh + padY * 2);
+        const borderRadius = Math.min(bgH * 0.12, 6);
 
         // Draw rounded rect backdrop
         ctx.beginPath();
@@ -351,10 +352,26 @@ export default function MemeRenderer({
         ctx.quadraticCurveTo(bgX, bgY, bgX + borderRadius, bgY);
         ctx.closePath();
 
-        // FULLY OPAQUE backdrop — completely hides original text
+        // FULLY OPAQUE backdrop matched to surrounding background
+        // Sample a wider area for more accurate color matching
         ctx.fillStyle = seg.backgroundColor || (brightness > 128
-          ? `rgb(${Math.min(255, r + 30)},${Math.min(255, g + 30)},${Math.min(255, b + 30)})`
-          : `rgb(${Math.max(0, r - 20)},${Math.max(0, g - 20)},${Math.max(0, b - 20)})`);
+          ? `rgb(${Math.min(255, r + 15)},${Math.min(255, g + 15)},${Math.min(255, b + 15)})`
+          : `rgb(${Math.max(0, r - 10)},${Math.max(0, g - 10)},${Math.max(0, b - 10)})`);
+        ctx.fill();
+
+        // Draw a second pass with slightly inset rect for smoother edges
+        const inset = 1;
+        ctx.beginPath();
+        ctx.moveTo(bgX + inset + borderRadius, bgY + inset);
+        ctx.lineTo(bgX + bgW - inset - borderRadius, bgY + inset);
+        ctx.quadraticCurveTo(bgX + bgW - inset, bgY + inset, bgX + bgW - inset, bgY + inset + borderRadius);
+        ctx.lineTo(bgX + bgW - inset, bgY + bgH - inset - borderRadius);
+        ctx.quadraticCurveTo(bgX + bgW - inset, bgY + bgH - inset, bgX + bgW - inset - borderRadius, bgY + bgH - inset);
+        ctx.lineTo(bgX + inset + borderRadius, bgY + bgH - inset);
+        ctx.quadraticCurveTo(bgX + inset, bgY + bgH - inset, bgX + inset, bgY + bgH - inset - borderRadius);
+        ctx.lineTo(bgX + inset, bgY + inset + borderRadius);
+        ctx.quadraticCurveTo(bgX + inset, bgY + inset, bgX + inset + borderRadius, bgY + inset);
+        ctx.closePath();
         ctx.fill();
       }
 

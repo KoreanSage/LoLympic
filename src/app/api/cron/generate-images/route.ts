@@ -123,9 +123,9 @@ async function composeImage(
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                backgroundColor: "rgba(0,0,0,0.75)",
-                borderRadius: "4px",
-                padding: "2px 4px",
+                backgroundColor: "rgba(0,0,0,0.85)",
+                borderRadius: "6px",
+                padding: "4px 8px",
                 overflow: "hidden",
               },
               children: {
