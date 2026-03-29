@@ -27,9 +27,19 @@ function getFontFamily(_lang: string): string {
 }
 
 async function fetchFont(_family: string, _text: string): Promise<ArrayBuffer> {
-  // Use a static Inter font from Google Fonts (no CJK substFormat issues)
-  const fontUrl = "https://fonts.gstatic.com/s/inter/v18/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKv0.woff";
-  const fontRes = await fetch(fontUrl);
+  // Fetch Inter as TrueType via Google Fonts (use old UA to get .ttf)
+  const cssUrl = "https://fonts.googleapis.com/css2?family=Inter:wght@400";
+  const cssRes = await fetch(cssUrl, {
+    headers: {
+      // Old IE UA forces Google to serve TrueType format (no woff substFormat issues)
+      "User-Agent": "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1; Trident/4.0)",
+    },
+  });
+  if (!cssRes.ok) throw new Error(`Font CSS failed: ${cssRes.status}`);
+  const css = await cssRes.text();
+  const match = css.match(/url\(([^)]+\.ttf[^)]*)\)/i) || css.match(/url\(([^)]+)\)/);
+  if (!match?.[1]) throw new Error("No font URL found");
+  const fontRes = await fetch(match[1]);
   if (!fontRes.ok) throw new Error(`Font fetch failed: ${fontRes.status}`);
   return fontRes.arrayBuffer();
 }
