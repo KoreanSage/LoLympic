@@ -333,13 +333,15 @@ export default function TopNav() {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/85 backdrop-blur-xl border-b border-border">
-      {/* Season bar — hides on scroll */}
-      <div
-        className="transition-all duration-300 overflow-hidden"
-        style={{ maxHeight: hideSeasonBar ? 0 : 60, opacity: hideSeasonBar ? 0 : 1 }}
-      >
-        <SeasonBar />
-      </div>
+      {/* Season bar — only on season-related pages, hides on scroll */}
+      {(pathname === "/seasons" || pathname === "/tournament" || pathname?.startsWith("/seasons/")) && (
+        <div
+          className="transition-all duration-300 overflow-hidden"
+          style={{ maxHeight: hideSeasonBar ? 0 : 60, opacity: hideSeasonBar ? 0 : 1 }}
+        >
+          <SeasonBar />
+        </div>
+      )}
 
       {/* Main nav */}
       <nav className="max-w-[1280px] mx-auto px-4 h-14 flex items-center justify-between">
