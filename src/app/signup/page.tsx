@@ -107,8 +107,8 @@ export default function SignUpPage() {
         <div className="text-center mb-8">
           <Link href="/">
             <h1 className="text-3xl font-bold tracking-tight">
-              <span className="text-[#c9a84c]">LoL</span>
-              <span className="text-foreground">ympic</span>
+              <span className="text-foreground">mi</span>
+              <span className="text-[#c9a84c]">mzy</span>
             </h1>
           </Link>
           <p className="mt-2 text-foreground-subtle text-sm">
