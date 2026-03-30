@@ -39,6 +39,7 @@ interface TopCreator {
 interface HotMeme {
   id: string;
   title: string;
+  translatedTitle?: string | null;
   thumbnailUrl?: string;
   authorUsername: string;
   reactionCount: number;
@@ -47,6 +48,7 @@ interface HotMeme {
 interface MonthlyContender {
   id: string;
   title: string;
+  translatedTitle?: string | null;
   imageUrl: string | null;
   reactionCount: number;
 }
@@ -148,6 +150,12 @@ export default function Sidebar() {
   const [errorRankings, setErrorRankings] = useState(false);
   const [errorCreators, setErrorCreators] = useState(false);
   const [errorMemes, setErrorMemes] = useState(false);
+
+  // Get user's preferred language for translated titles
+  const preferredLang =
+    (typeof window !== "undefined" && localStorage.getItem("mimzy_preferredLanguage")) ||
+    session?.user?.preferredLanguage ||
+    "";
   const [myCountry, setMyCountry] = useState<{ flag: string; name: string; rank: number; score: number } | null>(null);
   const [myCountryInTop5, setMyCountryInTop5] = useState(false);
 
@@ -236,14 +244,16 @@ export default function Sidebar() {
       })
       .finally(() => setLoadingCreators(false));
 
-    // Fetch hot memes
-    fetch("/api/leaderboard?type=meme&limit=3")
+    // Fetch hot memes (with translated titles if user has a preferred language)
+    const langParam = preferredLang ? `&lang=${preferredLang}` : "";
+    fetch(`/api/leaderboard?type=meme&limit=3${langParam}`)
       .then((res) => res.json())
       .then((data) => {
         const entries = (data.entries ?? []) as Array<{
           post: {
             id: string;
             title: string;
+            translatedTitle?: string | null;
             author: { username: string };
             images: Array<{ originalUrl: string }>;
             reactionCount: number;
@@ -252,6 +262,7 @@ export default function Sidebar() {
         const mapped = entries.map((e) => ({
           id: e.post.id,
           title: e.post.title,
+          translatedTitle: e.post.translatedTitle ?? null,
           thumbnailUrl: e.post.images?.[0]?.originalUrl,
           authorUsername: e.post.author.username,
           reactionCount: e.post.reactionCount ?? 0,
@@ -261,6 +272,7 @@ export default function Sidebar() {
           mapped.slice(0, 3).map((m) => ({
             id: m.id,
             title: m.title,
+            translatedTitle: m.translatedTitle,
             imageUrl: m.thumbnailUrl || null,
             reactionCount: m.reactionCount,
           }))
@@ -462,7 +474,7 @@ export default function Sidebar() {
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium text-foreground truncate group-hover:text-[#c9a84c] transition-colors">
-                    {meme.title}
+                    {meme.translatedTitle ?? meme.title}
                   </p>
                   <p className="text-[10px] text-foreground-subtle">
                     @{meme.authorUsername} · ❤️ {meme.reactionCount}
@@ -510,7 +522,7 @@ export default function Sidebar() {
                       />
                     )}
                     <span className="text-xs text-foreground-muted truncate flex-1 group-hover:text-foreground transition-colors">
-                      {post.title}
+                      {post.translatedTitle ?? post.title}
                     </span>
                     <span className="text-[10px] text-foreground-subtle tabular-nums flex-shrink-0">
                       {"\u{1F525}"} {post.reactionCount}

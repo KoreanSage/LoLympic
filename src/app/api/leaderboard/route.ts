@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const type = searchParams.get("type") || "country";
     const seasonId = searchParams.get("seasonId");
+    const lang = searchParams.get("lang") || null; // target language for translated titles
     const limit = Math.min(
       100,
       Math.max(1, parseInt(searchParams.get("limit") || "20", 10))
@@ -46,7 +47,7 @@ export async function GET(request: NextRequest) {
 
     // If we have a season, try season stats first — fallback to realtime if empty
     if (resolvedSeasonId) {
-      const result = await handleSeasonLeaderboard(type, resolvedSeasonId, limit);
+      const result = await handleSeasonLeaderboard(type, resolvedSeasonId, limit, lang);
       const body = await result.json();
       if (body.entries && body.entries.length > 0) {
         return NextResponse.json(body, { headers: LEADERBOARD_CACHE_HEADERS });
@@ -55,7 +56,7 @@ export async function GET(request: NextRequest) {
     }
 
     // No season or empty season stats: fallback to realtime
-    const result = await handleRealtimeLeaderboard(type, limit);
+    const result = await handleRealtimeLeaderboard(type, limit, lang);
     const body = await result.json();
     return NextResponse.json(body, { headers: LEADERBOARD_CACHE_HEADERS });
   } catch (error) {
@@ -126,7 +127,8 @@ async function handleBattleLeaderboard(limit: number) {
 async function handleSeasonLeaderboard(
   type: string,
   seasonId: string,
-  limit: number
+  limit: number,
+  lang: string | null = null
 ) {
   switch (type) {
     case "country": {
@@ -237,6 +239,14 @@ async function handleSeasonLeaderboard(
                   isChampion: true,
                 },
               },
+              ...(lang ? {
+                translationPayloads: {
+                  where: { targetLanguage: lang as string, status: "APPROVED" },
+                  orderBy: { version: "desc" },
+                  take: 1,
+                  select: { translatedTitle: true },
+                },
+              } : {}),
             },
           },
           country: {
@@ -249,18 +259,24 @@ async function handleSeasonLeaderboard(
         type: "meme",
         source: "season",
         seasonId,
-        entries: stats.map((stat, index) => ({
-          rank: stat.globalRank ?? index + 1,
-          post: stat.post,
-          country: stat.country,
-          medal: index < 3 ? (["GOLD", "SILVER", "BRONZE"] as const)[index] : null,
-          score: stat.totalScore,
-          reactionScore: stat.reactionScore,
-          commentScore: stat.commentScore,
-          shareScore: stat.shareScore,
-          translationScore: stat.translationScore,
-          cultureScore: stat.cultureScore,
-        })),
+        entries: stats.map((stat, index) => {
+          const post = stat.post as typeof stat.post & {
+            translationPayloads?: Array<{ translatedTitle: string | null }>;
+          };
+          const translatedTitle = post.translationPayloads?.[0]?.translatedTitle ?? null;
+          return {
+            rank: stat.globalRank ?? index + 1,
+            post: { ...post, translatedTitle, translationPayloads: undefined },
+            country: stat.country,
+            medal: index < 3 ? (["GOLD", "SILVER", "BRONZE"] as const)[index] : null,
+            score: stat.totalScore,
+            reactionScore: stat.reactionScore,
+            commentScore: stat.commentScore,
+            shareScore: stat.shareScore,
+            translationScore: stat.translationScore,
+            cultureScore: stat.cultureScore,
+          };
+        }),
       });
     }
 
@@ -275,7 +291,7 @@ async function handleSeasonLeaderboard(
 // ---------------------------------------------------------------------------
 // Realtime leaderboard (no season — aggregate from posts/users directly)
 // ---------------------------------------------------------------------------
-async function handleRealtimeLeaderboard(type: string, limit: number) {
+async function handleRealtimeLeaderboard(type: string, limit: number, lang: string | null = null) {
   // Current month boundaries for "this month's" rankings
   const now = new Date();
   const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -510,10 +526,22 @@ async function handleRealtimeLeaderboard(type: string, limit: number) {
           country: {
             select: { id: true, nameEn: true, flagEmoji: true },
           },
+          ...(lang ? {
+            translationPayloads: {
+              where: { targetLanguage: lang as string, status: "APPROVED" },
+              orderBy: { version: "desc" as const },
+              take: 1,
+              select: { translatedTitle: true },
+            },
+          } : {}),
         },
       });
 
       const entries = posts.map((post, index) => {
+        const p = post as typeof post & {
+          translationPayloads?: Array<{ translatedTitle: string | null }>;
+        };
+        const translatedTitle = p.translationPayloads?.[0]?.translatedTitle ?? null;
         const score =
           post.reactionCount +
           post.commentCount * 2 +
@@ -523,6 +551,7 @@ async function handleRealtimeLeaderboard(type: string, limit: number) {
           post: {
             id: post.id,
             title: post.title,
+            translatedTitle,
             authorId: post.authorId,
             reactionCount: post.reactionCount,
             commentCount: post.commentCount,
