@@ -3,22 +3,22 @@ import { getSessionUser } from "@/lib/auth";
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 import crypto from "crypto";
 
-const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
-const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50MB
-
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_MIME_TYPES = [
   "image/jpeg",
   "image/png",
   "image/webp",
   "image/gif",
-  "video/mp4",
-  "video/webm",
 ];
 
-const VIDEO_MIME_TYPES = ["video/mp4", "video/webm"];
-
-// Check if Vercel Blob is available
-const USE_BLOB = !!process.env.BLOB_READ_WRITE_TOKEN;
+// Storage backend detection
+const USE_R2 = !!(
+  process.env.R2_ACCESS_KEY_ID &&
+  process.env.R2_SECRET_ACCESS_KEY &&
+  process.env.R2_ENDPOINT &&
+  process.env.R2_BUCKET_NAME
+);
+const USE_BLOB = !USE_R2 && !!process.env.BLOB_READ_WRITE_TOKEN;
 
 export async function POST(request: NextRequest) {
   try {
@@ -52,44 +52,63 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const isVideo = VIDEO_MIME_TYPES.includes(file.type);
-    const maxSize = isVideo ? MAX_VIDEO_SIZE : MAX_IMAGE_SIZE;
-
-    if (file.size > maxSize) {
+    if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
-        { error: `File too large. Maximum size is ${maxSize / 1024 / 1024}MB.` },
+        { error: `File too large. Maximum size is ${MAX_FILE_SIZE / 1024 / 1024}MB.` },
         { status: 400 }
       );
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    // Get image dimensions using sharp (skip for videos)
+    // Get image dimensions using sharp
     let width: number | null = null;
     let height: number | null = null;
 
-    if (!isVideo) {
-      try {
-        const sharp = (await import("sharp")).default;
-        const metadata = await sharp(buffer).metadata();
-        width = metadata.width ?? null;
-        height = metadata.height ?? null;
-      } catch {
-        console.warn("Could not read image metadata with sharp");
-      }
+    try {
+      const sharp = (await import("sharp")).default;
+      const metadata = await sharp(buffer).metadata();
+      width = metadata.width ?? null;
+      height = metadata.height ?? null;
+    } catch {
+      console.warn("Could not read image metadata with sharp");
     }
 
     // Generate unique filename
     const hash = crypto.randomBytes(16).toString("hex");
     const ext = mimeToExt(file.type);
-    const filename = `${Date.now()}-${hash}${ext}`;
+    const filename = `uploads/${Date.now()}-${hash}${ext}`;
 
     let url: string;
 
-    if (USE_BLOB) {
-      // Production: Upload to Vercel Blob
+    if (USE_R2) {
+      // Production: Upload to Cloudflare R2
+      const { S3Client, PutObjectCommand } = await import("@aws-sdk/client-s3");
+
+      const s3 = new S3Client({
+        region: "auto",
+        endpoint: process.env.R2_ENDPOINT!,
+        credentials: {
+          accessKeyId: process.env.R2_ACCESS_KEY_ID!,
+          secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
+        },
+      });
+
+      await s3.send(
+        new PutObjectCommand({
+          Bucket: process.env.R2_BUCKET_NAME!,
+          Key: filename,
+          Body: buffer,
+          ContentType: file.type,
+        })
+      );
+
+      const publicUrl = process.env.R2_PUBLIC_URL?.replace(/\/$/, "");
+      url = `${publicUrl}/${filename}`;
+    } else if (USE_BLOB) {
+      // Fallback: Upload to Vercel Blob
       const { put } = await import("@vercel/blob");
-      const blob = await put(`uploads/${filename}`, buffer, {
+      const blob = await put(filename, buffer, {
         access: "public",
         contentType: file.type,
       });
@@ -130,8 +149,6 @@ function mimeToExt(mime: string): string {
     "image/png": ".png",
     "image/webp": ".webp",
     "image/gif": ".gif",
-    "video/mp4": ".mp4",
-    "video/webm": ".webm",
   };
   return map[mime] || ".bin";
 }
