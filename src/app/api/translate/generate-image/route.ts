@@ -12,7 +12,13 @@ import crypto from "crypto";
 // Allow longer timeout for image generation (multiple images)
 export const maxDuration = 60;
 
-const USE_BLOB = !!process.env.BLOB_READ_WRITE_TOKEN;
+const USE_R2 = !!(
+  process.env.R2_ACCESS_KEY_ID &&
+  process.env.R2_SECRET_ACCESS_KEY &&
+  process.env.R2_ENDPOINT &&
+  process.env.R2_BUCKET_NAME
+);
+const USE_BLOB = !USE_R2 && !!process.env.BLOB_READ_WRITE_TOKEN;
 const genAI2 = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
 function extractMimeType(filePathOrUrl: string): string {
@@ -53,13 +59,36 @@ async function readImageAsBuffer(imageUrl: string): Promise<{ buffer: Buffer; mi
 }
 
 async function saveGeneratedImage(buffer: Buffer, prefix: string, ext: string): Promise<string> {
-  const filename = `${prefix}_${crypto.randomUUID()}${ext}`;
-  if (USE_BLOB) {
+  const filename = `uploads/${prefix}_${crypto.randomUUID()}${ext}`;
+  const mimeMap: Record<string, string> = { ".png": "image/png", ".jpg": "image/jpeg" };
+  const contentType = mimeMap[ext] || "image/jpeg";
+
+  if (USE_R2) {
+    const { S3Client, PutObjectCommand } = await import("@aws-sdk/client-s3");
+    const s3 = new S3Client({
+      region: "auto",
+      endpoint: process.env.R2_ENDPOINT!,
+      credentials: {
+        accessKeyId: process.env.R2_ACCESS_KEY_ID!,
+        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
+      },
+    });
+    await s3.send(
+      new PutObjectCommand({
+        Bucket: process.env.R2_BUCKET_NAME!,
+        Key: filename,
+        Body: buffer,
+        ContentType: contentType,
+      })
+    );
+    const publicUrl = process.env.R2_PUBLIC_URL?.replace(/\/$/, "");
+    if (!publicUrl) throw new Error("R2_PUBLIC_URL is not configured");
+    return `${publicUrl}/${filename}`;
+  } else if (USE_BLOB) {
     const { put } = await import("@vercel/blob");
-    const mimeMap: Record<string, string> = { ".png": "image/png", ".jpg": "image/jpeg" };
-    const blob = await put(`uploads/${filename}`, buffer, {
+    const blob = await put(filename, buffer, {
       access: "public",
-      contentType: mimeMap[ext] || "image/jpeg",
+      contentType,
     });
     return blob.url;
   } else {
@@ -67,6 +96,7 @@ async function saveGeneratedImage(buffer: Buffer, prefix: string, ext: string): 
     const fs = await import("fs/promises");
     const uploadDir = process.env.UPLOAD_DIR || "./uploads";
     const filePath = path.join(path.resolve(uploadDir), filename);
+    await fs.mkdir(path.dirname(filePath), { recursive: true });
     await fs.writeFile(filePath, buffer);
     return `/api/uploads/${filename}`;
   }

@@ -39,7 +39,13 @@ const translateSchema = z.object({
 // Vercel Hobby: max 60s, Pro: up to 300s
 export const maxDuration = 60;
 
-const USE_BLOB = !!process.env.BLOB_READ_WRITE_TOKEN;
+const USE_R2 = !!(
+  process.env.R2_ACCESS_KEY_ID &&
+  process.env.R2_SECRET_ACCESS_KEY &&
+  process.env.R2_ENDPOINT &&
+  process.env.R2_BUCKET_NAME
+);
+const USE_BLOB = !USE_R2 && !!process.env.BLOB_READ_WRITE_TOKEN;
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 const genAI2 = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
@@ -217,20 +223,39 @@ function extractMimeType(filePathOrUrl: string): string {
   return map[ext] || "image/jpeg";
 }
 
-// Helper: Save generated image (Blob or local)
+// Helper: Save generated image (R2 > Blob > local)
 async function saveGeneratedImage(
   buffer: Buffer,
   prefix: string,
   ext: string
 ): Promise<string> {
-  const filename = `${prefix}_${crypto.randomUUID()}${ext}`;
+  const filename = `uploads/${prefix}_${crypto.randomUUID()}${ext}`;
+  const mimeMap: Record<string, string> = { ".png": "image/png", ".jpg": "image/jpeg" };
+  const contentType = mimeMap[ext] || "image/jpeg";
 
-  if (USE_BLOB) {
+  if (USE_R2) {
+    const { S3Client, PutObjectCommand } = await import("@aws-sdk/client-s3");
+    const s3 = new S3Client({
+      region: "auto",
+      endpoint: process.env.R2_ENDPOINT!,
+      credentials: {
+        accessKeyId: process.env.R2_ACCESS_KEY_ID!,
+        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
+      },
+    });
+    await s3.send(new PutObjectCommand({
+      Bucket: process.env.R2_BUCKET_NAME!,
+      Key: filename,
+      Body: buffer,
+      ContentType: contentType,
+    }));
+    const publicUrl = process.env.R2_PUBLIC_URL?.replace(/\/$/, "");
+    return `${publicUrl}/${filename}`;
+  } else if (USE_BLOB) {
     const { put } = await import("@vercel/blob");
-    const mimeMap: Record<string, string> = { ".png": "image/png", ".jpg": "image/jpeg" };
-    const blob = await put(`uploads/${filename}`, buffer, {
+    const blob = await put(filename, buffer, {
       access: "public",
-      contentType: mimeMap[ext] || "image/jpeg",
+      contentType,
     });
     return blob.url;
   } else {
