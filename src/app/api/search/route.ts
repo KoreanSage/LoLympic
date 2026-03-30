@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
+import { getSessionUser } from "@/lib/auth";
+import { getBlockedUserIds } from "@/lib/block";
 
 // ---------------------------------------------------------------------------
 // GET /api/search?q=keyword&type=posts|users|all&limit=20
@@ -14,6 +16,62 @@ export async function GET(request: NextRequest) {
       50,
       Math.max(1, parseInt(searchParams.get("limit") || "20", 10))
     );
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+    const skip = (page - 1) * limit;
+    const timeRange = searchParams.get("timeRange") || "all";
+    const sort = searchParams.get("sort") || "relevance";
+    const country = searchParams.get("country");
+    const language = searchParams.get("language");
+
+    // Block filtering
+    let blockedIds: string[] = [];
+    try {
+      const user = await getSessionUser();
+      if (user) {
+        blockedIds = await getBlockedUserIds(user.id);
+      }
+    } catch {
+      // Not logged in
+    }
+
+    // Time range filter
+    let createdAtFilter: Prisma.PostWhereInput | undefined;
+    if (timeRange !== "all") {
+      const now = new Date();
+      let gte: Date;
+      switch (timeRange) {
+        case "24h":
+          gte = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+          break;
+        case "week":
+          gte = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          break;
+        case "month":
+          gte = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          break;
+        case "year":
+          gte = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+          break;
+        default:
+          gte = new Date(0);
+      }
+      createdAtFilter = { createdAt: { gte } };
+    }
+
+    // Sort order for posts
+    let postOrderBy: Prisma.PostOrderByWithRelationInput[];
+    switch (sort) {
+      case "top":
+        postOrderBy = [{ reactionCount: "desc" }, { commentCount: "desc" }];
+        break;
+      case "newest":
+        postOrderBy = [{ createdAt: "desc" }];
+        break;
+      case "relevance":
+      default:
+        postOrderBy = [{ reactionCount: "desc" }, { createdAt: "desc" }];
+        break;
+    }
 
     if (!query || query.length < 1) {
       return NextResponse.json(
@@ -83,6 +141,10 @@ export async function GET(request: NextRequest) {
         where: {
           status: "PUBLISHED",
           visibility: "PUBLIC",
+          ...(blockedIds.length > 0 ? { authorId: { notIn: blockedIds } } : {}),
+          ...(country ? { countryId: country } : {}),
+          ...(language ? { sourceLanguage: language as any } : {}),
+          ...createdAtFilter,
           OR: [
             // All words match somewhere in the post (AND logic for multi-word)
             { AND: wordConditions },
@@ -95,7 +157,8 @@ export async function GET(request: NextRequest) {
               : []),
           ],
         },
-        orderBy: [{ reactionCount: "desc" }, { createdAt: "desc" }],
+        orderBy: postOrderBy,
+        skip,
         take: limit,
         select: {
           id: true,
@@ -193,6 +256,10 @@ export async function GET(request: NextRequest) {
       ...results,
       postCount: results.posts?.length ?? 0,
       userCount: results.users?.length ?? 0,
+      pagination: {
+        page,
+        limit,
+      },
     });
   } catch (error) {
     console.error("Error searching:", error);

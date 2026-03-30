@@ -20,6 +20,9 @@ interface UserRow {
   email: string | null;
   role: string;
   isChampion: boolean;
+  isBanned: boolean;
+  banReason: string | null;
+  bannedUntil: string | null;
   createdAt: string;
   _count: { posts: number };
 }
@@ -50,10 +53,14 @@ export default function AdminDashboard() {
   const [reportFilter, setReportFilter] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [actionMsg, setActionMsg] = useState("");
+  const [banTarget, setBanTarget] = useState<UserRow | null>(null);
+  const [banReason, setBanReason] = useState("");
+  const [banDuration, setBanDuration] = useState("7");
+  const [banPending, setBanPending] = useState(false);
 
   const isAdmin =
-    (session?.user as any)?.role === "ADMIN" ||
-    (session?.user as any)?.role === "SUPER_ADMIN";
+    session?.user?.role === "ADMIN" ||
+    session?.user?.role === "SUPER_ADMIN";
 
   useEffect(() => {
     if (status === "loading") return;
@@ -168,6 +175,50 @@ export default function AdminDashboard() {
     } else {
       const data = await res.json();
       setActionMsg(`Error: ${data.error}`);
+    }
+  };
+
+  const handleBan = async () => {
+    if (!banTarget || !banReason.trim() || banPending) return;
+    setBanPending(true);
+    try {
+      const durationDays = banDuration === "permanent" ? null : parseInt(banDuration, 10);
+      const res = await fetch(`/api/admin/users/${banTarget.id}/ban`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: banReason, durationDays }),
+      });
+      if (res.ok) {
+        setActionMsg(`User @${banTarget.username} banned`);
+        loadData();
+      } else {
+        const data = await res.json();
+        setActionMsg(`Error: ${data.error}`);
+      }
+    } catch {
+      setActionMsg("Failed to ban user");
+    } finally {
+      setBanPending(false);
+      setBanTarget(null);
+      setBanReason("");
+      setBanDuration("7");
+    }
+  };
+
+  const handleUnban = async (userId: string, username: string) => {
+    try {
+      const res = await fetch(`/api/admin/users/${userId}/ban`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setActionMsg(`User @${username} unbanned`);
+        loadData();
+      } else {
+        const data = await res.json();
+        setActionMsg(`Error: ${data.error}`);
+      }
+    } catch {
+      setActionMsg("Failed to unban user");
     }
   };
 
@@ -472,6 +523,7 @@ export default function AdminDashboard() {
                   <th className="pb-3 pr-4">Role</th>
                   <th className="pb-3 pr-4">Posts</th>
                   <th className="pb-3 pr-4">Champion</th>
+                  <th className="pb-3 pr-4">Status</th>
                   <th className="pb-3">Joined</th>
                 </tr>
               </thead>
@@ -515,6 +567,32 @@ export default function AdminDashboard() {
                         "—"
                       )}
                     </td>
+                    <td className="py-3 pr-4">
+                      {u.isBanned ? (
+                        <div className="flex items-center gap-1.5">
+                          <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-medium bg-red-500/20 text-red-400">
+                            BANNED
+                          </span>
+                          <button
+                            onClick={() => handleUnban(u.id, u.username)}
+                            className="px-2 py-0.5 rounded text-[10px] bg-background-elevated border border-border hover:border-foreground-subtle transition-colors"
+                          >
+                            Unban
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            setBanTarget(u);
+                            setBanReason("");
+                            setBanDuration("7");
+                          }}
+                          className="px-2 py-0.5 rounded text-[10px] bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
+                        >
+                          Ban
+                        </button>
+                      )}
+                    </td>
                     <td className="py-3 text-foreground-subtle text-xs">
                       {new Date(u.createdAt).toLocaleDateString()}
                     </td>
@@ -525,6 +603,63 @@ export default function AdminDashboard() {
           </div>
         </div>
         </>}
+
+        {/* Ban Modal */}
+        {banTarget && (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50" onClick={() => setBanTarget(null)}>
+            <div className="bg-background-surface border border-border rounded-xl p-6 mx-4 max-w-md w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
+              <h3 className="text-base font-semibold text-foreground mb-1">
+                Ban @{banTarget.username}
+              </h3>
+              <p className="text-sm text-foreground-muted mb-4">
+                {banTarget.displayName || banTarget.username}
+              </p>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-medium text-foreground-muted mb-1">
+                    {t("ban.reason")} *
+                  </label>
+                  <input
+                    value={banReason}
+                    onChange={(e) => setBanReason(e.target.value)}
+                    placeholder="Enter ban reason..."
+                    className="w-full bg-background-elevated border border-border-hover rounded-lg px-3 py-2 text-sm text-foreground placeholder-foreground-subtle focus:outline-none focus:border-[#c9a84c]/50 transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-foreground-muted mb-1">
+                    {t("ban.duration")}
+                  </label>
+                  <select
+                    value={banDuration}
+                    onChange={(e) => setBanDuration(e.target.value)}
+                    className="w-full bg-background-elevated border border-border-hover rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-[#c9a84c]/50 transition-colors"
+                  >
+                    <option value="1">1{t("ban.days", { count: "1" }).replace("1", "").trim() || " day"}</option>
+                    <option value="7">7{t("ban.days", { count: "7" }).replace("7", "").trim() || " days"}</option>
+                    <option value="30">30{t("ban.days", { count: "30" }).replace("30", "").trim() || " days"}</option>
+                    <option value="permanent">{t("ban.permanent")}</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 justify-end mt-5">
+                <button
+                  onClick={() => setBanTarget(null)}
+                  className="px-3 py-1.5 rounded-lg text-sm font-medium text-foreground-muted border border-border hover:bg-background-elevated transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleBan}
+                  disabled={!banReason.trim() || banPending}
+                  className="px-3 py-1.5 rounded-lg text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition-colors disabled:opacity-50"
+                >
+                  {banPending ? "Banning..." : "Ban User"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

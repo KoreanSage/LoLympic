@@ -128,6 +128,12 @@ const ja: Record<TranslationKeys, string> = {
   "comment.misinformation": "誤情報",
   "comment.copyrightReport": "著作権",
   "comment.other": "その他",
+  "comment.edited": "編集済み",
+  "comment.sortTop": "人気",
+  "comment.sortNewest": "最新",
+  "comment.sortOldest": "古い順",
+  "comment.showMoreReplies": "他 {count} 件の返信を表示",
+  "comment.collapseReplies": "返信を折りたたむ",
 
   // ── Mention ────────────────────────────────────────────────────────────────
   "mention.searching": "検索中...",
@@ -144,6 +150,26 @@ const ja: Record<TranslationKeys, string> = {
   "post.original": "原文",
   "post.views": "閲覧",
   "post.shares": "共有",
+  "post.edited": "（編集済み）",
+  "post.editPost": "投稿を編集",
+  "post.editSaved": "変更を保存しました",
+  "post.saveChanges": "変更を保存",
+  "post.title": "タイトル",
+  "post.titleRequired": "タイトルは必須です",
+  "post.titlePlaceholder": "投稿タイトル",
+  "post.body": "本文",
+  "post.bodyPlaceholder": "投稿本文（任意）",
+  "post.category": "カテゴリ",
+  "post.noCategory": "カテゴリなし",
+  "post.tags": "タグ",
+  "post.addTags": "タグを追加...",
+  "post.forward": "転送",
+  "post.forwardSent": "転送しました！",
+  "post.searchUsers": "ユーザーを検索...",
+  "post.noUsersFound": "ユーザーが見つかりません",
+  "post.noRecentConversations": "最近の会話がありません",
+  "post.addMessage": "メッセージを追加（任意）",
+  "post.sendForward": "送信",
   "feed.save": "保存",
 
   // ── Discussion / Suggestion ────────────────────────────────────────────────
@@ -575,6 +601,49 @@ const ja: Record<TranslationKeys, string> = {
   "feed.reportInappropriate": "不適切",
   "feed.reportCopyright": "著作権",
   "feed.reportOther": "その他",
+
+  // ── Block ──────────────────────────────────────────────────────────────────
+  "block.block": "ブロック",
+  "block.unblock": "ブロック解除",
+  "block.confirmTitle": "このユーザーをブロックしますか？",
+  "block.confirmMessage": "ブロックされたユーザーはあなたの投稿を見たり、メッセージを送ったりできなくなります。",
+  "block.blockedUsers": "ブロックリスト",
+  "block.noBlockedUsers": "ブロック中のユーザーはいません",
+  "block.userBlocked": "ユーザーをブロックしました",
+  "block.userUnblocked": "ブロックを解除しました",
+
+  // ── Ban ────────────────────────────────────────────────────────────────────
+  "ban.banned": "アカウント停止",
+  "ban.reason": "理由",
+  "ban.duration": "期間",
+  "ban.permanent": "永久",
+  "ban.days": "{count}日間",
+  "ban.bannedMessage": "アカウントが停止されました。",
+  "ban.contactSupport": "誤りだと思われる場合はサポートにお問い合わせください。",
+
+  // ── Karma ──────────────────────────────────────────────────────────────────
+  "karma.postKarma": "投稿カルマ",
+  "karma.commentKarma": "コメントカルマ",
+
+  // ── Search (filters) ──────────────────────────────────────────────────────
+  "search.timeRange": "期間",
+  "search.24h": "24時間",
+  "search.week": "今週",
+  "search.month": "今月",
+  "search.year": "今年",
+  "search.allTime": "全期間",
+  "search.sortBy": "並び替え",
+  "search.relevance": "関連度",
+  "search.top": "人気",
+  "search.newest": "最新",
+
+  // ── Forward ────────────────────────────────────────────────────────────────
+  "forward.title": "送信先",
+  "forward.searchUsers": "ユーザーを検索...",
+  "forward.recentConversations": "最近の会話",
+  "forward.addMessage": "メッセージを追加...",
+  "forward.sent": "送信完了！",
+  "forward.send": "送信",
 };
 
 export default ja;

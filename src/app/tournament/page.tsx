@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
-import { useTranslation } from "@/i18n";
+import { useTranslation, type TranslationKeys } from "@/i18n";
 import MainLayout from "@/components/layout/MainLayout";
 import ErrorState from "@/components/ui/ErrorState";
 
@@ -132,7 +132,7 @@ export default function TournamentPage() {
     if (roundMatches.length > 0 && roundMatches[0].startAt) {
       date = new Date(roundMatches[0].startAt).toLocaleDateString("en-US", { month: "short", day: "numeric" });
     }
-    return { round, name: t(ROUND_KEYS[round] as any), emoji: ROUND_EMOJI[round], date, label: t(ROUND_LABEL_KEYS[round] as any), matches: roundMatches };
+    return { round, name: t(ROUND_KEYS[round] as TranslationKeys), emoji: ROUND_EMOJI[round], date, label: t(ROUND_LABEL_KEYS[round] as TranslationKeys), matches: roundMatches };
   });
 
   // Votable matches: only those with both posts filled and active/pending
@@ -348,7 +348,7 @@ function VoteView({
   const p1Pct = totalVotes > 0 ? Math.round((match.post1Votes / totalVotes) * 100) : 50;
   const p2Pct = 100 - p1Pct;
   const myVote = userVotes[match.id];
-  const roundLabel = ROUND_LABEL_KEYS[match.round] ? t(ROUND_LABEL_KEYS[match.round] as any) : "";
+  const roundLabel = ROUND_LABEL_KEYS[match.round] ? t(ROUND_LABEL_KEYS[match.round] as TranslationKeys) : "";
 
   return (
     <div className="max-w-lg mx-auto">
@@ -604,7 +604,7 @@ function BracketView({
                   ) : (
                     <div className="border border-border border-dashed rounded-xl p-6 text-center opacity-50">
                       <p className="text-[10px] text-foreground-subtle">
-                        {t("tournament.waitingFor", { round: t(ROUND_KEYS[round - 1] as any) })}
+                        {t("tournament.waitingFor", { round: t(ROUND_KEYS[round - 1] as TranslationKeys) })}
                       </p>
                     </div>
                   )}

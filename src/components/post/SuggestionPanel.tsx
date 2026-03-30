@@ -188,7 +188,7 @@ function DiscussionItem({
   const [isTranslating, setIsTranslating] = useState(false);
   const { data: session } = useSession();
   const { t } = useTranslation();
-  const preferredLang = (session?.user as any)?.preferredLanguage || "en";
+  const preferredLang = session?.user?.preferredLanguage || "en";
 
   const handleTranslate = async () => {
     if (translatedText) {

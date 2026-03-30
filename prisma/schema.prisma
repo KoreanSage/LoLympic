@@ -177,6 +177,7 @@ enum NotificationType {
   SEASON_END
   SYSTEM
   DIRECT_MESSAGE
+  FORWARD
 }
 
 enum CultureNoteStatus {
@@ -238,6 +239,16 @@ model User {
   isChampion        Boolean      @default(false)
   championSeasonId  String?      // Which season they won
 
+  // Karma (community reputation, separate from XP)
+  postKarma         Int          @default(0)
+  commentKarma      Int          @default(0)
+
+  // Ban/suspension
+  isBanned          Boolean      @default(false)
+  banReason         String?
+  bannedAt          DateTime?
+  bannedUntil       DateTime?    // null = permanent ban
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -252,6 +263,8 @@ model User {
   savedPosts           PostSave[]
   followers            Follow[]          @relation("Following")
   following            Follow[]          @relation("Follower")
+  blockedUsers         UserBlock[]       @relation("Blocker")
+  blockedByUsers       UserBlock[]       @relation("Blocked")
   seasonEntries        SeasonEntry[]
   userSeasonStats      UserSeasonStat[]
   medals               Medal[]
@@ -333,6 +346,10 @@ model Post {
   // Cached ranking score (computed by ranking jobs)
   rankingScore Float @default(0)
 
+  // Edit tracking
+  isEdited    Boolean   @default(false)
+  editedAt    DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -357,6 +374,8 @@ model Post {
   votes               PostVote[]
   tournamentAsPost1   TournamentMatch[]  @relation("TournamentPost1")
   tournamentAsPost2   TournamentMatch[]  @relation("TournamentPost2")
+  editHistory         PostEditHistory[]
+  forwardedMessages   DirectMessage[]    @relation("ForwardedPost")
 
   @@index([authorId])
   @@index([countryId])
@@ -509,6 +528,7 @@ model Comment {
   language  LanguageCode?
   status    CommentStatus @default(VISIBLE)
   isPinned  Boolean       @default(false)
+  isEdited  Boolean       @default(false)
 
   // Cached counts
   replyCount Int @default(0)
@@ -662,6 +682,32 @@ model Follow {
   @@unique([followerId, followingId])
   @@index([followingId])
   @@index([followerId])
+}
+
+model UserBlock {
+  id        String   @id @default(cuid())
+  blockerId String
+  blockedId String
+  createdAt DateTime @default(now())
+
+  blocker User @relation("Blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked User @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedId])
+  @@index([blockedId])
+}
+
+model PostEditHistory {
+  id       String   @id @default(cuid())
+  postId   String
+  field    String   // "title", "body", "tags", "category"
+  oldValue String?
+  newValue String?
+  editedAt DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId, editedAt(sort: Desc)])
 }
 
 // ============================================================================
@@ -1074,20 +1120,23 @@ model ConversationParticipant {
 }
 
 model DirectMessage {
-  id             String   @id @default(cuid())
-  conversationId String
-  senderId       String
-  body           String
-  imageUrl       String?
-  imageWidth     Int?
-  imageHeight    Int?
-  createdAt      DateTime @default(now())
+  id              String   @id @default(cuid())
+  conversationId  String
+  senderId        String
+  body            String
+  imageUrl        String?
+  imageWidth      Int?
+  imageHeight     Int?
+  forwardedPostId String?
+  createdAt       DateTime @default(now())
 
-  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  sender       User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  conversation  Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender        User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  forwardedPost Post?        @relation("ForwardedPost", fields: [forwardedPostId], references: [id], onDelete: SetNull)
 
   @@index([conversationId, createdAt(sort: Desc)])
   @@index([senderId])
+  @@index([forwardedPostId])
 }
 
 // ============================================================================

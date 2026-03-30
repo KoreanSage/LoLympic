@@ -128,6 +128,12 @@ const es: Record<TranslationKeys, string> = {
   "comment.misinformation": "Desinformación",
   "comment.copyrightReport": "Derechos de autor",
   "comment.other": "Otro",
+  "comment.edited": "editado",
+  "comment.sortTop": "Mejor",
+  "comment.sortNewest": "Más reciente",
+  "comment.sortOldest": "Más antiguo",
+  "comment.showMoreReplies": "Mostrar {count} respuestas más",
+  "comment.collapseReplies": "Ocultar respuestas",
 
   // ── Mention ────────────────────────────────────────────────────────────────
   "mention.searching": "Buscando...",
@@ -144,6 +150,26 @@ const es: Record<TranslationKeys, string> = {
   "post.original": "Original",
   "post.views": "vistas",
   "post.shares": "compartidos",
+  "post.edited": "(editado)",
+  "post.editPost": "Editar publicación",
+  "post.editSaved": "Cambios guardados",
+  "post.saveChanges": "Guardar cambios",
+  "post.title": "Título",
+  "post.titleRequired": "El título es obligatorio",
+  "post.titlePlaceholder": "Título de la publicación",
+  "post.body": "Cuerpo",
+  "post.bodyPlaceholder": "Cuerpo de la publicación (opcional)",
+  "post.category": "Categoría",
+  "post.noCategory": "Sin categoría",
+  "post.tags": "Etiquetas",
+  "post.addTags": "Añadir etiquetas...",
+  "post.forward": "Reenviar",
+  "post.forwardSent": "¡Reenviado!",
+  "post.searchUsers": "Buscar usuarios...",
+  "post.noUsersFound": "No se encontraron usuarios",
+  "post.noRecentConversations": "Sin conversaciones recientes",
+  "post.addMessage": "Añadir un mensaje (opcional)",
+  "post.sendForward": "Enviar",
   "feed.save": "Guardar",
 
   // ── Discussion / Suggestion ────────────────────────────────────────────────
@@ -575,6 +601,49 @@ const es: Record<TranslationKeys, string> = {
   "feed.reportInappropriate": "Inapropiado",
   "feed.reportCopyright": "Derechos de autor",
   "feed.reportOther": "Otro",
+
+  // ── Block ──────────────────────────────────────────────────────────────────
+  "block.block": "Bloquear",
+  "block.unblock": "Desbloquear",
+  "block.confirmTitle": "Bloquear a este usuario?",
+  "block.confirmMessage": "No podr\u00E1 ver tus publicaciones ni enviarte mensajes.",
+  "block.blockedUsers": "Usuarios bloqueados",
+  "block.noBlockedUsers": "No hay usuarios bloqueados",
+  "block.userBlocked": "Usuario bloqueado",
+  "block.userUnblocked": "Usuario desbloqueado",
+
+  // ── Ban ────────────────────────────────────────────────────────────────────
+  "ban.banned": "Cuenta suspendida",
+  "ban.reason": "Motivo",
+  "ban.duration": "Duraci\u00F3n",
+  "ban.permanent": "Permanente",
+  "ban.days": "{count} d\u00EDas",
+  "ban.bannedMessage": "Tu cuenta ha sido suspendida.",
+  "ban.contactSupport": "Contacta a soporte si crees que es un error.",
+
+  // ── Karma ──────────────────────────────────────────────────────────────────
+  "karma.postKarma": "Karma de publicaciones",
+  "karma.commentKarma": "Karma de comentarios",
+
+  // ── Search (filters) ──────────────────────────────────────────────────────
+  "search.timeRange": "Per\u00EDodo",
+  "search.24h": "24 horas",
+  "search.week": "Esta semana",
+  "search.month": "Este mes",
+  "search.year": "Este a\u00F1o",
+  "search.allTime": "Todo",
+  "search.sortBy": "Ordenar por",
+  "search.relevance": "Relevancia",
+  "search.top": "Mejores",
+  "search.newest": "M\u00E1s recientes",
+
+  // ── Forward ────────────────────────────────────────────────────────────────
+  "forward.title": "Enviar a",
+  "forward.searchUsers": "Buscar usuarios...",
+  "forward.recentConversations": "Recientes",
+  "forward.addMessage": "Agregar un mensaje...",
+  "forward.sent": "\u00A1Enviado!",
+  "forward.send": "Enviar",
 };
 
 export default es;

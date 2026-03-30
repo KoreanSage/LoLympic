@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
+import { updateKarma } from "@/lib/karma";
 
 type RouteContext = { params: Promise<{ id: string; commentId: string }> };
 
@@ -29,7 +30,7 @@ export async function POST(
 
     const comment = await prisma.comment.findUnique({
       where: { id: commentId },
-      select: { id: true, status: true },
+      select: { id: true, status: true, authorId: true },
     });
 
     if (!comment || comment.status === "REMOVED") {
@@ -73,6 +74,13 @@ export async function POST(
         }),
       ]);
       liked = true;
+    }
+
+    // Karma: +1 for like, -1 for unlike (fire-and-forget)
+    if (liked) {
+      updateKarma(comment.authorId, "comment", 1).catch(() => {});
+    } else {
+      updateKarma(comment.authorId, "comment", -1).catch(() => {});
     }
 
     const updated = await prisma.comment.findUnique({

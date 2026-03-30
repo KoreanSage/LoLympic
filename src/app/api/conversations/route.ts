@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
+import { isBlocked } from "@/lib/block";
 
 // GET /api/conversations — list user's conversations
 export async function GET() {
@@ -107,6 +108,11 @@ export async function POST(request: NextRequest) {
     const otherUser = await prisma.user.findUnique({ where: { id: participantId } });
     if (!otherUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Check if block exists
+    if (await isBlocked(user.id, participantId)) {
+      return NextResponse.json({ error: "Cannot start a conversation with a blocked user" }, { status: 403 });
     }
 
     // Check if conversation already exists between these two users

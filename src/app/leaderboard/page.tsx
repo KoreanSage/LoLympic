@@ -106,7 +106,10 @@ export default function LeaderboardPage() {
       const memeData: ApiLeaderboardResponse = await memeRes.json();
       const battleData = await battleRes.json().catch(() => ({ entries: [] }));
 
-      if ((countryData as any).source === "realtime") setIsRealtime(true);
+      // Check if data is from realtime fallback
+      if ((countryData as ApiLeaderboardResponse & { source?: string }).source === "realtime") {
+        setIsRealtime(true);
+      }
 
       const mappedCountries = mapCountries((countryData.entries ?? []) as ApiCountryEntry[]);
       const mappedCreators = mapCreators((creatorData.entries ?? []) as ApiCreatorEntry[]);

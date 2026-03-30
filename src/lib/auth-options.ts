@@ -154,6 +154,8 @@ export const authOptions: NextAuthOptions = {
           token.preferredLanguage = dbUser.preferredLanguage;
           token.uiLanguage = dbUser.uiLanguage;
           token.role = dbUser.role;
+          token.isBanned = dbUser.isBanned;
+          token.banReason = dbUser.banReason;
           token.needsSetup = false;
         } else {
           // User was deleted from DB — invalidate session
@@ -189,6 +191,8 @@ export const authOptions: NextAuthOptions = {
             token.preferredLanguage = dbUser.preferredLanguage;
             token.uiLanguage = dbUser.uiLanguage;
             token.role = dbUser.role;
+            token.isBanned = dbUser.isBanned;
+            token.banReason = dbUser.banReason;
             // Check if profile looks auto-generated (email prefix as username)
             const emailPrefix = (user.email || "").split("@")[0].replace(/[^a-zA-Z0-9_]/g, "_");
             token.needsSetup = dbUser.username === emailPrefix || dbUser.username.startsWith(emailPrefix + "_");
@@ -224,6 +228,8 @@ export const authOptions: NextAuthOptions = {
         session.user.preferredLanguage = token.preferredLanguage;
         session.user.uiLanguage = token.uiLanguage;
         session.user.role = token.role as string;
+        session.user.isBanned = token.isBanned ?? false;
+        session.user.banReason = token.banReason as string | undefined;
         session.user.needsSetup = token.needsSetup ?? false;
       }
       return session;

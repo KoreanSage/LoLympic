@@ -327,9 +327,9 @@ export default function TopNav() {
     }
   };
 
-  const userAvatarUrl = (session?.user as any)?.avatarUrl || session?.user?.image || null;
-  const username = (session?.user as any)?.username || "me";
-  const userRole = (session?.user as any)?.role;
+  const userAvatarUrl = session?.user?.avatarUrl || session?.user?.image || null;
+  const username = session?.user?.username || "me";
+  const userRole = session?.user?.role;
   const isAdmin = userRole === "ADMIN" || userRole === "SUPER_ADMIN";
 
   // Hide season bar on scroll
@@ -539,7 +539,7 @@ export default function TopNav() {
               >
                 <Avatar
                   src={userAvatarUrl}
-                  alt={(session.user as any).displayName || username}
+                  alt={session.user?.displayName || username}
                   size="sm"
                 />
               </Link>

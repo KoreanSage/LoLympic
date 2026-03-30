@@ -39,14 +39,14 @@ export default function WelcomePage() {
   const { t } = useTranslation();
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState(
-    (session?.user as any)?.displayName || session?.user?.name || ""
+    session?.user?.displayName || session?.user?.name || ""
   );
 
   // Redirect if not logged in or if profile is already set up
   useEffect(() => {
     if (status === "unauthenticated") {
       router.replace("/login");
-    } else if (status === "authenticated" && !(session?.user as any)?.needsSetup) {
+    } else if (status === "authenticated" && !session?.user?.needsSetup) {
       router.replace("/");
     }
   }, [status, session, router]);

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
+import { updateKarma } from "@/lib/karma";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -61,7 +62,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
     const post = await prisma.post.findUnique({
       where: { id: postId },
-      select: { id: true, status: true },
+      select: { id: true, status: true, authorId: true },
     });
     if (!post || post.status === "REMOVED") {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
@@ -80,6 +81,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
             where: { id: postId },
             data: { voteScore: { decrement: existing.value } },
           });
+          // Karma: removing upvote = -1, removing downvote = +1
+          const karmaDelta = existing.value === 1 ? -1 : 1;
+          updateKarma(post.authorId, "post", karmaDelta).catch(() => {});
         }
       } else if (existing) {
         // Change vote
@@ -90,6 +94,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
             where: { id: postId },
             data: { voteScore: { increment: diff } },
           });
+          // Karma: change from up to down = -2, change from down to up = +2
+          updateKarma(post.authorId, "post", diff).catch(() => {});
         }
       } else {
         // New vote
@@ -98,6 +104,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
           where: { id: postId },
           data: { voteScore: { increment: value } },
         });
+        // Karma: new upvote = +1, new downvote = -1
+        updateKarma(post.authorId, "post", value).catch(() => {});
       }
     });
 

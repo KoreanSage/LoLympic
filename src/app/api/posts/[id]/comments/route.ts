@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import { updateRankingScore } from "@/lib/ranking";
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 import { awardXp, XP_AWARDS } from "@/lib/xp";
+import { getBlockedUserIds } from "@/lib/block";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -34,6 +35,18 @@ export async function GET(
       Math.max(1, parseInt(searchParams.get("limit") || "20", 10))
     );
     const skip = (page - 1) * limit;
+    const sort = searchParams.get("sort") || "top";
+
+    // Block filtering
+    let blockedIds: string[] = [];
+    try {
+      const user = await getSessionUser();
+      if (user) {
+        blockedIds = await getBlockedUserIds(user.id);
+      }
+    } catch {
+      // Not logged in
+    }
 
     const authorSelect = {
       id: true,
@@ -51,12 +64,28 @@ export async function GET(
       postId,
       parentId: null,
       status: "VISIBLE" as const,
+      ...(blockedIds.length > 0 ? { authorId: { notIn: blockedIds } } : {}),
     };
+
+    // Sorting
+    let orderBy: any;
+    switch (sort) {
+      case "newest":
+        orderBy = { createdAt: "desc" };
+        break;
+      case "oldest":
+        orderBy = { createdAt: "asc" };
+        break;
+      case "top":
+      default:
+        orderBy = { likeCount: "desc" };
+        break;
+    }
 
     const [comments, total] = await Promise.all([
       prisma.comment.findMany({
         where,
-        orderBy: { createdAt: "desc" },
+        orderBy,
         skip,
         take: limit,
         include: {

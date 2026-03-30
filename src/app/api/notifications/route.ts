@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
+import { getBlockedUserIds } from "@/lib/block";
 
 // ---------------------------------------------------------------------------
 // GET /api/notifications — Get user notifications (paginated)
@@ -22,8 +23,12 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit;
     const unreadOnly = searchParams.get("unread") === "true";
 
+    // Block filtering
+    const blockedIds = await getBlockedUserIds(user.id);
+
     const where: Record<string, unknown> = {
       recipientId: user.id,
+      ...(blockedIds.length > 0 ? { actorId: { notIn: blockedIds } } : {}),
     };
 
     if (unreadOnly) {

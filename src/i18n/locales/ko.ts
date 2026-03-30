@@ -128,6 +128,12 @@ const ko: Record<TranslationKeys, string> = {
   "comment.misinformation": "허위 정보",
   "comment.copyrightReport": "저작권",
   "comment.other": "기타",
+  "comment.edited": "수정됨",
+  "comment.sortTop": "인기순",
+  "comment.sortNewest": "최신순",
+  "comment.sortOldest": "오래된순",
+  "comment.showMoreReplies": "{count}개 답글 더 보기",
+  "comment.collapseReplies": "답글 접기",
 
   // ── Mention ────────────────────────────────────────────────────────────────
   "mention.searching": "검색 중...",
@@ -144,6 +150,26 @@ const ko: Record<TranslationKeys, string> = {
   "post.original": "원문",
   "post.views": "조회",
   "post.shares": "공유",
+  "post.edited": "(수정됨)",
+  "post.editPost": "게시물 수정",
+  "post.editSaved": "변경 사항이 저장되었습니다",
+  "post.saveChanges": "변경 저장",
+  "post.title": "제목",
+  "post.titleRequired": "제목은 필수입니다",
+  "post.titlePlaceholder": "게시물 제목",
+  "post.body": "내용",
+  "post.bodyPlaceholder": "게시물 내용 (선택)",
+  "post.category": "카테고리",
+  "post.noCategory": "카테고리 없음",
+  "post.tags": "태그",
+  "post.addTags": "태그 추가...",
+  "post.forward": "전달",
+  "post.forwardSent": "전달됨!",
+  "post.searchUsers": "사용자 검색...",
+  "post.noUsersFound": "사용자를 찾을 수 없습니다",
+  "post.noRecentConversations": "최근 대화가 없습니다",
+  "post.addMessage": "메시지 추가 (선택)",
+  "post.sendForward": "보내기",
   "feed.save": "저장",
 
   // ── Discussion / Suggestion ────────────────────────────────────────────────
@@ -581,6 +607,49 @@ const ko: Record<TranslationKeys, string> = {
   "feed.reportInappropriate": "부적절한 콘텐츠",
   "feed.reportCopyright": "저작권",
   "feed.reportOther": "기타",
+
+  // ── Block ──────────────────────────────────────────────────────────────────
+  "block.block": "차단",
+  "block.unblock": "차단 해제",
+  "block.confirmTitle": "이 유저를 차단하시겠습니까?",
+  "block.confirmMessage": "차단된 유저는 회원님의 게시물을 보거나 메시지를 보낼 수 없습니다.",
+  "block.blockedUsers": "차단 목록",
+  "block.noBlockedUsers": "차단된 유저가 없습니다",
+  "block.userBlocked": "유저를 차단했습니다",
+  "block.userUnblocked": "차단을 해제했습니다",
+
+  // ── Ban ────────────────────────────────────────────────────────────────────
+  "ban.banned": "계정 정지됨",
+  "ban.reason": "사유",
+  "ban.duration": "기간",
+  "ban.permanent": "영구",
+  "ban.days": "{count}일",
+  "ban.bannedMessage": "계정이 정지되었습니다.",
+  "ban.contactSupport": "오류라고 생각되시면 고객지원에 문의하세요.",
+
+  // ── Karma ──────────────────────────────────────────────────────────────────
+  "karma.postKarma": "포스트 카르마",
+  "karma.commentKarma": "댓글 카르마",
+
+  // ── Search (filters) ──────────────────────────────────────────────────────
+  "search.timeRange": "기간",
+  "search.24h": "24시간",
+  "search.week": "1주",
+  "search.month": "1달",
+  "search.year": "1년",
+  "search.allTime": "전체",
+  "search.sortBy": "정렬",
+  "search.relevance": "관련도",
+  "search.top": "인기",
+  "search.newest": "최신",
+
+  // ── Forward ────────────────────────────────────────────────────────────────
+  "forward.title": "전달하기",
+  "forward.searchUsers": "유저 검색...",
+  "forward.recentConversations": "최근 대화",
+  "forward.addMessage": "메시지 추가...",
+  "forward.sent": "전달 완료!",
+  "forward.send": "보내기",
 };
 
 export default ko;

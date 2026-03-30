@@ -8,7 +8,7 @@ import Avatar from "@/components/ui/Avatar";
 import Button from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { useTheme } from "@/components/providers/ThemeProvider";
-import { useTranslation } from "@/i18n";
+import { useTranslation, type TranslationKeys, type Locale } from "@/i18n";
 import Link from "next/link";
 
 const LANGUAGES = [
@@ -42,23 +42,25 @@ const COUNTRIES = [
   { code: "AE", label: "UAE", flag: "\u{1F1E6}\u{1F1EA}" },
 ];
 
-type SettingsTab = "profile" | "account" | "notifications" | "language" | "about";
+type SettingsTab = "profile" | "account" | "notifications" | "language" | "blocked" | "about";
 
 const TAB_ICONS: Record<SettingsTab, string> = {
   profile: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z",
   account: "M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z",
   notifications: "M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9",
   language: "M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129",
+  blocked: "M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636",
   about: "M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
 };
 
-const TAB_IDS: SettingsTab[] = ["profile", "account", "notifications", "language", "about"];
+const TAB_IDS: SettingsTab[] = ["profile", "account", "notifications", "language", "blocked", "about"];
 
 const TAB_LABEL_KEYS: Record<SettingsTab, string> = {
   profile: "settings.profile",
   account: "settings.account",
   notifications: "settings.notifications",
   language: "settings.language",
+  blocked: "block.blockedUsers",
   about: "settings.about",
 };
 
@@ -104,6 +106,11 @@ export default function SettingsPage() {
   const [preferredLang, setPreferredLang] = useState("ko");
   const [autoTranslate, setAutoTranslate] = useState(true);
 
+  // Blocked users state
+  const [blockedUsers, setBlockedUsers] = useState<Array<{ id: string; username: string; displayName?: string | null; avatarUrl?: string | null }>>([]);
+  const [blockedLoading, setBlockedLoading] = useState(false);
+  const [unblockingId, setUnblockingId] = useState<string | null>(null);
+
   const [saving, setSaving] = useState(false);
   const [profileLoading, setProfileLoading] = useState(true);
 
@@ -128,6 +135,37 @@ export default function SettingsPage() {
       .catch((e) => { console.error("Failed to fetch user profile:", e); })
       .finally(() => setProfileLoading(false));
   }, [status]);
+
+  // Fetch blocked users when tab changes to blocked
+  useEffect(() => {
+    if (activeTab !== "blocked" || status !== "authenticated") return;
+    setBlockedLoading(true);
+    fetch("/api/block/list")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data) setBlockedUsers(data.blockedUsers || []);
+      })
+      .catch(() => {})
+      .finally(() => setBlockedLoading(false));
+  }, [activeTab, status]);
+
+  const handleUnblock = async (userId: string) => {
+    setUnblockingId(userId);
+    try {
+      const res = await fetch("/api/block", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId }),
+      });
+      if (!res.ok) throw new Error();
+      setBlockedUsers((prev) => prev.filter((u) => u.id !== userId));
+      toast(t("block.userUnblocked" as TranslationKeys), "success");
+    } catch {
+      toast("Failed to unblock user", "error");
+    } finally {
+      setUnblockingId(null);
+    }
+  };
 
   if (status === "loading") {
     return (
@@ -189,7 +227,7 @@ export default function SettingsPage() {
         payload.uiLanguage = uiLanguage;
         payload.preferredLanguage = preferredLang;
         // Update the i18n locale so the UI re-renders in the new language
-        setLocale(uiLanguage as any);
+        setLocale(uiLanguage as Locale);
       } else if (activeTab === "notifications") {
         // Notification preferences are stored locally for now
         localStorage.setItem("mimzy_notif_prefs", JSON.stringify({
@@ -244,7 +282,7 @@ export default function SettingsPage() {
                 <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={TAB_ICONS[tabId]} />
                 </svg>
-                {t(TAB_LABEL_KEYS[tabId] as any)}
+                {t(TAB_LABEL_KEYS[tabId] as TranslationKeys)}
               </button>
             ))}
           </nav>
@@ -267,7 +305,7 @@ export default function SettingsPage() {
                       <div className="relative group">
                         <Avatar
                           src={avatarUrl}
-                          alt={displayName || (session.user as any)?.username || "User"}
+                          alt={displayName || session.user?.username || "User"}
                           size="xl"
                         />
                         <button
@@ -379,16 +417,16 @@ export default function SettingsPage() {
                   <div className="space-y-3">
                     <div className="flex justify-between items-center py-2 border-b border-border">
                       <span className="text-sm text-foreground-muted">{t("settings.email")}</span>
-                      <span className="text-sm text-foreground">{(session.user as any).email || "\u2014"}</span>
+                      <span className="text-sm text-foreground">{session.user.email || "\u2014"}</span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-b border-border">
                       <span className="text-sm text-foreground-muted">{t("settings.username")}</span>
-                      <span className="text-sm text-foreground">@{(session.user as any).username || "\u2014"}</span>
+                      <span className="text-sm text-foreground">@{session.user.username || "\u2014"}</span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-b border-border">
                       <span className="text-sm text-foreground-muted">{t("settings.role")}</span>
                       <span className="text-xs px-2 py-0.5 rounded-full bg-[#c9a84c]/10 text-[#c9a84c]">
-                        {(session.user as any).role || "USER"}
+                        {session.user.role || "USER"}
                       </span>
                     </div>
                     <div className="flex justify-between items-center py-2">
@@ -631,6 +669,43 @@ export default function SettingsPage() {
                 <Button onClick={handleSave} loading={saving}>
                   {t("settings.savePrefs")}
                 </Button>
+              </div>
+            )}
+
+            {/* Blocked Users */}
+            {activeTab === "blocked" && (
+              <div className="bg-background-surface border border-border rounded-xl p-6 space-y-4">
+                <h2 className="text-lg font-semibold text-foreground">{t("block.blockedUsers" as TranslationKeys)}</h2>
+                {blockedLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="w-6 h-6 border-2 border-[#c9a84c] border-t-transparent rounded-full animate-spin" />
+                  </div>
+                ) : blockedUsers.length === 0 ? (
+                  <p className="text-sm text-foreground-subtle py-8 text-center">{t("block.noBlockedUsers" as TranslationKeys)}</p>
+                ) : (
+                  <div className="space-y-2">
+                    {blockedUsers.map((user) => (
+                      <div key={user.id} className="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-background-elevated transition-colors">
+                        <Avatar
+                          src={user.avatarUrl}
+                          alt={user.displayName || user.username}
+                          size="md"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate">{user.displayName || user.username}</p>
+                          <p className="text-xs text-foreground-subtle">@{user.username}</p>
+                        </div>
+                        <button
+                          onClick={() => handleUnblock(user.id)}
+                          disabled={unblockingId === user.id}
+                          className="px-3 py-1.5 rounded-lg text-xs font-medium bg-background-elevated border border-border hover:border-foreground-subtle text-foreground-muted hover:text-foreground transition-colors disabled:opacity-50"
+                        >
+                          {unblockingId === user.id ? "..." : t("block.unblock" as TranslationKeys)}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getSessionUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { LanguageCode } from "@prisma/client";
 import { backfillSinglePostTitle } from "@/lib/translate-backfill";
 
 const patchPostSchema = z.object({
@@ -57,7 +58,7 @@ export async function GET(
         translationPayloads: {
           where: {
             status: { in: ["COMPLETED", "APPROVED"] },
-            ...(lang ? { targetLanguage: lang as any } : {}),
+            ...(lang ? { targetLanguage: lang as LanguageCode } : {}),
           },
           orderBy: { version: "desc" },
           ...(lang ? { take: 1 } : {}),
@@ -68,7 +69,7 @@ export async function GET(
         cultureNotes: {
           where: {
             status: { in: ["PUBLISHED", "APPROVED"] },
-            ...(lang ? { language: lang as any } : {}),
+            ...(lang ? { language: lang as LanguageCode } : {}),
           },
           orderBy: { version: "desc" },
         },
@@ -110,7 +111,7 @@ export async function GET(
         },
         orderBy: { version: "desc" },
       });
-      (post as any).cultureNotes = fallbackNotes;
+      Object.assign(post, { cultureNotes: fallbackNotes });
     }
 
     // Get reaction counts by type
@@ -192,7 +193,7 @@ export async function PATCH(
 
     const existing = await prisma.post.findUnique({
       where: { id },
-      select: { authorId: true, status: true },
+      select: { authorId: true, status: true, title: true, body: true, category: true, tags: true, visibility: true },
     });
 
     if (!existing || existing.status === "REMOVED") {
@@ -224,20 +225,54 @@ export async function PATCH(
     if (tags !== undefined) updateData.tags = tags;
     if (visibility !== undefined) updateData.visibility = visibility;
 
-    const post = await prisma.post.update({
-      where: { id },
-      data: updateData,
-      include: {
-        author: {
-          select: {
-            id: true,
-            username: true,
-            displayName: true,
-            avatarUrl: true,
+    // Track edit
+    updateData.isEdited = true;
+    updateData.editedAt = new Date();
+
+    // Build edit history records for changed fields
+    const editHistoryRecords: { postId: string; field: string; oldValue: string | null; newValue: string | null }[] = [];
+    const fieldsToCheck: { key: string; field: string; oldVal: any; newVal: any }[] = [
+      { key: "title", field: "title", oldVal: existing.title, newVal: title },
+      { key: "body", field: "body", oldVal: existing.body, newVal: postBody },
+      { key: "category", field: "category", oldVal: existing.category, newVal: category },
+      { key: "tags", field: "tags", oldVal: JSON.stringify(existing.tags), newVal: tags !== undefined ? JSON.stringify(tags) : undefined },
+      { key: "visibility", field: "visibility", oldVal: existing.visibility, newVal: visibility },
+    ];
+
+    for (const { field: f, oldVal, newVal } of fieldsToCheck) {
+      if (newVal !== undefined && String(oldVal ?? "") !== String(newVal ?? "")) {
+        editHistoryRecords.push({
+          postId: id,
+          field: f,
+          oldValue: oldVal != null ? String(oldVal) : null,
+          newValue: newVal != null ? String(newVal) : null,
+        });
+      }
+    }
+
+    // Wrap in transaction
+    const post = await prisma.$transaction(async (tx) => {
+      const updated = await tx.post.update({
+        where: { id },
+        data: updateData,
+        include: {
+          author: {
+            select: {
+              id: true,
+              username: true,
+              displayName: true,
+              avatarUrl: true,
+            },
           },
+          images: { orderBy: { orderIndex: "asc" } },
         },
-        images: { orderBy: { orderIndex: "asc" } },
-      },
+      });
+
+      if (editHistoryRecords.length > 0) {
+        await tx.postEditHistory.createMany({ data: editHistoryRecords });
+      }
+
+      return updated;
     });
 
     return NextResponse.json({ post });

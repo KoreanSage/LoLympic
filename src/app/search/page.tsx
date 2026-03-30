@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState, useCallback } from "react";
+import { Suspense, useEffect, useState, useCallback, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslation } from "@/i18n";
 import Link from "next/link";
@@ -43,6 +43,22 @@ interface UserResult {
     posts: number;
   };
 }
+
+const TIME_RANGES = [
+  { value: "all", labelKey: "search.allTime" },
+  { value: "24h", labelKey: "search.24h" },
+  { value: "week", labelKey: "search.week" },
+  { value: "month", labelKey: "search.month" },
+  { value: "year", labelKey: "search.year" },
+] as const;
+
+const SORT_OPTIONS = [
+  { value: "relevance", labelKey: "search.relevance" },
+  { value: "top", labelKey: "search.top" },
+  { value: "newest", labelKey: "search.newest" },
+] as const;
+
+const PAGE_SIZE = 20;
 
 export default function SearchPageWrapper() {
   return (
@@ -106,43 +122,92 @@ function SearchPage() {
   const [postCount, setPostCount] = useState(0);
   const [userCount, setUserCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [timeRange, setTimeRange] = useState("all");
+  const [sort, setSort] = useState("relevance");
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   // Load recent searches on mount
   useEffect(() => {
     setRecentSearches(getRecentSearches());
   }, []);
 
-  const doSearch = useCallback(async (q: string) => {
+  const doSearch = useCallback(async (q: string, pageNum: number, append: boolean, tr: string, s: string) => {
     if (!q.trim()) return;
-    setLoading(true);
-    setError(false);
-    // Save to recent searches
-    addRecentSearch(q.trim());
-    setRecentSearches(getRecentSearches());
+    if (append) {
+      setLoadingMore(true);
+    } else {
+      setLoading(true);
+      setError(false);
+      addRecentSearch(q.trim());
+      setRecentSearches(getRecentSearches());
+    }
     try {
-      const res = await fetch(
-        `/api/search?q=${encodeURIComponent(q)}&type=all&limit=30`
-      );
+      const params = new URLSearchParams({
+        q,
+        type: "all",
+        limit: String(PAGE_SIZE),
+        page: String(pageNum),
+        timeRange: tr,
+        sort: s,
+      });
+      const res = await fetch(`/api/search?${params}`);
       if (res.ok) {
         const data = await res.json();
-        setPosts(data.posts || []);
-        setUsers(data.users || []);
+        if (append) {
+          setPosts((prev) => [...prev, ...(data.posts || [])]);
+          setUsers((prev) => [...prev, ...(data.users || [])]);
+        } else {
+          setPosts(data.posts || []);
+          setUsers(data.users || []);
+        }
         setPostCount(data.postCount ?? 0);
         setUserCount(data.userCount ?? 0);
+        // Determine if there are more results
+        const currentBatchSize = (data.posts?.length ?? 0);
+        setHasMore(currentBatchSize >= PAGE_SIZE);
       }
     } catch (e) {
       console.error("Search failed:", e);
-      setError(true);
+      if (!append) setError(true);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   }, []);
 
+  // Initial search
   useEffect(() => {
-    if (query) doSearch(query);
-  }, [query, doSearch]);
+    if (query) {
+      setPage(1);
+      doSearch(query, 1, false, timeRange, sort);
+    }
+  }, [query, timeRange, sort, doSearch]);
+
+  // Load more function
+  const loadMore = useCallback(() => {
+    if (loadingMore || loading || !hasMore || !query) return;
+    const nextPage = page + 1;
+    setPage(nextPage);
+    doSearch(query, nextPage, true, timeRange, sort);
+  }, [loadingMore, loading, hasMore, query, page, timeRange, sort, doSearch]);
+
+  // IntersectionObserver for infinite scroll
+  useEffect(() => {
+    if (!sentinelRef.current) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) loadMore();
+      },
+      { rootMargin: "200px" }
+    );
+    observer.observe(sentinelRef.current);
+    return () => observer.disconnect();
+  }, [loadMore]);
 
   return (
     <MainLayout showSidebar={false}>
@@ -158,6 +223,47 @@ function SearchPage() {
             </p>
           )}
         </div>
+
+        {/* Time Range Filters */}
+        {query && (
+          <div className="space-y-3">
+            <div className="flex flex-wrap gap-1.5">
+              {TIME_RANGES.map((tr) => (
+                <button
+                  key={tr.value}
+                  onClick={() => {
+                    setTimeRange(tr.value);
+                    setPage(1);
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                    timeRange === tr.value
+                      ? "bg-[#c9a84c]/20 text-[#c9a84c] border border-[#c9a84c]/30"
+                      : "bg-background-elevated text-foreground-muted hover:text-foreground border border-transparent hover:border-border"
+                  }`}
+                >
+                  {t(tr.labelKey as any)}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-foreground-subtle">{t("search.sortBy" as any)}:</span>
+              <select
+                value={sort}
+                onChange={(e) => {
+                  setSort(e.target.value);
+                  setPage(1);
+                }}
+                className="bg-background-elevated border border-border rounded-lg px-2.5 py-1 text-xs text-foreground focus:outline-none focus:border-[#c9a84c]/50 transition-colors"
+              >
+                {SORT_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {t(opt.labelKey as any)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="flex gap-1 border-b border-border">
@@ -185,7 +291,7 @@ function SearchPage() {
 
         {/* Results */}
         {error ? (
-          <ErrorState message="Search failed" onRetry={() => doSearch(query)} />
+          <ErrorState message="Search failed" onRetry={() => doSearch(query, 1, false, timeRange, sort)} />
         ) : loading ? (
           <div className="flex items-center justify-center py-20">
             <div className="w-8 h-8 border-2 border-[#c9a84c] border-t-transparent rounded-full animate-spin" />
@@ -277,6 +383,13 @@ function SearchPage() {
                   </Card>
                 </Link>
               ))}
+              {/* Infinite scroll sentinel */}
+              <div ref={sentinelRef} className="h-1" />
+              {loadingMore && (
+                <div className="flex items-center justify-center py-4">
+                  <div className="w-6 h-6 border-2 border-[#c9a84c] border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
             </div>
           )
         ) : users.length === 0 ? (

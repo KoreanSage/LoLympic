@@ -53,7 +53,7 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const userId = (session?.user as any)?.id;
+  const userId = session?.user?.id;
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -164,12 +164,12 @@ export default function ChatPage() {
       imageWidth: image?.width,
       imageHeight: image?.height,
       createdAt: new Date().toISOString(),
-      senderId: userId,
+      senderId: userId || "",
       sender: {
-        id: userId,
-        username: (session?.user as any)?.username || "",
-        displayName: (session?.user as any)?.displayName || null,
-        avatarUrl: (session?.user as any)?.avatarUrl || null,
+        id: userId || "",
+        username: session?.user?.username || "",
+        displayName: session?.user?.displayName || null,
+        avatarUrl: session?.user?.avatarUrl || null,
       },
     };
     setMessages((prev) => [...prev, optimisticMsg]);

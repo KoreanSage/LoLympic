@@ -1,1 +1,1 @@
-export { useTranslation, type TranslationKeys } from "./provider";
+export { useTranslation, type TranslationKeys, type Locale } from "./provider";

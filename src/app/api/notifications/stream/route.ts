@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
   }
 
   const userId = user.id;
+  const watchPostId = request.nextUrl.searchParams.get("watchPostId");
   const MAX_DURATION_MS = 5 * 60 * 1000; // 5 minutes
   const POLL_INTERVAL_MS = 5000; // 5 seconds
   const startTime = Date.now();
@@ -82,12 +83,82 @@ export async function GET(request: NextRequest) {
             }),
           ]);
 
-          lastCheckedAt = new Date();
-
           send("notification", {
             unreadCount,
             latest: latestNotifications,
           });
+
+          // Poll for new comments on watched post
+          if (watchPostId) {
+            const newComments = await prisma.comment.findMany({
+              where: {
+                postId: watchPostId,
+                createdAt: { gt: lastCheckedAt },
+              },
+              orderBy: { createdAt: "asc" },
+              select: {
+                id: true,
+                body: true,
+                authorId: true,
+                author: {
+                  select: {
+                    username: true,
+                    displayName: true,
+                    avatarUrl: true,
+                  },
+                },
+                createdAt: true,
+              },
+            });
+
+            if (newComments.length > 0) {
+              send("comment", {
+                postId: watchPostId,
+                comments: newComments,
+              });
+            }
+          }
+
+          // Poll for new direct messages in user's conversations
+          const conversationsWithNewMessages =
+            await prisma.conversation.findMany({
+              where: {
+                participants: { some: { userId } },
+                messages: { some: { createdAt: { gt: lastCheckedAt } } },
+              },
+              select: {
+                id: true,
+                messages: {
+                  where: { createdAt: { gt: lastCheckedAt } },
+                  orderBy: { createdAt: "asc" },
+                  select: {
+                    id: true,
+                    body: true,
+                    senderId: true,
+                    sender: {
+                      select: {
+                        username: true,
+                        displayName: true,
+                        avatarUrl: true,
+                      },
+                    },
+                    forwardedPostId: true,
+                    createdAt: true,
+                  },
+                },
+              },
+            });
+
+          if (conversationsWithNewMessages.length > 0) {
+            send("message", {
+              conversations: conversationsWithNewMessages.map((c) => ({
+                conversationId: c.id,
+                messages: c.messages,
+              })),
+            });
+          }
+
+          lastCheckedAt = new Date();
         } catch (err) {
           console.error("SSE poll error:", err);
         }

@@ -4,6 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
+import { Ban } from "lucide-react";
 import MainLayout from "@/components/layout/MainLayout";
 import Avatar from "@/components/ui/Avatar";
 import Card from "@/components/ui/Card";
@@ -29,6 +30,8 @@ interface UserProfile {
   totalXp: number;
   level: number;
   tier: string;
+  postKarma: number;
+  commentKarma: number;
   followerCount: number;
   followingCount: number;
   postCount: number;
@@ -60,6 +63,9 @@ export default function UserProfilePage() {
   const [activeTab, setActiveTab] = useState("posts");
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [deletePending, setDeletePending] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [blockPending, setBlockPending] = useState(false);
+  const [showBlockConfirm, setShowBlockConfirm] = useState(false);
 
   useEffect(() => {
     if (!username) return;
@@ -87,6 +93,42 @@ export default function UserProfilePage() {
 
     return () => { cancelled = true; };
   }, [username]);
+
+  // Fetch block status
+  useEffect(() => {
+    if (!profile || profile.isOwnProfile || !session) return;
+    fetch(`/api/block?userId=${profile.id}`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data) setIsBlocked(data.isBlocked);
+      })
+      .catch(() => {});
+  }, [profile, session]);
+
+  const handleBlock = useCallback(async () => {
+    if (!profile || blockPending) return;
+    setBlockPending(true);
+    try {
+      const res = await fetch("/api/block", {
+        method: isBlocked ? "DELETE" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: profile.id }),
+      });
+      if (!res.ok) throw new Error();
+      setIsBlocked(!isBlocked);
+      if (!isBlocked) {
+        // If blocking, also unfollow
+        setFollowing(false);
+        setFollowerCount((c) => following ? c - 1 : c);
+      }
+      toast(isBlocked ? t("block.userUnblocked") : t("block.userBlocked"), "success");
+    } catch {
+      toast("Failed to update block status", "error");
+    } finally {
+      setBlockPending(false);
+      setShowBlockConfirm(false);
+    }
+  }, [profile, isBlocked, blockPending, following, toast, t]);
 
   const handleFollow = useCallback(async () => {
     if (!profile || followPending) return;
@@ -232,6 +274,18 @@ export default function UserProfilePage() {
                   >
                     {t("profile.message")}
                   </button>
+                  <button
+                    onClick={() => isBlocked ? handleBlock() : setShowBlockConfirm(true)}
+                    disabled={blockPending}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors flex items-center gap-1.5 ${
+                      isBlocked
+                        ? "bg-background-overlay text-foreground-muted hover:text-foreground border-border-active"
+                        : "bg-transparent text-red-400 hover:bg-red-500/10 border-red-500/30 hover:border-red-500/50"
+                    }`}
+                  >
+                    <Ban className="w-3.5 h-3.5" />
+                    {isBlocked ? t("block.unblock") : t("block.block")}
+                  </button>
                 </div>
               )}
               {profile.isOwnProfile && (
@@ -262,6 +316,18 @@ export default function UserProfilePage() {
           <Card className="text-center">
             <div className="text-2xl font-bold text-foreground">{profile.followingCount}</div>
             <div className="text-xs text-foreground-subtle">{t("profile.following")}</div>
+          </Card>
+        </div>
+
+        {/* Karma */}
+        <div className="grid grid-cols-2 gap-3">
+          <Card className="text-center">
+            <div className="text-2xl font-bold text-foreground">{profile.postKarma ?? 0}</div>
+            <div className="text-xs text-foreground-subtle">{t("karma.postKarma")}</div>
+          </Card>
+          <Card className="text-center">
+            <div className="text-2xl font-bold text-foreground">{profile.commentKarma ?? 0}</div>
+            <div className="text-xs text-foreground-subtle">{t("karma.commentKarma")}</div>
           </Card>
         </div>
 
@@ -326,6 +392,31 @@ export default function UserProfilePage() {
           )}
         </div>
       </div>
+
+      {/* Block confirmation dialog */}
+      {showBlockConfirm && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50" onClick={() => setShowBlockConfirm(false)}>
+          <div className="bg-background-surface border border-border rounded-xl p-5 mx-4 max-w-sm w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-base font-semibold text-foreground mb-2">{t("block.confirmTitle")}</h3>
+            <p className="text-sm text-foreground-muted mb-4">{t("block.confirmMessage")}</p>
+            <div className="flex items-center gap-2 justify-end">
+              <button
+                onClick={() => setShowBlockConfirm(false)}
+                className="px-3 py-1.5 rounded-lg text-sm font-medium text-foreground-muted border border-border hover:bg-background-elevated transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleBlock}
+                disabled={blockPending}
+                className="px-3 py-1.5 rounded-lg text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition-colors disabled:opacity-50"
+              >
+                {blockPending ? "..." : t("block.block")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete confirmation dialog */}
       {deleteTarget && (

@@ -128,6 +128,12 @@ const ar: Record<TranslationKeys, string> = {
   "comment.misinformation": "معلومات مغلوطة",
   "comment.copyrightReport": "حقوق نشر",
   "comment.other": "تاني",
+  "comment.edited": "معدّل",
+  "comment.sortTop": "الأعلى",
+  "comment.sortNewest": "الأحدث",
+  "comment.sortOldest": "الأقدم",
+  "comment.showMoreReplies": "عرض {count} ردود إضافية",
+  "comment.collapseReplies": "إخفاء الردود",
 
   // ── Mention ────────────────────────────────────────────────────────────────
   "mention.searching": "بيدوّر...",
@@ -144,6 +150,26 @@ const ar: Record<TranslationKeys, string> = {
   "post.original": "الأصلي",
   "post.views": "مشاهدات",
   "post.shares": "مشاركات",
+  "post.edited": "(معدّل)",
+  "post.editPost": "تعديل البوست",
+  "post.editSaved": "تم حفظ التغييرات",
+  "post.saveChanges": "حفظ التغييرات",
+  "post.title": "العنوان",
+  "post.titleRequired": "العنوان مطلوب",
+  "post.titlePlaceholder": "عنوان البوست",
+  "post.body": "المحتوى",
+  "post.bodyPlaceholder": "محتوى البوست (اختياري)",
+  "post.category": "التصنيف",
+  "post.noCategory": "بدون تصنيف",
+  "post.tags": "الوسوم",
+  "post.addTags": "أضف وسوم...",
+  "post.forward": "إعادة توجيه",
+  "post.forwardSent": "تم الإرسال!",
+  "post.searchUsers": "ابحث عن مستخدمين...",
+  "post.noUsersFound": "مفيش مستخدمين",
+  "post.noRecentConversations": "مفيش محادثات حديثة",
+  "post.addMessage": "أضف رسالة (اختياري)",
+  "post.sendForward": "إرسال",
   "feed.save": "حفظ",
 
   // ── Discussion / Suggestion ────────────────────────────────────────────────
@@ -579,6 +605,49 @@ const ar: Record<TranslationKeys, string> = {
   "feed.reportInappropriate": "غير لائق",
   "feed.reportCopyright": "حقوق النشر",
   "feed.reportOther": "أخرى",
+
+  // ── Block ──────────────────────────────────────────────────────────────────
+  "block.block": "حظر",
+  "block.unblock": "إلغاء الحظر",
+  "block.confirmTitle": "حظر هذا المستخدم؟",
+  "block.confirmMessage": "لن يتمكن من رؤية منشوراتك أو إرسال رسائل إليك.",
+  "block.blockedUsers": "المستخدمون المحظورون",
+  "block.noBlockedUsers": "لا يوجد مستخدمون محظورون",
+  "block.userBlocked": "تم حظر المستخدم",
+  "block.userUnblocked": "تم إلغاء حظر المستخدم",
+
+  // ── Ban ────────────────────────────────────────────────────────────────────
+  "ban.banned": "الحساب معلّق",
+  "ban.reason": "السبب",
+  "ban.duration": "المدة",
+  "ban.permanent": "دائم",
+  "ban.days": "{count} أيام",
+  "ban.bannedMessage": "تم تعليق حسابك.",
+  "ban.contactSupport": "تواصل مع الدعم إذا كنت تعتقد أن هذا خطأ.",
+
+  // ── Karma ──────────────────────────────────────────────────────────────────
+  "karma.postKarma": "كارما المنشورات",
+  "karma.commentKarma": "كارما التعليقات",
+
+  // ── Search (filters) ──────────────────────────────────────────────────────
+  "search.timeRange": "النطاق الزمني",
+  "search.24h": "24 ساعة",
+  "search.week": "هذا الأسبوع",
+  "search.month": "هذا الشهر",
+  "search.year": "هذا العام",
+  "search.allTime": "كل الأوقات",
+  "search.sortBy": "ترتيب حسب",
+  "search.relevance": "الصلة",
+  "search.top": "الأكثر شعبية",
+  "search.newest": "الأحدث",
+
+  // ── Forward ────────────────────────────────────────────────────────────────
+  "forward.title": "إرسال إلى",
+  "forward.searchUsers": "البحث عن مستخدمين...",
+  "forward.recentConversations": "الأخيرة",
+  "forward.addMessage": "أضف رسالة...",
+  "forward.sent": "تم الإرسال!",
+  "forward.send": "إرسال",
 } as const;
 
 export default ar;

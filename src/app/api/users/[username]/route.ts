@@ -22,6 +22,8 @@ export async function GET(
         totalXp: true,
         level: true,
         tier: true,
+        postKarma: true,
+        commentKarma: true,
         createdAt: true,
         country: {
           select: {

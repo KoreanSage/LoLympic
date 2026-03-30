@@ -27,7 +27,7 @@ export default function PostPageClient() {
       const stored = localStorage.getItem("mimzy_preferredLanguage");
       if (stored) return stored;
     }
-    return (session?.user as any)?.preferredLanguage || "en";
+    return session?.user?.preferredLanguage || "en";
   });
   const [langReady, setLangReady] = useState(() => {
     if (typeof window !== "undefined") {

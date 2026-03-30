@@ -126,6 +126,12 @@ const en = {
   "comment.misinformation": "Misinformation",
   "comment.copyrightReport": "Copyright",
   "comment.other": "Other",
+  "comment.edited": "edited",
+  "comment.sortTop": "Top",
+  "comment.sortNewest": "Newest",
+  "comment.sortOldest": "Oldest",
+  "comment.showMoreReplies": "Show {count} more replies",
+  "comment.collapseReplies": "Collapse replies",
 
   // ── Mention ────────────────────────────────────────────────────────────────
   "mention.searching": "Searching...",
@@ -142,6 +148,26 @@ const en = {
   "post.original": "Original",
   "post.views": "views",
   "post.shares": "shares",
+  "post.edited": "(edited)",
+  "post.editPost": "Edit Post",
+  "post.editSaved": "Changes saved",
+  "post.saveChanges": "Save Changes",
+  "post.title": "Title",
+  "post.titleRequired": "Title is required",
+  "post.titlePlaceholder": "Post title",
+  "post.body": "Body",
+  "post.bodyPlaceholder": "Post body (optional)",
+  "post.category": "Category",
+  "post.noCategory": "No category",
+  "post.tags": "Tags",
+  "post.addTags": "Add tags...",
+  "post.forward": "Forward",
+  "post.forwardSent": "Forwarded!",
+  "post.searchUsers": "Search users...",
+  "post.noUsersFound": "No users found",
+  "post.noRecentConversations": "No recent conversations",
+  "post.addMessage": "Add a message (optional)",
+  "post.sendForward": "Send",
   "feed.save": "Save",
 
   // ── Discussion / Suggestion ────────────────────────────────────────────────
@@ -588,6 +614,49 @@ const en = {
   "feed.reportInappropriate": "Inappropriate",
   "feed.reportCopyright": "Copyright",
   "feed.reportOther": "Other",
+
+  // ── Block ──────────────────────────────────────────────────────────────────
+  "block.block": "Block",
+  "block.unblock": "Unblock",
+  "block.confirmTitle": "Block this user?",
+  "block.confirmMessage": "They won't be able to see your posts or send you messages.",
+  "block.blockedUsers": "Blocked Users",
+  "block.noBlockedUsers": "No blocked users",
+  "block.userBlocked": "User blocked",
+  "block.userUnblocked": "User unblocked",
+
+  // ── Ban ────────────────────────────────────────────────────────────────────
+  "ban.banned": "Account Suspended",
+  "ban.reason": "Reason",
+  "ban.duration": "Duration",
+  "ban.permanent": "Permanent",
+  "ban.days": "{count} days",
+  "ban.bannedMessage": "Your account has been suspended.",
+  "ban.contactSupport": "Contact support if you believe this is a mistake.",
+
+  // ── Karma ──────────────────────────────────────────────────────────────────
+  "karma.postKarma": "Post Karma",
+  "karma.commentKarma": "Comment Karma",
+
+  // ── Search (filters) ──────────────────────────────────────────────────────
+  "search.timeRange": "Time Range",
+  "search.24h": "24 hours",
+  "search.week": "This week",
+  "search.month": "This month",
+  "search.year": "This year",
+  "search.allTime": "All time",
+  "search.sortBy": "Sort by",
+  "search.relevance": "Relevance",
+  "search.top": "Top",
+  "search.newest": "Newest",
+
+  // ── Forward ────────────────────────────────────────────────────────────────
+  "forward.title": "Send to",
+  "forward.searchUsers": "Search users...",
+  "forward.recentConversations": "Recent",
+  "forward.addMessage": "Add a message...",
+  "forward.sent": "Sent!",
+  "forward.send": "Send",
 } as const;
 
 export type TranslationKeys = keyof typeof en;
