@@ -518,6 +518,7 @@ async function generateTranslatedImageForPayload(
     strokeColor?: string;
     strokeWidth?: number;
     isUppercase?: boolean;
+    backgroundColor?: string;
   }>,
   targetLanguage: string
 ): Promise<void> {
@@ -662,7 +663,7 @@ async function generateTranslatedImageForPayload(
               : "-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff";
 
             // Use original background color if available
-            const bgColor = (seg as any).backgroundColor || "transparent";
+            const bgColor = seg.backgroundColor || "transparent";
 
             return {
               type: "div",

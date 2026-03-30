@@ -22,6 +22,8 @@ interface Comment {
   likeCount: number;
   userLiked?: boolean;
   createdAt: string;
+  updatedAt?: string;
+  isEdited?: boolean;
   author: CommentAuthor;
   replies?: Comment[];
 }
@@ -226,12 +228,13 @@ export default function CommentSection({
   const [comments, setComments] = useState<Comment[]>(initialComments);
   const [newComment, setNewComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [sortBy, setSortBy] = useState<"top" | "newest" | "oldest">("top");
   const mainTextareaRef = useRef<HTMLTextAreaElement>(null);
   const mainMention = useMention(mainTextareaRef);
 
-  const sessionUsername = (session?.user as any)?.username;
-  const sessionAvatarUrl = (session?.user as any)?.avatarUrl || session?.user?.image || null;
-  const sessionDisplayName = (session?.user as any)?.displayName || session?.user?.name || sessionUsername;
+  const sessionUsername = session?.user?.username;
+  const sessionAvatarUrl = session?.user?.avatarUrl || session?.user?.image || null;
+  const sessionDisplayName = session?.user?.displayName || session?.user?.name || sessionUsername;
 
   // Map API comment to local Comment shape
   const mapComment = (c: any): Comment => ({
@@ -240,6 +243,8 @@ export default function CommentSection({
     likeCount: c.likeCount ?? 0,
     userLiked: c.userLiked ?? false,
     createdAt: c.createdAt,
+    updatedAt: c.updatedAt,
+    isEdited: c.isEdited ?? false,
     author: {
       username: c.author?.username || "unknown",
       displayName: c.author?.displayName,
@@ -250,10 +255,10 @@ export default function CommentSection({
     replies: c.replies?.map(mapComment),
   });
 
-  // Fetch comments from API on mount
+  // Fetch comments from API on mount and when sort changes
   const fetchComments = useCallback(async () => {
     try {
-      const res = await fetch(`/api/posts/${postId}/comments`);
+      const res = await fetch(`/api/posts/${postId}/comments?sort=${sortBy}`);
       if (res.ok) {
         const data = await res.json();
         const raw = Array.isArray(data) ? data : data.comments || [];
@@ -262,7 +267,7 @@ export default function CommentSection({
     } catch {
       // Fall back to initial comments
     }
-  }, [postId]);
+  }, [postId, sortBy]);
 
   useEffect(() => {
     fetchComments();
@@ -339,7 +344,7 @@ export default function CommentSection({
       });
       if (res.ok) {
         setComments((prev) =>
-          prev.map((c) => (c.id === commentId ? { ...c, body: newBody } : c))
+          prev.map((c) => (c.id === commentId ? { ...c, body: newBody, isEdited: true, updatedAt: new Date().toISOString() } : c))
         );
         toast(t("comment.updated"), "success");
       } else {
@@ -429,6 +434,24 @@ export default function CommentSection({
         <p className="text-sm text-foreground-subtle text-center py-2">
           {t("comment.loginToComment")}
         </p>
+      )}
+
+      {/* Sort dropdown */}
+      {comments.length > 1 && (
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-foreground-subtle">
+            {comments.length} {t("post.comments") || "comments"}
+          </span>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as "top" | "newest" | "oldest")}
+            className="bg-background-surface border border-border rounded-lg px-2 py-1 text-xs text-foreground-muted focus:outline-none focus:border-border-active transition-colors cursor-pointer"
+          >
+            <option value="top">{t("comment.sortTop") || "\uC778\uAE30\uC21C"}</option>
+            <option value="newest">{t("comment.sortNewest") || "\uCD5C\uC2E0\uC21C"}</option>
+            <option value="oldest">{t("comment.sortOldest") || "\uC624\uB798\uB41C\uC21C"}</option>
+          </select>
+        </div>
       )}
 
       {/* Comments list */}
@@ -528,8 +551,10 @@ function CommentItem({
   const [reportDetails, setReportDetails] = useState("");
   const [translatedText, setTranslatedText] = useState<string | null>(null);
   const [isTranslating, setIsTranslating] = useState(false);
+  const [repliesExpanded, setRepliesExpanded] = useState(true);
+  const COLLAPSED_REPLY_LIMIT = 3;
 
-  const userLang = (session?.user as any)?.preferredLanguage || "en";
+  const userLang = session?.user?.preferredLanguage || "en";
   const isOwn = sessionUsername === comment.author.username;
   const timeAgo = formatTimeAgo(comment.createdAt);
 
@@ -623,6 +648,11 @@ function CommentItem({
                 {comment.author.displayName || comment.author.username}
               </span>
               <span className="text-[10px] text-foreground-subtle">{timeAgo}</span>
+              {(comment.isEdited || (comment.updatedAt && comment.createdAt && (new Date(comment.updatedAt).getTime() - new Date(comment.createdAt).getTime()) > 60000)) && (
+                <span className="text-[10px] text-foreground-subtle italic">
+                  ({t("comment.edited") || "\uC218\uC815\uB428"})
+                </span>
+              )}
               {isOwn && <span className="text-[10px] text-[#c9a84c]">{t("comment.you")}</span>}
             </div>
 
@@ -887,18 +917,45 @@ function CommentItem({
       {/* Replies (depth 1 only -- 2-depth max) */}
       {comment.replies && comment.replies.length > 0 && depth === 0 && (
         <div>
-          {comment.replies.map((reply) => (
-            <CommentItem
-              key={reply.id}
-              comment={reply}
-              depth={1}
-              sessionUsername={sessionUsername}
-              postId={postId}
-              onDelete={onDelete}
-              onEdit={onEdit}
-              onReport={onReport}
-            />
-          ))}
+          {(() => {
+            const replies = comment.replies!;
+            const showAll = repliesExpanded || replies.length <= COLLAPSED_REPLY_LIMIT;
+            const visibleReplies = showAll ? replies : replies.slice(0, COLLAPSED_REPLY_LIMIT);
+            const hiddenCount = replies.length - COLLAPSED_REPLY_LIMIT;
+
+            return (
+              <>
+                {visibleReplies.map((reply) => (
+                  <CommentItem
+                    key={reply.id}
+                    comment={reply}
+                    depth={1}
+                    sessionUsername={sessionUsername}
+                    postId={postId}
+                    onDelete={onDelete}
+                    onEdit={onEdit}
+                    onReport={onReport}
+                  />
+                ))}
+                {!showAll && hiddenCount > 0 && (
+                  <button
+                    onClick={() => setRepliesExpanded(true)}
+                    className="ml-10 pl-4 py-2 text-xs text-[#c9a84c] hover:text-[#d4b85c] transition-colors font-medium"
+                  >
+                    {t("comment.showMoreReplies", { count: hiddenCount }) || `${hiddenCount}\uAC1C \uB2F5\uAE00 \uB354 \uBCF4\uAE30`}
+                  </button>
+                )}
+                {showAll && replies.length > COLLAPSED_REPLY_LIMIT && (
+                  <button
+                    onClick={() => setRepliesExpanded(false)}
+                    className="ml-10 pl-4 py-2 text-xs text-foreground-subtle hover:text-foreground-muted transition-colors"
+                  >
+                    {t("comment.collapseReplies") || "\uB2F5\uAE00 \uC811\uAE30"}
+                  </button>
+                )}
+              </>
+            );
+          })()}
         </div>
       )}
     </div>

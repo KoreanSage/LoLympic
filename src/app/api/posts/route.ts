@@ -6,6 +6,7 @@ import { LanguageCode, PostStatus, Prisma } from "@prisma/client";
 import { backfillMissingTitleTranslations } from "@/lib/translate-backfill";
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 import { awardXp, XP_AWARDS } from "@/lib/xp";
+import { getBlockedUserIds } from "@/lib/block";
 
 const VALID_LANGUAGES = ["ko", "en", "ja", "zh", "es", "hi", "ar"] as const;
 
@@ -62,10 +63,22 @@ export async function GET(request: NextRequest) {
     // Sorting
     const sort = searchParams.get("sort") || "recent";
 
+    // Block filtering: hide posts from blocked users
+    let blockedIds: string[] = [];
+    try {
+      const user = await getSessionUser();
+      if (user) {
+        blockedIds = await getBlockedUserIds(user.id);
+      }
+    } catch {
+      // Not logged in
+    }
+
     // Build where clause
     const where: Prisma.PostWhereInput = {
       status: PostStatus.PUBLISHED,
       visibility: "PUBLIC",
+      ...(blockedIds.length > 0 ? { authorId: { notIn: blockedIds } } : {}),
     };
 
     if (countryId) where.countryId = countryId;

@@ -32,7 +32,7 @@ export default function I18nProvider({ children }: { children: React.ReactNode }
 
   // Sync with session's uiLanguage when available
   useEffect(() => {
-    const sessionLang = (session?.user as any)?.uiLanguage as Locale | undefined;
+    const sessionLang = session?.user?.uiLanguage as Locale | undefined;
     if (sessionLang && ["en", "ko", "ja", "zh", "es", "hi", "ar"].includes(sessionLang) && sessionLang !== locale) {
       setLocaleState(sessionLang);
       localStorage.setItem("uiLanguage", sessionLang);
@@ -66,7 +66,7 @@ export default function I18nProvider({ children }: { children: React.ReactNode }
 
   const t = useCallback(
     (key: TranslationKeys, params?: Record<string, string | number>): string => {
-      const raw = dict[key] || (en as any)[key] || key;
+      const raw = dict[key] || (en as Record<string, string>)[key] || key;
       // Defensive: ensure we always return a string, never an object/Date/etc.
       let text = typeof raw === "string" ? raw : String(raw);
       if (params) {

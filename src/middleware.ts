@@ -7,7 +7,20 @@ const PROTECTED_PATHS = ["/upload", "/settings", "/messages", "/admin", "/bookma
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Only check protected routes
+  // Allow the banned page itself and auth routes
+  if (pathname === "/banned" || pathname.startsWith("/api/auth")) {
+    return NextResponse.next();
+  }
+
+  // Check for banned users on all non-static routes
+  const token = await getToken({ req: request });
+
+  if (token?.isBanned && pathname !== "/banned") {
+    const bannedUrl = new URL("/banned", request.url);
+    return NextResponse.redirect(bannedUrl);
+  }
+
+  // Only check protected routes for auth
   const isProtected = PROTECTED_PATHS.some(
     (p) => pathname === p || pathname.startsWith(`${p}/`)
   );
@@ -15,8 +28,6 @@ export async function middleware(request: NextRequest) {
   if (!isProtected) {
     return NextResponse.next();
   }
-
-  const token = await getToken({ req: request });
 
   if (!token) {
     const loginUrl = new URL("/login", request.url);
@@ -28,5 +39,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/upload/:path*", "/settings/:path*", "/messages/:path*", "/admin/:path*", "/bookmarks/:path*", "/dashboard/:path*"],
+  matcher: ["/upload/:path*", "/settings/:path*", "/messages/:path*", "/admin/:path*", "/bookmarks/:path*", "/dashboard/:path*", "/banned"],
 };

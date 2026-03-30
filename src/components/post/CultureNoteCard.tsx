@@ -25,7 +25,7 @@ export default function CultureNoteCard({
 }: CultureNoteCardProps) {
   const { data: session } = useSession();
   const { t } = useTranslation();
-  const preferredLang = (session?.user as any)?.preferredLanguage || "en";
+  const preferredLang = session?.user?.preferredLanguage || "en";
   const textDir = preferredLang === "ar" ? "rtl" as const : "ltr" as const;
   const creatorBadgeVariant =
     creatorType === "AI" ? "info" : creatorType === "ADMIN" ? "gold" : "default";

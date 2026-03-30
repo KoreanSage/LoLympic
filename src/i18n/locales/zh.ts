@@ -128,6 +128,12 @@ const zh: Record<TranslationKeys, string> = {
   "comment.misinformation": "虚假信息",
   "comment.copyrightReport": "版权问题",
   "comment.other": "其他",
+  "comment.edited": "已编辑",
+  "comment.sortTop": "热门",
+  "comment.sortNewest": "最新",
+  "comment.sortOldest": "最旧",
+  "comment.showMoreReplies": "显示其余 {count} 条回复",
+  "comment.collapseReplies": "折叠回复",
 
   // ── Mention ────────────────────────────────────────────────────────────────
   "mention.searching": "搜索中...",
@@ -144,6 +150,26 @@ const zh: Record<TranslationKeys, string> = {
   "post.original": "原文",
   "post.views": "浏览",
   "post.shares": "分享",
+  "post.edited": "（已编辑）",
+  "post.editPost": "编辑帖子",
+  "post.editSaved": "更改已保存",
+  "post.saveChanges": "保存更改",
+  "post.title": "标题",
+  "post.titleRequired": "标题为必填项",
+  "post.titlePlaceholder": "帖子标题",
+  "post.body": "正文",
+  "post.bodyPlaceholder": "帖子正文（可选）",
+  "post.category": "分类",
+  "post.noCategory": "无分类",
+  "post.tags": "标签",
+  "post.addTags": "添加标签...",
+  "post.forward": "转发",
+  "post.forwardSent": "已转发！",
+  "post.searchUsers": "搜索用户...",
+  "post.noUsersFound": "未找到用户",
+  "post.noRecentConversations": "没有最近的对话",
+  "post.addMessage": "添加消息（可选）",
+  "post.sendForward": "发送",
   "feed.save": "收藏",
 
   // ── Discussion / Suggestion ────────────────────────────────────────────────
@@ -565,6 +591,49 @@ const zh: Record<TranslationKeys, string> = {
   "feed.reportInappropriate": "不适当内容",
   "feed.reportCopyright": "版权问题",
   "feed.reportOther": "其他",
+
+  // ── Block ──────────────────────────────────────────────────────────────────
+  "block.block": "拉黑",
+  "block.unblock": "取消拉黑",
+  "block.confirmTitle": "确定要拉黑该用户吗？",
+  "block.confirmMessage": "被拉黑的用户将无法查看你的帖子或向你发送消息。",
+  "block.blockedUsers": "黑名单",
+  "block.noBlockedUsers": "暂无拉黑用户",
+  "block.userBlocked": "已拉黑该用户",
+  "block.userUnblocked": "已取消拉黑",
+
+  // ── Ban ────────────────────────────────────────────────────────────────────
+  "ban.banned": "账户已被封禁",
+  "ban.reason": "原因",
+  "ban.duration": "时长",
+  "ban.permanent": "永久",
+  "ban.days": "{count}天",
+  "ban.bannedMessage": "你的账户已被封禁。",
+  "ban.contactSupport": "如果你认为这是一个错误，请联系客服。",
+
+  // ── Karma ──────────────────────────────────────────────────────────────────
+  "karma.postKarma": "帖子声望",
+  "karma.commentKarma": "评论声望",
+
+  // ── Search (filters) ──────────────────────────────────────────────────────
+  "search.timeRange": "时间范围",
+  "search.24h": "24小时",
+  "search.week": "本周",
+  "search.month": "本月",
+  "search.year": "今年",
+  "search.allTime": "全部",
+  "search.sortBy": "排序",
+  "search.relevance": "相关度",
+  "search.top": "热门",
+  "search.newest": "最新",
+
+  // ── Forward ────────────────────────────────────────────────────────────────
+  "forward.title": "转发给",
+  "forward.searchUsers": "搜索用户...",
+  "forward.recentConversations": "最近",
+  "forward.addMessage": "添加留言...",
+  "forward.sent": "已发送！",
+  "forward.send": "发送",
 };
 
 export default zh;

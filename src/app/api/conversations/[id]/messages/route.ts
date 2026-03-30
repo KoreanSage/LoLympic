@@ -40,6 +40,16 @@ export async function GET(
         sender: {
           select: { id: true, username: true, displayName: true, avatarUrl: true },
         },
+        forwardedPost: {
+          select: {
+            id: true,
+            title: true,
+            author: {
+              select: { id: true, username: true, displayName: true, avatarUrl: true },
+            },
+            images: { select: { originalUrl: true }, take: 1 },
+          },
+        },
       },
     });
 
@@ -67,6 +77,7 @@ export async function GET(
         createdAt: m.createdAt.toISOString(),
         senderId: m.senderId,
         sender: m.sender,
+        forwardedPost: (m as any).forwardedPost ?? null,
       })),
       nextCursor: hasMore ? items[items.length - 1].id : null,
     });

@@ -41,7 +41,7 @@ export default function HomePage() {
       .catch((e) => { console.error("Failed to fetch user language preference:", e); });
   }, [session?.user]);
 
-  const translateTo = freshLang || (session?.user as any)?.preferredLanguage || "";
+  const translateTo = freshLang || session?.user?.preferredLanguage || "";
   const [feedFilters, setFeedFilters] = useState<{
     country?: string;
     language?: string;

@@ -147,7 +147,7 @@ export default function LeaderboardPage() {
       const battleData = await battleRes.json().catch(() => ({ entries: [] }));
 
       // Check if data is from realtime fallback
-      if ((countryData as any).source === "realtime") {
+      if ((countryData as ApiLeaderboardResponse & { source?: string }).source === "realtime") {
         setIsRealtime(true);
       }
 

@@ -128,6 +128,12 @@ const hi: Record<TranslationKeys, string> = {
   "comment.misinformation": "गलत जानकारी",
   "comment.copyrightReport": "Copyright",
   "comment.other": "Other",
+  "comment.edited": "संपादित",
+  "comment.sortTop": "टॉप",
+  "comment.sortNewest": "नवीनतम",
+  "comment.sortOldest": "सबसे पुराना",
+  "comment.showMoreReplies": "{count} और रिप्लाई दिखाएं",
+  "comment.collapseReplies": "रिप्लाई छुपाएं",
 
   // ── Mention ────────────────────────────────────────────────────────────────
   "mention.searching": "खोज रहे हैं...",
@@ -144,6 +150,26 @@ const hi: Record<TranslationKeys, string> = {
   "post.original": "Original",
   "post.views": "व्यूज़",
   "post.shares": "शेयर",
+  "post.edited": "(संपादित)",
+  "post.editPost": "पोस्ट संपादित करें",
+  "post.editSaved": "बदलाव सेव हो गए",
+  "post.saveChanges": "बदलाव सेव करें",
+  "post.title": "शीर्षक",
+  "post.titleRequired": "शीर्षक ज़रूरी है",
+  "post.titlePlaceholder": "पोस्ट का शीर्षक",
+  "post.body": "विवरण",
+  "post.bodyPlaceholder": "पोस्ट का विवरण (वैकल्पिक)",
+  "post.category": "श्रेणी",
+  "post.noCategory": "कोई श्रेणी नहीं",
+  "post.tags": "टैग",
+  "post.addTags": "टैग जोड़ें...",
+  "post.forward": "फॉरवर्ड",
+  "post.forwardSent": "फॉरवर्ड हो गया!",
+  "post.searchUsers": "यूज़र खोजें...",
+  "post.noUsersFound": "कोई यूज़र नहीं मिला",
+  "post.noRecentConversations": "कोई हाल की बातचीत नहीं",
+  "post.addMessage": "संदेश जोड़ें (वैकल्पिक)",
+  "post.sendForward": "भेजें",
   "feed.save": "सेव करें",
 
   // ── Discussion / Suggestion ────────────────────────────────────────────────
@@ -569,6 +595,49 @@ const hi: Record<TranslationKeys, string> = {
   "feed.reportInappropriate": "अनुचित",
   "feed.reportCopyright": "कॉपीराइट",
   "feed.reportOther": "अन्य",
+
+  // ── Block ──────────────────────────────────────────────────────────────────
+  "block.block": "ब्लॉक करें",
+  "block.unblock": "अनब्लॉक करें",
+  "block.confirmTitle": "इस यूज़र को ब्लॉक करें?",
+  "block.confirmMessage": "वे आपकी पोस्ट नहीं देख पाएंगे और आपको संदेश नहीं भेज पाएंगे।",
+  "block.blockedUsers": "ब्लॉक किए गए यूज़र",
+  "block.noBlockedUsers": "कोई ब्लॉक किया गया यूज़र नहीं",
+  "block.userBlocked": "यूज़र ब्लॉक किया गया",
+  "block.userUnblocked": "यूज़र अनब्लॉक किया गया",
+
+  // ── Ban ────────────────────────────────────────────────────────────────────
+  "ban.banned": "खाता निलंबित",
+  "ban.reason": "कारण",
+  "ban.duration": "अवधि",
+  "ban.permanent": "स्थायी",
+  "ban.days": "{count} दिन",
+  "ban.bannedMessage": "आपका खाता निलंबित कर दिया गया है।",
+  "ban.contactSupport": "अगर आपको लगता है कि यह गलती है तो सहायता से संपर्क करें।",
+
+  // ── Karma ──────────────────────────────────────────────────────────────────
+  "karma.postKarma": "पोस्ट कर्मा",
+  "karma.commentKarma": "कमेंट कर्मा",
+
+  // ── Search (filters) ──────────────────────────────────────────────────────
+  "search.timeRange": "समय सीमा",
+  "search.24h": "24 घंटे",
+  "search.week": "इस हफ़्ते",
+  "search.month": "इस महीने",
+  "search.year": "इस साल",
+  "search.allTime": "सभी समय",
+  "search.sortBy": "क्रमबद्ध करें",
+  "search.relevance": "प्रासंगिकता",
+  "search.top": "लोकप्रिय",
+  "search.newest": "नवीनतम",
+
+  // ── Forward ────────────────────────────────────────────────────────────────
+  "forward.title": "भेजें",
+  "forward.searchUsers": "यूज़र खोजें...",
+  "forward.recentConversations": "हाल के",
+  "forward.addMessage": "संदेश जोड़ें...",
+  "forward.sent": "भेज दिया!",
+  "forward.send": "भेजें",
 } as const;
 
 export default hi;

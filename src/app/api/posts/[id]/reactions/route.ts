@@ -5,6 +5,7 @@ import { ReactionType } from "@prisma/client";
 import { updateRankingScore } from "@/lib/ranking";
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 import { awardXp, XP_AWARDS } from "@/lib/xp";
+import { updateKarma } from "@/lib/karma";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -174,6 +175,13 @@ export async function POST(
     // Award XP to post author when they receive a reaction (not self-reactions)
     if (action === "added" && post.authorId !== user.id) {
       awardXp(post.authorId, XP_AWARDS.REACTION_RECEIVED).catch(() => {});
+    }
+
+    // Karma: +1 for adding reaction, -1 for removing
+    if (action === "added") {
+      updateKarma(post.authorId, "post", 1).catch(() => {});
+    } else {
+      updateKarma(post.authorId, "post", -1).catch(() => {});
     }
 
     // Return updated counts

@@ -15,6 +15,7 @@ import ImageCarousel from "@/components/ui/ImageCarousel";
 import { TranslationSegmentData } from "@/types/components";
 import { useToast } from "@/components/ui/Toast";
 import { useTranslation } from "@/i18n";
+import ForwardModal from "@/components/post/ForwardModal";
 
 interface TopComment {
   id: string;
@@ -63,6 +64,7 @@ interface FeedCardProps {
   commentCount: number;
   shareCount: number;
   createdAt: string;
+  isEdited?: boolean;
   seasonBadge?: string;
   tags?: string[];
   topComments?: TopComment[];
@@ -106,6 +108,7 @@ function FeedCardInner({
   commentCount,
   shareCount,
   createdAt,
+  isEdited,
   seasonBadge,
   tags,
   topComments,
@@ -141,6 +144,7 @@ function FeedCardInner({
 
   const [bookmarked, setBookmarked] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showForwardModal, setShowForwardModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletePending, setDeletePending] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
@@ -340,6 +344,9 @@ function FeedCardInner({
           </div>
           <div className="flex items-center gap-1.5 text-xs text-foreground-subtle">
             <span>{timeAgo}</span>
+            {isEdited && (
+              <span className="italic">({t("post.edited") || "\uC218\uC815\uB428"})</span>
+            )}
           </div>
         </div>
 
@@ -748,6 +755,16 @@ function FeedCardInner({
           count={shareCount}
           onClick={handleShare}
         />
+        <ActionButton
+          ariaLabel={t("post.forward") || "Forward"}
+          icon={
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 10h10a5 5 0 015 5v2M3 10l4-4M3 10l4 4" />
+            </svg>
+          }
+          count={0}
+          onClick={() => setShowForwardModal(true)}
+        />
         <div className="flex-1" />
         <button
           aria-label={bookmarked ? "Remove bookmark" : "Bookmark"}
@@ -759,6 +776,11 @@ function FeedCardInner({
           </svg>
         </button>
       </div>
+
+      {/* Forward modal */}
+      {showForwardModal && (
+        <ForwardModal postId={id} onClose={() => setShowForwardModal(false)} />
+      )}
     </Card>
   );
 }

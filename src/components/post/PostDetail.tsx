@@ -14,9 +14,12 @@ import ScreenshotRenderer from "@/components/translation/ScreenshotRenderer";
 import TranslationToggle from "@/components/translation/TranslationToggle";
 import CompareMode from "@/components/translation/CompareMode";
 import ImageCarousel from "@/components/ui/ImageCarousel";
+import { Pencil } from "lucide-react";
 import CultureNoteCard from "./CultureNoteCard";
 import SuggestionPanel from "./SuggestionPanel";
 import CommentSection from "./CommentSection";
+import PostEditModal from "./PostEditModal";
+import ForwardModal from "./ForwardModal";
 import { TranslationSegmentData } from "@/types/components";
 
 interface PostDetailProps {
@@ -47,6 +50,7 @@ interface PostDetailProps {
   shareCount: number;
   viewCount: number;
   createdAt: string;
+  isEdited?: boolean;
   tags?: string[];
   images?: Array<{
     originalUrl: string;
@@ -124,6 +128,7 @@ export default function PostDetail({
   shareCount,
   viewCount,
   createdAt,
+  isEdited,
   tags,
   images,
   onDelete,
@@ -191,6 +196,10 @@ export default function PostDetail({
       .catch((e) => { console.error("Failed to fetch vote state:", e); });
   }, [id, session?.user]);
 
+  // Edit and forward modal state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showForwardModal, setShowForwardModal] = useState(false);
+
   // More options menu state
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -201,7 +210,7 @@ export default function PostDetail({
   const [isReporting, setIsReporting] = useState(false);
   const moreMenuRef = useRef<HTMLDivElement>(null);
 
-  const sessionUsername = (session?.user as any)?.username;
+  const sessionUsername = session?.user?.username;
   const isOwnPost = sessionUsername === author.username;
 
   // Close more menu on outside click
@@ -270,7 +279,7 @@ export default function PostDetail({
     }
   };
 
-  const preferredLang = preferredLangProp || (session?.user as any)?.preferredLanguage || "en";
+  const preferredLang = preferredLangProp || session?.user?.preferredLanguage || "en";
 
   const tabs = [
     { id: "comments", label: t("post.comments"), count: commentCount },
@@ -299,8 +308,25 @@ export default function PostDetail({
             )}
             <span className="text-xs text-foreground-subtle">·</span>
             <span className="text-xs text-foreground-subtle" suppressHydrationWarning>{new Date(createdAt).toLocaleDateString()}</span>
+            {isEdited && (
+              <>
+                <span className="text-xs text-foreground-subtle">·</span>
+                <span className="text-xs text-foreground-subtle italic">{t("post.edited") || "\uC218\uC815\uB428"}</span>
+              </>
+            )}
           </div>
         </div>
+
+        {/* Edit button (author only) */}
+        {isOwnPost && (
+          <button
+            onClick={() => setShowEditModal(true)}
+            className="p-2 rounded-lg text-foreground-subtle hover:text-foreground-muted hover:bg-background-elevated transition-colors"
+            aria-label={t("post.editPost") || "Edit post"}
+          >
+            <Pencil className="w-4 h-4" />
+          </button>
+        )}
 
         {/* More options */}
         <div className="relative" ref={moreMenuRef}>
@@ -318,6 +344,18 @@ export default function PostDetail({
 
           {showMoreMenu && (
             <div className="absolute right-0 top-full mt-1 w-48 bg-background-surface border border-border rounded-xl shadow-2xl overflow-hidden z-50">
+              {isOwnPost && (
+                <button
+                  onClick={() => {
+                    setShowMoreMenu(false);
+                    setShowEditModal(true);
+                  }}
+                  className="w-full px-4 py-2.5 text-left text-sm text-foreground-muted hover:bg-background-elevated transition-colors flex items-center gap-2"
+                >
+                  <Pencil className="w-4 h-4" />
+                  {t("post.editPost") || "Edit Post"}
+                </button>
+              )}
               {isOwnPost && (
                 <button
                   onClick={() => {
@@ -677,6 +715,11 @@ export default function PostDetail({
             }
           }}
         />
+        <ActionButton
+          label={t("post.forward") || "\uC804\uB2EC"}
+          icon="forward"
+          onClick={() => setShowForwardModal(true)}
+        />
         <div className="flex-1" />
         <ActionButton
           label={t("feed.save") || "Save"}
@@ -751,6 +794,23 @@ export default function PostDetail({
           <CommentSection comments={comments} postId={id} />
         )}
       </div>
+
+      {/* Edit modal */}
+      {showEditModal && (
+        <PostEditModal
+          post={{ id, title, body: body || undefined, category: category || undefined, tags }}
+          onClose={() => setShowEditModal(false)}
+          onSaved={() => {
+            // Reload the page to reflect changes
+            window.location.reload();
+          }}
+        />
+      )}
+
+      {/* Forward modal */}
+      {showForwardModal && (
+        <ForwardModal postId={id} onClose={() => setShowForwardModal(false)} />
+      )}
     </div>
   );
 }
@@ -787,6 +847,11 @@ function ActionButton({
     save: (
       <svg className="w-4 h-4" fill={active ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+      </svg>
+    ),
+    forward: (
+      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 10h10a5 5 0 015 5v2M3 10l4-4M3 10l4 4" />
       </svg>
     ),
   };

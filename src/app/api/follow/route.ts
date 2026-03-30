@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
+import { isBlocked } from "@/lib/block";
 
 // POST /api/follow — Follow a user
 export async function POST(request: NextRequest) {
@@ -33,6 +34,11 @@ export async function POST(request: NextRequest) {
     const targetUser = await prisma.user.findUnique({ where: { id: followingId } });
     if (!targetUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Check if block exists
+    if (await isBlocked(user.id, followingId)) {
+      return NextResponse.json({ error: "Cannot follow a blocked user" }, { status: 403 });
     }
 
     // Check if already following

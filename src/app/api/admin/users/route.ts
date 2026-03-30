@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { UserRole } from "@prisma/client";
 
 /**
  * GET /api/admin/users — List all users (admin only)
@@ -21,6 +22,9 @@ export async function GET() {
         email: true,
         role: true,
         isChampion: true,
+        isBanned: true,
+        banReason: true,
+        bannedUntil: true,
         createdAt: true,
         _count: { select: { posts: true } },
       },
@@ -77,7 +81,7 @@ export async function PATCH(request: NextRequest) {
 
     const updated = await prisma.user.update({
       where: { id: userId },
-      data: { role: role as any },
+      data: { role: role as UserRole },
       select: { id: true, username: true, role: true },
     });
 

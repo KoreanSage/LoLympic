@@ -65,8 +65,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Filter out WATERMARK segments
-    const visibleSegments = (segments as any[]).filter(
-      (s) => s.semanticRole !== "WATERMARK" && s.translatedText?.trim()
+    const visibleSegments = (segments as Array<Record<string, unknown>>).filter(
+      (s) => s.semanticRole !== "WATERMARK" && (s.translatedText as string)?.trim()
     );
 
     if (visibleSegments.length === 0) {
