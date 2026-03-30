@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { LanguageCode } from "@prisma/client";
 
 // ---------------------------------------------------------------------------
 // GET /api/leaderboard?type=country|creator|meme[&seasonId=xxx][&limit=10]
@@ -239,14 +240,14 @@ async function handleSeasonLeaderboard(
                   isChampion: true,
                 },
               },
-              ...(lang ? {
-                translationPayloads: {
-                  where: { targetLanguage: lang as string, status: "APPROVED" },
-                  orderBy: { version: "desc" },
-                  take: 1,
-                  select: { translatedTitle: true },
-                },
-              } : {}),
+              translationPayloads: lang
+                ? {
+                    where: { targetLanguage: lang as LanguageCode, status: "APPROVED" },
+                    orderBy: { version: "desc" as const },
+                    take: 1,
+                    select: { translatedTitle: true },
+                  }
+                : false,
             },
           },
           country: {
@@ -260,13 +261,25 @@ async function handleSeasonLeaderboard(
         source: "season",
         seasonId,
         entries: stats.map((stat, index) => {
-          const post = stat.post as typeof stat.post & {
-            translationPayloads?: Array<{ translatedTitle: string | null }>;
-          };
-          const translatedTitle = post.translationPayloads?.[0]?.translatedTitle ?? null;
+          const post = stat.post;
+          const payloads = Array.isArray((post as unknown as Record<string, unknown>).translationPayloads)
+            ? ((post as unknown as Record<string, unknown>).translationPayloads as Array<{ translatedTitle: string | null }>)
+            : [];
+          const translatedTitle = payloads[0]?.translatedTitle ?? null;
           return {
             rank: stat.globalRank ?? index + 1,
-            post: { ...post, translatedTitle, translationPayloads: undefined },
+            post: {
+              id: post.id,
+              title: post.title,
+              translatedTitle,
+              authorId: post.authorId,
+              reactionCount: post.reactionCount,
+              commentCount: post.commentCount,
+              shareCount: post.shareCount,
+              translationCount: post.translationCount,
+              images: post.images,
+              author: post.author,
+            },
             country: stat.country,
             medal: index < 3 ? (["GOLD", "SILVER", "BRONZE"] as const)[index] : null,
             score: stat.totalScore,
@@ -526,22 +539,22 @@ async function handleRealtimeLeaderboard(type: string, limit: number, lang: stri
           country: {
             select: { id: true, nameEn: true, flagEmoji: true },
           },
-          ...(lang ? {
-            translationPayloads: {
-              where: { targetLanguage: lang as string, status: "APPROVED" },
-              orderBy: { version: "desc" as const },
-              take: 1,
-              select: { translatedTitle: true },
-            },
-          } : {}),
+          translationPayloads: lang
+            ? {
+                where: { targetLanguage: lang as LanguageCode, status: "APPROVED" },
+                orderBy: { version: "desc" as const },
+                take: 1,
+                select: { translatedTitle: true },
+              }
+            : false,
         },
       });
 
       const entries = posts.map((post, index) => {
-        const p = post as typeof post & {
-          translationPayloads?: Array<{ translatedTitle: string | null }>;
-        };
-        const translatedTitle = p.translationPayloads?.[0]?.translatedTitle ?? null;
+        const payloads = Array.isArray((post as unknown as Record<string, unknown>).translationPayloads)
+          ? ((post as unknown as Record<string, unknown>).translationPayloads as Array<{ translatedTitle: string | null }>)
+          : [];
+        const translatedTitle = payloads[0]?.translatedTitle ?? null;
         const score =
           post.reactionCount +
           post.commentCount * 2 +
