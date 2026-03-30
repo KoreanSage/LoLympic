@@ -11,8 +11,14 @@ const ALLOWED_MIME_TYPES = [
   "image/gif",
 ];
 
-// Check if Vercel Blob is available
-const USE_BLOB = !!process.env.BLOB_READ_WRITE_TOKEN;
+// Storage backend detection
+const USE_R2 = !!(
+  process.env.R2_ACCESS_KEY_ID &&
+  process.env.R2_SECRET_ACCESS_KEY &&
+  process.env.R2_ENDPOINT &&
+  process.env.R2_BUCKET_NAME
+);
+const USE_BLOB = !USE_R2 && !!process.env.BLOB_READ_WRITE_TOKEN;
 
 export async function POST(request: NextRequest) {
   try {
@@ -71,14 +77,38 @@ export async function POST(request: NextRequest) {
     // Generate unique filename
     const hash = crypto.randomBytes(16).toString("hex");
     const ext = mimeToExt(file.type);
-    const filename = `${Date.now()}-${hash}${ext}`;
+    const filename = `uploads/${Date.now()}-${hash}${ext}`;
 
     let url: string;
 
-    if (USE_BLOB) {
-      // Production: Upload to Vercel Blob
+    if (USE_R2) {
+      // Production: Upload to Cloudflare R2
+      const { S3Client, PutObjectCommand } = await import("@aws-sdk/client-s3");
+
+      const s3 = new S3Client({
+        region: "auto",
+        endpoint: process.env.R2_ENDPOINT!,
+        credentials: {
+          accessKeyId: process.env.R2_ACCESS_KEY_ID!,
+          secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
+        },
+      });
+
+      await s3.send(
+        new PutObjectCommand({
+          Bucket: process.env.R2_BUCKET_NAME!,
+          Key: filename,
+          Body: buffer,
+          ContentType: file.type,
+        })
+      );
+
+      const publicUrl = process.env.R2_PUBLIC_URL?.replace(/\/$/, "");
+      url = `${publicUrl}/${filename}`;
+    } else if (USE_BLOB) {
+      // Fallback: Upload to Vercel Blob
       const { put } = await import("@vercel/blob");
-      const blob = await put(`uploads/${filename}`, buffer, {
+      const blob = await put(filename, buffer, {
         access: "public",
         contentType: file.type,
       });
