@@ -82,23 +82,14 @@ export async function POST(request: NextRequest) {
     // Create block and remove follows in both directions
     await prisma.$transaction([
       prisma.userBlock.create({
-        data: {
-          blockerId: user.id,
-          blockedId: userId,
-        },
+        data: { blockerId: user.id, blockedId: userId },
       }),
-      // Remove follow: blocker -> blocked
       prisma.follow.deleteMany({
         where: {
-          followerId: user.id,
-          followingId: userId,
-        },
-      }),
-      // Remove follow: blocked -> blocker
-      prisma.follow.deleteMany({
-        where: {
-          followerId: userId,
-          followingId: user.id,
+          OR: [
+            { followerId: user.id, followingId: userId },
+            { followerId: userId, followingId: user.id },
+          ],
         },
       }),
     ]);

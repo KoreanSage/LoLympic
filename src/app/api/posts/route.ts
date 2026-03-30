@@ -13,8 +13,8 @@ const VALID_LANGUAGES = ["ko", "en", "ja", "zh", "es", "hi", "ar"] as const;
 const createPostSchema = z.object({
   title: z.string().min(1, "Title is required").max(200, "Title must be under 200 characters"),
   body: z.string().max(5000, "Body must be under 5000 characters").nullable().optional(),
-  category: z.string().max(50).optional(),
-  tags: z.array(z.string().max(50)).max(10, "Maximum 10 tags allowed").optional(),
+  category: z.string().max(50).regex(/^[a-zA-Z0-9_\- ]+$/, "Invalid category format").optional(),
+  tags: z.array(z.string().max(50).regex(/^[a-zA-Z0-9\uAC00-\uD7A3\u3041-\u3094\u30A1-\u30F4\u30FC\u4E00-\u9FAF_\- ]+$/, "Invalid tag format")).max(10, "Maximum 10 tags allowed").optional(),
   sourceLanguage: z.enum(VALID_LANGUAGES, {
     errorMap: () => ({ message: `sourceLanguage must be one of: ${VALID_LANGUAGES.join(", ")}` }),
   }),

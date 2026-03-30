@@ -157,5 +157,7 @@ function mimeToExt(mime: string): string {
     "image/webp": ".webp",
     "image/gif": ".gif",
   };
-  return map[mime] || ".bin";
+  const ext = map[mime];
+  if (!ext) throw new Error(`Unsupported MIME type: ${mime}`);
+  return ext;
 }

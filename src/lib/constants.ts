@@ -1,4 +1,5 @@
 import { LanguageCode } from "@/types";
+import { LanguageCode as PrismaLanguageCode } from "@prisma/client";
 
 // ============================================================================
 // Countries
@@ -34,6 +35,12 @@ export const COUNTRY_MAP = new Map(
 
 export const VALID_LANGUAGES = ["ko", "en", "ja", "zh", "es", "hi", "ar"] as const;
 export type LanguageCodeString = typeof VALID_LANGUAGES[number];
+
+export const VALID_LANGUAGE_CODES: PrismaLanguageCode[] = [
+  "ko", "en", "ja", "zh", "es", "hi", "ar",
+];
+
+export const VALID_LANGUAGE_SET = new Set<string>(VALID_LANGUAGE_CODES);
 
 export const SUPPORTED_LANGUAGES: LanguageCode[] = [
   LanguageCode.ko,

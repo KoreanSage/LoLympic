@@ -282,6 +282,7 @@ model User {
   battles              Battle[]
   tournamentVotes      TournamentVote[]
   postVotes            PostVote[]
+  adminAuditLogs       AdminAuditLog[]   @relation("AdminAuditLogs")
 
   @@index([countryId])
   @@index([username])
@@ -549,6 +550,7 @@ model Comment {
   @@index([postId, createdAt(sort: Desc)])
   @@index([authorId])
   @@index([parentId])
+  @@index([postId, authorId])
 }
 
 model CommentLike {
@@ -1156,4 +1158,21 @@ model PasswordResetToken {
   @@index([token])
   @@index([userId])
   @@index([expiresAt])
+}
+
+model AdminAuditLog {
+  id         String   @id @default(cuid())
+  adminId    String
+  action     String   // "BAN_USER", "UNBAN_USER", "DELETE_POST", etc.
+  targetId   String   // userId, postId, etc.
+  targetType String   // "USER", "POST", "COMMENT"
+  reason     String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  admin      User     @relation("AdminAuditLogs", fields: [adminId], references: [id])
+
+  @@index([adminId])
+  @@index([targetId, targetType])
+  @@index([createdAt])
 }

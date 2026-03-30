@@ -39,10 +39,11 @@ export async function GET(
 
     // Block filtering
     let blockedIds: string[] = [];
+    let currentUser: Awaited<ReturnType<typeof getSessionUser>> = null;
     try {
-      const user = await getSessionUser();
-      if (user) {
-        blockedIds = await getBlockedUserIds(user.id);
+      currentUser = await getSessionUser();
+      if (currentUser) {
+        blockedIds = await getBlockedUserIds(currentUser.id);
       }
     } catch {
       // Not logged in
@@ -90,11 +91,21 @@ export async function GET(
         take: limit,
         include: {
           author: { select: authorSelect },
+          likes: currentUser ? {
+            where: { userId: currentUser.id },
+            select: { userId: true },
+            take: 1,
+          } : false,
           replies: {
             where: { status: "VISIBLE" },
             orderBy: { createdAt: "asc" },
             include: {
               author: { select: authorSelect },
+              likes: currentUser ? {
+                where: { userId: currentUser.id },
+                select: { userId: true },
+                take: 1,
+              } : false,
             },
           },
         },
@@ -102,34 +113,14 @@ export async function GET(
       prisma.comment.count({ where }),
     ]);
 
-    // Get current user's likes
-    let userLikedIds: Set<string> = new Set();
-    try {
-      const user = await getSessionUser();
-      if (user) {
-        const allCommentIds = comments.flatMap((c: any) => [
-          c.id,
-          ...(c.replies?.map((r: any) => r.id) || []),
-        ]);
-        const likes = await prisma.commentLike.findMany({
-          where: {
-            commentId: { in: allCommentIds },
-            userId: user.id,
-          },
-          select: { commentId: true },
-        });
-        userLikedIds = new Set(likes.map((l) => l.commentId));
-      }
-    } catch {
-      // Not logged in
-    }
-
     const enrichComment = (c: any) => ({
       ...c,
-      userLiked: userLikedIds.has(c.id),
+      userLiked: Array.isArray(c.likes) && c.likes.length > 0,
+      likes: undefined,
       replies: c.replies?.map((r: any) => ({
         ...r,
-        userLiked: userLikedIds.has(r.id),
+        userLiked: Array.isArray(r.likes) && r.likes.length > 0,
+        likes: undefined,
       })),
     });
 

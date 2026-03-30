@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { Prisma } from "@prisma/client";
+import { Prisma, LanguageCode } from "@prisma/client";
 import { getSessionUser } from "@/lib/auth";
 import { getBlockedUserIds } from "@/lib/block";
+import { VALID_LANGUAGE_SET } from "@/lib/constants";
 
 // ---------------------------------------------------------------------------
 // GET /api/search?q=keyword&type=posts|users|all&limit=20
@@ -90,7 +91,7 @@ export async function GET(request: NextRequest) {
     // Split query into individual words for multi-word matching
     const words = query
       .split(/\s+/)
-      .filter((w) => w.length > 0)
+      .filter((w) => w.length > 0 && w.length <= 100)
       .slice(0, 10); // max 10 search terms
 
     const results: { posts?: any[]; users?: any[] } = {};
@@ -143,7 +144,7 @@ export async function GET(request: NextRequest) {
           visibility: "PUBLIC",
           ...(blockedIds.length > 0 ? { authorId: { notIn: blockedIds } } : {}),
           ...(country ? { countryId: country } : {}),
-          ...(language ? { sourceLanguage: language as any } : {}),
+          ...(language && VALID_LANGUAGE_SET.has(language) ? { sourceLanguage: language as LanguageCode } : {}),
           ...createdAtFilter,
           OR: [
             // All words match somewhere in the post (AND logic for multi-word)

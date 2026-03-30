@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
 
   const userId = user.id;
   const watchPostId = request.nextUrl.searchParams.get("watchPostId");
-  const MAX_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+  const MAX_DURATION_MS = 25_000; // 25s — Vercel serverless function limit
   const POLL_INTERVAL_MS = 5000; // 5 seconds
   const startTime = Date.now();
 
