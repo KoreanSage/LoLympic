@@ -104,6 +104,13 @@ export async function POST(request: NextRequest) {
       );
 
       const publicUrl = process.env.R2_PUBLIC_URL?.replace(/\/$/, "");
+      if (!publicUrl) {
+        console.error("R2_PUBLIC_URL is not configured");
+        return NextResponse.json(
+          { error: "Storage misconfiguration: R2_PUBLIC_URL is not set" },
+          { status: 500 }
+        );
+      }
       url = `${publicUrl}/${filename}`;
     } else if (USE_BLOB) {
       // Fallback: Upload to Vercel Blob
