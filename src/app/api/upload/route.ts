@@ -4,6 +4,39 @@ import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 import crypto from "crypto";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
+// Set R2 bucket CORS once per cold start so images load via canvas (crossOrigin = "anonymous")
+let r2CorsConfigured = false;
+async function ensureR2Cors() {
+  if (r2CorsConfigured) return;
+  try {
+    const { S3Client, PutBucketCorsCommand } = await import("@aws-sdk/client-s3");
+    const s3 = new S3Client({
+      region: "auto",
+      endpoint: process.env.R2_ENDPOINT!,
+      credentials: {
+        accessKeyId: process.env.R2_ACCESS_KEY_ID!,
+        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
+      },
+    });
+    await s3.send(new PutBucketCorsCommand({
+      Bucket: process.env.R2_BUCKET_NAME!,
+      CORSConfiguration: {
+        CORSRules: [{
+          AllowedOrigins: ["*"],
+          AllowedMethods: ["GET", "HEAD"],
+          AllowedHeaders: ["*"],
+          MaxAgeSeconds: 86400,
+        }],
+      },
+    }));
+    r2CorsConfigured = true;
+    console.log("[R2] CORS configured successfully");
+  } catch (err) {
+    console.warn("[R2] Could not configure CORS (non-fatal):", err);
+    r2CorsConfigured = true; // Don't retry on every upload
+  }
+}
 const ALLOWED_MIME_TYPES = [
   "image/jpeg",
   "image/png",
@@ -82,6 +115,9 @@ export async function POST(request: NextRequest) {
     let url: string;
 
     if (USE_R2) {
+      // Ensure CORS is configured on the bucket (idempotent, runs once per cold start)
+      await ensureR2Cors();
+
       // Production: Upload to Cloudflare R2
       const { S3Client, PutObjectCommand } = await import("@aws-sdk/client-s3");
 

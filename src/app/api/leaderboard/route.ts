@@ -240,9 +240,9 @@ async function handleSeasonLeaderboard(
                   isChampion: true,
                 },
               },
-              // Fetch all approved translations (up to 7 languages) for fallback support
+              // Fetch all completed/approved translations (up to 7 languages) for fallback support
               translationPayloads: {
-                where: { status: "APPROVED" },
+                where: { status: { in: ["COMPLETED", "APPROVED"] } },
                 orderBy: { version: "desc" as const },
                 take: 7,
                 select: { targetLanguage: true, translatedTitle: true },
@@ -541,9 +541,9 @@ async function handleRealtimeLeaderboard(type: string, limit: number, lang: stri
           country: {
             select: { id: true, nameEn: true, flagEmoji: true },
           },
-          // Fetch all approved translations (up to 7 languages) for fallback support
+          // Fetch all completed/approved translations (up to 7 languages) for fallback support
           translationPayloads: {
-            where: { status: "APPROVED" },
+            where: { status: { in: ["COMPLETED", "APPROVED"] } },
             orderBy: { version: "desc" as const },
             take: 7,
             select: { targetLanguage: true, translatedTitle: true },

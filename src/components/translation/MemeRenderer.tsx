@@ -162,6 +162,7 @@ export default function MemeRenderer({
   const [cleanImage, setCleanImage] = useState<HTMLImageElement | null>(null);
   const [displaySize, setDisplaySize] = useState({ w: 0, h: 0 });
   const [imageError, setImageError] = useState(false);
+  const [imageCorsUnsafe, setImageCorsUnsafe] = useState(false); // true = loaded without crossOrigin
   const [translatedImageError, setTranslatedImageError] = useState(false);
   const [canvasRenderError, setCanvasRenderError] = useState(false);
 
@@ -170,13 +171,24 @@ export default function MemeRenderer({
   // Only fall back to canvas rendering when translatedImageUrl is falsy or errored.
   const usePreRendered = showTranslation && !!translatedImageUrl && !translatedImageError;
 
-  // Load original image
+  // Load original image — try with CORS first (needed for canvas getImageData),
+  // then fall back to without crossOrigin if server doesn't send CORS headers.
   useEffect(() => {
     setImageError(false);
+    setImageCorsUnsafe(false);
     const img = new Image();
     img.crossOrigin = "anonymous";
     img.onload = () => setImage(img);
-    img.onerror = () => setImageError(true);
+    img.onerror = () => {
+      // CORS attempt failed — retry without crossOrigin so the image still displays
+      const imgFallback = new Image();
+      imgFallback.onload = () => {
+        setImageCorsUnsafe(true);
+        setImage(imgFallback);
+      };
+      imgFallback.onerror = () => setImageError(true);
+      imgFallback.src = imageUrl;
+    };
     img.src = imageUrl;
   }, [imageUrl]);
 
@@ -307,25 +319,32 @@ export default function MemeRenderer({
       ctx.save();
 
       // Sample background color for contrast detection (average over region)
-      const sampleW = Math.max(1, Math.min(Math.floor(bw * dpr), 32));
-      const sampleH = Math.max(1, Math.min(Math.floor(bh * dpr), 32));
-      const imgData = ctx.getImageData(
-        Math.max(0, Math.floor(bx * dpr)),
-        Math.max(0, Math.floor(by * dpr)),
-        sampleW,
-        sampleH
-      );
-      let rSum = 0, gSum = 0, bSum = 0;
-      const pixelCount = imgData.data.length / 4;
-      for (let px = 0; px < imgData.data.length; px += 4) {
-        rSum += imgData.data[px];
-        gSum += imgData.data[px + 1];
-        bSum += imgData.data[px + 2];
+      // Falls back to neutral brightness if canvas is tainted (image loaded without CORS)
+      let brightness = 128; // neutral default
+      let r = 128, g = 128, b = 128; // neutral default RGB
+      try {
+        const sampleW = Math.max(1, Math.min(Math.floor(bw * dpr), 32));
+        const sampleH = Math.max(1, Math.min(Math.floor(bh * dpr), 32));
+        const imgData = ctx.getImageData(
+          Math.max(0, Math.floor(bx * dpr)),
+          Math.max(0, Math.floor(by * dpr)),
+          sampleW,
+          sampleH
+        );
+        let rSum = 0, gSum = 0, bSum = 0;
+        const pixelCount = imgData.data.length / 4;
+        for (let px = 0; px < imgData.data.length; px += 4) {
+          rSum += imgData.data[px];
+          gSum += imgData.data[px + 1];
+          bSum += imgData.data[px + 2];
+        }
+        r = Math.round(rSum / pixelCount);
+        g = Math.round(gSum / pixelCount);
+        b = Math.round(bSum / pixelCount);
+        brightness = (r * 299 + g * 587 + b * 114) / 1000;
+      } catch {
+        // Canvas tainted — image loaded without CORS, use default brightness
       }
-      const r = Math.round(rSum / pixelCount);
-      const g = Math.round(gSum / pixelCount);
-      const b = Math.round(bSum / pixelCount);
-      const brightness = (r * 299 + g * 587 + b * 114) / 1000;
 
       // When using clean image as base, NO backdrop needed (original text already removed)
       // When using original image, use FULLY OPAQUE backdrop to completely hide original text
