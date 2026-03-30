@@ -178,7 +178,7 @@ const legalEN: LegalContent = {
         {
           title: "7. Security",
           content:
-            "We implement industry-standard security measures to protect your data. However, no system is 100% secure. Report security vulnerabilities to lolympic.app@gmail.com.",
+            "We implement industry-standard security measures to protect your data. However, no system is 100% secure. Report security vulnerabilities to dkdnel95@gmail.com.",
         },
       ],
     },
@@ -198,7 +198,7 @@ const legalEN: LegalContent = {
         {
           title: "3. DMCA Takedown Process",
           content:
-            "If you believe content on mimzy infringes your copyright, submit a DMCA takedown notice to lolympic.app@gmail.com including:",
+            "If you believe content on mimzy infringes your copyright, submit a DMCA takedown notice to dkdnel95@gmail.com including:",
           list: [
             "Identification of the copyrighted work",
             "URL of the infringing content on mimzy",
@@ -318,7 +318,7 @@ const rulesEN: RulesContent = {
     ],
   },
   footer: {
-    questionsText: "Questions about these rules? Contact us at lolympic.app@gmail.com",
+    questionsText: "Questions about these rules? Contact us at dkdnel95@gmail.com",
     termsLink: "Terms of Service",
     privacyLink: "Privacy Policy",
     settingsLink: "Settings",
@@ -435,7 +435,7 @@ const legalKO: LegalContent = {
         {
           title: "7. 보안",
           content:
-            "당사는 귀하의 데이터를 보호하기 위해 업계 표준 보안 조치를 시행합니다. 그러나 어떠한 시스템도 100% 안전하지는 않습니다. 보안 취약점은 lolympic.app@gmail.com으로 신고해 주십시오.",
+            "당사는 귀하의 데이터를 보호하기 위해 업계 표준 보안 조치를 시행합니다. 그러나 어떠한 시스템도 100% 안전하지는 않습니다. 보안 취약점은 dkdnel95@gmail.com으로 신고해 주십시오.",
         },
       ],
     },
@@ -455,7 +455,7 @@ const legalKO: LegalContent = {
         {
           title: "3. DMCA 삭제 절차",
           content:
-            "mimzy의 콘텐츠가 귀하의 저작권을 침해한다고 판단되는 경우, 다음을 포함하여 lolympic.app@gmail.com으로 DMCA 삭제 통지를 제출해 주십시오:",
+            "mimzy의 콘텐츠가 귀하의 저작권을 침해한다고 판단되는 경우, 다음을 포함하여 dkdnel95@gmail.com으로 DMCA 삭제 통지를 제출해 주십시오:",
           list: [
             "저작권이 있는 저작물의 식별",
             "mimzy에서 침해 콘텐츠의 URL",
@@ -575,7 +575,7 @@ const rulesKO: RulesContent = {
     ],
   },
   footer: {
-    questionsText: "규칙에 대한 질문이 있으신가요? lolympic.app@gmail.com으로 문의하세요",
+    questionsText: "규칙에 대한 질문이 있으신가요? dkdnel95@gmail.com으로 문의하세요",
     termsLink: "이용약관",
     privacyLink: "개인정보처리방침",
     settingsLink: "설정",
@@ -692,7 +692,7 @@ const legalJA: LegalContent = {
         {
           title: "7. セキュリティ",
           content:
-            "当社はお客様のデータを保護するために業界標準のセキュリティ対策を実施しています。ただし、100%安全なシステムは存在しません。セキュリティの脆弱性はlolympic.app@gmail.comまでご報告ください。",
+            "当社はお客様のデータを保護するために業界標準のセキュリティ対策を実施しています。ただし、100%安全なシステムは存在しません。セキュリティの脆弱性はdkdnel95@gmail.comまでご報告ください。",
         },
       ],
     },
@@ -712,7 +712,7 @@ const legalJA: LegalContent = {
         {
           title: "3. DMCA削除手続き",
           content:
-            "mimzy上のコンテンツがお客様の著作権を侵害していると思われる場合は、以下を含むDMCA削除通知をlolympic.app@gmail.comに提出してください：",
+            "mimzy上のコンテンツがお客様の著作権を侵害していると思われる場合は、以下を含むDMCA削除通知をdkdnel95@gmail.comに提出してください：",
           list: [
             "著作権のある著作物の特定",
             "mimzy上の侵害コンテンツのURL",
@@ -832,7 +832,7 @@ const rulesJA: RulesContent = {
     ],
   },
   footer: {
-    questionsText: "ルールについてご質問がありますか？ lolympic.app@gmail.comまでお問い合わせください",
+    questionsText: "ルールについてご質問がありますか？ dkdnel95@gmail.comまでお問い合わせください",
     termsLink: "利用規約",
     privacyLink: "プライバシーポリシー",
     settingsLink: "設定",
@@ -949,7 +949,7 @@ const legalZH: LegalContent = {
         {
           title: "7. 安全",
           content:
-            "我们实施行业标准的安全措施来保护您的数据。但没有任何系统是100%安全的。请将安全漏洞报告至lolympic.app@gmail.com。",
+            "我们实施行业标准的安全措施来保护您的数据。但没有任何系统是100%安全的。请将安全漏洞报告至dkdnel95@gmail.com。",
         },
       ],
     },
@@ -969,7 +969,7 @@ const legalZH: LegalContent = {
         {
           title: "3. DMCA删除流程",
           content:
-            "如果您认为mimzy上的内容侵犯了您的版权，请向lolympic.app@gmail.com提交DMCA删除通知，包括：",
+            "如果您认为mimzy上的内容侵犯了您的版权，请向dkdnel95@gmail.com提交DMCA删除通知，包括：",
           list: [
             "受版权保护作品的标识",
             "mimzy上侵权内容的URL",
@@ -1089,7 +1089,7 @@ const rulesZH: RulesContent = {
     ],
   },
   footer: {
-    questionsText: "对这些规则有疑问？请通过lolympic.app@gmail.com联系我们",
+    questionsText: "对这些规则有疑问？请通过dkdnel95@gmail.com联系我们",
     termsLink: "服务条款",
     privacyLink: "隐私政策",
     settingsLink: "设置",
@@ -1206,7 +1206,7 @@ const legalES: LegalContent = {
         {
           title: "7. Seguridad",
           content:
-            "Implementamos medidas de seguridad estándar de la industria para proteger sus datos. Sin embargo, ningún sistema es 100% seguro. Reporte vulnerabilidades de seguridad a lolympic.app@gmail.com.",
+            "Implementamos medidas de seguridad estándar de la industria para proteger sus datos. Sin embargo, ningún sistema es 100% seguro. Reporte vulnerabilidades de seguridad a dkdnel95@gmail.com.",
         },
       ],
     },
@@ -1226,7 +1226,7 @@ const legalES: LegalContent = {
         {
           title: "3. Proceso de Eliminación DMCA",
           content:
-            "Si cree que el contenido en mimzy infringe sus derechos de autor, envíe un aviso de eliminación DMCA a lolympic.app@gmail.com incluyendo:",
+            "Si cree que el contenido en mimzy infringe sus derechos de autor, envíe un aviso de eliminación DMCA a dkdnel95@gmail.com incluyendo:",
           list: [
             "Identificación de la obra protegida por derechos de autor",
             "URL del contenido infractor en mimzy",
@@ -1346,7 +1346,7 @@ const rulesES: RulesContent = {
     ],
   },
   footer: {
-    questionsText: "¿Preguntas sobre estas reglas? Contáctenos en lolympic.app@gmail.com",
+    questionsText: "¿Preguntas sobre estas reglas? Contáctenos en dkdnel95@gmail.com",
     termsLink: "Términos de Servicio",
     privacyLink: "Política de Privacidad",
     settingsLink: "Configuración",
@@ -1463,7 +1463,7 @@ const legalHI: LegalContent = {
         {
           title: "7. सुरक्षा",
           content:
-            "हम आपके डेटा की सुरक्षा के लिए उद्योग-मानक सुरक्षा उपाय लागू करते हैं। हालाँकि, कोई भी सिस्टम 100% सुरक्षित नहीं है। सुरक्षा कमजोरियों की रिपोर्ट lolympic.app@gmail.com पर करें।",
+            "हम आपके डेटा की सुरक्षा के लिए उद्योग-मानक सुरक्षा उपाय लागू करते हैं। हालाँकि, कोई भी सिस्टम 100% सुरक्षित नहीं है। सुरक्षा कमजोरियों की रिपोर्ट dkdnel95@gmail.com पर करें।",
         },
       ],
     },
@@ -1483,7 +1483,7 @@ const legalHI: LegalContent = {
         {
           title: "3. DMCA हटाने की प्रक्रिया",
           content:
-            "यदि आपको लगता है कि mimzy पर सामग्री आपके कॉपीराइट का उल्लंघन करती है, तो निम्नलिखित सहित lolympic.app@gmail.com पर DMCA हटाने की सूचना जमा करें:",
+            "यदि आपको लगता है कि mimzy पर सामग्री आपके कॉपीराइट का उल्लंघन करती है, तो निम्नलिखित सहित dkdnel95@gmail.com पर DMCA हटाने की सूचना जमा करें:",
           list: [
             "कॉपीराइट कार्य की पहचान",
             "mimzy पर उल्लंघनकारी सामग्री का URL",
@@ -1603,7 +1603,7 @@ const rulesHI: RulesContent = {
     ],
   },
   footer: {
-    questionsText: "इन नियमों के बारे में प्रश्न? हमसे lolympic.app@gmail.com पर संपर्क करें",
+    questionsText: "इन नियमों के बारे में प्रश्न? हमसे dkdnel95@gmail.com पर संपर्क करें",
     termsLink: "सेवा की शर्तें",
     privacyLink: "गोपनीयता नीति",
     settingsLink: "सेटिंग्स",
@@ -1720,7 +1720,7 @@ const legalAR: LegalContent = {
         {
           title: "7. الأمان",
           content:
-            "نطبق إجراءات أمنية وفقًا لمعايير الصناعة لحماية بياناتك. ومع ذلك، لا يوجد نظام آمن بنسبة 100%. أبلغ عن الثغرات الأمنية إلى lolympic.app@gmail.com.",
+            "نطبق إجراءات أمنية وفقًا لمعايير الصناعة لحماية بياناتك. ومع ذلك، لا يوجد نظام آمن بنسبة 100%. أبلغ عن الثغرات الأمنية إلى dkdnel95@gmail.com.",
         },
       ],
     },
@@ -1740,7 +1740,7 @@ const legalAR: LegalContent = {
         {
           title: "3. إجراءات إزالة DMCA",
           content:
-            "إذا كنت تعتقد أن المحتوى على mimzy ينتهك حقوق النشر الخاصة بك، فقدم إشعار إزالة DMCA إلى lolympic.app@gmail.com متضمنًا:",
+            "إذا كنت تعتقد أن المحتوى على mimzy ينتهك حقوق النشر الخاصة بك، فقدم إشعار إزالة DMCA إلى dkdnel95@gmail.com متضمنًا:",
           list: [
             "تحديد العمل المحمي بحقوق النشر",
             "عنوان URL للمحتوى المخالف على mimzy",
@@ -1860,7 +1860,7 @@ const rulesAR: RulesContent = {
     ],
   },
   footer: {
-    questionsText: "أسئلة حول هذه القواعد؟ تواصل معنا على lolympic.app@gmail.com",
+    questionsText: "أسئلة حول هذه القواعد؟ تواصل معنا على dkdnel95@gmail.com",
     termsLink: "شروط الخدمة",
     privacyLink: "سياسة الخصوصية",
     settingsLink: "الإعدادات",
