@@ -216,7 +216,7 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       // If token was invalidated (user deleted from DB), clear session
       if (token.invalidated || !token.id) {
-        session.user = undefined as any;
+        delete (session as { user?: unknown }).user;
         return session;
       }
       if (session.user) {

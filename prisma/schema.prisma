@@ -270,6 +270,7 @@ model User {
   medals               Medal[]
   rewardGrants         RewardGrant[]
   reports              Report[]          @relation("Reporter")
+  reportedByReports    Report[]          @relation("ReportedUser")
   notifications        Notification[]    @relation("Recipient")
   actedNotifications   Notification[]    @relation("Actor")
   translationPayloads  TranslationPayload[]
@@ -382,6 +383,7 @@ model Post {
   @@index([countryId])
   @@index([seasonId])
   @@index([status, visibility])
+  @@index([status, visibility, authorId])
   @@index([rankingScore(sort: Desc)])
   @@index([createdAt(sort: Desc)])
   @@index([category])
@@ -1046,6 +1048,7 @@ model Report {
   reporterId    String?
   postId        String?
   commentId     String?
+  targetUserId  String?
   suggestionId  String?
   reason        String
   detail        String?
@@ -1063,10 +1066,12 @@ model Report {
   post       Post?       @relation(fields: [postId], references: [id])
   comment    Comment?    @relation(fields: [commentId], references: [id])
   suggestion Suggestion? @relation(fields: [suggestionId], references: [id])
+  targetUser User? @relation("ReportedUser", fields: [targetUserId], references: [id], onDelete: SetNull)
 
   @@index([reporterId])
   @@index([status])
   @@index([postId])
+  @@index([targetUserId])
 }
 
 model Notification {

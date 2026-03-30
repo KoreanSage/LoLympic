@@ -417,16 +417,16 @@ export default function SettingsPage() {
                   <div className="space-y-3">
                     <div className="flex justify-between items-center py-2 border-b border-border">
                       <span className="text-sm text-foreground-muted">{t("settings.email")}</span>
-                      <span className="text-sm text-foreground">{session.user.email || "\u2014"}</span>
+                      <span className="text-sm text-foreground">{session.user?.email || "\u2014"}</span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-b border-border">
                       <span className="text-sm text-foreground-muted">{t("settings.username")}</span>
-                      <span className="text-sm text-foreground">@{session.user.username || "\u2014"}</span>
+                      <span className="text-sm text-foreground">@{session.user?.username || "\u2014"}</span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-b border-border">
                       <span className="text-sm text-foreground-muted">{t("settings.role")}</span>
                       <span className="text-xs px-2 py-0.5 rounded-full bg-[#c9a84c]/10 text-[#c9a84c]">
-                        {session.user.role || "USER"}
+                        {session.user?.role || "USER"}
                       </span>
                     </div>
                     <div className="flex justify-between items-center py-2">

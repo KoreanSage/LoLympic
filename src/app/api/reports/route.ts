@@ -97,10 +97,6 @@ export async function POST(request: NextRequest) {
         );
       }
     } else if (targetType === "USER") {
-      // TODO: The Report schema currently lacks a targetUserId field.
-      // User reports are stored without a direct relation to the reported user,
-      // which means duplicate detection and admin queries for user reports are unreliable.
-      // Add a `targetUserId String?` field to the Report model and relate it to User.
       const targetUser = await prisma.user.findUnique({
         where: { id: targetId },
         select: { id: true },
@@ -130,12 +126,10 @@ export async function POST(request: NextRequest) {
       duplicateWhere.postId = targetId;
     } else if (targetType === "COMMENT") {
       duplicateWhere.commentId = targetId;
+    } else if (targetType === "USER") {
+      duplicateWhere.targetUserId = targetId;
     }
-    // For USER reports, check by reason as well since the schema uses
-    // nullable relation fields rather than a generic targetId
-    // We check if user already filed any report for this target.
 
-    // Build the actual duplicate check based on the schema's relation fields
     const existingReport = await prisma.report.findFirst({
       where: duplicateWhere,
     });
@@ -158,10 +152,9 @@ export async function POST(request: NextRequest) {
       createData.postId = targetId;
     } else if (targetType === "COMMENT") {
       createData.commentId = targetId;
+    } else if (targetType === "USER") {
+      createData.targetUserId = targetId;
     }
-    // Note: The schema doesn't have a direct userId field for user reports,
-    // so we store user reports with the reason containing the target user info.
-    // If the schema has a targetUserId or similar field, adjust accordingly.
 
     const report = await prisma.report.create({
       data: createData as {
@@ -170,6 +163,7 @@ export async function POST(request: NextRequest) {
         detail?: string | null;
         postId?: string;
         commentId?: string;
+        targetUserId?: string;
       },
     });
 

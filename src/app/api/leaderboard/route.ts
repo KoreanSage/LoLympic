@@ -240,14 +240,13 @@ async function handleSeasonLeaderboard(
                   isChampion: true,
                 },
               },
-              translationPayloads: lang
-                ? {
-                    where: { targetLanguage: lang as LanguageCode, status: "APPROVED" },
-                    orderBy: { version: "desc" as const },
-                    take: 1,
-                    select: { translatedTitle: true },
-                  }
-                : false,
+              // Fetch all approved translations (up to 7 languages) for fallback support
+              translationPayloads: {
+                where: { status: "APPROVED" },
+                orderBy: { version: "desc" as const },
+                take: 7,
+                select: { targetLanguage: true, translatedTitle: true },
+              },
             },
           },
           country: {
@@ -263,9 +262,12 @@ async function handleSeasonLeaderboard(
         entries: stats.map((stat, index) => {
           const post = stat.post;
           const payloads = Array.isArray((post as unknown as Record<string, unknown>).translationPayloads)
-            ? ((post as unknown as Record<string, unknown>).translationPayloads as Array<{ translatedTitle: string | null }>)
+            ? ((post as unknown as Record<string, unknown>).translationPayloads as Array<{ targetLanguage: string; translatedTitle: string | null }>)
             : [];
-          const translatedTitle = payloads[0]?.translatedTitle ?? null;
+          // Preferred language first, then any available translation as fallback
+          const preferred = lang ? payloads.find((p) => p.targetLanguage === lang && p.translatedTitle) : null;
+          const fallback = payloads.find((p) => p.translatedTitle);
+          const translatedTitle = preferred?.translatedTitle ?? fallback?.translatedTitle ?? null;
           return {
             rank: stat.globalRank ?? index + 1,
             post: {
@@ -539,22 +541,24 @@ async function handleRealtimeLeaderboard(type: string, limit: number, lang: stri
           country: {
             select: { id: true, nameEn: true, flagEmoji: true },
           },
-          translationPayloads: lang
-            ? {
-                where: { targetLanguage: lang as LanguageCode, status: "APPROVED" },
-                orderBy: { version: "desc" as const },
-                take: 1,
-                select: { translatedTitle: true },
-              }
-            : false,
+          // Fetch all approved translations (up to 7 languages) for fallback support
+          translationPayloads: {
+            where: { status: "APPROVED" },
+            orderBy: { version: "desc" as const },
+            take: 7,
+            select: { targetLanguage: true, translatedTitle: true },
+          },
         },
       });
 
       const entries = posts.map((post, index) => {
         const payloads = Array.isArray((post as unknown as Record<string, unknown>).translationPayloads)
-          ? ((post as unknown as Record<string, unknown>).translationPayloads as Array<{ translatedTitle: string | null }>)
+          ? ((post as unknown as Record<string, unknown>).translationPayloads as Array<{ targetLanguage: string; translatedTitle: string | null }>)
           : [];
-        const translatedTitle = payloads[0]?.translatedTitle ?? null;
+        // Preferred language first, then any available translation as fallback
+        const preferred = lang ? payloads.find((p) => p.targetLanguage === lang && p.translatedTitle) : null;
+        const fallback = payloads.find((p) => p.translatedTitle);
+        const translatedTitle = preferred?.translatedTitle ?? fallback?.translatedTitle ?? null;
         const score =
           post.reactionCount +
           post.commentCount * 2 +

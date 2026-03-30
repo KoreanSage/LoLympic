@@ -81,6 +81,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    if (query.length > 500) {
+      return NextResponse.json(
+        { error: "Search query too long (max 500 characters)" },
+        { status: 400 }
+      );
+    }
+
     if (!["posts", "users", "all"].includes(type)) {
       return NextResponse.json(
         { error: "type must be 'posts', 'users', or 'all'" },

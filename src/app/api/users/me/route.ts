@@ -11,36 +11,32 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const [user, passwordCheck] = await Promise.all([
-      prisma.user.findUnique({
-        where: { id: sessionUser.id },
-        select: {
-          id: true,
-          username: true,
-          displayName: true,
-          avatarUrl: true,
-          bio: true,
-          countryId: true,
-          preferredLanguage: true,
-          uiLanguage: true,
-          createdAt: true,
-          emailVerified: true,
-          country: {
-            select: { id: true, nameEn: true, flagEmoji: true },
-          },
+    const user = await prisma.user.findUnique({
+      where: { id: sessionUser.id },
+      select: {
+        id: true,
+        username: true,
+        displayName: true,
+        avatarUrl: true,
+        bio: true,
+        countryId: true,
+        preferredLanguage: true,
+        uiLanguage: true,
+        createdAt: true,
+        emailVerified: true,
+        passwordHash: true,
+        country: {
+          select: { id: true, nameEn: true, flagEmoji: true },
         },
-      }),
-      prisma.user.findUnique({
-        where: { id: sessionUser.id },
-        select: { passwordHash: true },
-      }),
-    ]);
+      },
+    });
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ ...user, hasPassword: !!passwordCheck?.passwordHash });
+    const { passwordHash, ...userWithoutHash } = user;
+    return NextResponse.json({ ...userWithoutHash, hasPassword: !!passwordHash });
   } catch (error) {
     console.error("Error fetching profile:", error);
     return NextResponse.json({ error: "Failed to fetch profile" }, { status: 500 });

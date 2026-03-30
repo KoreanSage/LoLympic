@@ -42,6 +42,24 @@ export const VALID_LANGUAGE_CODES: PrismaLanguageCode[] = [
 
 export const VALID_LANGUAGE_SET = new Set<string>(VALID_LANGUAGE_CODES);
 
+/** Maps country ID to default language code */
+export const COUNTRY_LANGUAGE_MAP: Record<string, string> = {
+  KR: "ko",
+  JP: "ja",
+  CN: "zh",
+  TW: "zh",
+  HK: "zh",
+  MX: "es",
+  ES: "es",
+  AR: "es",
+  CO: "es",
+  CL: "es",
+  IN: "hi",
+  SA: "ar",
+  EG: "ar",
+  AE: "ar",
+};
+
 export const SUPPORTED_LANGUAGES: LanguageCode[] = [
   LanguageCode.ko,
   LanguageCode.en,

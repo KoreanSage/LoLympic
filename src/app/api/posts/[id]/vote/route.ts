@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
-import { updateKarma } from "@/lib/karma";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -83,7 +82,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
           });
           // Karma: removing upvote = -1, removing downvote = +1
           const karmaDelta = existing.value === 1 ? -1 : 1;
-          updateKarma(post.authorId, "post", karmaDelta).catch(() => {});
+          tx.user.update({ where: { id: post.authorId }, data: { postKarma: { increment: karmaDelta } } }).catch(() => {});
         }
       } else if (existing) {
         // Change vote
@@ -95,7 +94,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
             data: { voteScore: { increment: diff } },
           });
           // Karma: change from up to down = -2, change from down to up = +2
-          updateKarma(post.authorId, "post", diff).catch(() => {});
+          tx.user.update({ where: { id: post.authorId }, data: { postKarma: { increment: diff } } }).catch(() => {});
         }
       } else {
         // New vote
@@ -105,7 +104,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
           data: { voteScore: { increment: value } },
         });
         // Karma: new upvote = +1, new downvote = -1
-        updateKarma(post.authorId, "post", value).catch(() => {});
+        tx.user.update({ where: { id: post.authorId }, data: { postKarma: { increment: value } } }).catch(() => {});
       }
     });
 
