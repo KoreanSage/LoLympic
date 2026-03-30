@@ -177,64 +177,43 @@ export default function LeaderboardPage() {
           <>
           {/* Country Competition — always show structure */}
             <div className="space-y-4">
-              {/* Podium */}
-              {countries.length >= 3 ? (
-                <div className="bg-background-surface border border-border rounded-xl p-6">
-                  <div className="flex items-end justify-center gap-3">
-                    {/* 2nd */}
-                    <Link href={`/?country=${countries[1]?.countryId}`} className="flex flex-col items-center hover:opacity-80 transition-opacity">
-                      <span className="text-3xl mb-1">{countries[1]?.flagEmoji}</span>
-                      <div className="w-20 bg-gradient-to-t from-[#8a8a8a] to-[#c0c0c0] rounded-t-lg flex flex-col items-center justify-end p-2" style={{ height: '100px' }}>
-                        <span className="text-xs font-bold text-white">2nd</span>
-                        <span className="text-[10px] text-white/80 truncate w-full text-center">{countries[1]?.name}</span>
-                        <span className="text-xs font-bold text-white mt-0.5">{countries[1]?.totalScore?.toLocaleString()}</span>
-                      </div>
-                    </Link>
-                    {/* 1st */}
-                    <Link href={`/?country=${countries[0]?.countryId}`} className="flex flex-col items-center hover:opacity-80 transition-opacity">
-                      <span className="text-4xl mb-1">{countries[0]?.flagEmoji}</span>
-                      <div className="w-24 bg-gradient-to-t from-[#a07c1c] to-[#c9a84c] rounded-t-lg flex flex-col items-center justify-end p-2" style={{ height: '140px' }}>
-                        <span className="text-sm font-bold text-white">1st</span>
-                        <span className="text-[10px] text-white/80 truncate w-full text-center">{countries[0]?.name}</span>
-                        <span className="text-sm font-bold text-white mt-0.5">{countries[0]?.totalScore?.toLocaleString()}</span>
-                      </div>
-                    </Link>
-                    {/* 3rd */}
-                    <Link href={`/?country=${countries[2]?.countryId}`} className="flex flex-col items-center hover:opacity-80 transition-opacity">
-                      <span className="text-2xl mb-1">{countries[2]?.flagEmoji}</span>
-                      <div className="w-20 bg-gradient-to-t from-[#8B4513] to-[#CD7F32] rounded-t-lg flex flex-col items-center justify-end p-2" style={{ height: '80px' }}>
-                        <span className="text-xs font-bold text-white">3rd</span>
-                        <span className="text-[10px] text-white/80 truncate w-full text-center">{countries[2]?.name}</span>
-                        <span className="text-xs font-bold text-white mt-0.5">{countries[2]?.totalScore?.toLocaleString()}</span>
-                      </div>
-                    </Link>
+              {/* Podium — shows real data when available, placeholders for missing slots */}
+              {(() => {
+                const podiumSlots = [
+                  { pos: "2nd", idx: 1, height: 100, from: "#8a8a8a", to: "#c0c0c0", textSize: "text-xs", flagSize: "text-3xl", w: "w-20" },
+                  { pos: "1st", idx: 0, height: 140, from: "#a07c1c", to: "#c9a84c", textSize: "text-sm", flagSize: "text-4xl", w: "w-24" },
+                  { pos: "3rd", idx: 2, height: 80,  from: "#8B4513", to: "#CD7F32", textSize: "text-xs", flagSize: "text-2xl", w: "w-20" },
+                ];
+                return (
+                  <div className="bg-background-surface border border-border rounded-xl p-6">
+                    <div className="flex items-end justify-center gap-3">
+                      {podiumSlots.map(({ pos, idx, height, from, to, textSize, flagSize, w }) => {
+                        const c = countries[idx];
+                        return c ? (
+                          <Link key={pos} href={`/?country=${c.countryId}`} className="flex flex-col items-center hover:opacity-80 transition-opacity">
+                            <span className={`${flagSize} mb-1`}>{c.flagEmoji}</span>
+                            <div className={`${w} rounded-t-lg flex flex-col items-center justify-end p-2`} style={{ height, background: `linear-gradient(to top, ${from}, ${to})` }}>
+                              <span className={`${textSize} font-bold text-white`}>{pos}</span>
+                              <span className="text-[10px] text-white/80 truncate w-full text-center">{c.name}</span>
+                              <span className={`${textSize} font-bold text-white mt-0.5`}>{c.totalScore?.toLocaleString()}</span>
+                            </div>
+                          </Link>
+                        ) : (
+                          <div key={pos} className="flex flex-col items-center opacity-25">
+                            <span className={`${flagSize} mb-1`}>🏳️</span>
+                            <div className={`${w} rounded-t-lg flex items-center justify-center p-2`} style={{ height, background: `linear-gradient(to top, ${from}40, ${to}40)` }}>
+                              <span className={`${textSize} text-foreground-subtle`}>{pos}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {countries.length < 3 && (
+                      <p className="text-xs text-foreground-subtle text-center mt-4">Post memes to represent your country!</p>
+                    )}
                   </div>
-                </div>
-              ) : (
-                <div className="bg-background-surface border border-border rounded-xl p-6">
-                  <div className="flex items-end justify-center gap-3">
-                    <div className="flex flex-col items-center">
-                      <span className="text-3xl mb-1 opacity-20">{"\u{1F948}"}</span>
-                      <div className="w-20 bg-gradient-to-t from-[#8a8a8a]/30 to-[#c0c0c0]/30 rounded-t-lg flex items-center justify-center p-2" style={{ height: '100px' }}>
-                        <span className="text-xs text-foreground-subtle">2nd</span>
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-center">
-                      <span className="text-4xl mb-1 opacity-20">{"\u{1F947}"}</span>
-                      <div className="w-24 bg-gradient-to-t from-[#a07c1c]/30 to-[#c9a84c]/30 rounded-t-lg flex items-center justify-center p-2" style={{ height: '140px' }}>
-                        <span className="text-sm text-foreground-subtle">1st</span>
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-center">
-                      <span className="text-2xl mb-1 opacity-20">{"\u{1F949}"}</span>
-                      <div className="w-20 bg-gradient-to-t from-[#8B4513]/30 to-[#CD7F32]/30 rounded-t-lg flex items-center justify-center p-2" style={{ height: '80px' }}>
-                        <span className="text-xs text-foreground-subtle">3rd</span>
-                      </div>
-                    </div>
-                  </div>
-                  <p className="text-xs text-foreground-subtle text-center mt-4">Post memes to represent your country!</p>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Score Bars */}
               <div className="bg-background-surface border border-border rounded-xl p-4 space-y-2.5">

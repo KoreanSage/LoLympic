@@ -151,13 +151,20 @@ export default function Sidebar() {
   const [errorCreators, setErrorCreators] = useState(false);
   const [errorMemes, setErrorMemes] = useState(false);
 
-  // Get user's preferred language for translated titles
-  const preferredLang =
-    (typeof window !== "undefined" && localStorage.getItem("mimzy_preferredLanguage")) ||
-    session?.user?.preferredLanguage ||
-    "";
+  // Get user's preferred language for translated titles (state so re-fetch works)
+  const [preferredLang, setPreferredLang] = useState<string>("");
   const [myCountry, setMyCountry] = useState<{ flag: string; name: string; rank: number; score: number } | null>(null);
   const [myCountryInTop5, setMyCountryInTop5] = useState(false);
+
+  // Initialize preferredLang from localStorage, then fall back to session
+  useEffect(() => {
+    const stored = localStorage.getItem("mimzy_preferredLanguage");
+    if (stored) {
+      setPreferredLang(stored);
+    } else if (session?.user?.preferredLanguage) {
+      setPreferredLang(session.user.preferredLanguage);
+    }
+  }, [session?.user?.preferredLanguage]);
 
   useEffect(() => {
     // Fetch country rankings with rank change detection
@@ -311,7 +318,7 @@ export default function Sidebar() {
       })
       .catch((err) => console.error("Failed to fetch trending tags:", err))
       .finally(() => setLoadingTags(false));
-  }, []);
+  }, [preferredLang]);
 
   // Fetch user's country standing
   useEffect(() => {
