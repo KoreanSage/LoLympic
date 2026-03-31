@@ -81,6 +81,8 @@ interface FeedListProps {
     category?: string;
     postType?: string;
     sort?: string;
+    search?: string;
+    tag?: string;
   };
 }
 
@@ -212,6 +214,8 @@ export default function FeedList({
       else if (parsedFilters?.category) params.set("category", parsedFilters.category);
       if (parsedFilters?.country && !isFollowingFeed) params.set("country", parsedFilters.country);
       if (parsedFilters?.language) params.set("language", parsedFilters.language);
+      if (parsedFilters?.search) params.set("search", parsedFilters.search);
+      if (parsedFilters?.tag) params.set("tag", parsedFilters.tag);
 
       const res = await fetch(`/api/posts?${params}`, { signal });
       if (!res.ok) throw new Error("Failed to fetch");

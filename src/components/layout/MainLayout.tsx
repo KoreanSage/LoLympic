@@ -7,11 +7,13 @@ import Footer from "./Footer";
 interface MainLayoutProps {
   children: React.ReactNode;
   showSidebar?: boolean;
+  sidebarContent?: React.ReactNode;
 }
 
 export default function MainLayout({
   children,
   showSidebar = true,
+  sidebarContent,
 }: MainLayoutProps) {
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
@@ -23,7 +25,7 @@ export default function MainLayout({
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6">
             <main className="min-w-0">{children}</main>
             <div className="hidden lg:block">
-              <Sidebar />
+              {sidebarContent || <Sidebar />}
             </div>
           </div>
         ) : (

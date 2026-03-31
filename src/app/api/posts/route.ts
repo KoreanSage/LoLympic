@@ -59,6 +59,8 @@ export async function GET(request: NextRequest) {
     const seasonId = searchParams.get("season");
     const category = searchParams.get("category");
     const feed = searchParams.get("feed"); // "following"
+    const search = searchParams.get("search");
+    const tag = searchParams.get("tag");
 
     // Translation language to include
     const translateTo = searchParams.get("translateTo") as LanguageCode | null;
@@ -140,6 +142,13 @@ export async function GET(request: NextRequest) {
     if (language) where.sourceLanguage = language;
     if (seasonId) where.seasonId = seasonId;
     if (category) where.category = category;
+    if (tag) where.tags = { has: tag };
+    if (search) {
+      where.OR = [
+        { title: { contains: search, mode: "insensitive" } },
+        { body: { contains: search, mode: "insensitive" } },
+      ];
+    }
 
     // Build orderBy
     let orderBy: Prisma.PostOrderByWithRelationInput | Prisma.PostOrderByWithRelationInput[];
