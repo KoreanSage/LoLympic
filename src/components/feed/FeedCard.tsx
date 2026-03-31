@@ -217,10 +217,10 @@ function FeedCardInner({
     try {
       const res = await fetch(`/api/posts/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error();
-      toast("Post deleted", "success");
+      toast(t("feed.postDeleted"), "success");
       onDelete?.(id);
     } catch {
-      toast("Failed to delete post", "error");
+      toast(t("feed.deleteFailed"), "error");
     } finally {
       setDeletePending(false);
       setShowDeleteConfirm(false);
@@ -398,16 +398,16 @@ function FeedCardInner({
                         if (!session?.user) return;
                         try {
                           await fetch(`/api/posts/${id}/translation-request`, { method: "POST" });
-                          toast("Translation request sent!", "success");
+                          toast(t("feed.translationSent"), "success");
                         } catch {
-                          toast("Failed to send request", "error");
+                          toast(t("feed.translationFailed"), "error");
                         }
                       }}
                       aria-label="Request translation"
                       className="w-full text-left px-3 py-2 text-sm text-foreground-muted hover:bg-background-elevated transition-colors flex items-center gap-2"
                     >
                       <span className="text-sm">🌐</span>
-                      Request Translation
+                      {t("feed.requestTranslation")}
                     </button>
                     <button
                       onClick={() => {
@@ -543,11 +543,11 @@ function FeedCardInner({
             </Link>
           )}
           {/* Community post: compact image after body */}
-          {isCommunity && !isTextOnly && (
+          {isCommunity && !isTextOnly && (imageUrl || images?.[0]?.originalUrl) && (
             <Link href={`/post/${id}`} className="block px-4 pb-3">
               <div className="overflow-hidden rounded-xl border border-border max-w-sm">
                 <Image
-                  src={imageUrl || images?.[0]?.originalUrl || ""}
+                  src={imageUrl || images![0].originalUrl}
                   alt={title}
                   width={images?.[0]?.width || 400}
                   height={images?.[0]?.height || 300}

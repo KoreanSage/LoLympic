@@ -119,6 +119,40 @@ export async function GET(request: NextRequest) {
             },
             country: { select: { id: true, nameEn: true, nameLocal: true, flagEmoji: true } },
             images: { orderBy: { orderIndex: "asc" }, select: { id: true, originalUrl: true, cleanUrl: true, width: true, height: true, mimeType: true, orderIndex: true } },
+            translationPayloads: translateTo
+              ? {
+                  where: { targetLanguage: translateTo, status: { in: ["COMPLETED", "APPROVED"] } },
+                  orderBy: { version: "desc" as const },
+                  take: 1,
+                  select: {
+                    id: true,
+                    memeType: true,
+                    translatedImageUrl: true,
+                    translatedTitle: true,
+                    translatedBody: true,
+                    segments: { orderBy: { orderIndex: "asc" as const } },
+                  },
+                }
+              : false,
+            comments: {
+              where: { parentId: null, status: "VISIBLE" },
+              orderBy: { likeCount: "desc" },
+              take: 3,
+              select: {
+                id: true,
+                body: true,
+                likeCount: true,
+                author: {
+                  select: {
+                    username: true,
+                    displayName: true,
+                    avatarUrl: true,
+                    isChampion: true,
+                    country: { select: { flagEmoji: true } },
+                  },
+                },
+              },
+            },
             _count: { select: { translationPayloads: true, reactions: true, comments: true } },
           },
         }),
@@ -143,7 +177,7 @@ export async function GET(request: NextRequest) {
     if (seasonId) where.seasonId = seasonId;
     if (category) where.category = category;
     if (tag) where.tags = { has: tag };
-    if (search) {
+    if (search && search.length >= 2) {
       where.OR = [
         { title: { contains: search, mode: "insensitive" } },
         { body: { contains: search, mode: "insensitive" } },
@@ -267,7 +301,9 @@ export async function GET(request: NextRequest) {
       },
     }, {
       headers: {
-        "Cache-Control": "public, s-maxage=10, stale-while-revalidate=30",
+        "Cache-Control": blockedIds.length > 0
+          ? "private, no-store"
+          : "public, s-maxage=10, stale-while-revalidate=30",
       },
     });
   } catch (error) {
@@ -298,7 +334,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const rawBody = await request.json();
+    let rawBody;
+    try {
+      rawBody = await request.json();
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    }
     const parsed = createPostSchema.safeParse(rawBody);
     if (!parsed.success) {
       return NextResponse.json(

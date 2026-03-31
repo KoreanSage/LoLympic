@@ -10,6 +10,7 @@ import { useTranslation } from "@/i18n";
 interface HotPost {
   id: string;
   title: string;
+  translatedTitle?: string | null;
   body?: string | null;
   reactionCount: number;
   commentCount: number;
@@ -77,14 +78,19 @@ export default function CommunityPage() {
       .catch(() => {});
   }, [session?.user]);
 
-  // Fetch hot posts
+  const translateTo = freshLang || session?.user?.preferredLanguage || "";
+
+  // Fetch hot posts (re-fetch when translateTo changes to get translated titles)
   useEffect(() => {
-    fetch("/api/posts?category=community&sort=top&limit=10")
-      .then((r) => r.json())
+    const params = new URLSearchParams({ category: "community", sort: "top", limit: "10" });
+    if (translateTo) params.set("translateTo", translateTo);
+    fetch(`/api/posts?${params}`)
+      .then((r) => r.ok ? r.json() : { posts: [] })
       .then((data) => {
         const posts = (data.posts || []).map((p: any) => ({
           id: p.id,
           title: p.title,
+          translatedTitle: p.translationPayloads?.[0]?.translatedTitle || null,
           body: p.body,
           reactionCount: p.reactionCount ?? p._count?.reactions ?? 0,
           commentCount: p.commentCount ?? p._count?.comments ?? 0,
@@ -96,20 +102,20 @@ export default function CommunityPage() {
         setHotPosts(posts);
       })
       .catch(() => {});
-  }, []);
-
-  const translateTo = freshLang || session?.user?.preferredLanguage || "";
+  }, [translateTo]);
 
   // Image handling
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) { alert("Max 10MB"); return; }
+    if (imagePreview) URL.revokeObjectURL(imagePreview);
     setImageFile(file);
     setImagePreview(URL.createObjectURL(file));
   };
 
   const removeImage = () => {
+    if (imagePreview) URL.revokeObjectURL(imagePreview);
     setImageFile(null);
     setImagePreview(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -159,7 +165,18 @@ export default function CommunityPage() {
       });
       const data = await res.json();
 
-      if (data.id || data.post) {
+      const postId = data.post?.id || data.id;
+      if (postId) {
+        // Fire-and-forget: trigger text translation to all languages
+        fetch("/api/translate/text", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            postId,
+            sourceLanguage: freshLang || "en",
+          }),
+        }).catch(() => {});
+
         setTitle(""); setBody(""); setPostCategory("general"); removeImage();
         setShowWrite(false);
         setFeedKey((k) => k + 1);
@@ -207,7 +224,7 @@ export default function CommunityPage() {
                   {i + 1}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-foreground leading-tight line-clamp-2">{p.title}</p>
+                  <p className="text-xs font-medium text-foreground leading-tight line-clamp-2">{p.translatedTitle || p.title}</p>
                   <div className="flex items-center gap-1.5 text-[10px] text-foreground-subtle mt-1">
                     {p.country && <span>{p.country.flagEmoji}</span>}
                     <span>@{p.author.username}</span>
@@ -392,14 +409,15 @@ export default function CommunityPage() {
           emptyMessage={t("community.emptyDiscussion")}
           emptySubtext={t("community.emptyDiscussionSubtext")}
           emptyActionLabel={t("community.writePost")}
-          emptyActionHref="/community"
+          emptyActionClick={session?.user ? () => setShowWrite(true) : undefined}
+          emptyActionHref={session?.user ? undefined : "/api/auth/signin"}
           emptyIcon="💬"
         />
       </div>
 
       {/* ── Write Modal ──────────────────────────────────────────────────── */}
       {showWrite && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center px-4">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center px-4" role="dialog" aria-modal="true" aria-labelledby="write-modal-title">
           {/* Backdrop */}
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowWrite(false)} />
 
@@ -410,7 +428,7 @@ export default function CommunityPage() {
           >
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-              <h2 className="text-base font-bold text-foreground">{t("community.newPost")}</h2>
+              <h2 id="write-modal-title" className="text-base font-bold text-foreground">{t("community.newPost")}</h2>
               <button type="button" onClick={() => setShowWrite(false)} className="text-foreground-subtle hover:text-foreground transition-colors">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />

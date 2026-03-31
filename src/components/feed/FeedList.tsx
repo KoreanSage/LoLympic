@@ -74,6 +74,7 @@ interface FeedListProps {
   emptySubtext?: string;
   emptyActionLabel?: string;
   emptyActionHref?: string;
+  emptyActionClick?: () => void;
   emptyIcon?: string;
   filters?: {
     country?: string;
@@ -173,6 +174,7 @@ export default function FeedList({
   emptySubtext,
   emptyActionLabel,
   emptyActionHref,
+  emptyActionClick,
   emptyIcon,
   filters,
 }: FeedListProps) {
@@ -305,15 +307,27 @@ export default function FeedList({
         <p className="text-sm text-foreground-subtle mb-6 max-w-sm">
           {emptySubtext || "Be the first to share a meme and get it translated into 7 languages!"}
         </p>
-        <a
-          href={emptyActionHref || "/upload"}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#c9a84c] hover:bg-[#d4b65c] text-black font-medium text-sm transition-colors"
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-          </svg>
-          {emptyActionLabel || "Upload a Meme"}
-        </a>
+        {emptyActionClick ? (
+          <button
+            onClick={emptyActionClick}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#c9a84c] hover:bg-[#d4b65c] text-black font-medium text-sm transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            {emptyActionLabel || "Upload a Meme"}
+          </button>
+        ) : (
+          <a
+            href={emptyActionHref || "/upload"}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#c9a84c] hover:bg-[#d4b65c] text-black font-medium text-sm transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            {emptyActionLabel || "Upload a Meme"}
+          </a>
+        )}
       </div>
     );
   }

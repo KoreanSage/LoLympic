@@ -66,6 +66,11 @@ const ja: Record<TranslationKeys, string> = {
   "feed.bookmarked": "ブックマークしました！",
   "feed.bookmarkRemoved": "ブックマークを解除しました",
   "feed.aiTranslation": "AI翻訳",
+  "feed.requestTranslation": "翻訳をリクエスト",
+  "feed.translationSent": "翻訳リクエストを送信しました！",
+  "feed.translationFailed": "リクエストの送信に失敗しました",
+  "feed.postDeleted": "投稿が削除されました",
+  "feed.deleteFailed": "投稿の削除に失敗しました",
 
   // ── Feed Filters ───────────────────────────────────────────────────────────
   "filter.trending": "トレンド",

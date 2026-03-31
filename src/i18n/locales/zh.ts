@@ -66,6 +66,11 @@ const zh: Record<TranslationKeys, string> = {
   "feed.bookmarked": "已收藏！",
   "feed.bookmarkRemoved": "已取消收藏",
   "feed.aiTranslation": "AI 翻译",
+  "feed.requestTranslation": "请求翻译",
+  "feed.translationSent": "翻译请求已发送！",
+  "feed.translationFailed": "发送请求失败",
+  "feed.postDeleted": "帖子已删除",
+  "feed.deleteFailed": "删除帖子失败",
 
   // ── Feed Filters ───────────────────────────────────────────────────────────
   "filter.trending": "热门",

@@ -66,6 +66,11 @@ const es: Record<TranslationKeys, string> = {
   "feed.bookmarked": "¡Guardado!",
   "feed.bookmarkRemoved": "Se quitó de guardados",
   "feed.aiTranslation": "Traducción IA",
+  "feed.requestTranslation": "Solicitar traducción",
+  "feed.translationSent": "¡Solicitud de traducción enviada!",
+  "feed.translationFailed": "Error al enviar la solicitud",
+  "feed.postDeleted": "Publicación eliminada",
+  "feed.deleteFailed": "Error al eliminar la publicación",
 
   // ── Feed Filters ───────────────────────────────────────────────────────────
   "filter.trending": "Tendencias",

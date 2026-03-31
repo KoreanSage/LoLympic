@@ -66,6 +66,11 @@ const hi: Record<TranslationKeys, string> = {
   "feed.bookmarked": "Bookmark हो गया!",
   "feed.bookmarkRemoved": "Bookmark हटा दिया",
   "feed.aiTranslation": "AI Translation",
+  "feed.requestTranslation": "अनुवाद का अनुरोध करें",
+  "feed.translationSent": "अनुवाद अनुरोध भेजा गया!",
+  "feed.translationFailed": "अनुरोध भेजने में विफल",
+  "feed.postDeleted": "पोस्ट हटा दी गई",
+  "feed.deleteFailed": "पोस्ट हटाने में विफल",
 
   // ── Feed Filters ───────────────────────────────────────────────────────────
   "filter.trending": "Trending",

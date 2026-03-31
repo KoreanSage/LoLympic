@@ -66,6 +66,11 @@ const ar: Record<TranslationKeys, string> = {
   "feed.bookmarked": "اتحفظ!",
   "feed.bookmarkRemoved": "اتشال من المحفوظات",
   "feed.aiTranslation": "ترجمة AI",
+  "feed.requestTranslation": "طلب ترجمة",
+  "feed.translationSent": "تم إرسال طلب الترجمة!",
+  "feed.translationFailed": "فشل في إرسال الطلب",
+  "feed.postDeleted": "تم حذف المنشور",
+  "feed.deleteFailed": "فشل في حذف المنشور",
 
   // ── Feed Filters ───────────────────────────────────────────────────────────
   "filter.trending": "الرائج",

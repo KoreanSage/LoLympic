@@ -64,6 +64,11 @@ const en = {
   "feed.bookmarked": "Bookmarked!",
   "feed.bookmarkRemoved": "Bookmark removed",
   "feed.aiTranslation": "AI Translation",
+  "feed.requestTranslation": "Request Translation",
+  "feed.translationSent": "Translation request sent!",
+  "feed.translationFailed": "Failed to send request",
+  "feed.postDeleted": "Post deleted",
+  "feed.deleteFailed": "Failed to delete post",
 
   // ── Feed Filters ───────────────────────────────────────────────────────────
   "filter.trending": "Trending",

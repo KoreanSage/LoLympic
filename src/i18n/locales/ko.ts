@@ -66,6 +66,11 @@ const ko: Record<TranslationKeys, string> = {
   "feed.bookmarked": "북마크에 저장되었습니다!",
   "feed.bookmarkRemoved": "북마크가 해제되었습니다",
   "feed.aiTranslation": "AI 번역",
+  "feed.requestTranslation": "번역 요청",
+  "feed.translationSent": "번역 요청이 전송되었습니다!",
+  "feed.translationFailed": "요청 전송에 실패했습니다",
+  "feed.postDeleted": "게시물이 삭제되었습니다",
+  "feed.deleteFailed": "게시물 삭제에 실패했습니다",
 
   // ── Feed Filters ───────────────────────────────────────────────────────────
   "filter.trending": "트렌딩",
