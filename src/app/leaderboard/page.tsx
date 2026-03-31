@@ -222,39 +222,6 @@ export default function LeaderboardPage() {
                 );
               })()}
 
-              {/* Score Bars */}
-              <div className="bg-background-surface border border-border rounded-xl p-4 space-y-2.5">
-                <h3 className="text-sm font-semibold text-foreground-muted mb-3">{t("leaderboard.scoreDistribution")}</h3>
-                {countries.length === 0 ? (
-                  <div className="space-y-2.5">
-                    {[80, 55, 35, 20, 10].map((w, i) => (
-                      <div key={i} className="flex items-center gap-2">
-                        <span className="text-sm w-6 text-right opacity-20">{"\u{1F3F3}\uFE0F"}</span>
-                        <span className="text-xs text-foreground-muted/30 w-20">—</span>
-                        <div className="flex-1 h-5 bg-background-elevated rounded-full overflow-hidden">
-                          <div className="h-full bg-foreground-subtle/10 rounded-full" style={{ width: `${w}%` }} />
-                        </div>
-                      </div>
-                    ))}
-                    <p className="text-[10px] text-foreground-subtle text-center mt-2">Rankings will appear as countries compete</p>
-                  </div>
-                ) : countries.slice(0, 10).map((c, i) => {
-                  const maxScore = countries[0]?.totalScore || 1;
-                  const pct = Math.max(3, (c.totalScore / maxScore) * 100);
-                  const barColor = i === 0 ? 'bg-[#c9a84c]' : i === 1 ? 'bg-[#c0c0c0]' : i === 2 ? 'bg-[#CD7F32]' : 'bg-foreground-subtle/30';
-                  return (
-                    <Link key={c.countryId} href={`/?country=${c.countryId}`} className="flex items-center gap-2 hover:bg-background-elevated rounded-lg px-1 -mx-1 py-0.5 transition-colors cursor-pointer">
-                      <span className="text-sm w-6 text-right">{c.flagEmoji}</span>
-                      <span className="text-xs text-foreground-muted w-20 truncate">{c.name}</span>
-                      <div className="flex-1 h-5 bg-background-elevated rounded-full overflow-hidden">
-                        <div className={`h-full ${barColor} rounded-full transition-all duration-700 flex items-center justify-end pr-2`} style={{ width: `${pct}%` }}>
-                          <span className="text-[10px] font-bold text-white">{c.totalScore?.toLocaleString()}</span>
-                        </div>
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
             </div>
 
           {/* Rankings Table — always show, even empty */}

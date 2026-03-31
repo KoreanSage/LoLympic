@@ -8,6 +8,7 @@ import ChampionshipTimeline from "@/components/championship/ChampionshipTimeline
 import CandidateCard from "@/components/championship/CandidateCard";
 import ChampionshipBattleGrid from "@/components/championship/ChampionshipBattleGrid";
 import ChampionshipResultCard from "@/components/championship/ChampionshipResultCard";
+import MainLayout from "@/components/layout/MainLayout";
 
 interface Championship {
   id: string;
@@ -354,17 +355,20 @@ export default function ChampionshipPage() {
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="flex items-center justify-center py-20">
-          <div className="w-8 h-8 border-2 border-[#c9a84c] border-t-transparent rounded-full animate-spin" />
+      <MainLayout showSidebar={false}>
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          <div className="flex items-center justify-center py-20">
+            <div className="w-8 h-8 border-2 border-[#c9a84c] border-t-transparent rounded-full animate-spin" />
+          </div>
         </div>
-      </div>
+      </MainLayout>
     );
   }
 
   // Inactive state (no championship running)
   if (!championship) {
     return (
+      <MainLayout showSidebar={false}>
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="text-center mb-8">
           <span className="text-5xl mb-4 block">🏆</span>
@@ -419,10 +423,12 @@ export default function ChampionshipPage() {
           </div>
         )}
       </div>
+      </MainLayout>
     );
   }
 
   return (
+    <MainLayout showSidebar={false}>
     <div className="max-w-4xl mx-auto px-4 py-8">
       {/* Header */}
       <div className="text-center mb-6">
@@ -655,5 +661,6 @@ export default function ChampionshipPage() {
         </div>
       )}
     </div>
+    </MainLayout>
   );
 }
