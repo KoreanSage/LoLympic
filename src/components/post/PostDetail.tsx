@@ -481,8 +481,8 @@ export default function PostDetail({
         {showTranslation ? title : (originalTitle || title)}
       </h1>
 
-      {/* Translation toggle for text posts (title + body) */}
-      {isTextOnly && (originalTitle || originalBody) && (
+      {/* Translation toggle for text (title + body) — shown when no image translation bar exists */}
+      {(isTextOnly || isCommunity) && (originalTitle || originalBody) && (
         <div className="flex items-center gap-2 -mt-1">
           <TranslationToggle
             showTranslation={showTranslation}
@@ -499,9 +499,9 @@ export default function PostDetail({
       )}
 
       {/* Category badge */}
-      {isTextOnly && category && category !== "meme" && (
+      {category && category !== "meme" && category !== "community" && (
         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-background-surface border border-border text-foreground-muted w-fit">
-          {category === "community" ? "💬 Community" : category}
+          {category}
         </span>
       )}
 
@@ -516,9 +516,9 @@ export default function PostDetail({
         </div>
       )}
 
-      {/* Text-only post: show body */}
-      {isTextOnly && body && (
-        <div className="bg-background-surface border border-border rounded-xl p-5">
+      {/* Body — always shown above image for all post types */}
+      {body && (
+        <div className={isTextOnly ? "bg-background-surface border border-border rounded-xl p-5" : ""}>
           <p className="text-base text-foreground-muted leading-relaxed whitespace-pre-wrap">
             {showTranslation ? body : (originalBody || body)}
           </p>
@@ -639,16 +639,6 @@ export default function PostDetail({
           </div>
         )}
       </div>}
-
-      {/* Body (for meme posts that also have body text) */}
-      {!isTextOnly && body && (
-        <div>
-          <p className="text-base sm:text-lg text-foreground-muted leading-relaxed whitespace-pre-wrap">{body}</p>
-          {originalBody && (
-            <p className="text-sm text-foreground-subtle mt-1 whitespace-pre-wrap">{originalBody}</p>
-          )}
-        </div>
-      )}
 
       {/* Stats */}
       <div className="flex items-center gap-4 text-xs text-foreground-subtle -mb-1">
