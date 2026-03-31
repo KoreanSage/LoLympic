@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import crypto from "crypto";
 import prisma from "@/lib/prisma";
 
 /**
@@ -20,7 +21,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!secret || secret !== expectedSecret) {
+    if (
+      !secret ||
+      secret.length !== expectedSecret.length ||
+      !crypto.timingSafeEqual(Buffer.from(secret), Buffer.from(expectedSecret))
+    ) {
       return NextResponse.json(
         { error: "Invalid bootstrap secret" },
         { status: 401 }
@@ -36,11 +41,6 @@ export async function POST(request: NextRequest) {
     if (existingSuperAdmin) {
       return NextResponse.json({
         message: "A SUPER_ADMIN already exists",
-        superAdmin: {
-          id: existingSuperAdmin.id,
-          email: existingSuperAdmin.email,
-          username: existingSuperAdmin.username,
-        },
       });
     }
 

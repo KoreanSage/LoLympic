@@ -2,58 +2,39 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { UserRole } from "@prisma/client";
-import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 
 /**
  * GET /api/admin/users — List all users (admin only)
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const user = await getSessionUser();
     if (!user || (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN")) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const rlKey = getRateLimitKey(request.headers, "admin_list");
-    const rl = await checkRateLimit(rlKey, { max: 30, windowSeconds: 60 });
-    if (!rl.allowed) {
-      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
-    }
-
-    const { searchParams } = new URL(request.url);
-    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
-    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "50", 10)));
-    const skip = (page - 1) * limit;
-
-    const [users, total] = await Promise.all([
-      prisma.user.findMany({
-        orderBy: { createdAt: "desc" },
-        skip,
-        take: limit,
-        select: {
-          id: true,
-          username: true,
-          displayName: true,
-          email: true,
-          role: true,
-          isChampion: true,
-          isBanned: true,
-          banReason: true,
-          bannedUntil: true,
-          createdAt: true,
-          _count: { select: { posts: true } },
-        },
-      }),
-      prisma.user.count(),
-    ]);
-
-    return NextResponse.json({
-      users,
-      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    const users = await prisma.user.findMany({
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        username: true,
+        displayName: true,
+        email: true,
+        role: true,
+        isChampion: true,
+        isBanned: true,
+        banReason: true,
+        bannedUntil: true,
+        createdAt: true,
+        _count: { select: { posts: true } },
+      },
+      take: 200,
     });
+
+    return NextResponse.json({ users });
   } catch (error) {
     console.error("Admin users error:", error);
-    return NextResponse.json({ error: "Failed to fetch users" }, { status: 500 });
+    return NextResponse.json({ error: "Failed" }, { status: 500 });
   }
 }
 
@@ -86,6 +67,22 @@ export async function PATCH(request: NextRequest) {
     if (role === "ADMIN" && currentUser.role !== "SUPER_ADMIN") {
       return NextResponse.json(
         { error: "Only SUPER_ADMIN can grant ADMIN role" },
+        { status: 403 }
+      );
+    }
+
+    // Only SUPER_ADMIN can modify ADMIN or SUPER_ADMIN users
+    const targetUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+    if (
+      targetUser &&
+      (targetUser.role === "ADMIN" || targetUser.role === "SUPER_ADMIN") &&
+      currentUser.role !== "SUPER_ADMIN"
+    ) {
+      return NextResponse.json(
+        { error: "Only SUPER_ADMIN can modify ADMIN or SUPER_ADMIN users" },
         { status: 403 }
       );
     }

@@ -123,7 +123,6 @@ export default function PostDetail({
   mimeType,
   segments,
   memeType,
-  reactionCount,
   commentCount,
   shareCount,
   viewCount,
@@ -145,7 +144,6 @@ export default function PostDetail({
     (s) => s.boxX != null && s.boxY != null && s.boxWidth != null && s.boxHeight != null
   );
   const isGif = mimeType === "image/gif";
-  const isVideo = !!mimeType?.startsWith("video/");
   const isTextOnly = !imageUrl && (!images || images.length === 0);
   const hasTranslation = !isGif && (hasOverlaySegments || !!translatedImageUrl || (isTextOnly && (!!originalTitle || !!originalBody)));
 
@@ -165,7 +163,7 @@ export default function PostDetail({
   useEffect(() => {
     // Load bookmark from localStorage first (instant)
     try {
-      const raw = localStorage.getItem("mimzy_bookmarks");
+      const raw = localStorage.getItem("lolympic_bookmarks");
       const bookmarks: string[] = raw ? JSON.parse(raw) : [];
       setSaved(bookmarks.includes(id));
     } catch (e) {
@@ -283,14 +281,11 @@ export default function PostDetail({
 
   const preferredLang = preferredLangProp || session?.user?.preferredLanguage || "en";
 
-  const isCommunity = category === "community";
-  const tabs = isCommunity
-    ? [{ id: "comments", label: t("post.comments"), count: commentCount }]
-    : [
-        { id: "comments", label: t("post.comments"), count: commentCount },
-        { id: "culture", label: t("post.cultureNote"), count: cultureNotes.length },
-        { id: "suggestions", label: t("post.discussion"), count: suggestions.length },
-      ];
+  const tabs = [
+    { id: "comments", label: t("post.comments"), count: commentCount },
+    { id: "culture", label: t("post.cultureNote"), count: cultureNotes.length },
+    { id: "suggestions", label: t("post.discussion"), count: suggestions.length },
+  ];
 
   return (
     <div className="max-w-4xl mx-auto space-y-3">
@@ -484,8 +479,8 @@ export default function PostDetail({
         {showTranslation ? title : (originalTitle || title)}
       </h1>
 
-      {/* Translation toggle for text (title + body) — shown when no image translation bar exists */}
-      {(isTextOnly || isCommunity) && (originalTitle || originalBody) && (
+      {/* Translation toggle for text posts (title + body) */}
+      {isTextOnly && (originalTitle || originalBody) && (
         <div className="flex items-center gap-2 -mt-1">
           <TranslationToggle
             showTranslation={showTranslation}
@@ -502,9 +497,9 @@ export default function PostDetail({
       )}
 
       {/* Category badge */}
-      {category && category !== "meme" && category !== "community" && (
+      {isTextOnly && category && category !== "meme" && (
         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-background-surface border border-border text-foreground-muted w-fit">
-          {category}
+          {category === "community" ? "💬 Community" : category}
         </span>
       )}
 
@@ -519,9 +514,9 @@ export default function PostDetail({
         </div>
       )}
 
-      {/* Body — always shown above image for all post types */}
-      {body && (
-        <div className={isTextOnly ? "bg-background-surface border border-border rounded-xl p-5" : ""}>
+      {/* Text-only post: show body */}
+      {isTextOnly && body && (
+        <div className="bg-background-surface border border-border rounded-xl p-5">
           <p className="text-base text-foreground-muted leading-relaxed whitespace-pre-wrap">
             {showTranslation ? body : (originalBody || body)}
           </p>
@@ -567,32 +562,34 @@ export default function PostDetail({
           </div>
         )}
 
-        {/* Video */}
-        {isVideo && imageUrl ? (
-          <div className="overflow-hidden border border-border rounded-xl">
-            <video
-              src={imageUrl}
-              className="w-full h-auto max-h-[600px] object-contain"
-              controls
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="metadata"
-            />
+        {/* Image(s) */}
+        {/* Priority 1: translatedImageUrl takes precedence for ALL meme types */}
+        {showTranslation && translatedImageUrl ? (
+          <div className={`overflow-hidden border border-border flex items-center justify-center bg-black/5 ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-xl border-t-0" : "rounded-xl"}`}>
+            <Image src={translatedImageUrl} alt={title} width={800} height={800} className="w-full h-full object-contain" unoptimized />
+          </div>
+        ) : isTypeB && segments.length > 0 ? (
+          /* Type B without translatedImageUrl: ScreenshotRenderer > original */
+          <div className={`overflow-hidden border border-border flex items-center justify-center bg-black/5 ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-xl border-t-0" : "rounded-xl"}`}>
+            {showTranslation ? (
+              <ScreenshotRenderer
+                segments={segments}
+                showTranslation={showTranslation}
+                originalImageUrl={imageUrl}
+              />
+            ) : (
+              <Image src={imageUrl} alt={title} width={800} height={800} className="w-full h-full object-contain" unoptimized />
+            )}
           </div>
         ) : images && images.length > 1 ? (
           <div className={`overflow-hidden border border-border ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-xl border-t-0" : "rounded-xl"}`}>
             <ImageCarousel>
               {images.map((img, i) => {
                 const imgIsGif = img.mimeType === "image/gif";
-                const imgIsVideo = img.mimeType?.startsWith("video/");
                 const imgSegments = segments.filter((s: any) => (s.imageIndex ?? 0) === i);
                 return (
                   <div key={i} className="flex items-center justify-center bg-black/5 dark:bg-black/20">
-                    {imgIsVideo ? (
-                      <video src={img.originalUrl} className="w-full h-auto max-h-[600px] object-contain" controls muted loop playsInline preload="metadata" />
-                    ) : imgIsGif ? (
+                    {imgIsGif ? (
                       <Image src={img.originalUrl} alt={title} width={800} height={800} className="w-full h-auto object-contain" unoptimized />
                     ) : (
                       <MemeRenderer
@@ -607,22 +604,6 @@ export default function PostDetail({
                 );
               })}
             </ImageCarousel>
-          </div>
-        ) : showTranslation && translatedImageUrl ? (
-          <div className={`overflow-hidden border border-border flex items-center justify-center bg-black/5 ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-xl border-t-0" : "rounded-xl"}`}>
-            <Image src={translatedImageUrl} alt={title} width={800} height={800} className="w-full h-full object-contain" unoptimized />
-          </div>
-        ) : isTypeB && segments.length > 0 ? (
-          <div className={`overflow-hidden border border-border flex items-center justify-center bg-black/5 ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-xl border-t-0" : "rounded-xl"}`}>
-            {showTranslation ? (
-              <ScreenshotRenderer
-                segments={segments}
-                showTranslation={showTranslation}
-                originalImageUrl={imageUrl}
-              />
-            ) : (
-              <Image src={imageUrl} alt={title} width={800} height={800} className="w-full h-full object-contain" unoptimized />
-            )}
           </div>
         ) : isGif ? (
           <div className={`overflow-hidden border border-border flex items-center justify-center bg-black/5 ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-xl border-t-0" : "rounded-xl"}`}>
@@ -643,6 +624,16 @@ export default function PostDetail({
         )}
       </div>}
 
+      {/* Body (for meme posts that also have body text) */}
+      {!isTextOnly && body && (
+        <div>
+          <p className="text-base sm:text-lg text-foreground-muted leading-relaxed whitespace-pre-wrap">{body}</p>
+          {originalBody && (
+            <p className="text-sm text-foreground-subtle mt-1 whitespace-pre-wrap">{originalBody}</p>
+          )}
+        </div>
+      )}
+
       {/* Stats */}
       <div className="flex items-center gap-4 text-xs text-foreground-subtle -mb-1">
         <span>{viewCount.toLocaleString()} {t("post.views")}</span>
@@ -658,6 +649,8 @@ export default function PostDetail({
             aria-label="Upvote"
             onClick={async () => {
               if (votePending) return;
+              const prevVote = userVote;
+              const prevScore = voteScore;
               const newVal = userVote === 1 ? 0 : 1;
               const diff = newVal - userVote;
               setVoteScore((p) => p + diff);
@@ -670,7 +663,7 @@ export default function PostDetail({
                   body: JSON.stringify({ value: newVal }),
                 });
                 if (res.ok) { const d = await res.json(); setVoteScore(d.voteScore); }
-              } catch { setVoteScore((p) => p - diff); setUserVote(userVote); }
+              } catch { setVoteScore(prevScore); setUserVote(prevVote); }
               finally { setVotePending(false); }
             }}
             className={`p-2 rounded-lg transition-all ${userVote === 1 ? "text-[#c9a84c] bg-[#c9a84c]/10" : "text-foreground-subtle hover:text-foreground-muted hover:bg-background-elevated"}`}
@@ -686,6 +679,8 @@ export default function PostDetail({
             aria-label="Downvote"
             onClick={async () => {
               if (votePending) return;
+              const prevVote = userVote;
+              const prevScore = voteScore;
               const newVal = userVote === -1 ? 0 : -1;
               const diff = newVal - userVote;
               setVoteScore((p) => p + diff);
@@ -698,7 +693,7 @@ export default function PostDetail({
                   body: JSON.stringify({ value: newVal }),
                 });
                 if (res.ok) { const d = await res.json(); setVoteScore(d.voteScore); }
-              } catch { setVoteScore((p) => p - diff); setUserVote(userVote); }
+              } catch { setVoteScore(prevScore); setUserVote(prevVote); }
               finally { setVotePending(false); }
             }}
             className={`p-2 rounded-lg transition-all ${userVote === -1 ? "text-blue-400 bg-blue-400/10" : "text-foreground-subtle hover:text-foreground-muted hover:bg-background-elevated"}`}
@@ -724,7 +719,9 @@ export default function PostDetail({
               try {
                 await navigator.clipboard.writeText(url);
                 toast(t("feed.linkCopied"), "success");
-              } catch { toast(t("feed.linkCopied"), "success"); }
+              } catch {
+                toast(t("feed.linkCopied"), "success"); // fallback - some browsers block clipboard
+              }
             }
           }}
         />
@@ -742,14 +739,14 @@ export default function PostDetail({
             const willSave = !saved;
             // localStorage update
             try {
-              const raw = localStorage.getItem("mimzy_bookmarks");
+              const raw = localStorage.getItem("lolympic_bookmarks");
               const bookmarks: string[] = raw ? JSON.parse(raw) : [];
               if (saved) {
                 const filtered = bookmarks.filter((bid) => bid !== id);
-                localStorage.setItem("mimzy_bookmarks", JSON.stringify(filtered));
+                localStorage.setItem("lolympic_bookmarks", JSON.stringify(filtered));
               } else {
                 if (!bookmarks.includes(id)) bookmarks.push(id);
-                localStorage.setItem("mimzy_bookmarks", JSON.stringify(bookmarks));
+                localStorage.setItem("lolympic_bookmarks", JSON.stringify(bookmarks));
               }
             } catch (e) {
               console.error("Failed to update bookmarks in localStorage:", e);
@@ -814,8 +811,8 @@ export default function PostDetail({
           post={{ id, title, body: body || undefined, category: category || undefined, tags }}
           onClose={() => setShowEditModal(false)}
           onSaved={() => {
-            // Reload the page to reflect changes
-            window.location.reload();
+            // Refresh server data to reflect changes
+            router.refresh();
           }}
         />
       )}

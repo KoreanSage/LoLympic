@@ -77,7 +77,7 @@ export async function GET(
         createdAt: m.createdAt.toISOString(),
         senderId: m.senderId,
         sender: m.sender,
-        forwardedPost: (m as any).forwardedPost ?? null,
+        forwardedPost: m.forwardedPost ?? null,
       })),
       nextCursor: hasMore ? items[items.length - 1].id : null,
     });
@@ -110,6 +110,14 @@ export async function POST(
 
     const hasBody = body && typeof body === "string" && body.trim().length > 0;
     const hasImage = imageUrl && typeof imageUrl === "string";
+
+    if (hasImage) {
+      try {
+        new URL(imageUrl);
+      } catch {
+        return NextResponse.json({ error: "Invalid imageUrl" }, { status: 400 });
+      }
+    }
 
     if (!hasBody && !hasImage) {
       return NextResponse.json({ error: "Message body or image required" }, { status: 400 });

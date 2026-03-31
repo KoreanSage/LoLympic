@@ -128,46 +128,44 @@ export async function POST(
 
     const reactionType = type as ReactionType;
 
-    // Check if reaction already exists — toggle
-    const existing = await prisma.postReaction.findUnique({
-      where: {
-        postId_userId_type: {
-          postId,
-          userId: user.id,
-          type: reactionType,
-        },
-      },
-    });
-
+    // Toggle reaction inside a transaction to avoid TOCTOU race
     let action: "added" | "removed";
 
-    if (existing) {
-      // Remove reaction
-      await prisma.$transaction([
-        prisma.postReaction.delete({ where: { id: existing.id } }),
-        prisma.post.update({
+    action = await prisma.$transaction(async (tx) => {
+      const existing = await tx.postReaction.findUnique({
+        where: {
+          postId_userId_type: {
+            postId,
+            userId: user.id,
+            type: reactionType,
+          },
+        },
+      });
+
+      if (existing) {
+        // Remove reaction
+        await tx.postReaction.delete({ where: { id: existing.id } });
+        await tx.post.update({
           where: { id: postId },
           data: { reactionCount: { decrement: 1 } },
-        }),
-      ]);
-      action = "removed";
-    } else {
-      // Add reaction
-      await prisma.$transaction([
-        prisma.postReaction.create({
+        });
+        return "removed" as const;
+      } else {
+        // Add reaction
+        await tx.postReaction.create({
           data: {
             postId,
             userId: user.id,
             type: reactionType,
           },
-        }),
-        prisma.post.update({
+        });
+        await tx.post.update({
           where: { id: postId },
           data: { reactionCount: { increment: 1 } },
-        }),
-      ]);
-      action = "added";
-    }
+        });
+        return "added" as const;
+      }
+    });
 
     // Update ranking score (fire and forget)
     updateRankingScore(postId).catch((e) => { console.error("Failed to update ranking score:", e); });

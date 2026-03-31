@@ -4,13 +4,12 @@ import { getSessionUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { LanguageCode } from "@prisma/client";
 import { backfillSinglePostTitle } from "@/lib/translate-backfill";
-import { VALID_LANGUAGE_CODES } from "@/lib/constants";
 
-const patchPostSchema = z.object({
-  title: z.string().max(200, "Title must be at most 200 characters").optional(),
-  body: z.string().max(5000, "Body must be at most 5000 characters").optional(),
-  category: z.string().optional(),
-  tags: z.array(z.string()).optional(),
+const updatePostSchema = z.object({
+  title: z.string().max(200, "Title must be under 200 characters").optional(),
+  body: z.string().max(5000, "Body must be under 5000 characters").nullable().optional(),
+  category: z.string().max(50).optional(),
+  tags: z.array(z.string().max(50)).max(10, "Maximum 10 tags allowed").optional(),
   visibility: z.enum(["PUBLIC", "UNLISTED", "PRIVATE"]).optional(),
 });
 
@@ -25,8 +24,9 @@ export async function GET(
 ) {
   try {
     const { id } = await context.params;
+    const VALID_LANGS = ["ko", "en", "ja", "zh", "es", "hi", "ar"];
     const rawLang = request.nextUrl.searchParams.get("lang");
-    const lang = rawLang && (VALID_LANGUAGE_CODES as string[]).includes(rawLang) ? rawLang : null;
+    const lang = rawLang && VALID_LANGS.includes(rawLang) ? rawLang : null;
 
     const post = await prisma.post.findUnique({
       where: { id },
@@ -83,7 +83,7 @@ export async function GET(
       },
     });
 
-    if (!post || post.status === "REMOVED") {
+    if (!post) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
 
@@ -95,11 +95,15 @@ export async function GET(
       // Not logged in
     }
 
-    // Privacy check BEFORE any extra queries
-    if (post.status === "HIDDEN" || post.visibility === "PRIVATE") {
-      if (!currentUser || (currentUser.id !== post.authorId && currentUser.role !== "ADMIN")) {
-        return NextResponse.json({ error: "Post not found" }, { status: 404 });
-      }
+    // Visibility check: non-PUBLISHED posts are only visible to the author and admins
+    const isOwnerOrAdmin = currentUser && (currentUser.id === post.authorId || currentUser.role === "ADMIN");
+    if (post.status !== "PUBLISHED" && !isOwnerOrAdmin) {
+      return NextResponse.json({ error: "Post not found" }, { status: 404 });
+    }
+
+    // Privacy check for private visibility
+    if (post.visibility === "PRIVATE" && !isOwnerOrAdmin) {
+      return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
 
     // Fallback: if no culture notes for requested language, fetch in any language
@@ -207,15 +211,14 @@ export async function PATCH(
       );
     }
 
-    const rawBody = await request.json();
-    const parsed = patchPostSchema.safeParse(rawBody);
+    const raw = await request.json();
+    const parsed = updatePostSchema.safeParse(raw);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: parsed.error.errors.map((e) => e.message).join(", ") },
+        { error: parsed.error.errors[0]?.message ?? "Invalid input" },
         { status: 400 }
       );
     }
-
     const { title, body: postBody, category, tags, visibility } = parsed.data;
 
     const updateData: Record<string, unknown> = {};

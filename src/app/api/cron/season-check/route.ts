@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import crypto from "crypto";
 import prisma from "@/lib/prisma";
 import { generateEmptyBracket } from "@/lib/tournament";
 
@@ -11,8 +12,13 @@ import { generateEmptyBracket } from "@/lib/tournament";
  *  - Auto-create next season if none exists
  */
 export async function GET(request: NextRequest) {
-  const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  // Verify cron secret (timing-safe)
+  const authHeader = request.headers.get("authorization") ?? "";
+  const expected = `Bearer ${process.env.CRON_SECRET}`;
+  if (
+    authHeader.length !== expected.length ||
+    !crypto.timingSafeEqual(Buffer.from(authHeader), Buffer.from(expected))
+  ) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

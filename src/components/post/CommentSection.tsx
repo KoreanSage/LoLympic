@@ -53,7 +53,7 @@ function renderBodyWithMentions(body: string) {
       return (
         <Link
           key={i}
-          href={`/profile/${username}`}
+          href={`/user/${username}`}
           className="text-[#c9a84c] hover:underline font-medium"
         >
           {part}

@@ -59,38 +59,33 @@ export async function GET() {
       };
     });
 
-    // Batch unread counts: 2 group-by queries instead of N individual count queries
+    // Get unread counts per conversation in a single query
     const conversationIds = conversations.map((c) => c.id);
-    const allFromOthers = conversationIds.length > 0
-      ? await prisma.directMessage.groupBy({
-          by: ["conversationId"],
-          where: {
-            conversationId: { in: conversationIds },
-            senderId: { not: user.id },
-          },
-          _count: { id: true },
-        })
-      : [];
-
-    const totalOthersMap = new Map(allFromOthers.map((r) => [r.conversationId, r._count.id]));
-
-    // For read messages, we need per-conversation lastReadAt — Prisma can't do this in one groupBy,
-    // so fall back to parallel queries only when there are unread candidates.
-    // Conversations with 0 messages from others trivially have 0 unread.
-    const conversationsWithUnread = await Promise.all(
-      conversations.map(async (conv, idx) => {
-        const total = totalOthersMap.get(conv.id) ?? 0;
-        if (total === 0) return { ...conv, unreadCount: 0 };
-        const unreadCount = await prisma.directMessage.count({
-          where: {
-            conversationId: conv.id,
-            senderId: { not: user.id },
-            createdAt: { gt: participations[idx].lastReadAt },
-          },
-        });
-        return { ...conv, unreadCount };
-      })
+    const lastReadMap = new Map(
+      participations.map((p) => [p.conversation.id, p.lastReadAt])
     );
+
+    // Batch unread counts: count messages after each conversation's lastReadAt
+    const unreadPromises = conversationIds.map(async (convId) => {
+      const lastRead = lastReadMap.get(convId);
+      const count = await prisma.directMessage.count({
+        where: {
+          conversationId: convId,
+          senderId: { not: user.id },
+          ...(lastRead ? { createdAt: { gt: lastRead } } : {}),
+        },
+      });
+      return { convId, count };
+    });
+    const unreadResults = await Promise.all(unreadPromises);
+    const unreadMap = new Map(
+      unreadResults.map((r) => [r.convId, r.count])
+    );
+
+    const conversationsWithUnread = conversations.map((conv) => ({
+      ...conv,
+      unreadCount: unreadMap.get(conv.id) || 0,
+    }));
 
     return NextResponse.json({ conversations: conversationsWithUnread });
   } catch (error) {

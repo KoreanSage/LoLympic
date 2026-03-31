@@ -15,6 +15,7 @@ interface RateLimitEntry {
 }
 
 const store = new Map<string, RateLimitEntry>();
+let warnedNoRedis = false;
 
 // Cleanup old entries every 5 minutes (only runs in warm instances)
 if (typeof globalThis !== "undefined") {
@@ -125,6 +126,10 @@ export async function checkRateLimit(
   }
 
   // Fallback: in-memory rate limiting
+  if (!warnedNoRedis) {
+    console.warn("[rate-limit] Using in-memory store — ineffective in serverless. Configure Redis for production.");
+    warnedNoRedis = true;
+  }
   return checkRateLimitInMemory(key, config);
 }
 

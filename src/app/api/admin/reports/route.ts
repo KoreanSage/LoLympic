@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { Prisma, ReportStatus } from "@prisma/client";
 
 /**
  * GET /api/admin/reports — List all reports with pagination (admin only)
@@ -17,12 +18,12 @@ export async function GET(req: NextRequest) {
     const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") || "20", 10)));
     const status = searchParams.get("status"); // PENDING, REVIEWING, RESOLVED, DISMISSED
 
-    const where: any = {};
+    const where: Prisma.ReportWhereInput = {};
     if (status) {
-      where.status = status;
+      where.status = status as ReportStatus;
     }
 
-    const [reports, total, flaggedPosts] = await Promise.all([
+    const [reports, total] = await Promise.all([
       prisma.report.findMany({
         where,
         orderBy: { createdAt: "desc" },
@@ -41,30 +42,10 @@ export async function GET(req: NextRequest) {
         },
       }),
       prisma.report.count({ where }),
-      // Include posts flagged by content moderation
-      prisma.post.findMany({
-        where: {
-          moderationFlag: { in: ["REVIEW", "BLOCKED"] },
-        },
-        orderBy: { updatedAt: "desc" },
-        take: 50,
-        select: {
-          id: true,
-          title: true,
-          status: true,
-          moderationFlag: true,
-          createdAt: true,
-          updatedAt: true,
-          author: {
-            select: { id: true, username: true, displayName: true },
-          },
-        },
-      }),
     ]);
 
     return NextResponse.json({
       reports,
-      flaggedPosts,
       pagination: {
         page,
         limit,

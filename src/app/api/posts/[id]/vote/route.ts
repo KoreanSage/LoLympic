@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { updateKarma } from "@/lib/karma";
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -67,6 +68,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
 
+    // Wrap read + conditional write in a transaction to avoid TOCTOU race
+    let karmaDelta = 0;
+
     await prisma.$transaction(async (tx) => {
       const existing = await tx.postVote.findUnique({
         where: { postId_userId: { postId, userId: user.id } },
@@ -81,8 +85,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
             data: { voteScore: { decrement: existing.value } },
           });
           // Karma: removing upvote = -1, removing downvote = +1
-          const karmaDelta = existing.value === 1 ? -1 : 1;
-          tx.user.update({ where: { id: post.authorId }, data: { postKarma: { increment: karmaDelta } } }).catch(() => {});
+          karmaDelta = existing.value === 1 ? -1 : 1;
         }
       } else if (existing) {
         // Change vote
@@ -94,7 +97,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
             data: { voteScore: { increment: diff } },
           });
           // Karma: change from up to down = -2, change from down to up = +2
-          tx.user.update({ where: { id: post.authorId }, data: { postKarma: { increment: diff } } }).catch(() => {});
+          karmaDelta = diff;
         }
       } else {
         // New vote
@@ -104,9 +107,13 @@ export async function POST(request: NextRequest, context: RouteContext) {
           data: { voteScore: { increment: value } },
         });
         // Karma: new upvote = +1, new downvote = -1
-        tx.user.update({ where: { id: post.authorId }, data: { postKarma: { increment: value } } }).catch(() => {});
+        karmaDelta = value;
       }
     });
+
+    if (karmaDelta !== 0) {
+      updateKarma(post.authorId, "post", karmaDelta).catch(() => {});
+    }
 
     const updated = await prisma.post.findUnique({
       where: { id: postId },

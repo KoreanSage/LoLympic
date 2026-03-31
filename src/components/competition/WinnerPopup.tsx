@@ -32,10 +32,9 @@ interface WinnerData {
   seasonName?: string;
 }
 
-const MONTH_NAMES = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-];
+function getMonthName(month: number): string {
+  return new Date(2000, month - 1).toLocaleDateString(undefined, { month: 'long' });
+}
 
 export default function WinnerPopup() {
   const { t } = useTranslation();
@@ -135,7 +134,7 @@ export default function WinnerPopup() {
             <h2 className={`text-lg font-bold ${isYearly ? "text-[#FFD700]" : "text-[#c9a84c]"}`}>
               {isYearly
                 ? `${winner.seasonName || winner.year} ${t("winner.champion")}`
-                : `${MONTH_NAMES[(winner.month || 1) - 1]} ${t("winner.monthlyWinner")}`
+                : `${getMonthName(winner.month || 1)} ${t("winner.monthlyWinner")}`
               }
             </h2>
             {isYearly && (

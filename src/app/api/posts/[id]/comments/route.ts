@@ -5,6 +5,7 @@ import { updateRankingScore } from "@/lib/ranking";
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 import { awardXp, XP_AWARDS } from "@/lib/xp";
 import { getBlockedUserIds } from "@/lib/block";
+import { Prisma } from "@prisma/client";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -39,11 +40,11 @@ export async function GET(
 
     // Block filtering
     let blockedIds: string[] = [];
-    let currentUser: Awaited<ReturnType<typeof getSessionUser>> = null;
+    let sessionUser: Awaited<ReturnType<typeof getSessionUser>> = null;
     try {
-      currentUser = await getSessionUser();
-      if (currentUser) {
-        blockedIds = await getBlockedUserIds(currentUser.id);
+      sessionUser = await getSessionUser();
+      if (sessionUser) {
+        blockedIds = await getBlockedUserIds(sessionUser.id);
       }
     } catch {
       // Not logged in
@@ -69,7 +70,7 @@ export async function GET(
     };
 
     // Sorting
-    let orderBy: any;
+    let orderBy: Prisma.CommentOrderByWithRelationInput;
     switch (sort) {
       case "newest":
         orderBy = { createdAt: "desc" };
@@ -91,21 +92,11 @@ export async function GET(
         take: limit,
         include: {
           author: { select: authorSelect },
-          likes: currentUser ? {
-            where: { userId: currentUser.id },
-            select: { userId: true },
-            take: 1,
-          } : false,
           replies: {
             where: { status: "VISIBLE" },
             orderBy: { createdAt: "asc" },
             include: {
               author: { select: authorSelect },
-              likes: currentUser ? {
-                where: { userId: currentUser.id },
-                select: { userId: true },
-                take: 1,
-              } : false,
             },
           },
         },
@@ -113,14 +104,33 @@ export async function GET(
       prisma.comment.count({ where }),
     ]);
 
+    // Get current user's likes
+    let userLikedIds: Set<string> = new Set();
+    try {
+      if (sessionUser) {
+        const allCommentIds = comments.flatMap((c: any) => [
+          c.id,
+          ...(c.replies?.map((r: any) => r.id) || []),
+        ]);
+        const likes = await prisma.commentLike.findMany({
+          where: {
+            commentId: { in: allCommentIds },
+            userId: sessionUser.id,
+          },
+          select: { commentId: true },
+        });
+        userLikedIds = new Set(likes.map((l) => l.commentId));
+      }
+    } catch {
+      // Not logged in
+    }
+
     const enrichComment = (c: any) => ({
       ...c,
-      userLiked: Array.isArray(c.likes) && c.likes.length > 0,
-      likes: undefined,
+      userLiked: userLikedIds.has(c.id),
       replies: c.replies?.map((r: any) => ({
         ...r,
-        userLiked: Array.isArray(r.likes) && r.likes.length > 0,
-        likes: undefined,
+        userLiked: userLikedIds.has(r.id),
       })),
     });
 
@@ -197,24 +207,17 @@ export async function POST(
     }
 
     // If replying, verify parent comment exists and belongs to the same post
-    let parentComment: { id: string; authorId: string; postId: string } | null = null;
+    let parentComment: { id: string; authorId: string } | null = null;
     if (parentId) {
       parentComment = await prisma.comment.findUnique({
         where: { id: parentId },
-        select: { id: true, authorId: true, postId: true },
+        select: { id: true, authorId: true },
       });
 
       if (!parentComment) {
         return NextResponse.json(
           { error: "Parent comment not found" },
           { status: 404 }
-        );
-      }
-
-      if (parentComment.postId !== postId) {
-        return NextResponse.json(
-          { error: "Parent comment does not belong to this post" },
-          { status: 400 }
         );
       }
     }
@@ -494,21 +497,26 @@ export async function DELETE(
       );
     }
 
-    // Soft delete and decrement counts (guard against negative counts)
-    await prisma.$transaction(async (tx) => {
-      await tx.comment.update({
+    // Soft delete and decrement counts
+    await prisma.$transaction([
+      prisma.comment.update({
         where: { id: commentId },
         data: { status: "REMOVED" },
-      });
-
-      // Use raw SQL to guard against negative comment counts
-      await tx.$executeRaw`UPDATE "Post" SET "commentCount" = GREATEST("commentCount" - 1, 0) WHERE id = ${postId}`;
-
-      // If it's a reply, decrement parent's reply count (guarded)
-      if (existing.parentId) {
-        await tx.$executeRaw`UPDATE "Comment" SET "replyCount" = GREATEST("replyCount" - 1, 0) WHERE id = ${existing.parentId}`;
-      }
-    });
+      }),
+      prisma.post.update({
+        where: { id: postId },
+        data: { commentCount: { decrement: 1 } },
+      }),
+      // If it's a reply, decrement parent's reply count
+      ...(existing.parentId
+        ? [
+            prisma.comment.update({
+              where: { id: existing.parentId },
+              data: { replyCount: { decrement: 1 } },
+            }),
+          ]
+        : []),
+    ]);
 
     return NextResponse.json({ message: "Comment deleted" });
   } catch (error) {

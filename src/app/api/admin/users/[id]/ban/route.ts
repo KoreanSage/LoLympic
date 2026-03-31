@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { getSessionUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { checkRateLimit, getRateLimitKey } from "@/lib/rate-limit";
+
+const banSchema = z.object({
+  reason: z.string().max(500).optional(),
+  durationDays: z.number().int().positive().optional(),
+});
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -17,14 +22,15 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     }
 
     const { id } = await params;
-
-    const rlKey = getRateLimitKey(request.headers, "admin_ban");
-    const rl = await checkRateLimit(rlKey, { max: 20, windowSeconds: 60 });
-    if (!rl.allowed) {
-      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    const raw = await request.json();
+    const parsed = banSchema.safeParse(raw);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: parsed.error.errors[0]?.message ?? "Invalid input" },
+        { status: 400 }
+      );
     }
-
-    const { reason, durationDays } = await request.json();
+    const { reason, durationDays } = parsed.data;
 
     if (!reason) {
       return NextResponse.json({ error: "reason required" }, { status: 400 });
@@ -57,18 +63,6 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       },
     });
 
-    // Fire-and-forget audit log
-    prisma.adminAuditLog.create({
-      data: {
-        adminId: currentUser.id,
-        action: "BAN_USER",
-        targetId: id,
-        targetType: "USER",
-        reason: reason || null,
-        metadata: { duration: durationDays, bannedUntil: bannedUntil?.toISOString() ?? null },
-      },
-    }).catch((e) => console.error("Audit log failed:", e));
-
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Admin ban user error:", error);
@@ -77,7 +71,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
 }
 
 // DELETE /api/admin/users/[id]/ban — Unban a user
-export async function DELETE(request: NextRequest, { params }: RouteContext) {
+export async function DELETE(_request: NextRequest, { params }: RouteContext) {
   try {
     const currentUser = await getSessionUser();
     if (
@@ -89,12 +83,6 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
 
     const { id } = await params;
 
-    const rlKey = getRateLimitKey(request.headers, "admin_ban");
-    const rl = await checkRateLimit(rlKey, { max: 20, windowSeconds: 60 });
-    if (!rl.allowed) {
-      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
-    }
-
     await prisma.user.update({
       where: { id },
       data: {
@@ -104,16 +92,6 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
         bannedUntil: null,
       },
     });
-
-    // Fire-and-forget audit log
-    prisma.adminAuditLog.create({
-      data: {
-        adminId: currentUser.id,
-        action: "UNBAN_USER",
-        targetId: id,
-        targetType: "USER",
-      },
-    }).catch((e) => console.error("Audit log failed:", e));
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -1,14 +1,165 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import crypto from "crypto";
+import prisma from "@/lib/prisma";
+import { broadcastNotification } from "@/lib/notifications";
 
 /**
  * GET /api/cron/tournament-advance
+ * Runs daily at 00:05 UTC during Dec 29-31.
+ * 1. Closes finished matches (picks winner by votes)
+ * 2. Creates next round matches from winners
  *
- * DEPRECATED: Tournament system has been replaced by the Championship system.
- * Championship phase advancement is handled by /api/cron/championship-phase.
+ * Schedule:
+ *   12/29 23:59 → QF matches close → create SF matches for 12/30
+ *   12/30 23:59 → SF matches close → create Final match for 12/31
+ *   12/31 23:59 → Final match closes → season champion determined
  */
-export async function GET() {
-  return NextResponse.json({
-    actions: ["Tournament cron disabled - replaced by championship system"],
-    timestamp: new Date().toISOString(),
-  });
+export async function GET(request: NextRequest) {
+  // Verify cron secret (timing-safe)
+  const authHeader = request.headers.get("authorization") ?? "";
+  const expected = `Bearer ${process.env.CRON_SECRET}`;
+  if (
+    authHeader.length !== expected.length ||
+    !crypto.timingSafeEqual(Buffer.from(authHeader), Buffer.from(expected))
+  ) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const now = new Date();
+    const actions: string[] = [];
+
+    // Find active season
+    const season = await prisma.season.findFirst({
+      where: { status: { in: ["ACTIVE", "JUDGING"] } },
+      orderBy: { startAt: "desc" },
+    });
+
+    if (!season) {
+      return NextResponse.json({ actions: ["No active season"], timestamp: now.toISOString() });
+    }
+
+    // Find matches that have ended but no winner yet
+    const expiredMatches = await prisma.tournamentMatch.findMany({
+      where: {
+        seasonId: season.id,
+        endAt: { lte: now },
+        winnerId: null,
+      },
+      orderBy: [{ round: "asc" }, { matchIndex: "asc" }],
+    });
+
+    if (expiredMatches.length === 0) {
+      return NextResponse.json({ actions: ["No matches to advance"], timestamp: now.toISOString() });
+    }
+
+    // Close each match and determine winner
+    const roundWinners = new Map<number, string[]>(); // round → winner postIds
+
+    for (const match of expiredMatches) {
+      // Skip matches where posts haven't been assigned yet
+      if (!match.post1Id && !match.post2Id) continue;
+
+      // If only one post is assigned, that post auto-advances
+      // Otherwise, winner = more votes. Tie → coin flip
+      const winnerId: string | null = !match.post1Id ? match.post2Id
+        : !match.post2Id ? match.post1Id
+        : match.post1Votes > match.post2Votes ? match.post1Id
+        : match.post1Votes < match.post2Votes ? match.post2Id
+        : (Math.random() < 0.5 ? match.post1Id : match.post2Id);
+
+      if (!winnerId) continue;
+
+      await prisma.tournamentMatch.update({
+        where: { id: match.id },
+        data: { winnerId },
+      });
+
+      if (!roundWinners.has(match.round)) {
+        roundWinners.set(match.round, []);
+      }
+      roundWinners.get(match.round)!.push(winnerId);
+
+      actions.push(`Round ${match.round} Match ${match.matchIndex}: winner=${winnerId} (${match.post1Votes} vs ${match.post2Votes})`);
+    }
+
+    // Create next round matches from winners
+    const year = now.getFullYear();
+
+    for (const [round, winners] of Array.from(roundWinners.entries())) {
+      if (winners.length < 2) continue;
+
+      const nextRound = round + 1;
+      if (nextRound > 4) continue; // Round 4 is the Final
+
+      // Check if next round matches already exist
+      const existingNext = await prisma.tournamentMatch.findFirst({
+        where: { seasonId: season.id, round: nextRound },
+      });
+      if (existingNext) continue;
+
+      // Schedule: round 2 (QF) = Dec 29, round 3 (SF) = Dec 30, round 4 (Final) = Dec 31
+      const dayOffset = nextRound === 2 ? 29 : nextRound === 3 ? 30 : 31;
+      const startAt = new Date(year, 11, dayOffset, 0, 0, 0);
+      const endAt = new Date(year, 11, dayOffset, 23, 59, 59);
+
+      const nextMatches = [];
+      for (let i = 0; i + 1 < winners.length; i += 2) {
+        nextMatches.push({
+          seasonId: season.id,
+          round: nextRound,
+          matchIndex: Math.floor(i / 2),
+          post1Id: winners[i],
+          post2Id: winners[i + 1],
+          startAt,
+          endAt,
+        });
+      }
+
+      if (nextMatches.length > 0) {
+        await prisma.tournamentMatch.createMany({ data: nextMatches });
+        actions.push(`Created ${nextMatches.length} match(es) for round ${nextRound}`);
+      }
+    }
+
+    // Check if final is decided (round 4 has a winner)
+    const finalMatch = await prisma.tournamentMatch.findFirst({
+      where: { seasonId: season.id, round: 4, winnerId: { not: null } },
+    });
+
+    if (finalMatch?.winnerId) {
+      // Find the post to get author/country
+      const championPost = await prisma.post.findUnique({
+        where: { id: finalMatch.winnerId },
+        select: { id: true, authorId: true, countryId: true },
+      });
+
+      if (championPost) {
+        await prisma.season.update({
+          where: { id: season.id },
+          data: {
+            championPostId: championPost.id,
+            championUserId: championPost.authorId,
+          },
+        });
+        actions.push(`Tournament champion: post ${championPost.id}`);
+
+        // Broadcast notification about the yearly champion
+        broadcastNotification({
+          type: "SYSTEM",
+          postId: championPost.id,
+          metadata: {
+            subtype: "yearly_champion",
+            seasonId: season.id,
+            year: now.getFullYear(),
+          },
+        }).catch((e) => { console.error("Failed to create tournament notification:", e); }); // fire-and-forget
+      }
+    }
+
+    return NextResponse.json({ actions, timestamp: now.toISOString() });
+  } catch (error) {
+    console.error("Tournament advance error:", error);
+    return NextResponse.json({ error: "Failed" }, { status: 500 });
+  }
 }

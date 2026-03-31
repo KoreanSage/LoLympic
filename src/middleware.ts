@@ -16,6 +16,10 @@ export async function middleware(request: NextRequest) {
   const token = await getToken({ req: request });
 
   if (token?.isBanned && pathname !== "/banned") {
+    // Block banned users from API routes (except auth) with 403
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "Account is banned" }, { status: 403 });
+    }
     const bannedUrl = new URL("/banned", request.url);
     return NextResponse.redirect(bannedUrl);
   }
@@ -39,5 +43,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/upload/:path*", "/settings/:path*", "/messages/:path*", "/admin/:path*", "/bookmarks/:path*", "/dashboard/:path*", "/banned"],
+  matcher: ["/upload/:path*", "/settings/:path*", "/messages/:path*", "/admin/:path*", "/bookmarks/:path*", "/dashboard/:path*", "/banned", "/api/:path*"],
 };

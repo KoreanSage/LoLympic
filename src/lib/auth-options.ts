@@ -112,6 +112,10 @@ export const authOptions: NextAuthOptions = {
           });
 
           if (!existingAccount) {
+            // Only auto-link if the existing account has a verified email
+            if (!existingUser.emailVerified) {
+              return false;
+            }
             await prisma.account.create({
               data: {
                 userId: existingUser.id,
@@ -157,24 +161,8 @@ export const authOptions: NextAuthOptions = {
           token.isBanned = dbUser.isBanned;
           token.banReason = dbUser.banReason;
           token.needsSetup = false;
-        } else {
-          // User was deleted from DB — invalidate session
-          token.id = undefined;
-          token.invalidated = true;
         }
         return token;
-      }
-
-      // Periodically verify user still exists in DB (on existing sessions)
-      if (token.id && !user && !account) {
-        const exists = await prisma.user.findUnique({
-          where: { id: token.id as string },
-          select: { id: true },
-        });
-        if (!exists) {
-          token.id = undefined;
-          token.invalidated = true;
-        }
       }
 
       if (user) {
@@ -206,19 +194,12 @@ export const authOptions: NextAuthOptions = {
           token.preferredLanguage = user.preferredLanguage;
           token.uiLanguage = user.uiLanguage;
           token.role = user.role;
-          // Check if credential user needs profile setup (no country selected)
-          token.needsSetup = !user.countryId;
         }
       }
       return token;
     },
 
     async session({ session, token }) {
-      // If token was invalidated (user deleted from DB), clear session
-      if (token.invalidated || !token.id) {
-        delete (session as { user?: unknown }).user;
-        return session;
-      }
       if (session.user) {
         session.user.id = token.id as string;
         session.user.username = token.username as string;

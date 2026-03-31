@@ -3,8 +3,6 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import prisma from "@/lib/prisma";
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
-import { COUNTRY_LANGUAGE_MAP } from "@/lib/constants";
-import { LanguageCode } from "@prisma/client";
 
 const signupSchema = z.object({
   email: z.string().email("Invalid email address").max(255),
@@ -37,24 +35,14 @@ export async function POST(req: Request) {
 
     const { email, username, password, countryId, displayName } = parsed.data;
 
-    // Check if email already exists
-    const existingEmail = await prisma.user.findUnique({
-      where: { email },
-    });
-    if (existingEmail) {
+    // Check if email or username already exists
+    const [existingEmail, existingUsername] = await Promise.all([
+      prisma.user.findUnique({ where: { email } }),
+      prisma.user.findUnique({ where: { username } }),
+    ]);
+    if (existingEmail || existingUsername) {
       return NextResponse.json(
-        { error: "Email already registered" },
-        { status: 409 }
-      );
-    }
-
-    // Check if username already exists
-    const existingUsername = await prisma.user.findUnique({
-      where: { username },
-    });
-    if (existingUsername) {
-      return NextResponse.json(
-        { error: "Username already taken" },
+        { error: "An account with this email or username already exists" },
         { status: 409 }
       );
     }
@@ -70,7 +58,20 @@ export async function POST(req: Request) {
         displayName: displayName || username,
         passwordHash,
         countryId: countryId || "US",
-        preferredLanguage: ((countryId && COUNTRY_LANGUAGE_MAP[countryId]) || "en") as LanguageCode,
+        preferredLanguage:
+          countryId === "KR"
+            ? "ko"
+            : countryId === "JP"
+            ? "ja"
+            : countryId === "CN" || countryId === "TW" || countryId === "HK"
+            ? "zh"
+            : countryId === "MX" || countryId === "ES" || countryId === "AR" || countryId === "CO" || countryId === "CL"
+            ? "es"
+            : countryId === "IN"
+            ? "hi"
+            : countryId === "SA" || countryId === "EG" || countryId === "AE"
+            ? "ar"
+            : "en",
       },
       select: {
         id: true,
