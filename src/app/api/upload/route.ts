@@ -110,7 +110,8 @@ export async function POST(request: NextRequest) {
     // Generate unique filename
     const hash = crypto.randomBytes(16).toString("hex");
     const ext = mimeToExt(file.type);
-    const filename = `uploads/${Date.now()}-${hash}${ext}`;
+    const baseName = `${Date.now()}-${hash}${ext}`;
+    const filename = `uploads/${baseName}`; // R2/Blob key
 
     let url: string;
 
@@ -163,9 +164,9 @@ export async function POST(request: NextRequest) {
       const uploadDir = process.env.UPLOAD_DIR || "./uploads";
       const absolutePath = path.resolve(uploadDir);
       await fs.mkdir(absolutePath, { recursive: true });
-      const filepath = path.join(absolutePath, filename);
+      const filepath = path.join(absolutePath, baseName);
       await fs.writeFile(filepath, buffer);
-      url = `/api/uploads/${filename}`;
+      url = `/api/uploads/${baseName}`;
     }
 
     return NextResponse.json({
