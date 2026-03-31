@@ -237,12 +237,15 @@ function BattleCardInner({ onDismiss }: BattleCardProps) {
               {t("battle.title")}
             </span>
           </div>
-          <div className="flex gap-3">
-            <div className="flex-1 aspect-[4/5] bg-background-elevated rounded-xl animate-pulse" />
-            <div className="flex items-center">
-              <span className="text-xs font-bold text-foreground-subtle">VS</span>
+          {/* Mobile: vertical stack, Desktop: horizontal */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex-1 aspect-[3/2] sm:aspect-[4/5] bg-background-elevated rounded-xl animate-pulse" />
+            <div className="flex sm:flex-col items-center justify-center gap-1">
+              <div className="flex-1 h-px sm:h-auto sm:w-px bg-border/50" />
+              <span className="text-xs font-bold text-foreground-subtle px-2 sm:px-0 sm:py-2">VS</span>
+              <div className="flex-1 h-px sm:h-auto sm:w-px bg-border/50" />
             </div>
-            <div className="flex-1 aspect-[4/5] bg-background-elevated rounded-xl animate-pulse" />
+            <div className="flex-1 aspect-[3/2] sm:aspect-[4/5] bg-background-elevated rounded-xl animate-pulse" />
           </div>
         </div>
       </Card>
@@ -307,9 +310,9 @@ function BattleCardInner({ onDismiss }: BattleCardProps) {
           )}
         </div>
 
-        {/* Battle arena */}
-        <div className="flex gap-2 items-stretch">
-          {/* Left meme */}
+        {/* Battle arena — vertical on mobile, horizontal on desktop */}
+        <div className="flex flex-col sm:flex-row gap-2 sm:items-stretch">
+          {/* Top (mobile) / Left (desktop) meme */}
           <BattleSide
             post={left}
             side="left"
@@ -319,9 +322,10 @@ function BattleCardInner({ onDismiss }: BattleCardProps) {
             disabled={!!voted || animating}
           />
 
-          {/* VS divider */}
-          <div className="flex flex-col items-center justify-center gap-1">
-            <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300 ${
+          {/* VS divider — horizontal bar on mobile, vertical badge on desktop */}
+          <div className="flex sm:flex-col items-center justify-center gap-1">
+            <div className="flex-1 h-px sm:h-auto sm:w-px bg-border/50 sm:hidden" />
+            <div className={`w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center transition-all duration-300 ${
               voted
                 ? "bg-[#c9a84c]/30 scale-110"
                 : "bg-[#c9a84c]/15"
@@ -330,9 +334,10 @@ function BattleCardInner({ onDismiss }: BattleCardProps) {
                 voted ? "text-[#c9a84c]" : "text-foreground-subtle"
               }`}>VS</span>
             </div>
+            <div className="flex-1 h-px sm:h-auto sm:w-px bg-border/50 sm:hidden" />
           </div>
 
-          {/* Right meme */}
+          {/* Bottom (mobile) / Right (desktop) meme */}
           <BattleSide
             post={right}
             side="right"
@@ -395,13 +400,13 @@ const BattleSide = React.memo(function BattleSide({
           : "border-border hover:border-[#c9a84c]/50 active:scale-[0.97]"
         }`}
     >
-      {/* Image */}
-      <div className="relative aspect-[4/5] bg-black/20">
+      {/* Image — wider on mobile (full width), portrait on desktop (half width) */}
+      <div className="relative aspect-[3/2] sm:aspect-[4/5] bg-black/20">
         <Image
           src={post.imageUrl}
           alt={post.title}
           fill
-          sizes="(max-width: 768px) 40vw, 200px"
+          sizes="(max-width: 640px) 90vw, 200px"
           className="object-contain"
           unoptimized
         />
