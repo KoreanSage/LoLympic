@@ -160,10 +160,10 @@ export default function LeaderboardPage() {
               {t("scoring.howItWorks")}
             </button>
             <Link
-              href="/seasons"
+              href="/championship"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-border bg-background-surface hover:border-[#c9a84c]/30 transition-all text-sm font-medium text-foreground-subtle hover:text-[#c9a84c]"
             >
-              {"\u{1F3C6}"} Season
+              {"\u{1F3C6}"} {t("nav.championship")}
               <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
             </Link>
           </div>

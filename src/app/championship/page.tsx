@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useTranslation } from "@/i18n";
@@ -86,6 +86,59 @@ interface CountryLeaderboardEntry {
   perUserScore?: number;
   activeUsers?: number;
   totalScore?: number;
+}
+
+function SeasonExplainer({ t }: { t: (key: any, params?: any) => string }) {
+  const [open, setOpen] = useState(false);
+
+  const steps = useMemo(() => [
+    { icon: "📅", titleKey: "championship.howItWorksStep1Title", descKey: "championship.howItWorksStep1Desc" },
+    { icon: "🌍", titleKey: "championship.howItWorksStep2Title", descKey: "championship.howItWorksStep2Desc" },
+    { icon: "🎯", titleKey: "championship.howItWorksStep3Title", descKey: "championship.howItWorksStep3Desc" },
+    { icon: "🗳️", titleKey: "championship.howItWorksStep4Title", descKey: "championship.howItWorksStep4Desc" },
+    { icon: "⚔️", titleKey: "championship.howItWorksStep5Title", descKey: "championship.howItWorksStep5Desc" },
+  ], []);
+
+  return (
+    <div className="bg-background-surface border border-border rounded-xl mb-6 overflow-hidden">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-background-elevated/50 transition-colors"
+      >
+        <span className="flex items-center gap-2 text-sm font-bold text-foreground">
+          <span>📖</span>
+          {t("championship.howItWorks")}
+        </span>
+        <svg
+          className={`w-4 h-4 text-foreground-subtle transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className="px-5 pb-5 border-t border-border">
+          <div className="mt-4 space-y-4">
+            {steps.map((step, i) => (
+              <div key={i} className="flex gap-3">
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[#c9a84c]/10 border border-[#c9a84c]/30 flex items-center justify-center text-sm">
+                  {step.icon}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-foreground">{t(step.titleKey)}</p>
+                  <p className="text-xs text-foreground-subtle mt-0.5 leading-relaxed">{t(step.descKey)}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function ChampionshipPage() {
@@ -319,6 +372,8 @@ export default function ChampionshipPage() {
           <p className="text-foreground-subtle">{t("championship.comingDecember")}</p>
         </div>
 
+        <SeasonExplainer t={t} />
+
         {/* Current Top 8 Preview */}
         {top8Countries.length > 0 && (
           <div className="bg-background-surface border border-border rounded-xl p-6 mb-6">
@@ -377,6 +432,8 @@ export default function ChampionshipPage() {
         </h1>
         <p className="text-sm text-foreground-subtle mt-1">{t("championship.subtitle")}</p>
       </div>
+
+      <SeasonExplainer t={t} />
 
       {/* Timeline */}
       <div className="mb-8">

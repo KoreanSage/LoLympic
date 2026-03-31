@@ -369,6 +369,7 @@ export default function TopNav() {
             <NavLink href="/" label={t("nav.explore")} />
             <NavLink href="/leaderboard" label={t("nav.leaderboard")} />
             <NavLink href="/championship" label={`🏆 ${t("nav.championship")}`} isGold={new Date().getMonth() === 11} />
+            <NavLink href="/community" label={t("nav.community")} />
             <NavLink href="/upload" label={t("nav.upload")} />
             {isAdmin && <NavLink href="/admin" label={t("nav.admin")} />}
           </div>
@@ -583,6 +584,7 @@ export default function TopNav() {
           <MobileNavLink href="/" label={t("nav.explore")} active={pathname === "/"} />
           <MobileNavLink href="/leaderboard" label={t("nav.leaderboard")} active={pathname === "/leaderboard"} />
           <MobileNavLink href="/championship" label={`🏆 ${t("nav.championship")}`} active={pathname === "/championship"} isGold={new Date().getMonth() === 11} />
+          <MobileNavLink href="/community" label={`💬 ${t("nav.community")}`} active={pathname === "/community"} />
           <MobileNavLink href="/upload" label={t("nav.upload")} active={pathname === "/upload"} />
           {session?.user && (
             <>

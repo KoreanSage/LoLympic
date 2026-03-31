@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import MainLayout from "@/components/layout/MainLayout";
 import FeedFilters from "@/components/feed/FeedFilters";
 import FeedList from "@/components/feed/FeedList";
-import CategoryTabs from "@/components/feed/CategoryTabs";
 import MonthlyWinnerBanner from "@/components/competition/MonthlyWinnerBanner";
 import WinnerPopup from "@/components/competition/WinnerPopup";
 import HeroBanner from "@/components/feed/HeroBanner";
@@ -59,11 +58,6 @@ export default function HomePage() {
         <HeroBanner />
         <MonthlyWinnerBanner />
         <FeedFilters onFilterChange={setFeedFilters} />
-        <div className="px-0 pt-2 pb-1">
-          <Suspense>
-            <CategoryTabs />
-          </Suspense>
-        </div>
 
         <div className="pt-2">
           <FeedList translateTo={translateTo} filters={feedFilters} />

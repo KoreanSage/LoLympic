@@ -741,6 +741,17 @@ const en = {
   "championship.champion": "CHAMPION",
   "championship.secondPlace": "2nd Place",
   "championship.thirdPlace": "3rd Place",
+  "championship.howItWorks": "How the Season Works",
+  "championship.howItWorksStep1Title": "Monthly Competition",
+  "championship.howItWorksStep1Desc": "Each month, creators post memes. The most popular meme wins \"Meme of the Month.\"",
+  "championship.howItWorksStep2Title": "Country Scoring",
+  "championship.howItWorksStep2Desc": "Every post earns points for your country. Scored by per-user average to keep things fair.",
+  "championship.howItWorksStep3Title": "Top 8 Qualification",
+  "championship.howItWorksStep3Desc": "The 8 countries with the highest per-user average scores qualify for the championship.",
+  "championship.howItWorksStep4Title": "Championship (December)",
+  "championship.howItWorksStep4Desc": "Each qualifying country elects a representative via voting, who then uploads a championship post.",
+  "championship.howItWorksStep5Title": "Final Battle",
+  "championship.howItWorksStep5Desc": "Everyone votes on championship posts. The winner becomes the year's champion!",
 
   // ── Tournament (deprecated) ──────────────────────────────────────────────
   "tournament.movedToChampionship": "Tournament has moved!",
@@ -771,6 +782,16 @@ const en = {
   "badge.CHAMPIONSHIP_CHAMPION": "Championship Champion",
   "badge.CHAMPIONSHIP_RUNNER_UP": "Championship Runner-up",
   "badge.CHAMPIONSHIP_REPRESENTATIVE": "Championship Representative",
+
+  // ── Community ──────────────────────────────────────────────────────────────
+  "nav.community": "Community",
+  "community.title": "Community",
+  "community.subtitle": "Connect, discuss, and share with meme creators worldwide",
+  "community.discussion": "Discussion",
+  "community.countryBoards": "Country Boards",
+  "community.emptyDiscussion": "No discussions yet. Start a conversation!",
+  "community.members": "creators",
+  "community.noCountries": "No active countries yet",
 } as const;
 
 export type TranslationKeys = keyof typeof en;
