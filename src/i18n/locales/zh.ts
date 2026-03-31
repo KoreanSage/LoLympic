@@ -761,13 +761,15 @@ const zh: Record<TranslationKeys, string> = {
   "community.emptyDiscussionSubtext": "与全球创作者分享想法、提问或讨论梗图。",
   "community.members": "创作者",
   "community.noCountries": "还没有活跃的国家",
-  "community.writePlaceholder": "你在想什么？",
-  "community.postingAs": "发布到你的国家板块 •",
+  "community.titlePlaceholder": "讨论标题",
+  "community.bodyPlaceholder": "你在想什么？（可选）",
+  "community.postingAs": "你的国家",
   "community.post": "发布",
   "community.loginToPost": "登录参与讨论。",
-  "community.selectCountryFirst": "请先在设置中选择你的国家。",
-  "community.discussionDesc": "所有国家的讨论汇聚在一个信息流中。你的帖子也会出现在你的国家板块！",
-  "community.boardsDesc": "浏览特定国家社区的讨论。",
+  "community.attachImage": "图片",
+  "community.uploading": "上传中...",
+  "community.hotPosts": "热门讨论",
+  "community.startDiscussion": "在上面写下你的第一篇帖子！",
 };
 
 export default zh;

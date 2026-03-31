@@ -761,13 +761,15 @@ const ja: Record<TranslationKeys, string> = {
   "community.emptyDiscussionSubtext": "世界中のクリエイターと考えを共有し、質問したり、ミームについて議論しましょう。",
   "community.members": "クリエイター",
   "community.noCountries": "まだアクティブな国がありません",
-  "community.writePlaceholder": "何を考えていますか？",
-  "community.postingAs": "国の掲示板に投稿 •",
+  "community.titlePlaceholder": "ディスカッションタイトル",
+  "community.bodyPlaceholder": "何を考えていますか？（任意）",
+  "community.postingAs": "あなたの国",
   "community.post": "投稿",
   "community.loginToPost": "ディスカッションに参加するにはログインしてください。",
-  "community.selectCountryFirst": "投稿するには設定で国を選択してください。",
-  "community.discussionDesc": "すべての国のディスカッションを一つのフィードで。投稿は国の掲示板にも表示されます！",
-  "community.boardsDesc": "特定の国のコミュニティでディスカッションを見る。",
+  "community.attachImage": "画像",
+  "community.uploading": "アップロード中...",
+  "community.hotPosts": "人気のディスカッション",
+  "community.startDiscussion": "上で最初の投稿を書きましょう！",
 };
 
 export default ja;

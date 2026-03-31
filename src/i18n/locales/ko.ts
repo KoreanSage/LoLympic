@@ -775,13 +775,15 @@ const ko: Record<TranslationKeys, string> = {
   "community.emptyDiscussionSubtext": "전 세계 크리에이터들과 생각을 나누고, 질문하고, 밈에 대해 토론하세요.",
   "community.members": "명",
   "community.noCountries": "아직 활동 중인 국가가 없습니다",
-  "community.writePlaceholder": "무슨 생각을 하고 있나요?",
-  "community.postingAs": "내 국가 게시판에 게시 •",
+  "community.titlePlaceholder": "토론 제목",
+  "community.bodyPlaceholder": "무슨 생각을 하고 있나요? (선택)",
+  "community.postingAs": "내 국가",
   "community.post": "게시",
   "community.loginToPost": "토론에 참여하려면 로그인하세요.",
-  "community.selectCountryFirst": "게시하려면 설정에서 국가를 선택하세요.",
-  "community.discussionDesc": "모든 국가의 토론을 한 피드에서 볼 수 있습니다. 작성한 글은 내 국가 게시판에도 표시됩니다!",
-  "community.boardsDesc": "특정 국가 커뮤니티에서 토론을 확인하세요.",
+  "community.attachImage": "이미지",
+  "community.uploading": "업로드 중...",
+  "community.hotPosts": "인기 토론",
+  "community.startDiscussion": "위에서 첫 글을 작성해보세요!",
 };
 
 export default ko;

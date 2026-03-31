@@ -765,13 +765,15 @@ const ar: Record<TranslationKeys, string> = {
   "community.emptyDiscussionSubtext": "شارك أفكارك واطرح أسئلة أو ناقش الميمز مع صانعين من حول العالم.",
   "community.members": "صانعين",
   "community.noCountries": "لا توجد دول نشطة بعد",
-  "community.writePlaceholder": "ما الذي يدور في ذهنك؟",
-  "community.postingAs": "النشر في لوحة بلدك •",
+  "community.titlePlaceholder": "عنوان النقاش",
+  "community.bodyPlaceholder": "ما الذي يدور في ذهنك؟ (اختياري)",
+  "community.postingAs": "بلدك",
   "community.post": "نشر",
   "community.loginToPost": "سجل الدخول للانضمام إلى النقاش.",
-  "community.selectCountryFirst": "اختر بلدك في الإعدادات لبدء النشر.",
-  "community.discussionDesc": "جميع النقاشات من كل الدول في خلاصة واحدة. منشوراتك تظهر في لوحة بلدك أيضاً!",
-  "community.boardsDesc": "تصفح النقاشات في مجتمعات دول محددة.",
+  "community.attachImage": "صورة",
+  "community.uploading": "جاري الرفع...",
+  "community.hotPosts": "نقاشات شائعة",
+  "community.startDiscussion": "اكتب أول منشور لك أعلاه!",
 } as const;
 
 export default ar;

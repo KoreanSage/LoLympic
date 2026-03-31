@@ -793,13 +793,15 @@ const en = {
   "community.emptyDiscussionSubtext": "Share your thoughts, ask questions, or discuss memes with creators from around the world.",
   "community.members": "creators",
   "community.noCountries": "No active countries yet",
-  "community.writePlaceholder": "What's on your mind?",
-  "community.postingAs": "posting to your country board •",
+  "community.titlePlaceholder": "Discussion title",
+  "community.bodyPlaceholder": "What's on your mind? (optional)",
+  "community.postingAs": "your country",
   "community.post": "Post",
   "community.loginToPost": "Log in to join the discussion.",
-  "community.selectCountryFirst": "Set your country in settings to start posting.",
-  "community.discussionDesc": "All discussions from every country in one feed. Your posts appear in your country's board too!",
-  "community.boardsDesc": "Browse and join discussions in specific country communities.",
+  "community.attachImage": "Image",
+  "community.uploading": "Uploading...",
+  "community.hotPosts": "Popular Discussions",
+  "community.startDiscussion": "Write your first post above!",
 } as const;
 
 export type TranslationKeys = keyof typeof en;
