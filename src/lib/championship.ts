@@ -246,7 +246,7 @@ export async function handleMissingPosts(championshipId: string) {
         }),
         prisma.championshipCandidate.update({
           where: { id: runnerUp.id },
-          data: { status: "SUBSTITUTE" },
+          data: { status: "ELECTED" },
         }),
         prisma.notification.create({
           data: {

@@ -56,31 +56,23 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ actions: ["No championship found"], timestamp: now.toISOString() });
     }
 
+    // Track current phase locally so multiple transitions can happen in one run
+    let currentPhase = championship.phase;
+
     // Phase transitions based on date
-    if (day >= 1 && day <= 10 && championship.phase === "NOMINATION") {
-      // Stay in NOMINATION phase, candidates being nominated
-      actions.push("NOMINATION phase active");
-    }
-
-    if (day >= 1 && day <= 15 && championship.phase === "NOMINATION" && day > 10) {
-      // Transition to REPRESENTATIVE voting phase
+    // NOMINATION is brief: candidates are auto-nominated on creation (above).
+    // Since representative voting starts Dec 1 alongside nomination,
+    // immediately transition to REPRESENTATIVE phase so users can vote.
+    if (currentPhase === "NOMINATION") {
       await prisma.championship.update({
         where: { id: championship.id },
         data: { phase: "REPRESENTATIVE" },
       });
-      actions.push("Transitioned to REPRESENTATIVE phase");
-    }
-
-    if (day === 1 && championship.phase === "NOMINATION") {
-      // Also transition to REPRESENTATIVE on day 1 since voting starts on Dec 1
-      await prisma.championship.update({
-        where: { id: championship.id },
-        data: { phase: "REPRESENTATIVE" },
-      });
+      currentPhase = "REPRESENTATIVE";
       actions.push("Transitioned to REPRESENTATIVE phase (voting open)");
     }
 
-    if (day >= 16 && day <= 20 && championship.phase === "REPRESENTATIVE") {
+    if (day >= 16 && currentPhase === "REPRESENTATIVE") {
       // Tally votes and transition to UPLOAD phase
       const tallyResult = await tallyRepresentativeVotes(championship.id);
       actions.push(`Tallied ${tallyResult.tallied} candidate votes`);
@@ -89,18 +81,31 @@ export async function GET(request: NextRequest) {
         where: { id: championship.id },
         data: { phase: "UPLOAD" },
       });
+      currentPhase = "UPLOAD";
       actions.push("Transitioned to UPLOAD phase");
     }
 
-    if (day >= 21 && championship.phase === "UPLOAD") {
-      // Handle missing posts (substitute runner-ups)
+    // On day 20 (last day of upload), check for missing posts early
+    // so substitutes can still post before upload period ends
+    if (day === 20 && currentPhase === "UPLOAD") {
       const missResult = await handleMissingPosts(championship.id);
-      actions.push(`Processed ${missResult.substitutions} substitutions`);
+      if (missResult.substitutions > 0) {
+        actions.push(`Processed ${missResult.substitutions} substitutions (substitutes can still upload today)`);
+      }
+    }
+
+    if (day >= 21 && currentPhase === "UPLOAD") {
+      // Final missing posts check before transitioning
+      const missResult = await handleMissingPosts(championship.id);
+      if (missResult.substitutions > 0) {
+        actions.push(`Processed ${missResult.substitutions} last-minute substitutions`);
+      }
 
       await prisma.championship.update({
         where: { id: championship.id },
         data: { phase: "CHAMPIONSHIP" },
       });
+      currentPhase = "CHAMPIONSHIP";
       actions.push("Transitioned to CHAMPIONSHIP phase");
 
       // Send vote-open notifications
@@ -121,7 +126,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    if (day === 31 && championship.phase === "CHAMPIONSHIP") {
+    if (day === 31 && currentPhase === "CHAMPIONSHIP") {
       // Tally battle votes
       const battleResult = await tallyBattleVotes(championship.id);
       actions.push(`Ranked ${battleResult.ranked} championship posts`);

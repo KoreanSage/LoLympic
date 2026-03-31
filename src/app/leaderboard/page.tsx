@@ -277,7 +277,7 @@ export default function LeaderboardPage() {
                 <span>{"\u2694\uFE0F"}</span> {t("battle.hotBattle")}
               </h2>
               <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-                {battleMemes.map((meme: any) => (
+                {battleMemes.map((meme) => (
                   <Link key={meme.id} href={`/post/${meme.id}`} className="flex-shrink-0 w-32 rounded-xl overflow-hidden border border-border bg-background-surface hover:border-[#c9a84c] transition-colors">
                     <img src={meme.imageUrl} alt={meme.title} className="w-full aspect-square object-cover" />
                     <div className="p-2">
