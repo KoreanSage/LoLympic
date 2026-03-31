@@ -50,9 +50,9 @@ async function getRandomPair(excludePostIds: string[], userId?: string, userLang
 
   const count = await prisma.post.count({ where });
   if (count < 2) {
-    // Fallback: try without language filter if not enough posts
+    // Fallback: try without language filter but still pass language for translations
     if (userLanguage) {
-      return getRandomPair(excludePostIds, userId);
+      return getRandomPairFallback(excludePostIds, userId, userLanguage);
     }
     return null;
   }
@@ -119,6 +119,94 @@ async function getRandomPair(excludePostIds: string[], userId?: string, userLang
       ? translation.translatedImageUrl
       : null;
     // Prefer translated image > clean image (text removed) > original
+    const imageUrl = translatedImg
+      || p.images[0]?.cleanUrl
+      || p.images[0]?.originalUrl
+      || "";
+    return {
+      id: p.id,
+      title: translation?.translatedTitle || p.title,
+      imageUrl,
+      imageCount: p._count.images,
+      reactionCount: p.reactionCount,
+      battleWins: p.battleWins,
+      battleLosses: p.battleLosses,
+      author: p.author,
+      country: p.country,
+    };
+  };
+
+  return { left: format(left), right: format(right) };
+}
+
+// ---------------------------------------------------------------------------
+// Fallback: no language WHERE filter, but still fetch translations for display
+// ---------------------------------------------------------------------------
+async function getRandomPairFallback(excludePostIds: string[], userId?: string, userLanguage?: string) {
+  const where: any = {
+    status: "PUBLISHED",
+    visibility: "PUBLIC",
+    images: {
+      some: {
+        OR: [
+          { mimeType: { notIn: ["video/mp4", "video/webm", "image/gif"] } },
+          { mimeType: null },
+        ],
+      },
+    },
+  };
+
+  if (userId) where.authorId = { not: userId };
+  if (excludePostIds.length > 0) where.id = { notIn: excludePostIds };
+
+  const count = await prisma.post.count({ where });
+  if (count < 2) return null;
+
+  const offset1 = Math.floor(Math.random() * count);
+  let offset2 = Math.floor(Math.random() * (count - 1));
+  if (offset2 >= offset1) offset2 += 1;
+
+  const select: any = {
+    id: true,
+    title: true,
+    reactionCount: true,
+    battleWins: true,
+    battleLosses: true,
+    _count: { select: { images: true } },
+    images: {
+      orderBy: { orderIndex: "asc" as const },
+      take: 1,
+      select: { originalUrl: true, cleanUrl: true },
+    },
+    author: { select: { username: true, displayName: true, avatarUrl: true } },
+    country: { select: { id: true, flagEmoji: true, nameEn: true } },
+  };
+
+  // Still fetch translations so we can show translated title/image
+  if (userLanguage) {
+    select.translationPayloads = {
+      where: {
+        targetLanguage: userLanguage,
+        status: { in: ["COMPLETED", "APPROVED"] },
+      },
+      orderBy: { version: "desc" as const },
+      take: 1,
+      select: { translatedTitle: true, translatedImageUrl: true },
+    };
+  }
+
+  const [left, right] = await Promise.all([
+    prisma.post.findFirst({ where, skip: offset1, select }),
+    prisma.post.findFirst({ where, skip: offset2, select }),
+  ]);
+
+  if (!left || !right || left.id === right.id) return null;
+
+  const format = (p: any) => {
+    const translation = p.translationPayloads?.[0];
+    const translatedImg = translation?.translatedImageUrl?.startsWith("http")
+      ? translation.translatedImageUrl
+      : null;
     const imageUrl = translatedImg
       || p.images[0]?.cleanUrl
       || p.images[0]?.originalUrl
