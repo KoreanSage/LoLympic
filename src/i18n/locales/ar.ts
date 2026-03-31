@@ -359,6 +359,10 @@ const ar: Record<TranslationKeys, string> = {
   "messages.typePlaceholder": "اكتب رسالة...",
   "messages.send": "ابعت",
   "messages.startHint": "روح على بروفايل أي حد واضغط \"رسالة\" عشان تبدأ محادثة",
+  "messages.searchPlaceholder": "البحث في المحادثات...",
+  "messages.filterAll": "الكل",
+  "messages.filterUnread": "غير مقروء",
+  "messages.noResults": "لا توجد محادثات مطابقة",
 
   // ── Bookmarks ──────────────────────────────────────────────────────────────
   "bookmarks.title": "المحفوظات",

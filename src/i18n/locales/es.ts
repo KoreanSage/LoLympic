@@ -359,6 +359,10 @@ const es: Record<TranslationKeys, string> = {
   "messages.typePlaceholder": "Escribe un mensaje...",
   "messages.send": "Enviar",
   "messages.startHint": "Visita el perfil de un usuario y haz clic en \"Mensaje\" para iniciar una conversación",
+  "messages.searchPlaceholder": "Buscar conversaciones...",
+  "messages.filterAll": "Todo",
+  "messages.filterUnread": "No leído",
+  "messages.noResults": "No se encontraron conversaciones",
 
   // ── Bookmarks ──────────────────────────────────────────────────────────────
   "bookmarks.title": "Guardados",

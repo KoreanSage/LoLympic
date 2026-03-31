@@ -359,6 +359,10 @@ const ja: Record<TranslationKeys, string> = {
   "messages.typePlaceholder": "メッセージを入力...",
   "messages.send": "送信",
   "messages.startHint": "ユーザーのプロフィールで「メッセージ」をクリックして会話を始めましょう",
+  "messages.searchPlaceholder": "会話を検索...",
+  "messages.filterAll": "すべて",
+  "messages.filterUnread": "未読",
+  "messages.noResults": "該当する会話はありません",
 
   // ── Bookmarks ──────────────────────────────────────────────────────────────
   "bookmarks.title": "ブックマーク",

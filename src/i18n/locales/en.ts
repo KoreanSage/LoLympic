@@ -357,6 +357,10 @@ const en = {
   "messages.typePlaceholder": "Type a message...",
   "messages.send": "Send",
   "messages.startHint": "Visit a user's profile and click \"Message\" to start a conversation",
+  "messages.searchPlaceholder": "Search conversations...",
+  "messages.filterAll": "All",
+  "messages.filterUnread": "Unread",
+  "messages.noResults": "No matching conversations",
 
   // ── Bookmarks ──────────────────────────────────────────────────────────────
   "bookmarks.title": "Bookmarks",

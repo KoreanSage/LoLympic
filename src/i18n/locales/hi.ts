@@ -359,6 +359,10 @@ const hi: Record<TranslationKeys, string> = {
   "messages.typePlaceholder": "Message लिखें...",
   "messages.send": "भेजें",
   "messages.startHint": "किसी user की profile पर जाकर \"Message\" पर click करें",
+  "messages.searchPlaceholder": "बातचीत खोजें...",
+  "messages.filterAll": "सभी",
+  "messages.filterUnread": "अपठित",
+  "messages.noResults": "कोई मेल खाती बातचीत नहीं",
 
   // ── Bookmarks ──────────────────────────────────────────────────────────────
   "bookmarks.title": "Bookmarks",

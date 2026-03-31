@@ -359,6 +359,10 @@ const ko: Record<TranslationKeys, string> = {
   "messages.typePlaceholder": "메시지를 입력하세요...",
   "messages.send": "보내기",
   "messages.startHint": "사용자 프로필에서 \"메시지\" 버튼을 눌러 대화를 시작하세요",
+  "messages.searchPlaceholder": "대화 검색...",
+  "messages.filterAll": "전체",
+  "messages.filterUnread": "읽지 않음",
+  "messages.noResults": "일치하는 대화가 없습니다",
 
   // ── Bookmarks ──────────────────────────────────────────────────────────────
   "bookmarks.title": "북마크",

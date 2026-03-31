@@ -359,6 +359,10 @@ const zh: Record<TranslationKeys, string> = {
   "messages.typePlaceholder": "输入消息...",
   "messages.send": "发送",
   "messages.startHint": "访问用户主页并点击「消息」开始对话",
+  "messages.searchPlaceholder": "搜索对话...",
+  "messages.filterAll": "全部",
+  "messages.filterUnread": "未读",
+  "messages.noResults": "没有匹配的对话",
 
   // ── Bookmarks ──────────────────────────────────────────────────────────────
   "bookmarks.title": "收藏",
