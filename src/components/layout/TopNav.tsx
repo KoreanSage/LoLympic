@@ -345,7 +345,7 @@ export default function TopNav() {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/85 backdrop-blur-xl border-b border-border">
       {/* Season bar — only on season-related pages, hides on scroll */}
-      {(pathname === "/seasons" || pathname === "/tournament" || pathname?.startsWith("/seasons/")) && (
+      {(pathname === "/seasons" || pathname === "/tournament" || pathname === "/championship" || pathname?.startsWith("/seasons/")) && (
         <div
           className="transition-all duration-300 overflow-hidden"
           style={{ maxHeight: hideSeasonBar ? 0 : 60, opacity: hideSeasonBar ? 0 : 1 }}
@@ -369,6 +369,7 @@ export default function TopNav() {
             <NavLink href="/" label={t("nav.explore")} />
             <NavLink href="/leaderboard" label={t("nav.leaderboard")} />
             <NavLink href="/seasons" label={t("nav.season")} />
+            <NavLink href="/championship" label={`🏆 ${t("nav.championship")}`} />
             <NavLink href="/upload" label={t("nav.upload")} />
             {isAdmin && <NavLink href="/admin" label={t("nav.admin")} />}
           </div>
@@ -583,6 +584,7 @@ export default function TopNav() {
           <MobileNavLink href="/" label={t("nav.explore")} active={pathname === "/"} />
           <MobileNavLink href="/leaderboard" label={t("nav.leaderboard")} active={pathname === "/leaderboard"} />
           <MobileNavLink href="/seasons" label={t("nav.season")} active={pathname?.startsWith("/seasons")} />
+          <MobileNavLink href="/championship" label={`🏆 ${t("nav.championship")}`} active={pathname === "/championship"} />
           <MobileNavLink href="/upload" label={t("nav.upload")} active={pathname === "/upload"} />
           <MobileNavLink href="/bookmarks" label={t("nav.bookmarks")} active={pathname === "/bookmarks"} />
           {session?.user && (

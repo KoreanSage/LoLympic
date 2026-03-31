@@ -7,6 +7,7 @@ import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import TierBadge from "@/components/ui/TierBadge";
 import VsEventBanner from "@/components/competition/VsEventBanner";
+import ChampionshipBanner from "@/components/championship/ChampionshipBanner";
 import { useTranslation } from "@/i18n";
 
 // ---------------------------------------------------------------------------
@@ -157,6 +158,8 @@ export default function Sidebar() {
   const [myCountry, setMyCountry] = useState<{ flag: string; name: string; rank: number; score: number } | null>(null);
   const [myCountryInTop5, setMyCountryInTop5] = useState(false);
   const [uploadStreak, setUploadStreak] = useState<number>(0);
+  const [championshipPhase, setChampionshipPhase] = useState<string | null>(null);
+  const [championshipYear, setChampionshipYear] = useState<number>(new Date().getFullYear());
 
   // Initialize preferredLang from localStorage, then fall back to session
   useEffect(() => {
@@ -301,6 +304,17 @@ export default function Sidebar() {
     // Reuse meme leaderboard data for monthly contenders (already fetched above for hotMemes)
     // We set monthlyContenders from the same meme fetch result above — see hotMemes fetch
 
+    // Fetch championship status
+    fetch("/api/championship")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.championship) {
+          setChampionshipPhase(data.championship.phase);
+          setChampionshipYear(data.championship.year);
+        }
+      })
+      .catch(() => {});
+
     // Fetch trending posts and extract unique tags
     fetch("/api/posts?limit=20&sort=trending")
       .then((res) => res.json())
@@ -390,6 +404,11 @@ export default function Sidebar() {
 
       {/* VS Event Banner */}
       <VsEventBanner />
+
+      {/* Championship Banner */}
+      {championshipPhase && championshipPhase !== "COMPLETED" && (
+        <ChampionshipBanner phase={championshipPhase} year={championshipYear} />
+      )}
 
       {/* Country Rankings */}
       <Card>

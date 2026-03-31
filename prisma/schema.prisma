@@ -183,6 +183,10 @@ enum NotificationType {
   BATTLE_EVENT
   BADGE_EARNED
   STREAK_BONUS
+  CHAMPIONSHIP_NOMINATED
+  CHAMPIONSHIP_ELECTED
+  CHAMPIONSHIP_VOTE_OPEN
+  CHAMPIONSHIP_RESULT
 }
 
 enum CultureNoteStatus {
@@ -191,6 +195,22 @@ enum CultureNoteStatus {
   APPROVED
   REJECTED
   SUPERSEDED
+}
+
+enum ChampionshipPhase {
+  NOMINATION
+  REPRESENTATIVE
+  UPLOAD
+  CHAMPIONSHIP
+  COMPLETED
+}
+
+enum CandidateStatus {
+  NOMINATED
+  ELECTED
+  RUNNER_UP
+  SUBSTITUTE
+  ELIMINATED
 }
 
 // ============================================================================
@@ -296,6 +316,10 @@ model User {
   adminAuditLogs       AdminAuditLog[]   @relation("AdminAuditLogs")
   badges               UserBadge[]
   countryBoardPosts    CountryBoard[]
+  championshipCandidates    ChampionshipCandidate[]
+  championshipVotes         ChampionshipVote[]       @relation("ChampionshipVoter")
+  championshipPosts         ChampionshipPost[]       @relation("ChampionshipPostAuthor")
+  championshipBattleVotes   ChampionshipBattleVote[] @relation("ChampionshipBattleVoter")
 
   @@index([countryId])
   @@index([username])
@@ -327,6 +351,8 @@ model Country {
   vsEventsAsCountry1 CountryVsEvent[] @relation("VsEventCountry1")
   vsEventsAsCountry2 CountryVsEvent[] @relation("VsEventCountry2")
   countryBoardPosts  CountryBoard[]
+  championshipCandidates ChampionshipCandidate[]
+  championshipPosts      ChampionshipPost[]
 }
 
 model Post {
@@ -393,6 +419,7 @@ model Post {
   tournamentAsPost2   TournamentMatch[]  @relation("TournamentPost2")
   editHistory         PostEditHistory[]
   forwardedMessages   DirectMessage[]    @relation("ForwardedPost")
+  championshipPost    ChampionshipPost?
 
   @@index([authorId])
   @@index([countryId])
@@ -763,6 +790,7 @@ model Season {
   monthlyWinners     MonthlyWinner[]
   finalVotes         FinalVote[]
   tournamentMatches  TournamentMatch[]
+  championship       Championship?
 }
 
 model SeasonEntry {
@@ -1242,4 +1270,120 @@ model CountryBoard {
   author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
   @@index([countryId, createdAt(sort: Desc)])
   @@index([authorId])
+}
+
+// ============================================================================
+// YEAR-END CHAMPIONSHIP (Dec 1-31)
+// ============================================================================
+
+model Championship {
+  id        String            @id @default(cuid())
+  seasonId  String            @unique
+  year      Int               @unique
+  phase     ChampionshipPhase @default(NOMINATION)
+
+  nominationStartAt     DateTime
+  nominationEndAt       DateTime
+  representativeStartAt DateTime
+  representativeEndAt   DateTime
+  uploadStartAt         DateTime
+  uploadEndAt           DateTime
+  battleStartAt         DateTime
+  battleEndAt           DateTime
+  resultAt              DateTime
+
+  championUserId    String?
+  championCountryId String?
+  championPostId    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  season     Season              @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  candidates ChampionshipCandidate[]
+  votes      ChampionshipVote[]
+  posts      ChampionshipPost[]
+
+  @@index([year])
+}
+
+model ChampionshipCandidate {
+  id               String          @id @default(cuid())
+  championshipId   String
+  userId           String
+  countryId        String
+  rank             Int
+  status           CandidateStatus @default(NOMINATED)
+  seasonScore      Float           @default(0)
+  voteCount        Int             @default(0)
+  weightedVoteScore Float          @default(0)
+  autoElected      Boolean         @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  championship Championship @relation(fields: [championshipId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  country      Country      @relation(fields: [countryId], references: [id])
+  votes        ChampionshipVote[]
+
+  @@unique([championshipId, userId])
+  @@unique([championshipId, countryId, rank])
+  @@index([championshipId, countryId])
+  @@index([status])
+}
+
+model ChampionshipVote {
+  id              String   @id @default(cuid())
+  championshipId  String
+  voterId         String
+  candidateId     String
+  voterCountryId  String?
+
+  createdAt DateTime @default(now())
+
+  championship Championship          @relation(fields: [championshipId], references: [id], onDelete: Cascade)
+  voter        User                   @relation("ChampionshipVoter", fields: [voterId], references: [id], onDelete: Cascade)
+  candidate    ChampionshipCandidate  @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@unique([championshipId, voterId, candidateId])
+  @@index([championshipId, candidateId])
+  @@index([voterId])
+}
+
+model ChampionshipPost {
+  id              String   @id @default(cuid())
+  championshipId  String
+  postId          String   @unique
+  userId          String
+  countryId       String
+
+  battleVoteCount Int      @default(0)
+  finalRank       Int?
+
+  createdAt DateTime @default(now())
+
+  championship Championship @relation(fields: [championshipId], references: [id], onDelete: Cascade)
+  post         Post         @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user         User         @relation("ChampionshipPostAuthor", fields: [userId], references: [id], onDelete: Cascade)
+  country      Country      @relation(fields: [countryId], references: [id])
+  battleVotes  ChampionshipBattleVote[]
+
+  @@unique([championshipId, countryId])
+  @@index([championshipId])
+}
+
+model ChampionshipBattleVote {
+  id                   String   @id @default(cuid())
+  championshipPostId   String
+  voterId              String
+
+  createdAt DateTime @default(now())
+
+  championshipPost ChampionshipPost @relation(fields: [championshipPostId], references: [id], onDelete: Cascade)
+  voter            User             @relation("ChampionshipBattleVoter", fields: [voterId], references: [id], onDelete: Cascade)
+
+  @@unique([championshipPostId, voterId])
+  @@index([championshipPostId])
+  @@index([voterId])
 }

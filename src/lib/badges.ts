@@ -7,7 +7,10 @@ export const BADGE_DEFS = {
   REACTION_100:      { emoji: "❤️", nameKey: "badge.REACTION_100" },
   BATTLE_10W:        { emoji: "⚔️", nameKey: "badge.BATTLE_10W" },
   STREAK_7:          { emoji: "🔥", nameKey: "badge.STREAK_7" },
-  STREAK_30:         { emoji: "💎", nameKey: "badge.STREAK_30" },
+  STREAK_30:                  { emoji: "💎", nameKey: "badge.STREAK_30" },
+  CHAMPIONSHIP_CHAMPION:      { emoji: "🏆", nameKey: "badge.CHAMPIONSHIP_CHAMPION" },
+  CHAMPIONSHIP_RUNNER_UP:     { emoji: "🥈", nameKey: "badge.CHAMPIONSHIP_RUNNER_UP" },
+  CHAMPIONSHIP_REPRESENTATIVE:{ emoji: "🎖️", nameKey: "badge.CHAMPIONSHIP_REPRESENTATIVE" },
 } as const;
 
 export type BadgeKey = keyof typeof BADGE_DEFS;
