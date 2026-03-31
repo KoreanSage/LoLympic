@@ -11,6 +11,7 @@ import Card from "@/components/ui/Card";
 import Tabs from "@/components/ui/Tabs";
 import TierBadge from "@/components/ui/TierBadge";
 import RankCard from "@/components/ui/RankCard";
+import BadgeShowcase from "@/components/ui/BadgeShowcase";
 import { useToast } from "@/components/ui/Toast";
 import { useTranslation } from "@/i18n";
 
@@ -37,6 +38,7 @@ interface UserProfile {
   postCount: number;
   isFollowing: boolean;
   isOwnProfile: boolean;
+  badges: Array<{ badgeKey: string; earnedAt: string }>;
   posts: Array<{
     id: string;
     title: string;
@@ -330,6 +332,16 @@ export default function UserProfilePage() {
             <div className="text-xs text-foreground-subtle">{t("karma.commentKarma")}</div>
           </Card>
         </div>
+
+        {/* Badges */}
+        {profile.badges && profile.badges.length > 0 && (
+          <Card>
+            <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-1.5">
+              <span>🏅</span> Badges
+            </h3>
+            <BadgeShowcase badges={profile.badges} />
+          </Card>
+        )}
 
         {/* Tabs */}
         <Tabs tabs={tabs} defaultTab="posts" onChange={setActiveTab} />

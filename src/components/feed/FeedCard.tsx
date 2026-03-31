@@ -390,17 +390,36 @@ function FeedCardInner({
                   </button>
                 )}
                 {!isOwnPost && (
-                  <button
-                    onClick={() => {
-                      setMenuOpen(false);
-                      setShowReportDialog(true);
-                    }}
-                    aria-label="Report post"
-                    className="w-full text-left px-3 py-2 text-sm text-foreground-muted hover:bg-background-elevated transition-colors flex items-center gap-2"
-                  >
-                    <span className="text-sm">{"\uD83D\uDEA9"}</span>
-                    {t("feed.report")}
-                  </button>
+                  <>
+                    <button
+                      onClick={async () => {
+                        setMenuOpen(false);
+                        if (!session?.user) return;
+                        try {
+                          await fetch(`/api/posts/${id}/translation-request`, { method: "POST" });
+                          toast("Translation request sent!", "success");
+                        } catch {
+                          toast("Failed to send request", "error");
+                        }
+                      }}
+                      aria-label="Request translation"
+                      className="w-full text-left px-3 py-2 text-sm text-foreground-muted hover:bg-background-elevated transition-colors flex items-center gap-2"
+                    >
+                      <span className="text-sm">🌐</span>
+                      Request Translation
+                    </button>
+                    <button
+                      onClick={() => {
+                        setMenuOpen(false);
+                        setShowReportDialog(true);
+                      }}
+                      aria-label="Report post"
+                      className="w-full text-left px-3 py-2 text-sm text-foreground-muted hover:bg-background-elevated transition-colors flex items-center gap-2"
+                    >
+                      <span className="text-sm">{"\uD83D\uDEA9"}</span>
+                      {t("feed.report")}
+                    </button>
+                  </>
                 )}
               </div>
             )}

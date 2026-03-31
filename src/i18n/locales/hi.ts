@@ -648,6 +648,30 @@ const hi: Record<TranslationKeys, string> = {
   "forward.addMessage": "संदेश जोड़ें...",
   "forward.sent": "भेज दिया!",
   "forward.send": "भेजें",
+
+  // ── Badges & new features ─────────────────────────────────────────────────
+  "badge.FIRST_TRANSLATION": "पहला अनुवादक",
+  "badge.UPLOAD_10": "सक्रिय पोस्टर",
+  "badge.UPLOAD_50": "मीम लेजेंड",
+  "badge.REACTION_100": "लोकप्रिय क्रिएटर",
+  "badge.BATTLE_10W": "बैटल वेटरन",
+  "badge.STREAK_7": "स्ट्रीक पर",
+  "badge.STREAK_30": "अजेय",
+  "badge.earned": "बैज मिला: {name}!",
+  "sidebar.nudge": "{country} से सिर्फ {diff} pts पीछे!",
+  "sidebar.nudgePost": "#{rank} पर पहुंचने के लिए पोस्ट करें",
+  "sidebar.streak": "🔥 {n} दिन की स्ट्रीक!",
+  "sidebar.streakStart": "आज अपलोड करके स्ट्रीक शुरू करें!",
+  "notif.RANK_CHANGE": "{country} आगे निकल गया! पोस्ट करें!",
+  "notif.BADGE_EARNED": "आपने बैज जीता!",
+  "notif.STREAK_BONUS": "🔥 {n} दिन स्ट्रीक बोनस!",
+  "notif.TRANSLATION_REQUEST": "{actor} ने अनुवाद मांगा!",
+  "notif.BATTLE_EVENT": "नया बैटल इवेंट: {title}",
+  "feed.following": "फॉलोइंग",
+  "feed.followingEmpty": "पोस्ट देखने के लिए लोगों को फॉलो करें!",
+  "countryBoard.title": "{country} कम्युनिटी बोर्ड",
+  "countryBoard.placeholder": "अपने देश के लिए कुछ लिखें...",
+  "countryBoard.empty": "अभी कोई पोस्ट नहीं। पहले पोस्ट करें!",
 } as const;
 
 export default hi;

@@ -178,6 +178,11 @@ enum NotificationType {
   SYSTEM
   DIRECT_MESSAGE
   FORWARD
+  RANK_CHANGE
+  TRANSLATION_REQUEST
+  BATTLE_EVENT
+  BADGE_EARNED
+  STREAK_BONUS
 }
 
 enum CultureNoteStatus {
@@ -249,6 +254,11 @@ model User {
   bannedAt          DateTime?
   bannedUntil       DateTime?    // null = permanent ban
 
+  // Upload streak
+  uploadStreakCount    Int       @default(0)
+  uploadStreakLastDate DateTime?
+  isCountryCaptain    Boolean    @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -284,6 +294,8 @@ model User {
   tournamentVotes      TournamentVote[]
   postVotes            PostVote[]
   adminAuditLogs       AdminAuditLog[]   @relation("AdminAuditLogs")
+  badges               UserBadge[]
+  countryBoardPosts    CountryBoard[]
 
   @@index([countryId])
   @@index([username])
@@ -312,6 +324,9 @@ model Country {
   medals             Medal[]
   rewardGrants       RewardGrant[]
   monthlyWinners     MonthlyWinner[]
+  vsEventsAsCountry1 CountryVsEvent[] @relation("VsEventCountry1")
+  vsEventsAsCountry2 CountryVsEvent[] @relation("VsEventCountry2")
+  countryBoardPosts  CountryBoard[]
 }
 
 model Post {
@@ -1180,4 +1195,51 @@ model AdminAuditLog {
   @@index([adminId])
   @@index([targetId, targetType])
   @@index([createdAt])
+}
+
+// ============================================================================
+// BADGES, STREAKS, VS EVENTS, COUNTRY BOARD
+// ============================================================================
+
+model UserBadge {
+  id        String   @id @default(cuid())
+  userId    String
+  badgeKey  String
+  earnedAt  DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([userId, badgeKey])
+  @@index([userId])
+}
+
+model CountryVsEvent {
+  id            String   @id @default(cuid())
+  title         String
+  country1Id    String
+  country2Id    String
+  startAt       DateTime
+  endAt         DateTime
+  status        String   @default("UPCOMING")
+  country1Score Float    @default(0)
+  country2Score Float    @default(0)
+  winnerId      String?
+  createdById   String
+  createdAt     DateTime @default(now())
+  country1      Country  @relation("VsEventCountry1", fields: [country1Id], references: [id])
+  country2      Country  @relation("VsEventCountry2", fields: [country2Id], references: [id])
+  @@index([status])
+  @@index([startAt])
+}
+
+model CountryBoard {
+  id        String   @id @default(cuid())
+  countryId String
+  authorId  String
+  body      String   @db.Text
+  likeCount Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  country   Country  @relation(fields: [countryId], references: [id])
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  @@index([countryId, createdAt(sort: Desc)])
+  @@index([authorId])
 }

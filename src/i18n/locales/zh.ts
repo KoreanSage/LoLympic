@@ -644,6 +644,30 @@ const zh: Record<TranslationKeys, string> = {
   "forward.addMessage": "添加留言...",
   "forward.sent": "已发送！",
   "forward.send": "发送",
+
+  // ── Badges & new features ─────────────────────────────────────────────────
+  "badge.FIRST_TRANSLATION": "首位翻译者",
+  "badge.UPLOAD_10": "积极发帖者",
+  "badge.UPLOAD_50": "表情包传奇",
+  "badge.REACTION_100": "人气创作者",
+  "badge.BATTLE_10W": "战斗老手",
+  "badge.STREAK_7": "连续上传中",
+  "badge.STREAK_30": "无敌创作者",
+  "badge.earned": "获得徽章: {name}!",
+  "sidebar.nudge": "距{country}仅差{diff}分!",
+  "sidebar.nudgePost": "多发帖冲击第#{rank}名",
+  "sidebar.streak": "🔥 连续{n}天上传!",
+  "sidebar.streakStart": "今天上传开始你的连胜!",
+  "notif.RANK_CHANGE": "{country}超过了你！快去发帖！",
+  "notif.BADGE_EARNED": "你获得了徽章！",
+  "notif.STREAK_BONUS": "🔥 {n}天连胜奖励！",
+  "notif.TRANSLATION_REQUEST": "{actor}请求翻译！",
+  "notif.BATTLE_EVENT": "新战斗活动: {title}",
+  "feed.following": "关注",
+  "feed.followingEmpty": "关注其他人以查看他们的帖子！",
+  "countryBoard.title": "{country}社区公告板",
+  "countryBoard.placeholder": "为你的国家写点什么...",
+  "countryBoard.empty": "还没有帖子。来第一个发帖吧！",
 };
 
 export default zh;

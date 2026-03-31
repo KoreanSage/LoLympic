@@ -648,6 +648,30 @@ const ar: Record<TranslationKeys, string> = {
   "forward.addMessage": "أضف رسالة...",
   "forward.sent": "تم الإرسال!",
   "forward.send": "إرسال",
+
+  // ── Badges & new features ─────────────────────────────────────────────────
+  "badge.FIRST_TRANSLATION": "أول مترجم",
+  "badge.UPLOAD_10": "ناشر نشيط",
+  "badge.UPLOAD_50": "أسطورة الميم",
+  "badge.REACTION_100": "المفضل لدى الجمهور",
+  "badge.BATTLE_10W": "محارب متمرس",
+  "badge.STREAK_7": "في سلسلة",
+  "badge.STREAK_30": "لا يُقهر",
+  "badge.earned": "حصلت على شارة: {name}!",
+  "sidebar.nudge": "فقط {diff} نقطة خلف {country}!",
+  "sidebar.nudgePost": "انشر أكثر للوصول إلى المركز #{rank}",
+  "sidebar.streak": "🔥 سلسلة {n} أيام!",
+  "sidebar.streakStart": "ارفع اليوم لبدء سلسلتك!",
+  "notif.RANK_CHANGE": "تجاوزتك {country}! حان وقت النشر!",
+  "notif.BADGE_EARNED": "حصلت على شارة!",
+  "notif.STREAK_BONUS": "🔥 مكافأة سلسلة {n} أيام!",
+  "notif.TRANSLATION_REQUEST": "{actor} يريد ترجمة هذا!",
+  "notif.BATTLE_EVENT": "حدث معركة جديد: {title}",
+  "feed.following": "المتابَعون",
+  "feed.followingEmpty": "تابع أشخاصاً لرؤية منشوراتهم هنا!",
+  "countryBoard.title": "لوحة مجتمع {country}",
+  "countryBoard.placeholder": "اكتب شيئاً لبلدك...",
+  "countryBoard.empty": "لا توجد منشورات بعد. كن الأول!",
 } as const;
 
 export default ar;

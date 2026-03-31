@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import TierBadge from "@/components/ui/TierBadge";
+import VsEventBanner from "@/components/competition/VsEventBanner";
 import { useTranslation } from "@/i18n";
 
 // ---------------------------------------------------------------------------
@@ -155,6 +156,7 @@ export default function Sidebar() {
   const [preferredLang, setPreferredLang] = useState<string>("");
   const [myCountry, setMyCountry] = useState<{ flag: string; name: string; rank: number; score: number } | null>(null);
   const [myCountryInTop5, setMyCountryInTop5] = useState(false);
+  const [uploadStreak, setUploadStreak] = useState<number>(0);
 
   // Initialize preferredLang from localStorage, then fall back to session
   useEffect(() => {
@@ -320,12 +322,17 @@ export default function Sidebar() {
       .finally(() => setLoadingTags(false));
   }, [preferredLang]);
 
-  // Fetch user's country standing
+  // Fetch user's country standing + streak
   useEffect(() => {
     if (!session?.user) return;
     fetch("/api/users/me")
       .then((r) => r.ok ? r.json() : null)
       .then((userData) => {
+        if (!userData) return;
+        // Set streak
+        if (typeof userData.uploadStreakCount === "number") {
+          setUploadStreak(userData.uploadStreakCount);
+        }
         if (!userData?.countryId) return;
         const countryId = userData.countryId;
         const countryFlag = userData.country?.flagEmoji || "";
@@ -366,6 +373,24 @@ export default function Sidebar() {
 
   return (
     <aside className="sticky top-[7.5rem] max-h-[calc(100vh-8.5rem)] overflow-y-auto space-y-4 scrollbar-hide pr-0.5">
+      {/* Upload Streak */}
+      {session?.user && (
+        <div className="bg-background-surface border border-border rounded-xl px-3 py-2 text-center">
+          {uploadStreak > 0 ? (
+            <p className="text-xs text-[#c9a84c] font-medium">
+              🔥 {uploadStreak}-day upload streak!
+            </p>
+          ) : (
+            <p className="text-xs text-foreground-subtle">
+              Upload today to start your streak!
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* VS Event Banner */}
+      <VsEventBanner />
+
       {/* Country Rankings */}
       <Card>
         <div className="flex items-center justify-between mb-3">
@@ -446,6 +471,23 @@ export default function Sidebar() {
           </div>
         </Card>
       )}
+
+      {/* Rank nudge: show pts needed to overtake the country above */}
+      {session?.user && myCountry && rankings.length > 0 && (() => {
+        const myRank = myCountry.rank;
+        const above = rankings.find((r) => r.rank === myRank - 1);
+        if (!above) return null;
+        const diff = above.score - myCountry.score;
+        if (diff <= 0) return null;
+        return (
+          <div className="bg-[#c9a84c]/10 border border-[#c9a84c]/20 rounded-xl px-3 py-2 text-center">
+            <p className="text-xs text-[#c9a84c] font-medium">
+              🎯 Only <strong>{diff.toLocaleString()} pts</strong> behind {above.flag} {above.name}!
+            </p>
+            <p className="text-[10px] text-foreground-subtle mt-0.5">Post more to climb to #{myRank - 1}</p>
+          </div>
+        );
+      })()}
 
       {/* Hot Memes */}
       <Card>

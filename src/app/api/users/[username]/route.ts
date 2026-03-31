@@ -39,7 +39,7 @@ export async function GET(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const [followerCount, followingCount, postCount, posts] = await Promise.all([
+    const [followerCount, followingCount, postCount, posts, badges] = await Promise.all([
       prisma.follow.count({ where: { followingId: user.id } }),
       prisma.follow.count({ where: { followerId: user.id } }),
       prisma.post.count({ where: { authorId: user.id, status: "PUBLISHED" } }),
@@ -60,6 +60,11 @@ export async function GET(
             select: { reactions: true, comments: true },
           },
         },
+      }),
+      prisma.userBadge.findMany({
+        where: { userId: user.id },
+        select: { badgeKey: true, earnedAt: true },
+        orderBy: { earnedAt: "asc" },
       }),
     ]);
 
@@ -84,6 +89,7 @@ export async function GET(
       followingCount,
       postCount,
       posts,
+      badges,
       isFollowing,
       isOwnProfile: currentUser?.id === user.id,
     });

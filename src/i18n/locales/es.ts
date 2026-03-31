@@ -644,6 +644,30 @@ const es: Record<TranslationKeys, string> = {
   "forward.addMessage": "Agregar un mensaje...",
   "forward.sent": "\u00A1Enviado!",
   "forward.send": "Enviar",
+
+  // ── Badges & new features ─────────────────────────────────────────────────
+  "badge.FIRST_TRANSLATION": "Primer Traductor",
+  "badge.UPLOAD_10": "Publicador Prolífico",
+  "badge.UPLOAD_50": "Leyenda del Meme",
+  "badge.REACTION_100": "Favorito del Público",
+  "badge.BATTLE_10W": "Veterano de Batalla",
+  "badge.STREAK_7": "En Racha",
+  "badge.STREAK_30": "Imparable",
+  "badge.earned": "¡Insignia obtenida: {name}!",
+  "sidebar.nudge": "¡Solo {diff} pts detrás de {country}!",
+  "sidebar.nudgePost": "Publica más para llegar al #{rank}",
+  "sidebar.streak": "🔥 ¡{n} días de racha!",
+  "sidebar.streakStart": "¡Sube algo hoy para comenzar tu racha!",
+  "notif.RANK_CHANGE": "¡{country} te superó! ¡A publicar!",
+  "notif.BADGE_EARNED": "¡Obtuviste una insignia!",
+  "notif.STREAK_BONUS": "🔥 ¡Bono de racha de {n} días!",
+  "notif.TRANSLATION_REQUEST": "¡{actor} quiere que traduzca esto!",
+  "notif.BATTLE_EVENT": "Nuevo evento de batalla: {title}",
+  "feed.following": "Siguiendo",
+  "feed.followingEmpty": "¡Sigue personas para ver sus publicaciones aquí!",
+  "countryBoard.title": "Tablero de {country}",
+  "countryBoard.placeholder": "Escribe algo para tu país...",
+  "countryBoard.empty": "Aún no hay publicaciones. ¡Sé el primero!",
 };
 
 export default es;

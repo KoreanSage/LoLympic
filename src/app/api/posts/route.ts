@@ -7,6 +7,8 @@ import { backfillMissingTitleTranslations } from "@/lib/translate-backfill";
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 import { awardXp, XP_AWARDS } from "@/lib/xp";
 import { getBlockedUserIds } from "@/lib/block";
+import { updateUploadStreak } from "@/lib/streak";
+import { checkAndAwardBadges } from "@/lib/badges";
 
 const VALID_LANGUAGES = ["ko", "en", "ja", "zh", "es", "hi", "ar"] as const;
 
@@ -56,6 +58,7 @@ export async function GET(request: NextRequest) {
     const language = searchParams.get("language") as LanguageCode | null;
     const seasonId = searchParams.get("season");
     const category = searchParams.get("category");
+    const feed = searchParams.get("feed"); // "following"
 
     // Translation language to include
     const translateTo = searchParams.get("translateTo") as LanguageCode | null;
@@ -65,13 +68,65 @@ export async function GET(request: NextRequest) {
 
     // Block filtering: hide posts from blocked users
     let blockedIds: string[] = [];
+    let sessionUser: Awaited<ReturnType<typeof getSessionUser>> = null;
     try {
-      const user = await getSessionUser();
-      if (user) {
-        blockedIds = await getBlockedUserIds(user.id);
+      sessionUser = await getSessionUser();
+      if (sessionUser) {
+        blockedIds = await getBlockedUserIds(sessionUser.id);
       }
     } catch {
       // Not logged in
+    }
+
+    // Following feed: return posts only from followed users
+    if (feed === "following" && sessionUser) {
+      const follows = await prisma.follow.findMany({
+        where: { followerId: sessionUser.id },
+        select: { followingId: true },
+      });
+      const followingIds = follows.map((f) => f.followingId);
+      if (followingIds.length === 0) {
+        return NextResponse.json({ posts: [], pagination: { page, limit, total: 0, totalPages: 0 } });
+      }
+      // We'll filter by followingIds below in the where clause
+      const followWhere: Prisma.PostWhereInput = {
+        status: PostStatus.PUBLISHED,
+        visibility: "PUBLIC",
+        authorId: { in: followingIds },
+        ...(blockedIds.length > 0 ? { NOT: { authorId: { in: blockedIds } } } : {}),
+      };
+      if (category) followWhere.category = category;
+
+      const [followPosts, followTotal] = await Promise.all([
+        prisma.post.findMany({
+          where: followWhere,
+          orderBy: [{ createdAt: "desc" }],
+          skip,
+          take: limit,
+          include: {
+            author: {
+              select: {
+                id: true,
+                username: true,
+                displayName: true,
+                avatarUrl: true,
+                profileTitle: true,
+                profileBorder: true,
+                isChampion: true,
+              },
+            },
+            country: { select: { id: true, nameEn: true, nameLocal: true, flagEmoji: true } },
+            images: { orderBy: { orderIndex: "asc" }, select: { id: true, originalUrl: true, cleanUrl: true, width: true, height: true, mimeType: true, orderIndex: true } },
+            _count: { select: { translationPayloads: true, reactions: true, comments: true } },
+          },
+        }),
+        prisma.post.count({ where: followWhere }),
+      ]);
+
+      return NextResponse.json({
+        posts: followPosts,
+        pagination: { page, limit, total: followTotal, totalPages: Math.ceil(followTotal / limit) },
+      });
     }
 
     // Build where clause
@@ -308,6 +363,10 @@ export async function POST(request: NextRequest) {
 
     // Award XP for creating a post (fire and forget)
     awardXp(user.id, XP_AWARDS.POST_CREATED).catch(() => {});
+
+    // Update upload streak and check badges (fire and forget)
+    updateUploadStreak(user.id).catch(console.error);
+    checkAndAwardBadges(user.id).catch(console.error);
 
     return NextResponse.json({ post }, { status: 201 });
   } catch (error) {

@@ -644,6 +644,30 @@ const ja: Record<TranslationKeys, string> = {
   "forward.addMessage": "メッセージを追加...",
   "forward.sent": "送信完了！",
   "forward.send": "送信",
+
+  // ── Badges ────────────────────────────────────────────────────────────────
+  "badge.FIRST_TRANSLATION": "初翻訳者",
+  "badge.UPLOAD_10": "積極的な投稿者",
+  "badge.UPLOAD_50": "ミームの伝説",
+  "badge.REACTION_100": "人気クリエイター",
+  "badge.BATTLE_10W": "バトルベテラン",
+  "badge.STREAK_7": "連続投稿中",
+  "badge.STREAK_30": "無敵のクリエイター",
+  "badge.earned": "バッジ獲得: {name}!",
+  "sidebar.nudge": "{country}まであと{diff}点!",
+  "sidebar.nudgePost": "投稿して#{rank}位を目指そう",
+  "sidebar.streak": "🔥 {n}日連続投稿中!",
+  "sidebar.streakStart": "今日投稿してストリークを始めよう!",
+  "notif.RANK_CHANGE": "{country}に追い抜かれました！",
+  "notif.BADGE_EARNED": "バッジを獲得しました！",
+  "notif.STREAK_BONUS": "🔥 {n}日ストリークボーナス！",
+  "notif.TRANSLATION_REQUEST": "{actor}が翻訳をリクエストしました！",
+  "notif.BATTLE_EVENT": "新しいバトルイベント: {title}",
+  "feed.following": "フォロー中",
+  "feed.followingEmpty": "フォローすると投稿が表示されます！",
+  "countryBoard.title": "{country}コミュニティボード",
+  "countryBoard.placeholder": "あなたの国のために何か書いてください...",
+  "countryBoard.empty": "まだ投稿がありません。",
 };
 
 export default ja;

@@ -25,6 +25,8 @@ export async function GET() {
         createdAt: true,
         emailVerified: true,
         passwordHash: true,
+        uploadStreakCount: true,
+        uploadStreakLastDate: true,
         country: {
           select: { id: true, nameEn: true, flagEmoji: true },
         },

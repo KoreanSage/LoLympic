@@ -70,6 +70,7 @@ export default function FeedFilters({
     { value: "trending", label: t("filter.trending") },
     { value: "recent", label: t("filter.recent") },
     { value: "top", label: t("filter.top") },
+    ...(session?.user ? [{ value: "following", label: t("feed.following") }] : []),
   ];
 
   const POST_TYPE_OPTIONS: FilterOption[] = [

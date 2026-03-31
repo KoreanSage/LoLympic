@@ -192,15 +192,17 @@ export default function FeedList({
     setFetchError(false);
 
     try {
+      const isFollowingFeed = parsedFilters?.sort === "following";
       const params = new URLSearchParams({
         page: String(page),
         limit: "10",
-        sort: parsedFilters?.sort || "trending",
+        sort: isFollowingFeed ? "recent" : (parsedFilters?.sort || "trending"),
       });
+      if (isFollowingFeed) params.set("feed", "following");
       if (lang) params.set("translateTo", lang);
       if (parsedFilters?.postType) params.set("category", parsedFilters.postType);
       else if (parsedFilters?.category) params.set("category", parsedFilters.category);
-      if (parsedFilters?.country) params.set("country", parsedFilters.country);
+      if (parsedFilters?.country && !isFollowingFeed) params.set("country", parsedFilters.country);
       if (parsedFilters?.language) params.set("language", parsedFilters.language);
 
       const res = await fetch(`/api/posts?${params}`, { signal });

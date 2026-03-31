@@ -657,6 +657,38 @@ const en = {
   "forward.addMessage": "Add a message...",
   "forward.sent": "Sent!",
   "forward.send": "Send",
+
+  // ── Badges ────────────────────────────────────────────────────────────────
+  "badge.FIRST_TRANSLATION": "First Translator",
+  "badge.UPLOAD_10": "Prolific Poster",
+  "badge.UPLOAD_50": "Meme Legend",
+  "badge.REACTION_100": "Crowd Pleaser",
+  "badge.BATTLE_10W": "Battle Veteran",
+  "badge.STREAK_7": "On a Roll",
+  "badge.STREAK_30": "Unstoppable",
+  "badge.earned": "Badge earned: {name}!",
+
+  // ── Sidebar nudge ─────────────────────────────────────────────────────────
+  "sidebar.nudge": "Only {diff} pts behind {country}!",
+  "sidebar.nudgePost": "Post more to reach #{rank}",
+  "sidebar.streak": "🔥 {n}-day upload streak!",
+  "sidebar.streakStart": "Upload today to start your streak!",
+
+  // ── Notifications (new) ───────────────────────────────────────────────────
+  "notif.RANK_CHANGE": "{country} overtook you! Time to post!",
+  "notif.BADGE_EARNED": "You earned a badge!",
+  "notif.STREAK_BONUS": "🔥 {n}-day streak bonus!",
+  "notif.TRANSLATION_REQUEST": "{actor} wants this translated!",
+  "notif.BATTLE_EVENT": "New battle event: {title}",
+
+  // ── Feed (new) ────────────────────────────────────────────────────────────
+  "feed.following": "Following",
+  "feed.followingEmpty": "Follow people to see their posts here!",
+
+  // ── Country board ─────────────────────────────────────────────────────────
+  "countryBoard.title": "{country} Community Board",
+  "countryBoard.placeholder": "Write something for your country...",
+  "countryBoard.empty": "No posts yet. Be the first!",
 } as const;
 
 export type TranslationKeys = keyof typeof en;

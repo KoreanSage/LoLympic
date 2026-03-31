@@ -650,6 +650,38 @@ const ko: Record<TranslationKeys, string> = {
   "forward.addMessage": "메시지 추가...",
   "forward.sent": "전달 완료!",
   "forward.send": "보내기",
+
+  // ── Badges ────────────────────────────────────────────────────────────────
+  "badge.FIRST_TRANSLATION": "첫 번역가",
+  "badge.UPLOAD_10": "적극적인 게시자",
+  "badge.UPLOAD_50": "밈 전설",
+  "badge.REACTION_100": "인기 크리에이터",
+  "badge.BATTLE_10W": "배틀 베테랑",
+  "badge.STREAK_7": "연속 업로드 중",
+  "badge.STREAK_30": "무적의 크리에이터",
+  "badge.earned": "배지 획득: {name}!",
+
+  // ── Sidebar nudge ─────────────────────────────────────────────────────────
+  "sidebar.nudge": "{country}까지 {diff}점 차이!",
+  "sidebar.nudgePost": "더 올려서 #{rank}위에 도전!",
+  "sidebar.streak": "🔥 {n}일 연속 업로드!",
+  "sidebar.streakStart": "오늘 업로드로 스트릭을 시작하세요!",
+
+  // ── Notifications (new) ───────────────────────────────────────────────────
+  "notif.RANK_CHANGE": "{country}가 앞질렀어요! 지금 게시하세요!",
+  "notif.BADGE_EARNED": "배지를 획득했어요!",
+  "notif.STREAK_BONUS": "🔥 {n}일 스트릭 보너스!",
+  "notif.TRANSLATION_REQUEST": "{actor}님이 번역을 요청했어요!",
+  "notif.BATTLE_EVENT": "새 배틀 이벤트: {title}",
+
+  // ── Feed (new) ────────────────────────────────────────────────────────────
+  "feed.following": "팔로잉",
+  "feed.followingEmpty": "팔로우하면 게시물이 여기 표시됩니다!",
+
+  // ── Country board ─────────────────────────────────────────────────────────
+  "countryBoard.title": "{country} 커뮤니티 보드",
+  "countryBoard.placeholder": "우리나라를 위한 글을 써보세요...",
+  "countryBoard.empty": "아직 게시물이 없어요. 첫 번째로 작성해보세요!",
 };
 
 export default ko;
