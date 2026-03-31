@@ -758,8 +758,16 @@ const zh: Record<TranslationKeys, string> = {
   "community.discussion": "讨论",
   "community.countryBoards": "国家板块",
   "community.emptyDiscussion": "还没有讨论。来开始对话吧！",
+  "community.emptyDiscussionSubtext": "与全球创作者分享想法、提问或讨论梗图。",
   "community.members": "创作者",
   "community.noCountries": "还没有活跃的国家",
+  "community.writePlaceholder": "你在想什么？",
+  "community.postingAs": "发布到你的国家板块 •",
+  "community.post": "发布",
+  "community.loginToPost": "登录参与讨论。",
+  "community.selectCountryFirst": "请先在设置中选择你的国家。",
+  "community.discussionDesc": "所有国家的讨论汇聚在一个信息流中。你的帖子也会出现在你的国家板块！",
+  "community.boardsDesc": "浏览特定国家社区的讨论。",
 };
 
 export default zh;

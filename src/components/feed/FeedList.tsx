@@ -71,6 +71,10 @@ interface FeedPost {
 interface FeedListProps {
   translateTo?: string;
   emptyMessage?: string;
+  emptySubtext?: string;
+  emptyActionLabel?: string;
+  emptyActionHref?: string;
+  emptyIcon?: string;
   filters?: {
     country?: string;
     language?: string;
@@ -164,6 +168,10 @@ function mapApiPost(post: any): FeedPost {
 export default function FeedList({
   translateTo = "",
   emptyMessage,
+  emptySubtext,
+  emptyActionLabel,
+  emptyActionHref,
+  emptyIcon,
   filters,
 }: FeedListProps) {
   const { t } = useTranslation();
@@ -288,19 +296,19 @@ export default function FeedList({
   if (posts.length === 0 && !loading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center px-4">
-        <span className="text-5xl mb-4">🌍</span>
+        <span className="text-5xl mb-4">{emptyIcon || "🌍"}</span>
         <h3 className="text-lg font-bold text-foreground mb-2">{resolvedEmptyMessage}</h3>
         <p className="text-sm text-foreground-subtle mb-6 max-w-sm">
-          Be the first to share a meme and get it translated into 7 languages!
+          {emptySubtext || "Be the first to share a meme and get it translated into 7 languages!"}
         </p>
         <a
-          href="/upload"
+          href={emptyActionHref || "/upload"}
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#c9a84c] hover:bg-[#d4b65c] text-black font-medium text-sm transition-colors"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
           </svg>
-          Upload a Meme
+          {emptyActionLabel || "Upload a Meme"}
         </a>
       </div>
     );

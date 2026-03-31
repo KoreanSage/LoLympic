@@ -762,8 +762,16 @@ const hi: Record<TranslationKeys, string> = {
   "community.discussion": "चर्चा",
   "community.countryBoards": "देश बोर्ड",
   "community.emptyDiscussion": "अभी कोई चर्चा नहीं है। बातचीत शुरू करें!",
+  "community.emptyDiscussionSubtext": "दुनिया भर के क्रिएटर्स के साथ विचार साझा करें, सवाल पूछें या मीम्स पर चर्चा करें।",
   "community.members": "क्रिएटर्स",
   "community.noCountries": "अभी कोई सक्रिय देश नहीं है",
+  "community.writePlaceholder": "आपके मन में क्या है?",
+  "community.postingAs": "आपके देश बोर्ड पर पोस्ट •",
+  "community.post": "पोस्ट",
+  "community.loginToPost": "चर्चा में शामिल होने के लिए लॉगिन करें।",
+  "community.selectCountryFirst": "पोस्ट करने के लिए सेटिंग्स में अपना देश चुनें।",
+  "community.discussionDesc": "सभी देशों की चर्चाएं एक फीड में। आपकी पोस्ट आपके देश के बोर्ड पर भी दिखेगी!",
+  "community.boardsDesc": "विशिष्ट देश समुदायों में चर्चा देखें।",
 } as const;
 
 export default hi;

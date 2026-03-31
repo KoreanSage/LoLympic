@@ -762,8 +762,16 @@ const ar: Record<TranslationKeys, string> = {
   "community.discussion": "نقاش",
   "community.countryBoards": "لوحات الدول",
   "community.emptyDiscussion": "لا توجد نقاشات بعد. ابدأ محادثة!",
+  "community.emptyDiscussionSubtext": "شارك أفكارك واطرح أسئلة أو ناقش الميمز مع صانعين من حول العالم.",
   "community.members": "صانعين",
   "community.noCountries": "لا توجد دول نشطة بعد",
+  "community.writePlaceholder": "ما الذي يدور في ذهنك؟",
+  "community.postingAs": "النشر في لوحة بلدك •",
+  "community.post": "نشر",
+  "community.loginToPost": "سجل الدخول للانضمام إلى النقاش.",
+  "community.selectCountryFirst": "اختر بلدك في الإعدادات لبدء النشر.",
+  "community.discussionDesc": "جميع النقاشات من كل الدول في خلاصة واحدة. منشوراتك تظهر في لوحة بلدك أيضاً!",
+  "community.boardsDesc": "تصفح النقاشات في مجتمعات دول محددة.",
 } as const;
 
 export default ar;

@@ -758,8 +758,16 @@ const es: Record<TranslationKeys, string> = {
   "community.discussion": "Discusión",
   "community.countryBoards": "Foros por País",
   "community.emptyDiscussion": "Aún no hay discusiones. ¡Inicia una conversación!",
+  "community.emptyDiscussionSubtext": "Comparte tus ideas, haz preguntas o discute memes con creadores de todo el mundo.",
   "community.members": "creadores",
   "community.noCountries": "Aún no hay países activos",
+  "community.writePlaceholder": "¿Qué estás pensando?",
+  "community.postingAs": "publicando en el foro de tu país •",
+  "community.post": "Publicar",
+  "community.loginToPost": "Inicia sesión para unirte a la discusión.",
+  "community.selectCountryFirst": "Selecciona tu país en ajustes para empezar a publicar.",
+  "community.discussionDesc": "Todas las discusiones de todos los países en un solo feed. ¡Tus publicaciones también aparecen en el foro de tu país!",
+  "community.boardsDesc": "Explora discusiones en comunidades de países específicos.",
 };
 
 export default es;
