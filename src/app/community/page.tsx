@@ -184,19 +184,6 @@ export default function CommunityPage() {
   // ── Custom Sidebar ────────────────────────────────────────────────────────
   const communitySidebar = (
     <div className="space-y-4 sticky top-24">
-      {/* Write button (sidebar) */}
-      {session?.user && (
-        <button
-          onClick={() => setShowWrite(true)}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#c9a84c] text-black font-medium text-sm hover:bg-[#b8963f] transition-colors"
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-          </svg>
-          {t("community.writePost")}
-        </button>
-      )}
-
       {/* Hot Discussions */}
       <div className="bg-background-surface border border-border rounded-xl overflow-hidden">
         <div className="px-4 py-3 border-b border-border">

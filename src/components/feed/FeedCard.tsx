@@ -138,6 +138,7 @@ function FeedCardInner({
   const hasImageTranslation = !isGif && !isVideo && (hasOverlaySegments || !!effectiveTranslatedImageUrl);
   const hasTranslation = hasImageTranslation || !!translatedTitle || !!translatedBody;
   const isTextOnly = !imageUrl && (!images || images.length === 0);
+  const isCommunity = category === "community";
 
   // Detect Type B (screenshot/forum posts)
   const isTypeB = memeType === "B" || (!memeType && segments.length >= 4 && segments.every(
@@ -507,8 +508,8 @@ function FeedCardInner({
         </Link>
       )}
 
-      {/* Text-only post body */}
-      {isTextOnly && (
+      {/* Text-only post body OR community post body (community shows body before image) */}
+      {(isTextOnly || isCommunity) && (
         <>
           {/* Translation toggle — controls title + body */}
           {(translatedTitle || translatedBody) && (
@@ -523,13 +524,6 @@ function FeedCardInner({
                   : "bg-background-elevated text-foreground-subtle"
               }`}>
                 {showTranslation ? t("feed.translated") : t("feed.original")}
-              </span>
-            </div>
-          )}
-          {category && category !== "meme" && (
-            <div className="px-4 pb-2">
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-background-surface border border-border text-foreground-muted">
-                {category === "community" ? "💬 Community" : category}
               </span>
             </div>
           )}
@@ -548,11 +542,26 @@ function FeedCardInner({
               </div>
             </Link>
           )}
+          {/* Community post: compact image after body */}
+          {isCommunity && !isTextOnly && (
+            <Link href={`/post/${id}`} className="block px-4 pb-3">
+              <div className="overflow-hidden rounded-xl border border-border max-w-sm">
+                <Image
+                  src={imageUrl || images?.[0]?.originalUrl || ""}
+                  alt={title}
+                  width={images?.[0]?.width || 400}
+                  height={images?.[0]?.height || 300}
+                  className="w-full h-auto object-cover max-h-60"
+                  sizes="320px"
+                />
+              </div>
+            </Link>
+          )}
         </>
       )}
 
       {/* Title-only translation toggle for image posts with translated title but no image translation */}
-      {!isTextOnly && (translatedTitle || translatedBody) && !(segments.length > 0 || effectiveTranslatedImageUrl) && (
+      {!isCommunity && !isTextOnly && (translatedTitle || translatedBody) && !(segments.length > 0 || effectiveTranslatedImageUrl) && (
         <div className="flex items-center gap-2 px-4 pb-2">
           <TranslationToggle
             showTranslation={showTranslation}
@@ -569,7 +578,7 @@ function FeedCardInner({
       )}
 
       {/* Translation bar above image (meme posts only) */}
-      {!isTextOnly && (segments.length > 0 || effectiveTranslatedImageUrl) && (
+      {!isCommunity && !isTextOnly && (segments.length > 0 || effectiveTranslatedImageUrl) && (
         <div className="flex items-center justify-between mx-4 px-3 py-2 bg-background-surface border border-border rounded-t-lg">
           <div className="flex items-center gap-2">
             <TranslationToggle
@@ -601,8 +610,8 @@ function FeedCardInner({
         </div>
       )}
 
-      {/* Meme image(s) — only for posts with images */}
-      {!isTextOnly && (
+      {/* Meme image(s) — only for non-community posts with images */}
+      {!isCommunity && !isTextOnly && (
         <Link href={`/post/${id}`} className="block" onClick={isVideo ? (e: any) => e.preventDefault() : undefined}>
           <div className="px-4 pb-2">
             <div className={`overflow-hidden border border-border flex items-center justify-center bg-black/5 ${(segments.length > 0 || effectiveTranslatedImageUrl) ? "rounded-b-lg border-t-0" : "rounded-lg"}`}>
