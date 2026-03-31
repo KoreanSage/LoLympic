@@ -8,7 +8,7 @@ export default function OnboardingFlow() {
   const { t } = useTranslation();
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
-  const totalSteps = 7;
+  const totalSteps = 8;
 
   const handleSkip = () => {
     router.push("/");
@@ -153,8 +153,38 @@ export default function OnboardingFlow() {
       </p>
     </div>,
 
-    // Step 7: CTA (was old Step 4)
-    <div key="step7" className="flex flex-col items-center text-center space-y-5 px-4">
+    // Step 7: Championship System
+    <div key="step7" className="flex flex-col items-center text-center space-y-4 px-4">
+      <h2 className="text-xl font-bold text-foreground">
+        {t("onboarding.step7ChampionshipTitle")}
+      </h2>
+      <p className="text-sm text-foreground-muted">
+        {t("onboarding.step7ChampionshipDesc")}
+      </p>
+      {/* Visual: Championship flow */}
+      <div className="space-y-3 w-full max-w-xs">
+        {[
+          { icon: "🏳️", text: t("onboarding.step7ChampCountry") },
+          { icon: "📊", text: t("onboarding.step7ChampScore") },
+          { icon: "🏆", text: t("onboarding.step7ChampBattle") },
+        ].map((item, i) => (
+          <div key={i} className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-[#c9a84c]/10 flex items-center justify-center text-xl flex-shrink-0">
+              {item.icon}
+            </div>
+            <p className="text-sm text-foreground-muted text-left">{item.text}</p>
+          </div>
+        ))}
+      </div>
+      <div className="bg-[#c9a84c]/10 border border-[#c9a84c]/20 rounded-xl px-4 py-2 mt-2">
+        <p className="text-xs text-[#c9a84c] font-medium">
+          {t("onboarding.step7ChampTip")}
+        </p>
+      </div>
+    </div>,
+
+    // Step 8: CTA (was old Step 7)
+    <div key="step8" className="flex flex-col items-center text-center space-y-5 px-4">
       <h2 className="text-xl font-bold text-foreground">
         {t("onboarding.step7Title")}
       </h2>

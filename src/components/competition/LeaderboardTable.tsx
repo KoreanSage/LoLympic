@@ -18,6 +18,8 @@ interface CountryEntry {
   flagEmoji: string;
   name: string;
   totalScore: number;
+  perUserScore?: number;
+  activeUsers?: number;
   medal?: "GOLD" | "SILVER" | "BRONZE";
   totalPosts: number;
   totalCreators: number;
@@ -103,37 +105,58 @@ const CountryTable = React.memo(function CountryTable({ entries }: { entries: Co
 
   return (
     <div className="space-y-1">
-      {entries.map((entry) => (
-        <Link
-          key={entry.countryId}
-          href={`/?country=${entry.countryId}`}
-          className={`
-            flex items-center gap-2 md:gap-3 px-2 md:px-4 py-2 md:py-3 rounded-lg transition-colors cursor-pointer
-            ${
-              entry.medal
-                ? "bg-background-surface border border-border hover:border-[#c9a84c]"
-                : "hover:bg-background-surface"
-            }
-          `}
-        >
-          <span className="text-sm text-foreground-subtle font-mono w-6 text-right">
-            {entry.rank}
-          </span>
-          {entry.medal && <MedalBadge type={entry.medal} size="sm" />}
-          <span className="text-lg">{entry.flagEmoji}</span>
-          <span className="text-sm font-medium text-foreground flex-1 min-w-0 truncate">
-            {entry.name}
-          </span>
-          <span className="text-xs text-foreground-subtle hidden sm:inline">
-            {entry.totalPosts} {t("leaderboard.posts")}
-          </span>
-          <span className="text-xs text-foreground-subtle hidden sm:inline">
-            {entry.totalCreators} {t("leaderboard.creators")}
-          </span>
-          <span className="text-sm font-mono text-[#c9a84c]">
-            {entry.totalScore.toLocaleString()}
-          </span>
-        </Link>
+      {/* Header row */}
+      <div className="flex items-center gap-2 md:gap-3 px-2 md:px-4 py-1 text-[10px] text-foreground-subtle uppercase tracking-wider font-medium">
+        <span className="w-6 text-right">#</span>
+        <span className="w-5" />
+        <span className="flex-1" />
+        <span className="hidden sm:inline w-12 text-right">{t("leaderboard.users")}</span>
+        <span className="hidden sm:inline w-14 text-right">{t("leaderboard.total")}</span>
+        <span className="w-16 text-right">{t("leaderboard.perUser")}</span>
+      </div>
+      {entries.map((entry, idx) => (
+        <div key={entry.countryId}>
+          <Link
+            href={`/?country=${entry.countryId}`}
+            className={`
+              flex items-center gap-2 md:gap-3 px-2 md:px-4 py-2 md:py-3 rounded-lg transition-colors cursor-pointer
+              ${
+                entry.medal
+                  ? "bg-background-surface border border-border hover:border-[#c9a84c]"
+                  : "hover:bg-background-surface"
+              }
+              ${entry.rank > 8 ? "opacity-60" : ""}
+            `}
+          >
+            <span className="text-sm text-foreground-subtle font-mono w-6 text-right">
+              {entry.rank}
+            </span>
+            {entry.medal && <MedalBadge type={entry.medal} size="sm" />}
+            <span className="text-lg">{entry.flagEmoji}</span>
+            <span className="text-sm font-medium text-foreground flex-1 min-w-0 truncate">
+              {entry.name}
+            </span>
+            <span className="text-xs text-foreground-subtle hidden sm:inline w-12 text-right">
+              {entry.activeUsers ?? entry.totalCreators}
+            </span>
+            <span className="text-xs text-foreground-subtle hidden sm:inline w-14 text-right">
+              {entry.totalScore.toLocaleString()}
+            </span>
+            <span className="text-sm font-mono text-[#c9a84c] w-16 text-right">
+              {(entry.perUserScore ?? entry.totalScore).toLocaleString()}
+            </span>
+          </Link>
+          {/* Top 8 qualification line */}
+          {idx === 7 && entries.length > 8 && (
+            <div className="flex items-center gap-2 my-1.5 mx-2">
+              <div className="flex-1 border-t border-dashed border-[#c9a84c]/40" />
+              <span className="text-[9px] text-[#c9a84c]/70 font-medium whitespace-nowrap">
+                {t("leaderboard.qualificationLine")}
+              </span>
+              <div className="flex-1 border-t border-dashed border-[#c9a84c]/40" />
+            </div>
+          )}
+        </div>
       ))}
     </div>
   );

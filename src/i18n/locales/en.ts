@@ -729,6 +729,45 @@ const en = {
   "championship.banner.upload": "Representatives are uploading their championship posts.",
   "championship.banner.battle": "Championship battle is live! Vote for the best posts!",
   "championship.banner.active": "The championship is happening!",
+  "championship.banner.ctaVote": "Vote Now",
+  "championship.banner.ctaBattle": "Vote Now",
+  "championship.banner.ctaView": "View",
+  "championship.projectedTop8": "Projected Top 8 Qualifying Countries",
+  "championship.top8Explanation": "Top 8 countries by per-user average score qualify for the December Championship.",
+  "championship.lastYearResults": "Last Year's Championship Results",
+  "championship.uploadProgress": "Upload Progress",
+  "championship.uploadCta": "Upload Your Post",
+  "championship.totalVoteCast": "Total Votes Cast",
+  "championship.champion": "CHAMPION",
+  "championship.secondPlace": "2nd Place",
+  "championship.thirdPlace": "3rd Place",
+
+  // ── Tournament (deprecated) ──────────────────────────────────────────────
+  "tournament.movedToChampionship": "Tournament has moved!",
+  "tournament.movedDesc": "The tournament has been replaced by the new Championship system. You will be redirected automatically.",
+  "tournament.goToChampionship": "Go to Championship",
+  "tournament.autoRedirect": "Redirecting in 3 seconds...",
+
+  // ── Sidebar championship ────────────────────────────────────────────────
+  "sidebar.top8Line": "Championship Qualification Line",
+  "sidebar.qualified": "Your country qualifies for the Championship!",
+  "sidebar.championshipWidget": "Championship",
+  "sidebar.viewChampionship": "View Championship",
+
+  // ── Leaderboard ──────────────────────────────────────────────────────────
+  "leaderboard.users": "Users",
+  "leaderboard.total": "Total",
+  "leaderboard.perUser": "Per User",
+  "leaderboard.qualificationLine": "Championship Qualification Line",
+
+  // ── Onboarding championship ──────────────────────────────────────────────
+  "onboarding.step7ChampionshipTitle": "Year-End Championship",
+  "onboarding.step7ChampionshipDesc": "Every December, the top 8 countries compete in a championship. You could represent your country!",
+  "onboarding.step7ChampCountry": "Choose your country wisely - you represent them!",
+  "onboarding.step7ChampScore": "Your posts earn points for your country's ranking",
+  "onboarding.step7ChampBattle": "Top 8 countries send a representative to battle for the championship",
+  "onboarding.step7ChampTip": "Tip: Your country's score is calculated per-user, so every active member counts!",
+
   "badge.CHAMPIONSHIP_CHAMPION": "Championship Champion",
   "badge.CHAMPIONSHIP_RUNNER_UP": "Championship Runner-up",
   "badge.CHAMPIONSHIP_REPRESENTATIVE": "Championship Representative",

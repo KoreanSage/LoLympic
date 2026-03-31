@@ -18,6 +18,9 @@ interface ApiCountryEntry {
   country: { id: string; nameEn: string; flagEmoji: string };
   medal: "GOLD" | "SILVER" | "BRONZE" | null;
   score: number;
+  totalScore?: number;
+  perUserScore?: number;
+  activeUsers?: number;
   totalPosts: number;
   totalCreators: number;
 }
@@ -49,7 +52,10 @@ interface ApiLeaderboardResponse { type: string; seasonId: string | null; entrie
 function mapCountries(entries: ApiCountryEntry[]) {
   return entries.map((e) => ({
     rank: e.rank, countryId: e.country.id, flagEmoji: e.country.flagEmoji,
-    name: e.country.nameEn, totalScore: e.score, medal: e.medal ?? undefined,
+    name: e.country.nameEn, totalScore: e.totalScore ?? e.score,
+    perUserScore: e.perUserScore ?? e.score,
+    activeUsers: e.activeUsers ?? e.totalCreators,
+    medal: e.medal ?? undefined,
     totalPosts: e.totalPosts, totalCreators: e.totalCreators,
   }));
 }
@@ -195,7 +201,8 @@ export default function LeaderboardPage() {
                             <div className={`${w} rounded-t-lg flex flex-col items-center justify-end p-2`} style={{ height, background: `linear-gradient(to top, ${from}, ${to})` }}>
                               <span className={`${textSize} font-bold text-white`}>{pos}</span>
                               <span className="text-[10px] text-white/80 truncate w-full text-center">{c.name}</span>
-                              <span className={`${textSize} font-bold text-white mt-0.5`}>{c.totalScore?.toLocaleString()}</span>
+                              <span className={`${textSize} font-bold text-white mt-0.5`}>{(c.perUserScore ?? c.totalScore)?.toLocaleString()}</span>
+                              <span className="text-[8px] text-white/60">pts/user</span>
                             </div>
                           </Link>
                         ) : (

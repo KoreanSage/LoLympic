@@ -136,7 +136,7 @@ async function handleSeasonLeaderboard(
       const stats = await prisma.countrySeasonStat.findMany({
         where: { seasonId },
         orderBy: { totalScore: "desc" },
-        take: limit,
+        take: 100, // fetch all to recalculate per-user average
         include: {
           country: {
             select: {
@@ -150,15 +150,52 @@ async function handleSeasonLeaderboard(
         },
       });
 
+      // Count active users per country (users with >= 1 post in this season)
+      const activeUserCounts = await prisma.post.groupBy({
+        by: ["countryId", "authorId"],
+        where: {
+          status: "PUBLISHED",
+          visibility: "PUBLIC",
+          countryId: { not: null },
+          postSeasonStats: { some: { seasonId } },
+        },
+      });
+      const activeUsersMap = new Map<string, number>();
+      for (const row of activeUserCounts) {
+        if (!row.countryId) continue;
+        activeUsersMap.set(row.countryId, (activeUsersMap.get(row.countryId) || 0) + 1);
+      }
+
+      // Calculate per-user average: totalScore / max(activeUsers, 5)
+      const entriesWithPerUser = stats.map((stat) => {
+        const activeUsers = activeUsersMap.get(stat.countryId) || 0;
+        const divisor = Math.max(activeUsers, 5);
+        const perUserScore = Math.round((stat.totalScore / divisor) * 100) / 100;
+        return {
+          ...stat,
+          activeUsers,
+          perUserScore,
+        };
+      });
+
+      // Sort by perUserScore (descending)
+      entriesWithPerUser.sort((a, b) => b.perUserScore - a.perUserScore);
+
+      // Apply limit and rank
+      const sliced = entriesWithPerUser.slice(0, limit);
+
       return NextResponse.json({
         type: "country",
         source: "season",
         seasonId,
-        entries: stats.map((stat, index) => ({
-          rank: stat.rank ?? index + 1,
+        entries: sliced.map((stat, index) => ({
+          rank: index + 1,
           country: stat.country,
           medal: index < 3 ? (["GOLD", "SILVER", "BRONZE"] as const)[index] : null,
-          score: stat.totalScore,
+          score: stat.perUserScore,
+          totalScore: stat.totalScore,
+          perUserScore: stat.perUserScore,
+          activeUsers: stat.activeUsers,
           totalPosts: stat.totalPosts,
           totalCreators: stat.totalCreators,
           totalReactions: stat.totalReactions,
@@ -389,7 +426,23 @@ async function handleRealtimeLeaderboard(type: string, limit: number, lang: stri
         creatorCounts.map((c) => [c.countryId, c._count.authorId])
       );
 
-      // Build entries using monthly reaction scores
+      // Count active users per country (users who posted this month)
+      const activeUsersByCountry = await prisma.post.groupBy({
+        by: ["countryId", "authorId"],
+        where: {
+          status: "PUBLISHED",
+          visibility: "PUBLIC",
+          countryId: { in: countryIds },
+          createdAt: { gte: thisMonthStart, lt: nextMonthStart },
+        },
+      });
+      const activeUsersMap = new Map<string, number>();
+      for (const row of activeUsersByCountry) {
+        if (!row.countryId) continue;
+        activeUsersMap.set(row.countryId, (activeUsersMap.get(row.countryId) || 0) + 1);
+      }
+
+      // Build entries using monthly reaction scores with per-user average
       const allCountryIds = Array.from(new Set([
         ...countryStats.map((s) => s.countryId).filter((id): id is string => id !== null),
         ...Array.from(countryScoreMap.keys()),
@@ -401,11 +454,17 @@ async function handleRealtimeLeaderboard(type: string, limit: number, lang: stri
           if (!country) return null;
           const stat = countryStats.find((s) => s.countryId === cid);
           const monthlyScore = countryScoreMap.get(cid) || 0;
+          const activeUsers = activeUsersMap.get(cid) || 0;
+          const divisor = Math.max(activeUsers, 5);
+          const perUserScore = Math.round((monthlyScore / divisor) * 100) / 100;
           return {
             rank: 0,
             country,
             medal: null as "GOLD" | "SILVER" | "BRONZE" | null,
-            score: monthlyScore, // This month's reactions received
+            score: perUserScore,
+            totalScore: monthlyScore,
+            perUserScore,
+            activeUsers,
             totalPosts: stat?._count.id ?? 0,
             totalCreators: creatorCountMap.get(cid) ?? 0,
             totalReactions: monthlyScore,

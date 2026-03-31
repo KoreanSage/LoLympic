@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
+import Link from "next/link";
 import { useTranslation } from "@/i18n";
 import ChampionshipTimeline from "@/components/championship/ChampionshipTimeline";
 import CandidateCard from "@/components/championship/CandidateCard";
@@ -78,6 +79,15 @@ interface BattlePost {
   };
 }
 
+interface CountryLeaderboardEntry {
+  rank: number;
+  country: { id: string; nameEn: string; flagEmoji: string };
+  score: number;
+  perUserScore?: number;
+  activeUsers?: number;
+  totalScore?: number;
+}
+
 export default function ChampionshipPage() {
   const { data: session } = useSession();
   const { t } = useTranslation();
@@ -100,6 +110,16 @@ export default function ChampionshipPage() {
   const [voting, setVoting] = useState(false);
   const [battleVoting, setBattleVoting] = useState<string | null>(null);
   const [userCountryId, setUserCountryId] = useState<string | null>(null);
+  const [top8Countries, setTop8Countries] = useState<CountryLeaderboardEntry[]>([]);
+  const [lastYearResults, setLastYearResults] = useState<Array<{
+    rank: number | null;
+    championshipPostId: string;
+    postId: string;
+    battleVoteCount: number;
+    post: { id: string; title: string; images: Array<{ originalUrl: string }>; reactionCount: number };
+    user: { id: string; username: string; displayName?: string | null; avatarUrl?: string | null };
+    country: { id: string; nameEn: string; flagEmoji: string };
+  }>>([]);
 
   // Fetch championship data
   useEffect(() => {
@@ -110,6 +130,23 @@ export default function ChampionshipPage() {
         const data = await res.json();
         if (data.championship) {
           setChampionship(data.championship);
+        } else {
+          // No active championship - fetch top 8 countries for preview
+          const lbRes = await fetch("/api/leaderboard?type=country&limit=8");
+          const lbData = await lbRes.json();
+          setTop8Countries(lbData.entries ?? []);
+
+          // Try to fetch last year's results
+          const currentYear = new Date().getFullYear();
+          try {
+            const resultRes = await fetch(`/api/championship/results?year=${currentYear - 1}`);
+            const resultData = await resultRes.json();
+            if (resultData.rankings?.length > 0) {
+              setLastYearResults(resultData.rankings);
+            }
+          } catch {
+            // No last year results
+          }
         }
       } catch (e) {
         console.error("Failed to fetch championship:", e);
@@ -203,7 +240,6 @@ export default function ChampionshipPage() {
       });
       const data = await res.json();
       if (data.success) {
-        // Find the candidate to get its countryId
         const candidate = candidates.find((c) => c.id === candidateId);
         if (candidate) {
           setVotedCountries((prev) => { const next = new Set(Array.from(prev)); next.add(candidate.countryId); return next; });
@@ -258,6 +294,11 @@ export default function ChampionshipPage() {
     return acc;
   }, {});
 
+  // Upload phase: count uploaded posts
+  const electedCandidates = candidates.filter((c) => c.status === "ELECTED" || c.status === "SUBSTITUTE");
+  const uploadedCount = posts.length;
+  const totalReps = electedCandidates.length || 8;
+
   if (loading) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-8">
@@ -268,15 +309,60 @@ export default function ChampionshipPage() {
     );
   }
 
+  // Inactive state (no championship running)
   if (!championship) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="text-center py-20">
+        <div className="text-center mb-8">
           <span className="text-5xl mb-4 block">🏆</span>
           <h1 className="text-2xl font-bold text-foreground mb-2">{t("championship.title")}</h1>
-          <p className="text-foreground-subtle">{t("championship.notActive")}</p>
-          <p className="text-sm text-foreground-subtle mt-2">{t("championship.comingDecember")}</p>
+          <p className="text-foreground-subtle">{t("championship.comingDecember")}</p>
         </div>
+
+        {/* Current Top 8 Preview */}
+        {top8Countries.length > 0 && (
+          <div className="bg-background-surface border border-border rounded-xl p-6 mb-6">
+            <h2 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
+              <span>🎯</span>
+              {t("championship.projectedTop8")}
+            </h2>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {top8Countries.map((entry, i) => (
+                <div
+                  key={entry.country.id}
+                  className="flex flex-col items-center p-3 rounded-xl bg-background-elevated border border-border"
+                >
+                  <span className="text-2xl mb-1">{entry.country.flagEmoji}</span>
+                  <span className="text-xs font-medium text-foreground truncate w-full text-center">
+                    {entry.country.nameEn}
+                  </span>
+                  <span className="text-[10px] text-foreground-subtle mt-0.5">
+                    #{i + 1} - {typeof entry.score === 'number' ? entry.score.toLocaleString() : '0'} pts/user
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-3 pt-3 border-t border-border text-center">
+              <p className="text-[11px] text-foreground-subtle">
+                {t("championship.top8Explanation")}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Last Year Results */}
+        {lastYearResults.length > 0 && (
+          <div className="bg-background-surface border border-border rounded-xl p-6">
+            <h2 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
+              <span>👑</span>
+              {t("championship.lastYearResults")}
+            </h2>
+            <ChampionshipResultCard
+              rankings={lastYearResults}
+              championUserId={lastYearResults.find(r => r.rank === 1)?.user.id}
+            />
+          </div>
+        )}
       </div>
     );
   }
@@ -293,7 +379,7 @@ export default function ChampionshipPage() {
       </div>
 
       {/* Timeline */}
-      <div className="mb-8 bg-background-surface border border-border rounded-xl">
+      <div className="mb-8">
         <ChampionshipTimeline
           phase={championship.phase}
           schedule={championship.schedule}
@@ -301,7 +387,7 @@ export default function ChampionshipPage() {
         />
       </div>
 
-      {/* Phase-specific content */}
+      {/* Phase 1: Representative Voting */}
       {(championship.phase === "NOMINATION" || championship.phase === "REPRESENTATIVE") && (
         <div>
           <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
@@ -314,21 +400,48 @@ export default function ChampionshipPage() {
           {Object.entries(candidatesByCountry).map(([countryId, countryCandidates]) => {
             const country = countryCandidates[0]?.country;
             const hasVotedHere = votedCountries.has(countryId);
+            const totalVotes = countryCandidates.reduce((sum, c) => sum + c.voteCount, 0);
 
             return (
               <div key={countryId} className="mb-6">
-                <h3 className="text-sm font-semibold text-foreground-muted mb-3 flex items-center gap-2">
-                  <span className="text-lg">{country?.flagEmoji}</span>
-                  {country?.nameEn}
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-xl">{country?.flagEmoji}</span>
+                  <h3 className="text-sm font-semibold text-foreground">
+                    {country?.nameEn}
+                  </h3>
                   <span className="text-[11px] text-foreground-subtle">
                     ({countryCandidates.length} {t("championship.candidatesCount")})
                   </span>
-                </h3>
+                  {hasVotedHere && (
+                    <span className="ml-auto text-[10px] text-[#c9a84c] font-medium px-2 py-0.5 rounded-full bg-[#c9a84c]/10">
+                      {t("championship.voted")}
+                    </span>
+                  )}
+                </div>
+
+                {/* Vote progress bar */}
+                {totalVotes > 0 && (
+                  <div className="flex gap-0.5 mb-3 h-2 rounded-full overflow-hidden bg-background-elevated">
+                    {countryCandidates.map((c) => {
+                      const pct = totalVotes > 0 ? (c.voteCount / totalVotes) * 100 : 0;
+                      return (
+                        <div
+                          key={c.id}
+                          className="h-full bg-[#c9a84c] transition-all duration-500 first:rounded-l-full last:rounded-r-full"
+                          style={{ width: `${Math.max(pct, 2)}%`, opacity: 0.4 + (pct / 100) * 0.6 }}
+                          title={`${c.user.displayName || c.user.username}: ${c.voteCount} votes (${Math.round(pct)}%)`}
+                        />
+                      );
+                    })}
+                  </div>
+                )}
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {countryCandidates.map((c) => (
                     <CandidateCard
                       key={c.id}
                       candidate={c}
+                      totalVotesInCountry={totalVotes}
                       canVote={championship.phase === "REPRESENTATIVE" && !!session?.user}
                       hasVotedInCountry={hasVotedHere}
                       isMyCountry={c.countryId === userCountryId}
@@ -349,32 +462,75 @@ export default function ChampionshipPage() {
         </div>
       )}
 
+      {/* Phase 2: Upload Waiting */}
       {championship.phase === "UPLOAD" && (
         <div>
           <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
             <span>📤</span>
             {t("championship.uploadPhase")}
           </h2>
-          <p className="text-sm text-foreground-subtle mb-4">{t("championship.uploadDesc")}</p>
 
-          {/* Show elected representatives */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {candidates
-              .filter((c) => c.status === "ELECTED" || c.status === "SUBSTITUTE")
-              .map((c) => (
-                <CandidateCard
-                  key={c.id}
-                  candidate={c}
-                  canVote={false}
-                  hasVotedInCountry={false}
-                  isMyCountry={c.countryId === userCountryId}
-                />
-              ))}
+          {/* Progress indicator */}
+          <div className="bg-background-surface border border-border rounded-xl p-4 mb-6">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm text-foreground-muted">{t("championship.uploadProgress")}</p>
+              <span className="text-sm font-bold text-[#c9a84c]">{uploadedCount}/{totalReps}</span>
+            </div>
+            <div className="w-full h-2 bg-background-elevated rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-[#c9a84c] to-[#e8c84a] rounded-full transition-all duration-500"
+                style={{ width: `${(uploadedCount / totalReps) * 100}%` }}
+              />
+            </div>
           </div>
 
-          {/* Show already submitted posts */}
+          {/* Elected representatives grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+            {electedCandidates.map((c) => {
+              const hasUploaded = posts.some((p) => p.userId === c.userId);
+              const isMe = session?.user?.id === c.userId;
+              return (
+                <div
+                  key={c.id}
+                  className={`relative flex flex-col items-center p-4 rounded-xl border transition-all ${
+                    hasUploaded
+                      ? "border-[#c9a84c]/40 bg-[#c9a84c]/5"
+                      : "border-border bg-background-surface"
+                  }`}
+                >
+                  <div className="relative">
+                    {c.user.avatarUrl ? (
+                      <img src={c.user.avatarUrl} alt="" className="w-12 h-12 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-12 h-12 rounded-full bg-background-elevated flex items-center justify-center text-foreground-subtle text-lg">
+                        {(c.user.displayName || c.user.username)[0]?.toUpperCase()}
+                      </div>
+                    )}
+                    <span className="absolute -bottom-1 -right-1 text-sm">
+                      {hasUploaded ? "✅" : "⏳"}
+                    </span>
+                  </div>
+                  <span className="text-lg mt-1">{c.country.flagEmoji}</span>
+                  <span className="text-xs font-medium text-foreground text-center truncate w-full mt-1">
+                    {c.user.displayName || `@${c.user.username}`}
+                  </span>
+                  <span className="text-[10px] text-foreground-subtle">{c.country.nameEn}</span>
+                  {isMe && !hasUploaded && (
+                    <Link
+                      href="/upload?championship=true"
+                      className="mt-2 px-3 py-1 rounded-lg text-[10px] font-bold bg-[#c9a84c] text-black hover:bg-[#b8963f] transition-colors"
+                    >
+                      {t("championship.uploadCta")}
+                    </Link>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Already submitted posts */}
           {posts.length > 0 && (
-            <div className="mt-6">
+            <div>
               <h3 className="text-sm font-semibold text-foreground-muted mb-3">
                 {t("championship.submittedPosts")} ({posts.length})
               </h3>
@@ -390,16 +546,29 @@ export default function ChampionshipPage() {
         </div>
       )}
 
+      {/* Phase 3: Championship Battle */}
       {championship.phase === "CHAMPIONSHIP" && (
         <div>
-          <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+          <h2 className="text-lg font-bold text-foreground mb-2 flex items-center gap-2">
             <span>⚔️</span>
             {t("championship.battlePhase")}
           </h2>
           <p className="text-sm text-foreground-subtle mb-4">{t("championship.battleDesc")}</p>
 
+          {/* Vote progress */}
+          {posts.length > 0 && (
+            <div className="bg-background-surface border border-border rounded-xl p-3 mb-4">
+              <div className="flex items-center justify-between text-xs text-foreground-subtle mb-1">
+                <span>{t("championship.totalVoteCast")}</span>
+                <span className="font-bold text-[#c9a84c]">
+                  {posts.reduce((sum, p) => sum + p.battleVoteCount, 0)} {t("championship.votes")}
+                </span>
+              </div>
+            </div>
+          )}
+
           <ChampionshipBattleGrid
-            posts={posts}
+            posts={[...posts].sort((a, b) => b.battleVoteCount - a.battleVoteCount)}
             votedPostIds={votedBattlePosts}
             canVote={!!session?.user}
             onVote={handleBattleVote}
@@ -408,6 +577,7 @@ export default function ChampionshipPage() {
         </div>
       )}
 
+      {/* Phase 4: Results */}
       {championship.phase === "COMPLETED" && (
         <div>
           <h2 className="text-lg font-bold text-foreground mb-6 flex items-center gap-2">

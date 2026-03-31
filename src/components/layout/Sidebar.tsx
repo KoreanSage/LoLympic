@@ -22,6 +22,9 @@ interface CountryRanking {
   flag: string;
   name: string;
   score: number;
+  totalScore: number;
+  perUserScore: number;
+  activeUsers: number;
   totalPosts: number;
   medal?: "GOLD" | "SILVER" | "BRONZE";
   rankChange?: "up" | "down" | "same";
@@ -173,7 +176,7 @@ export default function Sidebar() {
 
   useEffect(() => {
     // Fetch country rankings with rank change detection
-    fetch("/api/leaderboard?type=country&limit=5")
+    fetch("/api/leaderboard?type=country&limit=10")
       .then((res) => res.json())
       .then((data) => {
         const entries = (data.entries ?? []) as Array<{
@@ -181,6 +184,9 @@ export default function Sidebar() {
           country: { id: string; nameEn: string; flagEmoji: string };
           medal: "GOLD" | "SILVER" | "BRONZE" | null;
           score: number;
+          totalScore?: number;
+          perUserScore?: number;
+          activeUsers?: number;
           totalPosts: number;
         }>;
 
@@ -203,6 +209,9 @@ export default function Sidebar() {
             flag: e.country.flagEmoji,
             name: e.country.nameEn,
             score: e.score,
+            totalScore: e.totalScore ?? e.score,
+            perUserScore: e.perUserScore ?? e.score,
+            activeUsers: e.activeUsers ?? 0,
             totalPosts: e.totalPosts ?? 0,
             medal: e.medal ?? undefined,
             rankChange,
@@ -433,44 +442,82 @@ export default function Sidebar() {
           </div>
         ) : (
           <div className="space-y-1.5">
-            {rankings.map((c) => (
-              <Link
-                key={c.id}
-                href={`/?country=${c.id}`}
-                className={`group block rounded-lg px-1 -mx-1 hover:bg-background-elevated transition-colors cursor-pointer ${
-                  c.rank === 1
-                    ? "bg-[#c9a84c]/10 border border-[#c9a84c]/20 hover:bg-[#c9a84c]/15"
-                    : ""
-                }`}
-              >
-                <div className="flex items-center gap-1.5 py-0.5">
-                  <RankBadge rank={c.rank} />
-                  <span className="text-sm">{c.flag}</span>
-                  <span className="text-xs text-foreground-muted flex-1 truncate">
-                    {c.rank === 1 && "👑 "}{c.name}
-                  </span>
-                  {/* Rank change indicator */}
-                  {c.rankChange === "up" && (
-                    <span className="text-[10px] text-emerald-400 font-bold">▲</span>
-                  )}
-                  {c.rankChange === "down" && (
-                    <span className="text-[10px] text-red-400 font-bold">▼</span>
-                  )}
-                  <span className="text-[10px] text-foreground-subtle">
-                    {c.totalPosts}p
-                  </span>
-                  <span className="text-xs font-semibold text-[#c9a84c] font-mono min-w-[32px] text-right">
-                    {c.score.toLocaleString()}
-                  </span>
-                </div>
-                <div className="ml-[26px]">
-                  <ScoreBar score={c.score} maxScore={maxCountryScore} />
-                </div>
-              </Link>
+            {rankings.slice(0, 8).map((c, idx) => (
+              <div key={c.id}>
+                <Link
+                  href={`/?country=${c.id}`}
+                  className={`group block rounded-lg px-1 -mx-1 hover:bg-background-elevated transition-colors cursor-pointer ${
+                    c.rank === 1
+                      ? "bg-[#c9a84c]/10 border border-[#c9a84c]/20 hover:bg-[#c9a84c]/15"
+                      : ""
+                  } ${c.rank > 8 ? "opacity-60" : ""}`}
+                >
+                  <div className="flex items-center gap-1.5 py-0.5">
+                    <RankBadge rank={c.rank} />
+                    <span className="text-sm">{c.flag}</span>
+                    <span className="text-xs text-foreground-muted flex-1 truncate">
+                      {c.rank === 1 && "👑 "}{c.name}
+                    </span>
+                    {/* Rank change indicator */}
+                    {c.rankChange === "up" && (
+                      <span className="text-[10px] text-emerald-400 font-bold">▲</span>
+                    )}
+                    {c.rankChange === "down" && (
+                      <span className="text-[10px] text-red-400 font-bold">▼</span>
+                    )}
+                    <span className="text-[10px] text-foreground-subtle">
+                      {c.activeUsers}u
+                    </span>
+                    <span className="text-xs font-semibold text-[#c9a84c] font-mono min-w-[32px] text-right" title={`Total: ${c.totalScore.toLocaleString()} / Per user: ${c.perUserScore}`}>
+                      {typeof c.perUserScore === 'number' ? c.perUserScore.toLocaleString() : c.score.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="ml-[26px]">
+                    <ScoreBar score={c.score} maxScore={maxCountryScore} />
+                  </div>
+                </Link>
+                {/* Top 8 qualification line */}
+                {idx === 7 && rankings.length > 8 && (
+                  <div className="flex items-center gap-2 my-1.5 px-1">
+                    <div className="flex-1 border-t border-dashed border-[#c9a84c]/30" />
+                    <span className="text-[9px] text-[#c9a84c]/60 font-medium whitespace-nowrap">
+                      {t("sidebar.top8Line")}
+                    </span>
+                    <div className="flex-1 border-t border-dashed border-[#c9a84c]/30" />
+                  </div>
+                )}
+              </div>
             ))}
+            {/* Show user's country qualification status */}
+            {session?.user && myCountry && !myCountryInTop5 && myCountry.rank <= 8 && (
+              <div className="mt-1 text-center">
+                <span className="text-[10px] text-[#c9a84c] font-medium">
+                  {t("sidebar.qualified")}
+                </span>
+              </div>
+            )}
           </div>
         )}
       </Card>
+
+      {/* Championship Widget (December) */}
+      {championshipPhase && championshipPhase !== "COMPLETED" && (
+        <Card>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-base">🏆</span>
+            <h3 className="text-sm font-semibold text-[#c9a84c]">{t("sidebar.championshipWidget")}</h3>
+          </div>
+          <p className="text-xs text-foreground-muted mb-2">
+            {t(`championship.banner.${championshipPhase.toLowerCase()}` as never)}
+          </p>
+          <Link
+            href="/championship"
+            className="block w-full text-center py-1.5 rounded-lg text-xs font-medium bg-[#c9a84c]/15 text-[#c9a84c] hover:bg-[#c9a84c]/25 transition-colors border border-[#c9a84c]/20"
+          >
+            {t("sidebar.viewChampionship")}
+          </Link>
+        </Card>
+      )}
 
       {/* My Country Standing (only if logged in and country NOT in top 5) */}
       {session?.user && myCountry && !myCountryInTop5 && (

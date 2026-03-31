@@ -14,6 +14,15 @@ import { broadcastNotification } from "@/lib/notifications";
  *   12/31 23:59 → Final match closes → season champion determined
  */
 export async function GET(request: NextRequest) {
+  // Tournament system has been replaced by the Championship system.
+  // This cron job is now disabled. Championship phase advancement is handled
+  // by /api/cron/championship-phase instead.
+  return NextResponse.json({
+    actions: ["Tournament cron disabled - replaced by championship system"],
+    timestamp: new Date().toISOString(),
+  });
+
+  // eslint-disable-next-line no-unreachable
   const authHeader = request.headers.get("authorization");
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

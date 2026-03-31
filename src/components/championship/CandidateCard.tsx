@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import Avatar from "@/components/ui/Avatar";
 import { useTranslation } from "@/i18n";
@@ -27,6 +26,7 @@ interface CandidateCardProps {
       flagEmoji: string;
     };
   };
+  totalVotesInCountry?: number;
   canVote: boolean;
   hasVotedInCountry: boolean;
   isMyCountry: boolean;
@@ -36,6 +36,7 @@ interface CandidateCardProps {
 
 export default function CandidateCard({
   candidate,
+  totalVotesInCountry = 0,
   canVote,
   hasVotedInCountry,
   isMyCountry,
@@ -43,6 +44,7 @@ export default function CandidateCard({
   voting = false,
 }: CandidateCardProps) {
   const { t } = useTranslation();
+  const votePct = totalVotesInCountry > 0 ? Math.round((candidate.voteCount / totalVotesInCountry) * 100) : 0;
 
   const statusBadge = () => {
     switch (candidate.status) {
@@ -129,6 +131,19 @@ export default function CandidateCard({
         </div>
       </div>
 
+      {/* Vote progress bar */}
+      {totalVotesInCountry > 0 && (
+        <div className="mt-3 flex items-center gap-2">
+          <div className="flex-1 h-1.5 bg-background-elevated rounded-full overflow-hidden">
+            <div
+              className="h-full bg-[#c9a84c] rounded-full transition-all duration-500"
+              style={{ width: `${Math.max(votePct, 3)}%` }}
+            />
+          </div>
+          <span className="text-[10px] text-foreground-subtle font-mono w-8 text-right">{votePct}%</span>
+        </div>
+      )}
+
       {/* Vote button */}
       {canVote && !hasVotedInCountry && candidate.status === "NOMINATED" && (
         <button
@@ -147,10 +162,16 @@ export default function CandidateCard({
         </button>
       )}
 
+      {/* Voted state */}
       {hasVotedInCountry && (
-        <p className="mt-2 text-center text-[11px] text-foreground-subtle">
-          {t("championship.alreadyVoted")}
-        </p>
+        <div className="mt-2 text-center">
+          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-medium bg-[#c9a84c]/10 text-[#c9a84c]">
+            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+            </svg>
+            {t("championship.alreadyVoted")}
+          </span>
+        </div>
       )}
     </div>
   );

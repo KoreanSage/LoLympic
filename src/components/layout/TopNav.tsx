@@ -369,7 +369,7 @@ export default function TopNav() {
             <NavLink href="/" label={t("nav.explore")} />
             <NavLink href="/leaderboard" label={t("nav.leaderboard")} />
             <NavLink href="/seasons" label={t("nav.season")} />
-            <NavLink href="/championship" label={`🏆 ${t("nav.championship")}`} />
+            <NavLink href="/championship" label={`🏆 ${t("nav.championship")}`} isGold={new Date().getMonth() === 11} />
             <NavLink href="/upload" label={t("nav.upload")} />
             {isAdmin && <NavLink href="/admin" label={t("nav.admin")} />}
           </div>
@@ -584,7 +584,7 @@ export default function TopNav() {
           <MobileNavLink href="/" label={t("nav.explore")} active={pathname === "/"} />
           <MobileNavLink href="/leaderboard" label={t("nav.leaderboard")} active={pathname === "/leaderboard"} />
           <MobileNavLink href="/seasons" label={t("nav.season")} active={pathname?.startsWith("/seasons")} />
-          <MobileNavLink href="/championship" label={`🏆 ${t("nav.championship")}`} active={pathname === "/championship"} />
+          <MobileNavLink href="/championship" label={`🏆 ${t("nav.championship")}`} active={pathname === "/championship"} isGold={new Date().getMonth() === 11} />
           <MobileNavLink href="/upload" label={t("nav.upload")} active={pathname === "/upload"} />
           <MobileNavLink href="/bookmarks" label={t("nav.bookmarks")} active={pathname === "/bookmarks"} />
           {session?.user && (
@@ -605,25 +605,32 @@ export default function TopNav() {
   );
 }
 
-function NavLink({ href, label }: { href: string; label: string }) {
+function NavLink({ href, label, isGold }: { href: string; label: string; isGold?: boolean }) {
   return (
     <Link
       href={href}
-      className="px-3 py-1.5 rounded-lg text-sm font-medium text-foreground-muted hover:text-foreground hover:bg-background-elevated transition-colors"
+      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+        isGold
+          ? "text-[#c9a84c] hover:text-[#d4b85c] hover:bg-[#c9a84c]/10"
+          : "text-foreground-muted hover:text-foreground hover:bg-background-elevated"
+      }`}
+      style={isGold ? { textShadow: "0 0 8px rgba(201,168,76,0.3)" } : undefined}
     >
       {label}
     </Link>
   );
 }
 
-function MobileNavLink({ href, label, active }: { href: string; label: string; active?: boolean }) {
+function MobileNavLink({ href, label, active, isGold }: { href: string; label: string; active?: boolean; isGold?: boolean }) {
   return (
     <Link
       href={href}
       className={`block px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
         active
           ? "text-[#c9a84c] bg-[#c9a84c]/10"
-          : "text-foreground-muted hover:text-foreground hover:bg-background-elevated"
+          : isGold
+            ? "text-[#c9a84c] hover:text-[#d4b85c] hover:bg-[#c9a84c]/10"
+            : "text-foreground-muted hover:text-foreground hover:bg-background-elevated"
       }`}
     >
       {label}
