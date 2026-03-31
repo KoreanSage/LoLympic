@@ -264,10 +264,10 @@ async function handleSeasonLeaderboard(
           const payloads = Array.isArray((post as unknown as Record<string, unknown>).translationPayloads)
             ? ((post as unknown as Record<string, unknown>).translationPayloads as Array<{ targetLanguage: string; translatedTitle: string | null }>)
             : [];
-          // Preferred language first, then any available translation as fallback
+          // Preferred language → English fallback → original title (no random-language fallback)
           const preferred = lang ? payloads.find((p) => p.targetLanguage === lang && p.translatedTitle) : null;
-          const fallback = payloads.find((p) => p.translatedTitle);
-          const translatedTitle = preferred?.translatedTitle ?? fallback?.translatedTitle ?? null;
+          const englishFallback = (!preferred && lang !== "en") ? payloads.find((p) => p.targetLanguage === "en" && p.translatedTitle) : null;
+          const translatedTitle = preferred?.translatedTitle ?? englishFallback?.translatedTitle ?? null;
           return {
             rank: stat.globalRank ?? index + 1,
             post: {
@@ -555,10 +555,10 @@ async function handleRealtimeLeaderboard(type: string, limit: number, lang: stri
         const payloads = Array.isArray((post as unknown as Record<string, unknown>).translationPayloads)
           ? ((post as unknown as Record<string, unknown>).translationPayloads as Array<{ targetLanguage: string; translatedTitle: string | null }>)
           : [];
-        // Preferred language first, then any available translation as fallback
+        // Preferred language → English fallback → original title (no random-language fallback)
         const preferred = lang ? payloads.find((p) => p.targetLanguage === lang && p.translatedTitle) : null;
-        const fallback = payloads.find((p) => p.translatedTitle);
-        const translatedTitle = preferred?.translatedTitle ?? fallback?.translatedTitle ?? null;
+        const englishFallback = (!preferred && lang !== "en") ? payloads.find((p) => p.targetLanguage === "en" && p.translatedTitle) : null;
+        const translatedTitle = preferred?.translatedTitle ?? englishFallback?.translatedTitle ?? null;
         const score =
           post.reactionCount +
           post.commentCount * 2 +
