@@ -33,7 +33,7 @@ export default function CommunityPage() {
   const [showWrite, setShowWrite] = useState(false);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
-  const [postCategory, setPostCategory] = useState("general");
+  const [postCategory, setPostCategory] = useState("free");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -51,6 +51,20 @@ export default function CommunityPage() {
   const [searchInput, setSearchInput] = useState("");
   const [feedKey, setFeedKey] = useState(0);
   const searchTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Cleanup imagePreview URL on unmount
+  useEffect(() => {
+    return () => {
+      if (imagePreview) URL.revokeObjectURL(imagePreview);
+    };
+  }, [imagePreview]);
+
+  // Cleanup search timer on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    };
+  }, []);
 
   // Get user language
   useEffect(() => {
@@ -177,7 +191,7 @@ export default function CommunityPage() {
           }),
         }).catch(() => {});
 
-        setTitle(""); setBody(""); setPostCategory("general"); removeImage();
+        setTitle(""); setBody(""); setPostCategory("free"); removeImage();
         setShowWrite(false);
         setFeedKey((k) => k + 1);
       } else {
@@ -185,6 +199,7 @@ export default function CommunityPage() {
       }
     } catch (err) {
       console.error("Post creation error:", err);
+      alert(t("common.error") || "Something went wrong. Please try again.");
     } finally {
       setSubmitting(false); setUploading(false);
     }
@@ -313,12 +328,11 @@ export default function CommunityPage() {
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
           {[
             { value: "", label: t("community.categoryAll"), icon: "🔖" },
-            { value: "general", label: t("community.categoryGeneral"), icon: "💬" },
-            { value: "meme-talk", label: t("community.categoryMemeTalk"), icon: "🎭" },
-            { value: "question", label: t("community.categoryQuestion"), icon: "❓" },
-            { value: "country", label: t("community.categoryCountry"), icon: "🌍" },
-            { value: "tips", label: t("community.categoryTips"), icon: "💡" },
-            { value: "off-topic", label: t("community.categoryOffTopic"), icon: "🗣️" },
+            { value: "free", label: t("community.categoryFree"), icon: "💬" },
+            { value: "meme", label: t("community.categoryMeme"), icon: "🎭" },
+            { value: "stocks", label: t("community.categoryStocks"), icon: "📈" },
+            { value: "sports", label: t("community.categorySports"), icon: "⚽" },
+            { value: "politics", label: t("community.categoryPolitics"), icon: "🏛️" },
           ].map((cat) => (
             <button
               key={cat.value}
@@ -368,9 +382,9 @@ export default function CommunityPage() {
             <option value="JP">🇯🇵 {t("filter.japan")}</option>
             <option value="CN">🇨🇳 {t("filter.china")}</option>
             <option value="MX">🇲🇽 {t("filter.mexico")}</option>
-            <option value="GB">🇬🇧 UK</option>
-            <option value="IN">🇮🇳 India</option>
-            <option value="ES">🇪🇸 Spain</option>
+            <option value="GB">🇬🇧 {t("filter.uk")}</option>
+            <option value="IN">🇮🇳 {t("filter.india")}</option>
+            <option value="ES">🇪🇸 {t("filter.spain")}</option>
           </select>
 
           {userCountryId && (
@@ -459,12 +473,11 @@ export default function CommunityPage() {
               <div className="flex items-center gap-1.5 flex-wrap">
                 <span className="text-[11px] text-foreground-subtle">{t("community.selectCategory")}:</span>
                 {[
-                  { value: "general", label: t("community.categoryGeneral"), icon: "💬" },
-                  { value: "meme-talk", label: t("community.categoryMemeTalk"), icon: "🎭" },
-                  { value: "question", label: t("community.categoryQuestion"), icon: "❓" },
-                  { value: "country", label: t("community.categoryCountry"), icon: "🌍" },
-                  { value: "tips", label: t("community.categoryTips"), icon: "💡" },
-                  { value: "off-topic", label: t("community.categoryOffTopic"), icon: "🗣️" },
+                  { value: "free", label: t("community.categoryFree"), icon: "💬" },
+                  { value: "meme", label: t("community.categoryMeme"), icon: "🎭" },
+                  { value: "stocks", label: t("community.categoryStocks"), icon: "📈" },
+                  { value: "sports", label: t("community.categorySports"), icon: "⚽" },
+                  { value: "politics", label: t("community.categoryPolitics"), icon: "🏛️" },
                 ].map((cat) => (
                   <button
                     key={cat.value}

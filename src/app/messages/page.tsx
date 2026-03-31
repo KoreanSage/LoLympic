@@ -28,6 +28,7 @@ export default function MessagesPage() {
   const router = useRouter();
   const [conversations, setConversations] = useState<ConversationListItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState<FilterType>("all");
 
@@ -46,7 +47,7 @@ export default function MessagesPage() {
           setConversations(data.conversations || []);
         }
       } catch {
-        // ignore
+        setError(true);
       } finally {
         setLoading(false);
       }
@@ -54,8 +55,11 @@ export default function MessagesPage() {
 
     fetchConversations();
 
-    // Poll every 10s
-    const interval = setInterval(fetchConversations, 10000);
+    // Poll every 10s, but only when tab is visible
+    const fetchIfVisible = () => {
+      if (document.visibilityState === "visible") fetchConversations();
+    };
+    const interval = setInterval(fetchIfVisible, 10000);
     return () => clearInterval(interval);
   }, [status, router]);
 
@@ -85,6 +89,25 @@ export default function MessagesPage() {
     () => conversations.reduce((sum, c) => sum + c.unreadCount, 0),
     [conversations]
   );
+
+  if (error) {
+    return (
+      <MainLayout showSidebar={false}>
+        <div className="max-w-2xl mx-auto py-6">
+          <h1 className="text-2xl font-bold text-foreground mb-6">{t("messages.title")}</h1>
+          <div className="flex flex-col items-center justify-center py-20 gap-4">
+            <p className="text-foreground-muted text-sm">{t("common.error") || "Something went wrong."}</p>
+            <button
+              onClick={() => { setError(false); setLoading(true); window.location.reload(); }}
+              className="px-4 py-2 rounded-xl bg-[#c9a84c] text-black text-sm font-medium hover:bg-[#b8963f] transition-colors"
+            >
+              {t("common.retry") || "Retry"}
+            </button>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   if (status === "loading" || loading) {
     return (

@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useTranslation } from "@/i18n";
 import MainLayout from "@/components/layout/MainLayout";
 import LeaderboardTable from "@/components/competition/LeaderboardTable";
@@ -216,7 +215,7 @@ export default function LeaderboardPage() {
                       })}
                     </div>
                     {countries.length < 3 && (
-                      <p className="text-xs text-foreground-subtle text-center mt-4">Post memes to represent your country!</p>
+                      <p className="text-xs text-foreground-subtle text-center mt-4">{t("leaderboard.noActivity")}</p>
                     )}
                   </div>
                 );
@@ -230,9 +229,9 @@ export default function LeaderboardPage() {
           {empty && (
             <div className="text-center py-8">
               <span className="text-3xl mb-3 block">{"\u{1F30D}"}</span>
-              <p className="text-sm text-foreground-subtle mb-4">No rankings yet — be the first to post!</p>
+              <p className="text-sm text-foreground-subtle mb-4">{t("leaderboard.noActivity")}</p>
               <Link href="/upload" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#c9a84c] hover:bg-[#d4b65c] text-black font-medium text-sm transition-colors">
-                Upload a Meme
+                {t("nav.upload")}
               </Link>
             </div>
           )}

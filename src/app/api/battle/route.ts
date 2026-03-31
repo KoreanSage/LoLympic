@@ -72,7 +72,7 @@ async function getRandomPair(excludePostIds: string[], userId?: string, userLang
     images: {
       orderBy: { orderIndex: "asc" as const },
       take: 1,
-      select: { originalUrl: true },
+      select: { originalUrl: true, cleanUrl: true },
     },
     author: {
       select: {
@@ -115,10 +115,18 @@ async function getRandomPair(excludePostIds: string[], userId?: string, userLang
 
   const format = (p: any) => {
     const translation = p.translationPayloads?.[0];
+    const translatedImg = translation?.translatedImageUrl?.startsWith("http")
+      ? translation.translatedImageUrl
+      : null;
+    // Prefer translated image > clean image (text removed) > original
+    const imageUrl = translatedImg
+      || p.images[0]?.cleanUrl
+      || p.images[0]?.originalUrl
+      || "";
     return {
       id: p.id,
       title: translation?.translatedTitle || p.title,
-      imageUrl: translation?.translatedImageUrl || p.images[0]?.originalUrl || "",
+      imageUrl,
       imageCount: p._count.images,
       reactionCount: p.reactionCount,
       battleWins: p.battleWins,

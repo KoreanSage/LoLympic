@@ -181,12 +181,14 @@ export default function ChampionshipPage() {
       setLoading(true);
       try {
         const res = await fetch("/api/championship");
+        if (!res.ok) throw new Error("Failed to fetch championship");
         const data = await res.json();
         if (data.championship) {
           setChampionship(data.championship);
         } else {
           // No active championship - fetch top 8 countries for preview
           const lbRes = await fetch("/api/leaderboard?type=country&limit=8");
+          if (!lbRes.ok) throw new Error("Failed to fetch leaderboard");
           const lbData = await lbRes.json();
           setTop8Countries(lbData.entries ?? []);
 
@@ -194,6 +196,7 @@ export default function ChampionshipPage() {
           const currentYear = new Date().getFullYear();
           try {
             const resultRes = await fetch(`/api/championship/results?year=${currentYear - 1}`);
+            if (!resultRes.ok) throw new Error("Failed to fetch last year results");
             const resultData = await resultRes.json();
             if (resultData.rankings?.length > 0) {
               setLastYearResults(resultData.rankings);
@@ -217,7 +220,7 @@ export default function ChampionshipPage() {
     if (!["NOMINATION", "REPRESENTATIVE", "UPLOAD"].includes(championship.phase)) return;
 
     fetch("/api/championship/candidates")
-      .then((r) => r.json())
+      .then((r) => r.ok ? r.json() : Promise.reject("API error"))
       .then((data) => setCandidates(data.candidates ?? []))
       .catch(console.error);
   }, [championship]);
@@ -228,7 +231,7 @@ export default function ChampionshipPage() {
     if (!["CHAMPIONSHIP", "UPLOAD"].includes(championship.phase)) return;
 
     fetch("/api/championship/posts")
-      .then((r) => r.json())
+      .then((r) => r.ok ? r.json() : Promise.reject("API error"))
       .then((data) => setPosts(data.posts ?? []))
       .catch(console.error);
   }, [championship]);
@@ -238,7 +241,7 @@ export default function ChampionshipPage() {
     if (!championship || championship.phase !== "COMPLETED") return;
 
     fetch(`/api/championship/results?year=${championship.year}`)
-      .then((r) => r.json())
+      .then((r) => r.ok ? r.json() : Promise.reject("API error"))
       .then((data) => setResults(data.rankings ?? []))
       .catch(console.error);
   }, [championship]);
@@ -258,7 +261,7 @@ export default function ChampionshipPage() {
     // Representative votes
     if (championship.phase === "REPRESENTATIVE") {
       fetch("/api/championship/vote/representative")
-        .then((r) => r.json())
+        .then((r) => r.ok ? r.json() : Promise.reject("API error"))
         .then((data) => {
           const countries = new Set<string>();
           for (const v of data.votes ?? []) {
@@ -272,7 +275,7 @@ export default function ChampionshipPage() {
     // Battle votes
     if (championship.phase === "CHAMPIONSHIP") {
       fetch("/api/championship/vote/battle")
-        .then((r) => r.json())
+        .then((r) => r.ok ? r.json() : Promise.reject("API error"))
         .then((data) => {
           const postIds = new Set<string>();
           for (const v of data.votes ?? []) {
@@ -304,7 +307,7 @@ export default function ChampionshipPage() {
           );
         }
       } else {
-        alert(data.error || "Failed to vote");
+        console.error("Vote failed:", data.error || "Unknown error");
       }
     } catch (e) {
       console.error("Vote error:", e);
@@ -332,7 +335,7 @@ export default function ChampionshipPage() {
           )
         );
       } else {
-        alert(data.error || "Failed to vote");
+        console.error("Battle vote failed:", data.error || "Unknown error");
       }
     } catch (e) {
       console.error("Battle vote error:", e);

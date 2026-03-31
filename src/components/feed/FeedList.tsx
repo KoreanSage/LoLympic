@@ -214,6 +214,10 @@ export default function FeedList({
       if (lang) params.set("translateTo", lang);
       if (parsedFilters?.postType) params.set("category", parsedFilters.postType);
       else if (parsedFilters?.category) params.set("category", parsedFilters.category);
+      // Exclude community posts from main feed when no specific category/postType is set
+      if (!parsedFilters?.postType && !parsedFilters?.category) {
+        params.set("excludeCategory", "community");
+      }
       if (parsedFilters?.country && !isFollowingFeed) params.set("country", parsedFilters.country);
       if (parsedFilters?.language) params.set("language", parsedFilters.language);
       if (parsedFilters?.search) params.set("search", parsedFilters.search);

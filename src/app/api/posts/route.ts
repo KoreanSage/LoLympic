@@ -25,7 +25,7 @@ const createPostSchema = z.object({
   images: z
     .array(
       z.object({
-        url: z.string().min(1, "Image url is required"),
+        url: z.string().url("Image url must be a valid URL"),
         cleanUrl: z.string().url().nullable().optional(),
         width: z.number().int().positive().nullable().optional(),
         height: z.number().int().positive().nullable().optional(),
@@ -46,24 +46,25 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
 
     // Pagination
-    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
-    const limit = Math.min(
-      50,
-      Math.max(1, parseInt(searchParams.get("limit") || "20", 10))
-    );
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") || "20", 10) || 20));
     const skip = (page - 1) * limit;
 
     // Filters
     const countryId = searchParams.get("country");
-    const language = searchParams.get("language") as LanguageCode | null;
+    const VALID_LANG_CODES = ["ko", "en", "ja", "zh", "es", "hi", "ar"];
+    let language = searchParams.get("language") as LanguageCode | null;
+    if (language && !VALID_LANG_CODES.includes(language)) language = null;
     const seasonId = searchParams.get("season");
     const category = searchParams.get("category");
     const feed = searchParams.get("feed"); // "following"
     const search = searchParams.get("search");
     const tag = searchParams.get("tag");
+    const excludeCategory = searchParams.get("excludeCategory");
 
     // Translation language to include
-    const translateTo = searchParams.get("translateTo") as LanguageCode | null;
+    let translateTo = searchParams.get("translateTo") as LanguageCode | null;
+    if (translateTo && !VALID_LANG_CODES.includes(translateTo)) translateTo = null;
 
     // Sorting
     const sort = searchParams.get("sort") || "recent";
@@ -159,8 +160,24 @@ export async function GET(request: NextRequest) {
         prisma.post.count({ where: followWhere }),
       ]);
 
+      // Batch-fetch user vote states for follow feed posts
+      let followUserVotes: Record<string, number> = {};
+      if (sessionUser && followPosts.length > 0) {
+        const postIds = followPosts.map((p) => p.id);
+        const votes = await prisma.postVote.findMany({
+          where: { postId: { in: postIds }, userId: sessionUser.id },
+          select: { postId: true, value: true },
+        });
+        for (const v of votes) followUserVotes[v.postId] = v.value;
+      }
+
+      const enrichedFollowPosts = followPosts.map((p) => ({
+        ...p,
+        userVote: followUserVotes[p.id] ?? 0,
+      }));
+
       return NextResponse.json({
-        posts: followPosts,
+        posts: enrichedFollowPosts,
         pagination: { page, limit, total: followTotal, totalPages: Math.ceil(followTotal / limit) },
       });
     }
@@ -176,8 +193,9 @@ export async function GET(request: NextRequest) {
     if (language) where.sourceLanguage = language;
     if (seasonId) where.seasonId = seasonId;
     if (category) where.category = category;
+    if (!category && excludeCategory) where.category = { not: excludeCategory };
     if (tag) where.tags = { has: tag };
-    if (search && search.length >= 2) {
+    if (search && search.length >= 2 && search.length <= 200) {
       where.OR = [
         { title: { contains: search, mode: "insensitive" } },
         { body: { contains: search, mode: "insensitive" } },
@@ -286,13 +304,29 @@ export async function GET(request: NextRequest) {
       prisma.post.count({ where }),
     ]);
 
+    // Batch-fetch user vote states for returned posts
+    let userVotes: Record<string, number> = {};
+    if (sessionUser && posts.length > 0) {
+      const postIds = posts.map((p) => p.id);
+      const votes = await prisma.postVote.findMany({
+        where: { postId: { in: postIds }, userId: sessionUser.id },
+        select: { postId: true, value: true },
+      });
+      for (const v of votes) userVotes[v.postId] = v.value;
+    }
+
+    const enrichedPosts = posts.map((p) => ({
+      ...p,
+      userVote: userVotes[p.id] ?? 0,
+    }));
+
     // Fire-and-forget: backfill missing translatedTitle for posts with translation payloads
     if (translateTo) {
-      backfillMissingTitleTranslations(posts, translateTo).catch((e) => { console.error("Failed to backfill title translations:", e); });
+      backfillMissingTitleTranslations(enrichedPosts, translateTo).catch((e) => { console.error("Failed to backfill title translations:", e); });
     }
 
     return NextResponse.json({
-      posts,
+      posts: enrichedPosts,
       pagination: {
         page,
         limit,

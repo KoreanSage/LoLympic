@@ -202,6 +202,10 @@ export default function TopNav() {
         }
         // Reconnect with exponential backoff
         retryCount++;
+        if (retryCount >= MAX_RETRIES) {
+          startPolling();
+          return;
+        }
         setTimeout(() => {
           if (!cancelled) {
             connectSSE();
@@ -233,8 +237,12 @@ export default function TopNav() {
     function startPolling() {
       // Initial fetch
       fetchNotifCount();
+      fetchDmUnreadCount();
       // Poll every 30 seconds
-      pollTimer = setInterval(fetchNotifCount, 30000);
+      pollTimer = setInterval(() => {
+        fetchNotifCount();
+        fetchDmUnreadCount();
+      }, 30000);
     }
 
     function fetchNotifCount() {
@@ -244,6 +252,15 @@ export default function TopNav() {
           if (data) setUnreadCount(data.unreadCount ?? 0);
         })
         .catch((e) => { console.error("Failed to fetch notification count:", e); });
+    }
+
+    function fetchDmUnreadCount() {
+      fetch("/api/conversations/unread")
+        .then((r) => r.ok ? r.json() : null)
+        .then((data) => {
+          if (data) setDmUnreadCount(data.unreadCount ?? 0);
+        })
+        .catch((e) => { console.error("Failed to fetch DM unread count:", e); });
     }
 
     // Initial fetch for notification count (SSE first data may take up to 5s)
