@@ -65,7 +65,7 @@ export async function GET() {
       participations.map((p) => [p.conversation.id, p.lastReadAt])
     );
 
-    // Batch unread counts: count messages after each conversation's lastReadAt
+    // Batch unread counts using lastReadAt comparison
     const unreadPromises = conversationIds.map(async (convId) => {
       const lastRead = lastReadMap.get(convId);
       const count = await prisma.directMessage.count({

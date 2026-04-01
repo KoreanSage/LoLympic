@@ -117,7 +117,6 @@ export async function POST(request: NextRequest) {
       targetLanguage,
       targetEntityType,
       targetEntityId,
-      originalText,
       proposedText,
       reason,
     }: {
@@ -126,10 +125,10 @@ export async function POST(request: NextRequest) {
       targetLanguage?: string;
       targetEntityType: string;
       targetEntityId: string;
-      originalText: string;
       proposedText: string;
       reason?: string;
     } = body;
+    const originalText: string = body.originalText || "";
 
     // Validation — only postId and proposedText are required now
     if (!postId || !proposedText) {

@@ -7,16 +7,14 @@ import { backfillMissingTitleTranslations } from "@/lib/translate-backfill";
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 import { awardXp, XP_AWARDS } from "@/lib/xp";
 import { getBlockedUserIds } from "@/lib/block";
-import { updateUploadStreak } from "@/lib/streak";
-import { checkAndAwardBadges } from "@/lib/badges";
 
 const VALID_LANGUAGES = ["ko", "en", "ja", "zh", "es", "hi", "ar"] as const;
 
 const createPostSchema = z.object({
   title: z.string().min(1, "Title is required").max(200, "Title must be under 200 characters"),
   body: z.string().max(5000, "Body must be under 5000 characters").nullable().optional(),
-  category: z.string().max(50).regex(/^[a-zA-Z0-9_\- ]+$/, "Invalid category format").optional(),
-  tags: z.array(z.string().max(50).regex(/^[a-zA-Z0-9\uAC00-\uD7A3\u3041-\u3094\u30A1-\u30F4\u30FC\u4E00-\u9FAF_\- ]+$/, "Invalid tag format")).max(10, "Maximum 10 tags allowed").optional(),
+  category: z.string().max(50).optional(),
+  tags: z.array(z.string().max(50)).max(10, "Maximum 10 tags allowed").optional(),
   sourceLanguage: z.enum(VALID_LANGUAGES, {
     errorMap: () => ({ message: `sourceLanguage must be one of: ${VALID_LANGUAGES.join(", ")}` }),
   }),
@@ -25,10 +23,10 @@ const createPostSchema = z.object({
   images: z
     .array(
       z.object({
-        url: z.string().url("Image url must be a valid URL"),
+        url: z.string().min(1, "Image url is required"),
         cleanUrl: z.string().url().nullable().optional(),
-        width: z.number().int().positive().nullable().optional(),
-        height: z.number().int().positive().nullable().optional(),
+        width: z.number().int().positive().optional(),
+        height: z.number().int().positive().optional(),
         mimeType: z.string().max(100).optional(),
         fileSizeBytes: z.number().int().nonnegative().optional(),
         altText: z.string().max(300).optional(),
@@ -46,140 +44,37 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
 
     // Pagination
-    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
-    const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") || "20", 10) || 20));
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+    const limit = Math.min(
+      50,
+      Math.max(1, parseInt(searchParams.get("limit") || "20", 10))
+    );
     const skip = (page - 1) * limit;
 
     // Filters
     const countryId = searchParams.get("country");
-    const VALID_LANG_CODES = ["ko", "en", "ja", "zh", "es", "hi", "ar"];
-    let language = searchParams.get("language") as LanguageCode | null;
-    if (language && !VALID_LANG_CODES.includes(language)) language = null;
+    const rawLanguage = searchParams.get("language");
+    const language = (rawLanguage && VALID_LANGUAGES.includes(rawLanguage as typeof VALID_LANGUAGES[number]))
+      ? (rawLanguage as LanguageCode)
+      : null;
     const seasonId = searchParams.get("season");
     const category = searchParams.get("category");
-    const feed = searchParams.get("feed"); // "following"
-    const search = searchParams.get("search");
-    const tag = searchParams.get("tag");
-    const excludeCategory = searchParams.get("excludeCategory");
 
     // Translation language to include
-    let translateTo = searchParams.get("translateTo") as LanguageCode | null;
-    if (translateTo && !VALID_LANG_CODES.includes(translateTo)) translateTo = null;
+    const translateTo = searchParams.get("translateTo") as LanguageCode | null;
 
     // Sorting
     const sort = searchParams.get("sort") || "recent";
 
     // Block filtering: hide posts from blocked users
     let blockedIds: string[] = [];
-    let sessionUser: Awaited<ReturnType<typeof getSessionUser>> = null;
     try {
-      sessionUser = await getSessionUser();
-      if (sessionUser) {
-        blockedIds = await getBlockedUserIds(sessionUser.id);
+      const user = await getSessionUser();
+      if (user) {
+        blockedIds = await getBlockedUserIds(user.id);
       }
     } catch {
       // Not logged in
-    }
-
-    // Following feed: return posts only from followed users
-    if (feed === "following" && sessionUser) {
-      const follows = await prisma.follow.findMany({
-        where: { followerId: sessionUser.id },
-        select: { followingId: true },
-      });
-      const followingIds = follows.map((f) => f.followingId);
-      if (followingIds.length === 0) {
-        return NextResponse.json({ posts: [], pagination: { page, limit, total: 0, totalPages: 0 } });
-      }
-      // We'll filter by followingIds below in the where clause
-      const followWhere: Prisma.PostWhereInput = {
-        status: PostStatus.PUBLISHED,
-        visibility: "PUBLIC",
-        authorId: { in: followingIds },
-        ...(blockedIds.length > 0 ? { NOT: { authorId: { in: blockedIds } } } : {}),
-      };
-      if (category) followWhere.category = category;
-
-      const [followPosts, followTotal] = await Promise.all([
-        prisma.post.findMany({
-          where: followWhere,
-          orderBy: [{ createdAt: "desc" }],
-          skip,
-          take: limit,
-          include: {
-            author: {
-              select: {
-                id: true,
-                username: true,
-                displayName: true,
-                avatarUrl: true,
-                profileTitle: true,
-                profileBorder: true,
-                isChampion: true,
-              },
-            },
-            country: { select: { id: true, nameEn: true, nameLocal: true, flagEmoji: true } },
-            images: { orderBy: { orderIndex: "asc" }, select: { id: true, originalUrl: true, cleanUrl: true, width: true, height: true, mimeType: true, orderIndex: true } },
-            translationPayloads: translateTo
-              ? {
-                  where: { targetLanguage: translateTo, status: { in: ["COMPLETED", "APPROVED"] } },
-                  orderBy: { version: "desc" as const },
-                  take: 1,
-                  select: {
-                    id: true,
-                    memeType: true,
-                    translatedImageUrl: true,
-                    translatedTitle: true,
-                    translatedBody: true,
-                    segments: { orderBy: { orderIndex: "asc" as const } },
-                  },
-                }
-              : false,
-            comments: {
-              where: { parentId: null, status: "VISIBLE" },
-              orderBy: { likeCount: "desc" },
-              take: 3,
-              select: {
-                id: true,
-                body: true,
-                likeCount: true,
-                author: {
-                  select: {
-                    username: true,
-                    displayName: true,
-                    avatarUrl: true,
-                    isChampion: true,
-                    country: { select: { flagEmoji: true } },
-                  },
-                },
-              },
-            },
-            _count: { select: { translationPayloads: true, reactions: true, comments: true } },
-          },
-        }),
-        prisma.post.count({ where: followWhere }),
-      ]);
-
-      // Batch-fetch user vote states for follow feed posts
-      let followUserVotes: Record<string, number> = {};
-      if (sessionUser && followPosts.length > 0) {
-        const postIds = followPosts.map((p) => p.id);
-        const votes = await prisma.postVote.findMany({
-          where: { postId: { in: postIds }, userId: sessionUser.id },
-          select: { postId: true, value: true },
-        });
-        for (const v of votes) followUserVotes[v.postId] = v.value;
-      }
-
-      const enrichedFollowPosts = followPosts.map((p) => ({
-        ...p,
-        userVote: followUserVotes[p.id] ?? 0,
-      }));
-
-      return NextResponse.json({
-        posts: enrichedFollowPosts,
-        pagination: { page, limit, total: followTotal, totalPages: Math.ceil(followTotal / limit) },
-      });
     }
 
     // Build where clause
@@ -193,14 +88,6 @@ export async function GET(request: NextRequest) {
     if (language) where.sourceLanguage = language;
     if (seasonId) where.seasonId = seasonId;
     if (category) where.category = category;
-    if (!category && excludeCategory) where.category = { not: excludeCategory };
-    if (tag) where.tags = { has: tag };
-    if (search && search.length >= 2 && search.length <= 200) {
-      where.OR = [
-        { title: { contains: search, mode: "insensitive" } },
-        { body: { contains: search, mode: "insensitive" } },
-      ];
-    }
 
     // Build orderBy
     let orderBy: Prisma.PostOrderByWithRelationInput | Prisma.PostOrderByWithRelationInput[];
@@ -304,29 +191,13 @@ export async function GET(request: NextRequest) {
       prisma.post.count({ where }),
     ]);
 
-    // Batch-fetch user vote states for returned posts
-    let userVotes: Record<string, number> = {};
-    if (sessionUser && posts.length > 0) {
-      const postIds = posts.map((p) => p.id);
-      const votes = await prisma.postVote.findMany({
-        where: { postId: { in: postIds }, userId: sessionUser.id },
-        select: { postId: true, value: true },
-      });
-      for (const v of votes) userVotes[v.postId] = v.value;
-    }
-
-    const enrichedPosts = posts.map((p) => ({
-      ...p,
-      userVote: userVotes[p.id] ?? 0,
-    }));
-
     // Fire-and-forget: backfill missing translatedTitle for posts with translation payloads
     if (translateTo) {
-      backfillMissingTitleTranslations(enrichedPosts, translateTo).catch((e) => { console.error("Failed to backfill title translations:", e); });
+      backfillMissingTitleTranslations(posts, translateTo).catch((e) => { console.error("Failed to backfill title translations:", e); });
     }
 
     return NextResponse.json({
-      posts: enrichedPosts,
+      posts,
       pagination: {
         page,
         limit,
@@ -335,9 +206,7 @@ export async function GET(request: NextRequest) {
       },
     }, {
       headers: {
-        "Cache-Control": blockedIds.length > 0
-          ? "private, no-store"
-          : "public, s-maxage=10, stale-while-revalidate=30",
+        "Cache-Control": "public, s-maxage=10, stale-while-revalidate=30",
       },
     });
   } catch (error) {
@@ -368,12 +237,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    let rawBody;
-    try {
-      rawBody = await request.json();
-    } catch {
-      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
-    }
+    const rawBody = await request.json();
     const parsed = createPostSchema.safeParse(rawBody);
     if (!parsed.success) {
       return NextResponse.json(
@@ -447,10 +311,6 @@ export async function POST(request: NextRequest) {
 
     // Award XP for creating a post (fire and forget)
     awardXp(user.id, XP_AWARDS.POST_CREATED).catch(() => {});
-
-    // Update upload streak and check badges (fire and forget)
-    updateUploadStreak(user.id).catch(console.error);
-    checkAndAwardBadges(user.id).catch(console.error);
 
     return NextResponse.json({ post }, { status: 201 });
   } catch (error) {

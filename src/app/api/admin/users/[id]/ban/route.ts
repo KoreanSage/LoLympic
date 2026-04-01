@@ -47,6 +47,14 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ error: "Cannot ban yourself" }, { status: 400 });
     }
 
+    // Cannot ban ADMIN/SUPER_ADMIN unless you are SUPER_ADMIN
+    if (
+      (targetUser.role === "ADMIN" || targetUser.role === "SUPER_ADMIN") &&
+      currentUser.role !== "SUPER_ADMIN"
+    ) {
+      return NextResponse.json({ error: "Cannot ban admin users" }, { status: 403 });
+    }
+
     const bannedAt = new Date();
     const bannedUntil =
       durationDays != null

@@ -96,7 +96,7 @@ export async function GET(
     }
 
     // Visibility check: non-PUBLISHED posts are only visible to the author and admins
-    const isOwnerOrAdmin = currentUser && (currentUser.id === post.authorId || currentUser.role === "ADMIN");
+    const isOwnerOrAdmin = currentUser && (currentUser.id === post.authorId || currentUser.role === "ADMIN" || currentUser.role === "SUPER_ADMIN");
     if (post.status !== "PUBLISHED" && !isOwnerOrAdmin) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }

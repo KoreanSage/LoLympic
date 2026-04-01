@@ -39,12 +39,22 @@ export async function GET(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const [followerCount, followingCount, postCount, posts, badges] = await Promise.all([
+    // Check if current user is the profile owner
+    const currentUser = await getSessionUser();
+    const isOwnProfile = currentUser?.id === user.id;
+
+    const postWhere = {
+      authorId: user.id,
+      status: "PUBLISHED" as const,
+      ...(isOwnProfile ? {} : { visibility: "PUBLIC" as const }),
+    };
+
+    const [followerCount, followingCount, postCount, posts] = await Promise.all([
       prisma.follow.count({ where: { followingId: user.id } }),
       prisma.follow.count({ where: { followerId: user.id } }),
-      prisma.post.count({ where: { authorId: user.id, status: "PUBLISHED" } }),
+      prisma.post.count({ where: postWhere }),
       prisma.post.findMany({
-        where: { authorId: user.id, status: "PUBLISHED" },
+        where: postWhere,
         orderBy: { createdAt: "desc" },
         take: 20,
         select: {
@@ -61,16 +71,10 @@ export async function GET(
           },
         },
       }),
-      prisma.userBadge.findMany({
-        where: { userId: user.id },
-        select: { badgeKey: true, earnedAt: true },
-        orderBy: { earnedAt: "asc" },
-      }),
     ]);
 
     // Check if current user follows this profile
     let isFollowing = false;
-    const currentUser = await getSessionUser();
     if (currentUser && currentUser.id !== user.id) {
       const follow = await prisma.follow.findUnique({
         where: {
@@ -89,9 +93,8 @@ export async function GET(
       followingCount,
       postCount,
       posts,
-      badges,
       isFollowing,
-      isOwnProfile: currentUser?.id === user.id,
+      isOwnProfile,
     });
   } catch (error) {
     console.error("Error fetching user profile:", error);

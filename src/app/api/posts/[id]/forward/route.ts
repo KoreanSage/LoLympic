@@ -46,9 +46,9 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Verify post exists
+    // Verify post exists and is accessible
     const post = await prisma.post.findUnique({ where: { id: postId } });
-    if (!post) {
+    if (!post || post.status === "REMOVED" || post.visibility === "PRIVATE") {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
 

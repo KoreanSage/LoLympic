@@ -18,6 +18,14 @@ export async function GET(req: NextRequest) {
     const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") || "20", 10)));
     const status = searchParams.get("status"); // PENDING, REVIEWING, RESOLVED, DISMISSED
 
+    const VALID_STATUSES = ["PENDING", "REVIEWING", "RESOLVED", "DISMISSED"];
+    if (status && !VALID_STATUSES.includes(status)) {
+      return NextResponse.json(
+        { error: `Invalid status. Must be one of: ${VALID_STATUSES.join(", ")}` },
+        { status: 400 }
+      );
+    }
+
     const where: Prisma.ReportWhereInput = {};
     if (status) {
       where.status = status as ReportStatus;

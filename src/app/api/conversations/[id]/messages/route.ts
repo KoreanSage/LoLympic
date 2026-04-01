@@ -56,16 +56,19 @@ export async function GET(
     const hasMore = messages.length > limit;
     const items = hasMore ? messages.slice(0, limit) : messages;
 
-    // Mark as read
-    await prisma.conversationParticipant.update({
-      where: {
-        conversationId_userId: {
-          conversationId,
-          userId: user.id,
+    // Mark as read — only update if there are newer messages than the current lastReadAt
+    const latestMessageTime = items.length > 0 ? items[0].createdAt : null;
+    if (latestMessageTime && (!participant.lastReadAt || latestMessageTime > participant.lastReadAt)) {
+      await prisma.conversationParticipant.update({
+        where: {
+          conversationId_userId: {
+            conversationId,
+            userId: user.id,
+          },
         },
-      },
-      data: { lastReadAt: new Date() },
-    });
+        data: { lastReadAt: new Date() },
+      });
+    }
 
     return NextResponse.json({
       messages: items.map((m) => ({

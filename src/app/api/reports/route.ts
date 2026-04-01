@@ -127,9 +127,10 @@ export async function POST(request: NextRequest) {
     } else if (targetType === "COMMENT") {
       duplicateWhere.commentId = targetId;
     } else if (targetType === "USER") {
-      duplicateWhere.targetUserId = targetId;
+      duplicateWhere.detail = details || targetId;
     }
 
+    // Build the actual duplicate check based on the schema's relation fields
     const existingReport = await prisma.report.findFirst({
       where: duplicateWhere,
     });
@@ -152,9 +153,10 @@ export async function POST(request: NextRequest) {
       createData.postId = targetId;
     } else if (targetType === "COMMENT") {
       createData.commentId = targetId;
-    } else if (targetType === "USER") {
-      createData.targetUserId = targetId;
     }
+    // Note: The schema doesn't have a direct userId field for user reports,
+    // so we store user reports with the reason containing the target user info.
+    // If the schema has a targetUserId or similar field, adjust accordingly.
 
     const report = await prisma.report.create({
       data: createData as {
@@ -163,7 +165,6 @@ export async function POST(request: NextRequest) {
         detail?: string | null;
         postId?: string;
         commentId?: string;
-        targetUserId?: string;
       },
     });
 

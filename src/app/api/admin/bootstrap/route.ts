@@ -70,8 +70,8 @@ export async function POST(request: NextRequest) {
       message: "Successfully promoted first user to SUPER_ADMIN",
       superAdmin: {
         id: firstUser.id,
-        email: firstUser.email,
         username: firstUser.username,
+        role: "SUPER_ADMIN",
       },
     });
   } catch (error) {

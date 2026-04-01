@@ -93,7 +93,10 @@ export async function GET(
         include: {
           author: { select: authorSelect },
           replies: {
-            where: { status: "VISIBLE" },
+            where: {
+              status: "VISIBLE",
+              ...(blockedIds.length > 0 ? { authorId: { notIn: blockedIds } } : {}),
+            },
             orderBy: { createdAt: "asc" },
             include: {
               author: { select: authorSelect },

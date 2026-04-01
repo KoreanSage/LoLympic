@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { VALID_LANGUAGES } from "@/lib/constants";
 
 // GET /api/users/me — Get current user's profile
 export async function GET() {
@@ -11,34 +10,36 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: sessionUser.id },
-      select: {
-        id: true,
-        username: true,
-        displayName: true,
-        avatarUrl: true,
-        bio: true,
-        countryId: true,
-        preferredLanguage: true,
-        uiLanguage: true,
-        createdAt: true,
-        emailVerified: true,
-        passwordHash: true,
-        uploadStreakCount: true,
-        uploadStreakLastDate: true,
-        country: {
-          select: { id: true, nameEn: true, flagEmoji: true },
+    const [user, passwordCheck] = await Promise.all([
+      prisma.user.findUnique({
+        where: { id: sessionUser.id },
+        select: {
+          id: true,
+          username: true,
+          displayName: true,
+          avatarUrl: true,
+          bio: true,
+          countryId: true,
+          preferredLanguage: true,
+          uiLanguage: true,
+          createdAt: true,
+          emailVerified: true,
+          country: {
+            select: { id: true, nameEn: true, flagEmoji: true },
+          },
         },
-      },
-    });
+      }),
+      prisma.user.findUnique({
+        where: { id: sessionUser.id },
+        select: { passwordHash: true },
+      }),
+    ]);
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const { passwordHash, ...userWithoutHash } = user;
-    return NextResponse.json({ ...userWithoutHash, hasPassword: !!passwordHash });
+    return NextResponse.json({ ...user, hasPassword: !!passwordCheck?.passwordHash });
   } catch (error) {
     console.error("Error fetching profile:", error);
     return NextResponse.json({ error: "Failed to fetch profile" }, { status: 500 });
@@ -97,27 +98,32 @@ export async function PATCH(request: NextRequest) {
     }
 
     if (countryId !== undefined) {
+      if (countryId) {
+        const country = await prisma.country.findUnique({ where: { id: countryId } });
+        if (!country) {
+          return NextResponse.json({ error: "Invalid countryId" }, { status: 400 });
+        }
+      }
       data.countryId = countryId;
     }
 
     if (avatarUrl !== undefined) {
+      if (avatarUrl) {
+        try {
+          new URL(avatarUrl);
+        } catch {
+          return NextResponse.json({ error: "Invalid avatarUrl" }, { status: 400 });
+        }
+      }
       data.avatarUrl = avatarUrl || null;
     }
 
-    if (preferredLanguage !== undefined && (VALID_LANGUAGES as readonly string[]).includes(preferredLanguage)) {
+    const validLangs = ["ko", "en", "ja", "zh", "es", "hi", "ar"];
+    if (preferredLanguage !== undefined && validLangs.includes(preferredLanguage)) {
       data.preferredLanguage = preferredLanguage;
     }
-    if (uiLanguage !== undefined && (VALID_LANGUAGES as readonly string[]).includes(uiLanguage)) {
+    if (uiLanguage !== undefined && validLangs.includes(uiLanguage)) {
       data.uiLanguage = uiLanguage;
-    }
-
-    // Verify user still exists in DB before updating
-    const userExists = await prisma.user.findUnique({
-      where: { id: sessionUser.id },
-      select: { id: true },
-    });
-    if (!userExists) {
-      return NextResponse.json({ error: "User not found. Please log out and log in again." }, { status: 401 });
     }
 
     const updated = await prisma.user.update({
@@ -130,8 +136,6 @@ export async function PATCH(request: NextRequest) {
         avatarUrl: true,
         bio: true,
         countryId: true,
-        preferredLanguage: true,
-        uiLanguage: true,
       },
     });
 

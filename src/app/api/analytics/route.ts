@@ -50,7 +50,6 @@ export async function POST(request: NextRequest) {
         event,
         data: data || {},
         timestamp: timestamp || Date.now(),
-        ip: getRateLimitKey(request.headers, "").replace(":", ""),
       })
     );
 
