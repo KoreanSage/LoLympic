@@ -95,8 +95,9 @@ export default function I18nProvider({ children }: { children: React.ReactNode }
   const handleLanguageSelect = useCallback((newLocale: Locale) => {
     setLocaleState(newLocale);
     localStorage.setItem("uiLanguage", newLocale);
-    // Also store as content preference for meme language
     localStorage.setItem("preferredLanguage", newLocale);
+    // Sync meme translation language
+    localStorage.setItem("mimzy_preferredLanguage", newLocale);
     setShowLanguageModal(false);
   }, []);
 

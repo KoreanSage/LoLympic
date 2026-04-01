@@ -111,20 +111,40 @@ export default function TopNav() {
   const notifRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
 
-  const UI_LANGS: { code: Locale; flag: string }[] = [
-    { code: "en", flag: "\uD83C\uDDFA\uD83C\uDDF8" },
-    { code: "ko", flag: "\uD83C\uDDF0\uD83C\uDDF7" },
-    { code: "ja", flag: "\uD83C\uDDEF\uD83C\uDDF5" },
-    { code: "zh", flag: "\uD83C\uDDE8\uD83C\uDDF3" },
-    { code: "es", flag: "\uD83C\uDDEA\uD83C\uDDF8" },
-    { code: "hi", flag: "\uD83C\uDDEE\uD83C\uDDF3" },
-    { code: "ar", flag: "\uD83C\uDDF8\uD83C\uDDE6" },
+  const UI_LANGS: { code: Locale; flag: string; name: string }[] = [
+    { code: "en", flag: "\uD83C\uDDFA\uD83C\uDDF8", name: "English" },
+    { code: "ko", flag: "\uD83C\uDDF0\uD83C\uDDF7", name: "\uD55C\uAD6D\uC5B4" },
+    { code: "ja", flag: "\uD83C\uDDEF\uD83C\uDDF5", name: "\u65E5\u672C\u8A9E" },
+    { code: "zh", flag: "\uD83C\uDDE8\uD83C\uDDF3", name: "\u4E2D\u6587" },
+    { code: "es", flag: "\uD83C\uDDEA\uD83C\uDDF8", name: "Espa\u00F1ol" },
+    { code: "hi", flag: "\uD83C\uDDEE\uD83C\uDDF3", name: "\u0939\u093F\u0928\u094D\u0926\u0940" },
+    { code: "ar", flag: "\uD83C\uDDF8\uD83C\uDDE6", name: "\u0627\u0644\u0639\u0631\u0628\u064A\u0629" },
   ];
+  const [showLangDropdown, setShowLangDropdown] = useState(false);
+  const langDropdownRef = useRef<HTMLDivElement>(null);
+
   const handleLocaleChange = useCallback((newLocale: Locale) => {
     setLocale(newLocale);
     localStorage.setItem("uiLanguage", newLocale);
     localStorage.setItem("preferredLanguage", newLocale);
+    // Sync meme translation language
+    localStorage.setItem("mimzy_preferredLanguage", newLocale);
+    // Dispatch storage event so other components (HomePage) pick up the change
+    window.dispatchEvent(new StorageEvent("storage", { key: "mimzy_preferredLanguage", newValue: newLocale }));
+    setShowLangDropdown(false);
   }, [setLocale]);
+
+  // Close lang dropdown on outside click
+  useEffect(() => {
+    if (!showLangDropdown) return;
+    function handleClick(e: MouseEvent) {
+      if (langDropdownRef.current && !langDropdownRef.current.contains(e.target as Node)) {
+        setShowLangDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [showLangDropdown]);
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -467,22 +487,41 @@ export default function TopNav() {
             </button>
           )}
 
-          {/* Language Switcher */}
-          <div className="flex items-center gap-0.5 overflow-x-auto scrollbar-hide shrink-0">
-            {UI_LANGS.map((lang) => (
-              <button
-                key={lang.code}
-                onClick={() => handleLocaleChange(lang.code)}
-                title={lang.code.toUpperCase()}
-                className={`w-7 h-7 text-sm rounded-md transition-all flex items-center justify-center shrink-0 ${
-                  locale === lang.code
-                    ? "bg-[#c9a84c]/20 ring-1 ring-[#c9a84c]/50 scale-110"
-                    : "opacity-50 hover:opacity-100 hover:bg-background-elevated"
-                }`}
-              >
-                {lang.flag}
-              </button>
-            ))}
+          {/* Language Dropdown */}
+          <div ref={langDropdownRef} className="relative shrink-0">
+            <button
+              onClick={() => setShowLangDropdown(!showLangDropdown)}
+              className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-background-elevated border border-border hover:border-border-active transition-colors text-sm"
+              aria-label="Change language"
+            >
+              <span className="text-base leading-none">{UI_LANGS.find((l) => l.code === locale)?.flag}</span>
+              <svg className="w-3 h-3 text-foreground-subtle" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {showLangDropdown && (
+              <div className="absolute right-0 top-full mt-1 w-44 bg-background-elevated border border-border rounded-lg shadow-lg overflow-hidden z-50">
+                {UI_LANGS.map((lang) => (
+                  <button
+                    key={lang.code}
+                    onClick={() => handleLocaleChange(lang.code)}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors ${
+                      locale === lang.code
+                        ? "bg-[#c9a84c]/15 text-[#c9a84c]"
+                        : "text-foreground-muted hover:bg-background-surface"
+                    }`}
+                  >
+                    <span className="text-base">{lang.flag}</span>
+                    <span>{lang.name}</span>
+                    {locale === lang.code && (
+                      <svg className="w-4 h-4 ml-auto text-[#c9a84c]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* DM Messages */}

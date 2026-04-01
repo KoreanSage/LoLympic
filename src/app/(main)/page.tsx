@@ -41,6 +41,17 @@ export default function HomePage() {
       .catch((e) => { console.error("Failed to fetch user language preference:", e); });
   }, [session?.user]);
 
+  // Listen for language changes from TopNav dropdown (syncs meme translations)
+  useEffect(() => {
+    function onStorageChange(e: StorageEvent) {
+      if (e.key === "mimzy_preferredLanguage" && e.newValue) {
+        setFreshLang(e.newValue);
+      }
+    }
+    window.addEventListener("storage", onStorageChange);
+    return () => window.removeEventListener("storage", onStorageChange);
+  }, []);
+
   const translateTo = freshLang || session?.user?.preferredLanguage || "";
   const [feedFilters, setFeedFilters] = useState<{
     country?: string;
