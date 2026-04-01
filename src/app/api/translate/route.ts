@@ -1140,32 +1140,51 @@ export async function POST(request: NextRequest) {
 
         // Translate title & body text (in parallel) — uses lighter model for cost savings
         const targetName = LANGUAGE_INSTRUCTIONS[targetLang]?.split(":")[0] || targetLang;
-        const textTranslations = await Promise.allSettled([
-          // Title translation (gemini-2.5-flash-lite — cheaper, sufficient quality for text)
-          (post.title && sourceLanguage !== targetLang) ? (async () => {
-            const m = getGenAI().getGenerativeModel({
-              model: "gemini-2.5-flash-lite",
-              generationConfig: { temperature: 0.3, maxOutputTokens: 512 },
-            });
-            const r = await m.generateContent(
-              `Translate the following meme title to ${targetName}. Output ONLY the translated text, nothing else. Keep the humor and tone.\n\n${post.title}`
-            );
-            return r.response.text().trim();
-          })() : Promise.resolve(null),
-          // Body translation (gemini-2.5-flash-lite — cheaper, sufficient quality for text)
-          (post.body && sourceLanguage !== targetLang) ? (async () => {
-            const m = getGenAI().getGenerativeModel({
-              model: "gemini-2.5-flash-lite",
-              generationConfig: { temperature: 0.3, maxOutputTokens: 1024 },
-            });
-            const r = await m.generateContent(
-              `Translate the following meme description to ${targetName}. Output ONLY the translated text, nothing else. Keep the humor and tone.\n\n${post.body}`
-            );
-            return r.response.text().trim();
-          })() : Promise.resolve(null),
-        ]);
-        const translatedTitle = textTranslations[0].status === "fulfilled" ? textTranslations[0].value : null;
-        const translatedBody = textTranslations[1].status === "fulfilled" ? textTranslations[1].value : null;
+        let translatedTitle: string | null = null;
+        let translatedBody: string | null = null;
+
+        // Check if title/body were already translated (e.g., by /api/translate/text)
+        const existingTextTranslation = await prisma.translationPayload.findFirst({
+          where: {
+            postId,
+            targetLanguage: targetLang as LanguageCode,
+            translatedTitle: { not: null },
+            status: { in: ["COMPLETED", "APPROVED"] },
+          },
+          orderBy: { version: "desc" },
+          select: { translatedTitle: true, translatedBody: true },
+        });
+        if (existingTextTranslation?.translatedTitle) {
+          translatedTitle = existingTextTranslation.translatedTitle;
+          translatedBody = existingTextTranslation.translatedBody || translatedBody;
+        } else {
+          const textTranslations = await Promise.allSettled([
+            // Title translation (gemini-2.5-flash-lite — cheaper, sufficient quality for text)
+            (post.title && sourceLanguage !== targetLang) ? (async () => {
+              const m = getGenAI().getGenerativeModel({
+                model: "gemini-2.5-flash-lite",
+                generationConfig: { temperature: 0.3, maxOutputTokens: 512 },
+              });
+              const r = await m.generateContent(
+                `Translate the following meme title to ${targetName}. Output ONLY the translated text, nothing else. Keep the humor and tone.\n\n${post.title}`
+              );
+              return r.response.text().trim();
+            })() : Promise.resolve(null),
+            // Body translation (gemini-2.5-flash-lite — cheaper, sufficient quality for text)
+            (post.body && sourceLanguage !== targetLang) ? (async () => {
+              const m = getGenAI().getGenerativeModel({
+                model: "gemini-2.5-flash-lite",
+                generationConfig: { temperature: 0.3, maxOutputTokens: 1024 },
+              });
+              const r = await m.generateContent(
+                `Translate the following meme description to ${targetName}. Output ONLY the translated text, nothing else. Keep the humor and tone.\n\n${post.body}`
+              );
+              return r.response.text().trim();
+            })() : Promise.resolve(null),
+          ]);
+          translatedTitle = textTranslations[0].status === "fulfilled" ? textTranslations[0].value : null;
+          translatedBody = textTranslations[1].status === "fulfilled" ? textTranslations[1].value : null;
+        }
 
         // Merge culture notes from all images into one combined note
         const mergedCultureNote: CultureNoteResponse | null = allCultureNotes.length > 0

@@ -5,6 +5,8 @@ import ThemeProvider from "@/components/providers/ThemeProvider";
 import I18nProvider from "@/components/providers/I18nProvider";
 import { ToastProvider } from "@/components/ui/Toast";
 import CookieConsent from "@/components/legal/CookieConsent";
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export const metadata: Metadata = {
   title: {
@@ -97,6 +99,8 @@ export default function RootLayout({
               <ToastProvider>
                 {children}
                 <CookieConsent />
+                <Analytics />
+                <SpeedInsights />
               </ToastProvider>
             </ThemeProvider>
           </I18nProvider>

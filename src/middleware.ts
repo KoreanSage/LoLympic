@@ -25,7 +25,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Admin role check
-  const ADMIN_PATHS = ["/admin"];
+  const ADMIN_PATHS = ["/admin", "/api/admin"];
   const isAdminPath = ADMIN_PATHS.some((p) => pathname.startsWith(p));
   if (isAdminPath && token?.role !== "ADMIN" && token?.role !== "SUPER_ADMIN") {
     return NextResponse.redirect(new URL("/", request.url));

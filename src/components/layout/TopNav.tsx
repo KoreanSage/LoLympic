@@ -149,6 +149,7 @@ export default function TopNav() {
   // Close mobile menu on route change
   useEffect(() => {
     setMobileMenuOpen(false);
+    setShowLangDropdown(false);
   }, [pathname]);
 
   // Close mobile menu on outside click

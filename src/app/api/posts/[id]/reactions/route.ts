@@ -126,6 +126,10 @@ export async function POST(
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
 
+    if (post.authorId === user.id) {
+      return NextResponse.json({ error: "Cannot react to your own post" }, { status: 403 });
+    }
+
     const reactionType = type as ReactionType;
 
     // Toggle reaction inside a transaction to avoid TOCTOU race

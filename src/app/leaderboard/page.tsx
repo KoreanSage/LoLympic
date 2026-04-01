@@ -148,7 +148,7 @@ export default function LeaderboardPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [locale]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 

@@ -2,6 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import crypto from "crypto";
+
+// Simple in-memory cache for comment translations (per serverless instance)
+const translationCache = new Map<string, { text: string; expiry: number }>();
+const CACHE_TTL = 3600000; // 1 hour
+
+function getCacheKey(text: string, lang: string): string {
+  const hash = crypto.createHash("md5").update(text).digest("hex").slice(0, 16);
+  return `${hash}:${lang}`;
+}
 
 let genAI: GoogleGenerativeAI | null = null;
 function getGenAI() {
@@ -54,6 +64,12 @@ export async function POST(request: NextRequest) {
 
     const targetName = LANG_NAMES[targetLanguage] || targetLanguage;
 
+    const cacheKey = getCacheKey(text, targetLanguage);
+    const cached = translationCache.get(cacheKey);
+    if (cached && cached.expiry > Date.now()) {
+      return NextResponse.json({ translated: cached.text, targetLanguage });
+    }
+
     const model = getGenAI().getGenerativeModel({
       model: "gemini-2.5-flash-lite",
       generationConfig: {
@@ -67,6 +83,8 @@ export async function POST(request: NextRequest) {
     );
 
     const translated = result.response.text().trim();
+
+    translationCache.set(cacheKey, { text: translated, expiry: Date.now() + CACHE_TTL });
 
     return NextResponse.json({ translated, targetLanguage });
   } catch (error) {

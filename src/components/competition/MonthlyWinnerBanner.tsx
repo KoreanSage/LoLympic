@@ -38,6 +38,8 @@ export default function MonthlyWinnerBanner() {
     const key = `mw-dismissed-${new Date().getFullYear()}-${new Date().getMonth() + 1}`;
     if (sessionStorage.getItem(key)) return;
 
+    setWinner(null);
+
     fetch(`/api/seasons/monthly-winner?lang=${locale}`)
       .then((r) => r.json())
       .then((data) => {
