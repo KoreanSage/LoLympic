@@ -139,10 +139,12 @@ export async function GET() {
             title: recentMonthlyWinner.post.title,
             imageUrl: recentMonthlyWinner.post.images[0]?.originalUrl || "",
           },
-          author: {
-            username: recentMonthlyWinner.author.username,
-            displayName: recentMonthlyWinner.author.displayName,
-          },
+          author: recentMonthlyWinner.author
+            ? {
+                username: recentMonthlyWinner.author.username,
+                displayName: recentMonthlyWinner.author.displayName,
+              }
+            : null,
           country: recentMonthlyWinner.country
             ? {
                 flagEmoji: recentMonthlyWinner.country.flagEmoji,
