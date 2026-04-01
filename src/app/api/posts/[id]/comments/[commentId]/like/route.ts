@@ -27,6 +27,10 @@ export async function POST(
       return NextResponse.json({ error: "Comment not found" }, { status: 404 });
     }
 
+    if (comment.authorId === user.id) {
+      return NextResponse.json({ error: "Cannot like your own comment" }, { status: 403 });
+    }
+
     const liked = await prisma.$transaction(async (tx) => {
       const existing = await tx.commentLike.findUnique({
         where: {

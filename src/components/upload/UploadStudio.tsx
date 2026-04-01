@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import ImageUploader from "./ImageUploader";
 import ImageCarousel from "@/components/ui/ImageCarousel";
@@ -89,6 +89,14 @@ export default function UploadStudio() {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [showOptions, setShowOptions] = useState(false);
+
+  // Revoke blob URLs on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      imagePreviews.forEach((url) => { if (url.startsWith("blob:")) URL.revokeObjectURL(url); });
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const hasImages = imageFiles.length > 0;
   const hasGif = imageFiles.some((f) => f.type === "image/gif");

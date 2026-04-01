@@ -3,7 +3,14 @@ import { getSessionUser } from "@/lib/auth";
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+let genAI: GoogleGenerativeAI | null = null;
+function getGenAI() {
+  if (!genAI) {
+    if (!process.env.GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not configured");
+    genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+  }
+  return genAI;
+}
 
 const LANG_NAMES: Record<string, string> = {
   ko: "Korean",
@@ -22,7 +29,7 @@ const LANG_NAMES: Record<string, string> = {
 export async function POST(request: NextRequest) {
   try {
     const rlKey = getRateLimitKey(request.headers, "translate-text");
-    const rl = await checkRateLimit(rlKey, RATE_LIMITS.write);
+    const rl = await checkRateLimit(rlKey, RATE_LIMITS.translate);
     if (!rl.allowed) {
       return NextResponse.json(
         { error: "Too many requests" },
@@ -47,8 +54,8 @@ export async function POST(request: NextRequest) {
 
     const targetName = LANG_NAMES[targetLanguage] || targetLanguage;
 
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
+    const model = getGenAI().getGenerativeModel({
+      model: "gemini-2.5-flash-lite",
       generationConfig: {
         temperature: 0.3,
         maxOutputTokens: 1024,

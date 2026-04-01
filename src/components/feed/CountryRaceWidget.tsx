@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useTranslation } from "@/i18n";
+import { fetchCurrentUser } from "@/lib/user-cache";
 
 interface CountryEntry {
   rank: number;
@@ -46,8 +47,7 @@ export default function CountryRaceWidget() {
   // Fetch user's country
   useEffect(() => {
     if (!session?.user) return;
-    fetch("/api/users/me")
-      .then((r) => (r.ok ? r.json() : null))
+    fetchCurrentUser()
       .then((data) => {
         if (data?.country) {
           setUserCountry(data.country);

@@ -75,6 +75,15 @@ function BattleCardInner({ onDismiss }: BattleCardProps) {
   // Pre-fetched next battle for instant transition
   const nextBattleRef = useRef<{ left: BattlePost; right: BattlePost } | null>(null);
 
+  // Track all setTimeout IDs for cleanup on unmount
+  const timeoutIdsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  useEffect(() => {
+    return () => {
+      timeoutIdsRef.current.forEach(clearTimeout);
+      timeoutIdsRef.current = [];
+    };
+  }, []);
+
   const fetchBattle = useCallback(async () => {
     setLoading(true);
     try {
@@ -130,7 +139,7 @@ function BattleCardInner({ onDismiss }: BattleCardProps) {
         // Flash effect for streaks ≥ 3
         if (newStreak >= 3) {
           setShowStreakFlash(true);
-          setTimeout(() => setShowStreakFlash(false), 600);
+          timeoutIdsRef.current.push(setTimeout(() => setShowStreakFlash(false), 600));
         }
 
         // Store next battle data
@@ -139,7 +148,7 @@ function BattleCardInner({ onDismiss }: BattleCardProps) {
         // Phase 1: Show winner result (800ms)
         // Phase 2: Slide out loser (300ms)
         // Phase 3: Slide in new challenger (300ms)
-        setTimeout(() => {
+        timeoutIdsRef.current.push(setTimeout(() => {
           if (data.nextBattle) {
             const winner = side === "left" ? left : right;
             const updatedWinner = {
@@ -151,7 +160,7 @@ function BattleCardInner({ onDismiss }: BattleCardProps) {
             // Start challenger exit animation
             setChallengerEntering(loserSide);
 
-            setTimeout(() => {
+            timeoutIdsRef.current.push(setTimeout(() => {
               // Swap in new challenger
               const newChallenger =
                 side === "left" ? data.nextBattle.right : data.nextBattle.left;
@@ -165,16 +174,16 @@ function BattleCardInner({ onDismiss }: BattleCardProps) {
               }
 
               // Phase 3: slide-in animation
-              setTimeout(() => {
+              timeoutIdsRef.current.push(setTimeout(() => {
                 setChallengerEntering(null);
                 setVoted(null);
                 setAnimating(false);
-              }, 50);
-            }, 250);
+              }, 50));
+            }, 250));
           } else {
             setNoBattle(true);
           }
-        }, 900);
+        }, 900));
       } catch (e) {
         console.error("Failed to submit battle vote:", e);
         setVoted(null);

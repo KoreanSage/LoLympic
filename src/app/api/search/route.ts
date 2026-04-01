@@ -3,12 +3,19 @@ import prisma from "@/lib/prisma";
 import { LanguageCode, Prisma } from "@prisma/client";
 import { getSessionUser } from "@/lib/auth";
 import { getBlockedUserIds } from "@/lib/block";
+import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 
 // ---------------------------------------------------------------------------
 // GET /api/search?q=keyword&type=posts|users|all&limit=20
 // ---------------------------------------------------------------------------
 export async function GET(request: NextRequest) {
   try {
+    const rlKey = getRateLimitKey(request.headers, "search");
+    const rl = await checkRateLimit(rlKey, RATE_LIMITS.read);
+    if (!rl.allowed) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429, headers: { "Retry-After": String(rl.retryAfter) } });
+    }
+
     const { searchParams } = new URL(request.url);
     const query = searchParams.get("q")?.trim();
     const type = searchParams.get("type") || "all";

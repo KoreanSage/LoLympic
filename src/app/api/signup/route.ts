@@ -51,36 +51,47 @@ export async function POST(req: Request) {
     const passwordHash = await bcrypt.hash(password, 12);
 
     // Create user
-    const user = await prisma.user.create({
-      data: {
-        email,
-        username,
-        displayName: displayName || username,
-        passwordHash,
-        countryId: countryId || "US",
-        preferredLanguage:
-          countryId === "KR"
-            ? "ko"
-            : countryId === "JP"
-            ? "ja"
-            : countryId === "CN" || countryId === "TW" || countryId === "HK"
-            ? "zh"
-            : countryId === "MX" || countryId === "ES" || countryId === "AR" || countryId === "CO" || countryId === "CL"
-            ? "es"
-            : countryId === "IN"
-            ? "hi"
-            : countryId === "SA" || countryId === "EG" || countryId === "AE"
-            ? "ar"
-            : "en",
-      },
-      select: {
-        id: true,
-        email: true,
-        username: true,
-        displayName: true,
-        countryId: true,
-      },
-    });
+    let user;
+    try {
+      user = await prisma.user.create({
+        data: {
+          email,
+          username,
+          displayName: displayName || username,
+          passwordHash,
+          countryId: countryId || "US",
+          preferredLanguage:
+            countryId === "KR"
+              ? "ko"
+              : countryId === "JP"
+              ? "ja"
+              : countryId === "CN" || countryId === "TW" || countryId === "HK"
+              ? "zh"
+              : countryId === "MX" || countryId === "ES" || countryId === "AR" || countryId === "CO" || countryId === "CL"
+              ? "es"
+              : countryId === "IN"
+              ? "hi"
+              : countryId === "SA" || countryId === "EG" || countryId === "AE"
+              ? "ar"
+              : "en",
+        },
+        select: {
+          id: true,
+          email: true,
+          username: true,
+          displayName: true,
+          countryId: true,
+        },
+      });
+    } catch (createError: any) {
+      if (createError?.code === "P2002") {
+        return NextResponse.json(
+          { error: "An account with this email or username already exists" },
+          { status: 409 }
+        );
+      }
+      throw createError;
+    }
 
     return NextResponse.json({ user }, { status: 201 });
   } catch (error) {

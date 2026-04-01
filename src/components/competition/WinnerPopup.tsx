@@ -203,7 +203,7 @@ export default function WinnerPopup() {
             </button>
             {winner.post && (
               <Link
-                href={isYearly ? "/tournament" : `/post/${winner.post.id}`}
+                href={isYearly ? "/leaderboard" : "/leaderboard"}
                 onClick={handleDismiss}
                 className={`flex-1 py-2.5 rounded-xl text-sm font-medium text-center transition-colors ${
                   isYearly

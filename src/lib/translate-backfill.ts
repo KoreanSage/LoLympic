@@ -49,7 +49,7 @@ export async function backfillMissingTitleTranslations(
 
   const targetName = LANGUAGE_NAMES[targetLang] || targetLang;
   const model = getGenAI().getGenerativeModel({
-    model: "gemini-2.5-flash",
+    model: "gemini-2.5-flash-lite",
     generationConfig: { temperature: 0.3, maxOutputTokens: 512 },
   });
 
@@ -57,6 +57,16 @@ export async function backfillMissingTitleTranslations(
   for (const item of toBackfill.slice(0, 5)) {
     try {
       if (item.sourceLanguage === targetLang) continue;
+
+      // Re-check if title was already filled by a concurrent request
+      const freshPayload = await prisma.translationPayload.findUnique({
+        where: { id: item.payloadId },
+        select: { translatedTitle: true },
+      });
+      if (freshPayload?.translatedTitle) {
+        console.debug(`[Backfill] Title already filled for ${item.payloadId}, skipping`);
+        continue;
+      }
 
       const result = await model.generateContent(
         `Translate the following meme title to ${targetName}. Output ONLY the translated text, nothing else. Keep the humor and tone.\n\n${item.title}`
@@ -91,9 +101,16 @@ export async function backfillSinglePostTitle(
   if (post.sourceLanguage === targetLang) return null;
 
   try {
+    // Re-check DB to avoid race condition with concurrent requests
+    const freshPayload = await prisma.translationPayload.findUnique({
+      where: { id: payload.id },
+      select: { translatedTitle: true },
+    });
+    if (freshPayload?.translatedTitle) return { translatedTitle: freshPayload.translatedTitle };
+
     const targetName = LANGUAGE_NAMES[targetLang] || targetLang;
     const model = getGenAI().getGenerativeModel({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.5-flash-lite",
       generationConfig: { temperature: 0.3, maxOutputTokens: 512 },
     });
 

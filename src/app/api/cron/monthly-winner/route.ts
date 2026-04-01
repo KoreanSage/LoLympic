@@ -16,6 +16,9 @@ const MONTH_NAMES = [
  */
 export async function GET(request: NextRequest) {
   // Verify cron secret (timing-safe)
+  if (!process.env.CRON_SECRET) {
+    return NextResponse.json({ error: "Server misconfiguration" }, { status: 500 });
+  }
   const authHeader = request.headers.get("authorization") ?? "";
   const expected = `Bearer ${process.env.CRON_SECRET}`;
   if (

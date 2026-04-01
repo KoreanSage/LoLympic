@@ -24,6 +24,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(bannedUrl);
   }
 
+  // Admin role check
+  const ADMIN_PATHS = ["/admin"];
+  const isAdminPath = ADMIN_PATHS.some((p) => pathname.startsWith(p));
+  if (isAdminPath && token?.role !== "ADMIN" && token?.role !== "SUPER_ADMIN") {
+    return NextResponse.redirect(new URL("/", request.url));
+  }
+
   // Only check protected routes for auth
   const isProtected = PROTECTED_PATHS.some(
     (p) => pathname === p || pathname.startsWith(`${p}/`)

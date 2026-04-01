@@ -61,7 +61,9 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get("category");
 
     // Translation language to include
-    const translateTo = searchParams.get("translateTo") as LanguageCode | null;
+    const VALID_TRANSLATE_LANGS = ["ko", "en", "ja", "zh", "es", "hi", "ar"];
+    const rawTranslateTo = searchParams.get("translateTo");
+    const translateTo = rawTranslateTo && VALID_TRANSLATE_LANGS.includes(rawTranslateTo) ? rawTranslateTo as LanguageCode : null;
 
     // Sorting
     const sort = searchParams.get("sort") || "recent";

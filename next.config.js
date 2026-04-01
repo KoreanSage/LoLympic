@@ -35,16 +35,6 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "utfs.io",
-        pathname: "/f/**",
-      },
-      {
-        protocol: "https",
-        hostname: "uploadthing.com",
-        pathname: "/**",
-      },
-      {
-        protocol: "https",
         hostname: "lh3.googleusercontent.com",
         pathname: "/**",
       },
@@ -55,12 +45,7 @@ const nextConfig = {
       },
       {
         protocol: "https",
-        hostname: "*.public.blob.vercel-storage.com",
-        pathname: "/**",
-      },
-      {
-        protocol: "https",
-        hostname: "*.r2.dev",
+        hostname: "pub-2f14473a556644b0a071362c5c85317b.r2.dev",
         pathname: "/**",
       },
       {
@@ -71,11 +56,11 @@ const nextConfig = {
     ],
     formats: ["image/avif", "image/webp"],
   },
+  serverExternalPackages: ["@resvg/resvg-js", "satori"],
   experimental: {
     serverActions: {
       bodySizeLimit: "10mb",
     },
-    serverComponentsExternalPackages: ["@resvg/resvg-js", "satori"],
   },
 };
 

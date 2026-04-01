@@ -16,6 +16,7 @@ import { TranslationSegmentData } from "@/types/components";
 import { useToast } from "@/components/ui/Toast";
 import { useTranslation } from "@/i18n";
 import ForwardModal from "@/components/post/ForwardModal";
+import { formatRelativeTime } from "@/lib/utils";
 
 interface TopComment {
   id: string;
@@ -72,6 +73,7 @@ interface FeedCardProps {
   topComments?: TopComment[];
   images?: FeedImage[];
   onDelete?: (id: string) => void;
+  isBookmarked?: boolean;
 }
 
 // Bookmark helpers
@@ -116,6 +118,7 @@ function FeedCardInner({
   topComments,
   images,
   onDelete,
+  isBookmarked: isBookmarkedProp,
 }: FeedCardProps) {
   const { toast } = useToast();
   const router = useRouter();
@@ -227,36 +230,16 @@ function FeedCardInner({
     }
   }, [id, deletePending, toast, onDelete]);
 
-  // Load bookmark state: server (logged in) or localStorage (guest)
+  // Load bookmark state: from prop (batched) or localStorage (guest)
   useEffect(() => {
-    // Always check localStorage first for instant UI
-    setBookmarked(getBookmarks().has(id));
-    // If logged in, verify against server
-    if (session?.user) {
-      fetch("/api/bookmarks?limit=100")
-        .then((r) => r.ok ? r.json() : null)
-        .then((data) => {
-          if (data?.postIds) {
-            const serverBookmarked = (data.postIds as string[]).includes(id);
-            setBookmarked(serverBookmarked);
-            // Sync localStorage with server state
-            const local = getBookmarks();
-            if (serverBookmarked && !local.has(id)) {
-              local.add(id);
-              saveBookmarks(local);
-            } else if (!serverBookmarked && local.has(id)) {
-              local.delete(id);
-              saveBookmarks(local);
-            }
-          }
-        })
-        .catch(() => {
-          // Keep localStorage state on error
-        });
+    if (isBookmarkedProp !== undefined) {
+      setBookmarked(isBookmarkedProp);
+    } else {
+      setBookmarked(getBookmarks().has(id));
     }
-  }, [id, session?.user]);
+  }, [isBookmarkedProp, id]);
 
-  const timeAgo = useMemo(() => formatTimeAgo(createdAt), [createdAt]);
+  const timeAgo = useMemo(() => formatRelativeTime(createdAt), [createdAt]);
 
   const handleVote = useCallback(async (newValue: number) => {
     if (votePending) return;
@@ -894,17 +877,3 @@ function langToFlag(code: string): string {
   return LANG_FLAG_MAP[code] || code.toUpperCase();
 }
 
-function formatTimeAgo(dateStr: string): string {
-  const now = Date.now();
-  const date = new Date(dateStr).getTime();
-  const diff = now - date;
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h`;
-  const days = Math.floor(hours / 24);
-  if (days < 30) return `${days}d`;
-  const months = Math.floor(days / 30);
-  return `${months}mo`;
-}

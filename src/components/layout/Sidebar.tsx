@@ -9,6 +9,7 @@ import TierBadge from "@/components/ui/TierBadge";
 import VsEventBanner from "@/components/competition/VsEventBanner";
 import ChampionshipBanner from "@/components/championship/ChampionshipBanner";
 import { useTranslation } from "@/i18n";
+import { fetchCurrentUser } from "@/lib/user-cache";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -348,8 +349,7 @@ export default function Sidebar() {
   // Fetch user's country standing + streak
   useEffect(() => {
     if (!session?.user) return;
-    fetch("/api/users/me")
-      .then((r) => r.ok ? r.json() : null)
+    fetchCurrentUser()
       .then((userData) => {
         if (!userData) return;
         // Set streak

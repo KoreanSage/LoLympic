@@ -210,17 +210,24 @@ export async function POST(
     }
 
     // If replying, verify parent comment exists and belongs to the same post
-    let parentComment: { id: string; authorId: string } | null = null;
+    let parentComment: { id: string; authorId: string; postId: string } | null = null;
     if (parentId) {
       parentComment = await prisma.comment.findUnique({
         where: { id: parentId },
-        select: { id: true, authorId: true },
+        select: { id: true, authorId: true, postId: true },
       });
 
       if (!parentComment) {
         return NextResponse.json(
           { error: "Parent comment not found" },
           { status: 404 }
+        );
+      }
+
+      if (parentComment.postId !== postId) {
+        return NextResponse.json(
+          { error: "Parent comment does not belong to this post" },
+          { status: 400 }
         );
       }
     }
@@ -500,26 +507,24 @@ export async function DELETE(
       );
     }
 
-    // Soft delete and decrement counts
-    await prisma.$transaction([
-      prisma.comment.update({
-        where: { id: commentId },
-        data: { status: "REMOVED" },
-      }),
-      prisma.post.update({
-        where: { id: postId },
-        data: { commentCount: { decrement: 1 } },
-      }),
-      // If it's a reply, decrement parent's reply count
-      ...(existing.parentId
-        ? [
-            prisma.comment.update({
-              where: { id: existing.parentId },
-              data: { replyCount: { decrement: 1 } },
-            }),
-          ]
-        : []),
-    ]);
+    // Soft delete and decrement counts (with guards to prevent negative values)
+    await prisma.comment.update({
+      where: { id: commentId },
+      data: { status: "REMOVED" },
+    });
+
+    await prisma.post.updateMany({
+      where: { id: postId, commentCount: { gt: 0 } },
+      data: { commentCount: { decrement: 1 } },
+    });
+
+    // If it's a reply, decrement parent's reply count
+    if (existing.parentId) {
+      await prisma.comment.updateMany({
+        where: { id: existing.parentId, replyCount: { gt: 0 } },
+        data: { replyCount: { decrement: 1 } },
+      });
+    }
 
     return NextResponse.json({ message: "Comment deleted" });
   } catch (error) {

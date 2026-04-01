@@ -125,7 +125,7 @@ export default function MonthlyWinnerBanner() {
             View Details →
           </Link>
           <Link
-            href="/seasons"
+            href="/leaderboard"
             className="text-[10px] text-foreground-subtle hover:text-foreground-muted transition-colors"
           >
             {t("season.viewAll")}

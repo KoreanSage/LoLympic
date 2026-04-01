@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useTranslation } from "@/i18n";
+import type { Locale } from "@/i18n/provider";
+import { fetchCurrentUser } from "@/lib/user-cache";
 
 interface FilterOption {
   value: string;
@@ -24,7 +26,7 @@ export default function FeedFilters({
   onFilterChange,
   className = "",
 }: FeedFiltersProps) {
-  const { t } = useTranslation();
+  const { t, locale, setLocale } = useTranslation();
   const { data: session } = useSession();
   const [sort, setSort] = useState("trending");
   const [postType, setPostType] = useState("");
@@ -39,8 +41,7 @@ export default function FeedFilters({
   // Fetch user's country
   useEffect(() => {
     if (!session?.user) return;
-    fetch("/api/users/me")
-      .then((r) => r.ok ? r.json() : null)
+    fetchCurrentUser()
       .then((data) => {
         if (data?.countryId) {
           setUserCountryId(data.countryId);
@@ -65,6 +66,22 @@ export default function FeedFilters({
       ro.disconnect();
     };
   }, []);
+
+  const UI_LANGUAGES: { code: Locale; flag: string; label: string }[] = [
+    { code: "en", flag: "\uD83C\uDDFA\uD83C\uDDF8", label: "EN" },
+    { code: "ko", flag: "\uD83C\uDDF0\uD83C\uDDF7", label: "\uD55C" },
+    { code: "ja", flag: "\uD83C\uDDEF\uD83C\uDDF5", label: "\u3042" },
+    { code: "zh", flag: "\uD83C\uDDE8\uD83C\uDDF3", label: "\u5B57" },
+    { code: "es", flag: "\uD83C\uDDEA\uD83C\uDDF8", label: "ES" },
+    { code: "hi", flag: "\uD83C\uDDEE\uD83C\uDDF3", label: "\u0905" },
+    { code: "ar", flag: "\uD83C\uDDF8\uD83C\uDDE6", label: "\u0639" },
+  ];
+
+  const handleLocaleChange = (newLocale: Locale) => {
+    setLocale(newLocale);
+    localStorage.setItem("uiLanguage", newLocale);
+    localStorage.setItem("preferredLanguage", newLocale);
+  };
 
   const SORT_OPTIONS: FilterOption[] = [
     { value: "trending", label: t("filter.trending") },
@@ -156,6 +173,26 @@ export default function FeedFilters({
     >
       <div className="relative">
         <div ref={scrollRef} className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
+          {/* UI Language quick-switcher */}
+          <div className="flex items-center gap-0.5 shrink-0">
+            {UI_LANGUAGES.map((lang) => (
+              <button
+                key={lang.code}
+                onClick={() => handleLocaleChange(lang.code)}
+                title={lang.code.toUpperCase()}
+                className={`w-7 h-7 text-sm rounded-md transition-all flex items-center justify-center ${
+                  locale === lang.code
+                    ? "bg-[#c9a84c]/20 ring-1 ring-[#c9a84c]/50 scale-110"
+                    : "hover:bg-background-surface opacity-60 hover:opacity-100"
+                }`}
+              >
+                {lang.flag}
+              </button>
+            ))}
+          </div>
+
+          <span className="text-border shrink-0">|</span>
+
           {/* Sort tabs */}
           <div className="flex items-center gap-0.5 bg-background-surface rounded-lg p-0.5 border border-border shrink-0">
             {SORT_OPTIONS.map((opt) => (

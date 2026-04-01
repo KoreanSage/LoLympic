@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { I18nContext, type Locale, type TranslationDict } from "@/i18n/provider";
 import type { TranslationKeys } from "@/i18n/locales/en";
 import en from "@/i18n/locales/en";
+import LanguageSelectModal from "@/components/ui/LanguageSelectModal";
 
 // Lazy-load non-English locales
 const localeLoaders: Record<string, () => Promise<{ default: TranslationDict }>> = {
@@ -19,6 +20,9 @@ const localeLoaders: Record<string, () => Promise<{ default: TranslationDict }>>
 export default function I18nProvider({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession();
 
+  // Check if user has ever selected a language
+  const [showLanguageModal, setShowLanguageModal] = useState(false);
+
   // Initialize from localStorage to prevent FOUC
   const [locale, setLocaleState] = useState<Locale>(() => {
     if (typeof window !== "undefined") {
@@ -29,6 +33,15 @@ export default function I18nProvider({ children }: { children: React.ReactNode }
   });
 
   const [dict, setDict] = useState<TranslationDict>(en as unknown as TranslationDict);
+
+  // Show language selection modal for first-time visitors (not logged in, no stored preference)
+  useEffect(() => {
+    const hasChosen = localStorage.getItem("uiLanguage");
+    const hasSession = !!session?.user;
+    if (!hasChosen && !hasSession) {
+      setShowLanguageModal(true);
+    }
+  }, [session]);
 
   // Sync with session's uiLanguage when available
   useEffect(() => {
@@ -79,7 +92,20 @@ export default function I18nProvider({ children }: { children: React.ReactNode }
     [dict]
   );
 
+  const handleLanguageSelect = useCallback((newLocale: Locale) => {
+    setLocaleState(newLocale);
+    localStorage.setItem("uiLanguage", newLocale);
+    // Also store as content preference for meme language
+    localStorage.setItem("preferredLanguage", newLocale);
+    setShowLanguageModal(false);
+  }, []);
+
   const value = useMemo(() => ({ locale, t, setLocale }), [locale, t, setLocale]);
 
-  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
+  return (
+    <I18nContext.Provider value={value}>
+      {showLanguageModal && <LanguageSelectModal onSelect={handleLanguageSelect} />}
+      {children}
+    </I18nContext.Provider>
+  );
 }

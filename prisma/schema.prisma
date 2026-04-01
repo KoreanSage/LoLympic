@@ -320,10 +320,9 @@ model User {
   championshipVotes         ChampionshipVote[]       @relation("ChampionshipVoter")
   championshipPosts         ChampionshipPost[]       @relation("ChampionshipPostAuthor")
   championshipBattleVotes   ChampionshipBattleVote[] @relation("ChampionshipBattleVoter")
+  passwordResetTokens       PasswordResetToken[]
 
   @@index([countryId])
-  @@index([username])
-  @@index([email])
 }
 
 model Country {
@@ -398,8 +397,8 @@ model Post {
 
   // Relations
   author              User                @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  country             Country?            @relation(fields: [countryId], references: [id])
-  season              Season?             @relation(fields: [seasonId], references: [id])
+  country             Country?            @relation(fields: [countryId], references: [id], onDelete: SetNull)
+  season              Season?             @relation(fields: [seasonId], references: [id], onDelete: SetNull)
   images              PostImage[]
   translationPayloads TranslationPayload[]
   cultureNotes        CultureNote[]
@@ -472,7 +471,7 @@ model TranslationPayload {
 
   // Relations
   post             Post                  @relation(fields: [postId], references: [id], onDelete: Cascade)
-  creator          User?                 @relation(fields: [creatorId], references: [id])
+  creator          User?                 @relation(fields: [creatorId], references: [id], onDelete: SetNull)
   approvedFrom     Suggestion?           @relation("ApprovedTranslation", fields: [approvedFromId], references: [id])
   segments         TranslationSegment[]
 
@@ -552,7 +551,7 @@ model CultureNote {
 
   // Relations
   post         Post        @relation(fields: [postId], references: [id], onDelete: Cascade)
-  creator      User?       @relation(fields: [creatorId], references: [id])
+  creator      User?       @relation(fields: [creatorId], references: [id], onDelete: SetNull)
   approvedFrom Suggestion? @relation("ApprovedCultureNote", fields: [approvedFromId], references: [id])
 
   @@unique([postId, language, version])
@@ -664,6 +663,7 @@ model SuggestionVote {
   user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([suggestionId, userId])
+  @@index([userId])
 }
 
 model PostReaction {
@@ -808,7 +808,7 @@ model SeasonEntry {
   season  Season   @relation(fields: [seasonId], references: [id], onDelete: Cascade)
   post    Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
   author  User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  country Country? @relation(fields: [countryId], references: [id])
+  country Country? @relation(fields: [countryId], references: [id], onDelete: Cascade)
 
   @@unique([seasonId, postId])
   @@index([seasonId, countryId])
@@ -835,7 +835,7 @@ model CountrySeasonStat {
 
   // Relations
   season  Season  @relation(fields: [seasonId], references: [id], onDelete: Cascade)
-  country Country @relation(fields: [countryId], references: [id])
+  country Country @relation(fields: [countryId], references: [id], onDelete: Cascade)
 
   @@unique([seasonId, countryId])
 }
@@ -865,7 +865,7 @@ model PostSeasonStat {
   // Relations
   season  Season   @relation(fields: [seasonId], references: [id], onDelete: Cascade)
   post    Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  country Country? @relation(fields: [countryId], references: [id])
+  country Country? @relation(fields: [countryId], references: [id], onDelete: Cascade)
 
   @@unique([seasonId, postId])
   @@index([seasonId, globalRank])
@@ -894,7 +894,7 @@ model UserSeasonStat {
   // Relations
   season  Season   @relation(fields: [seasonId], references: [id], onDelete: Cascade)
   user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  country Country? @relation(fields: [countryId], references: [id])
+  country Country? @relation(fields: [countryId], references: [id], onDelete: Cascade)
 
   @@unique([seasonId, userId])
   @@index([seasonId, globalRank])
@@ -919,7 +919,7 @@ model Medal {
   // Relations
   season  Season   @relation(fields: [seasonId], references: [id], onDelete: Cascade)
   user    User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  country Country? @relation(fields: [countryId], references: [id])
+  country Country? @relation(fields: [countryId], references: [id], onDelete: Cascade)
 
   // Medal → RewardGrant
   rewardGrants RewardGrant[]
@@ -960,11 +960,11 @@ model RewardGrant {
   createdAt DateTime @default(now())
 
   // Relations
-  reward  Reward   @relation(fields: [rewardId], references: [id])
+  reward  Reward   @relation(fields: [rewardId], references: [id], onDelete: Cascade)
   user    User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  country Country? @relation(fields: [countryId], references: [id])
+  country Country? @relation(fields: [countryId], references: [id], onDelete: SetNull)
   season  Season?  @relation(fields: [seasonId], references: [id], onDelete: Cascade)
-  medal   Medal?   @relation(fields: [medalId], references: [id])
+  medal   Medal?   @relation(fields: [medalId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([rewardId])
@@ -981,7 +981,7 @@ model MonthlyWinner {
   month     Int      // 1-12
   year      Int
   postId    String   @unique
-  authorId  String
+  authorId  String?
   countryId String?
   likeCount Int      @default(0)
 
@@ -990,12 +990,14 @@ model MonthlyWinner {
   // Relations
   season     Season    @relation(fields: [seasonId], references: [id], onDelete: Cascade)
   post       Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
-  author     User      @relation(fields: [authorId], references: [id])
-  country    Country?  @relation(fields: [countryId], references: [id])
+  author     User?     @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  country    Country?  @relation(fields: [countryId], references: [id], onDelete: SetNull)
   finalVotes FinalVote[]
 
   @@unique([seasonId, month])
   @@index([seasonId])
+  @@index([authorId])
+  @@index([countryId])
 }
 
 model FinalVote {
@@ -1038,8 +1040,8 @@ model TournamentMatch {
 
   // Relations
   season Season @relation(fields: [seasonId], references: [id], onDelete: Cascade)
-  post1  Post?  @relation("TournamentPost1", fields: [post1Id], references: [id])
-  post2  Post?  @relation("TournamentPost2", fields: [post2Id], references: [id])
+  post1  Post?  @relation("TournamentPost1", fields: [post1Id], references: [id], onDelete: SetNull)
+  post2  Post?  @relation("TournamentPost2", fields: [post2Id], references: [id], onDelete: SetNull)
   votes  TournamentVote[]
 
   @@unique([seasonId, round, matchIndex])
@@ -1106,9 +1108,9 @@ model Report {
 
   // Relations
   reporter   User?       @relation("Reporter", fields: [reporterId], references: [id], onDelete: SetNull)
-  post       Post?       @relation(fields: [postId], references: [id])
-  comment    Comment?    @relation(fields: [commentId], references: [id])
-  suggestion Suggestion? @relation(fields: [suggestionId], references: [id])
+  post       Post?       @relation(fields: [postId], references: [id], onDelete: SetNull)
+  comment    Comment?    @relation(fields: [commentId], references: [id], onDelete: SetNull)
+  suggestion Suggestion? @relation(fields: [suggestionId], references: [id], onDelete: SetNull)
   targetUser User? @relation("ReportedUser", fields: [targetUserId], references: [id], onDelete: SetNull)
 
   @@index([reporterId])
@@ -1132,13 +1134,16 @@ model Notification {
 
   // Relations
   recipient  User        @relation("Recipient", fields: [recipientId], references: [id], onDelete: Cascade)
-  actor      User?       @relation("Actor", fields: [actorId], references: [id])
-  post       Post?       @relation(fields: [postId], references: [id])
-  comment    Comment?    @relation(fields: [commentId], references: [id])
-  suggestion Suggestion? @relation(fields: [suggestionId], references: [id])
+  actor      User?       @relation("Actor", fields: [actorId], references: [id], onDelete: SetNull)
+  post       Post?       @relation(fields: [postId], references: [id], onDelete: Cascade)
+  comment    Comment?    @relation(fields: [commentId], references: [id], onDelete: SetNull)
+  suggestion Suggestion? @relation(fields: [suggestionId], references: [id], onDelete: SetNull)
 
   @@index([recipientId, isRead, createdAt(sort: Desc)])
   @@index([recipientId, createdAt(sort: Desc)])
+  @@index([actorId])
+  @@index([postId])
+  @@index([commentId])
 }
 
 // ============================================================================
@@ -1203,6 +1208,8 @@ model PasswordResetToken {
 
   createdAt DateTime @default(now())
 
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([token])
   @@index([userId])
   @@index([expiresAt])
@@ -1252,8 +1259,8 @@ model CountryVsEvent {
   winnerId      String?
   createdById   String
   createdAt     DateTime @default(now())
-  country1      Country  @relation("VsEventCountry1", fields: [country1Id], references: [id])
-  country2      Country  @relation("VsEventCountry2", fields: [country2Id], references: [id])
+  country1      Country  @relation("VsEventCountry1", fields: [country1Id], references: [id], onDelete: Cascade)
+  country2      Country  @relation("VsEventCountry2", fields: [country2Id], references: [id], onDelete: Cascade)
   @@index([status])
   @@index([startAt])
 }
@@ -1266,7 +1273,7 @@ model CountryBoard {
   likeCount Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  country   Country  @relation(fields: [countryId], references: [id])
+  country   Country  @relation(fields: [countryId], references: [id], onDelete: Cascade)
   author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
   @@index([countryId, createdAt(sort: Desc)])
   @@index([authorId])
@@ -1324,7 +1331,7 @@ model ChampionshipCandidate {
 
   championship Championship @relation(fields: [championshipId], references: [id], onDelete: Cascade)
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  country      Country      @relation(fields: [countryId], references: [id])
+  country      Country      @relation(fields: [countryId], references: [id], onDelete: Cascade)
   votes        ChampionshipVote[]
 
   @@unique([championshipId, userId])
@@ -1366,7 +1373,7 @@ model ChampionshipPost {
   championship Championship @relation(fields: [championshipId], references: [id], onDelete: Cascade)
   post         Post         @relation(fields: [postId], references: [id], onDelete: Cascade)
   user         User         @relation("ChampionshipPostAuthor", fields: [userId], references: [id], onDelete: Cascade)
-  country      Country      @relation(fields: [countryId], references: [id])
+  country      Country      @relation(fields: [countryId], references: [id], onDelete: Cascade)
   battleVotes  ChampionshipBattleVote[]
 
   @@unique([championshipId, countryId])

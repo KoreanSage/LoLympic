@@ -149,7 +149,7 @@ export async function POST(request: NextRequest) {
 
     // Set up Gemini model
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.5-flash-lite",
       generationConfig: { temperature: 0.3, maxOutputTokens: 1024 },
     });
 
@@ -157,6 +157,27 @@ export async function POST(request: NextRequest) {
     const translationPromises = targetLanguages
       .filter((lang) => lang !== sourceLanguage)
       .map(async (targetLang) => {
+        // --- DB check: skip if translation already exists ---
+        const existingPayload = await prisma.translationPayload.findFirst({
+          where: {
+            postId,
+            targetLanguage: targetLang as LanguageCode,
+            status: { in: ["COMPLETED", "APPROVED"] },
+          },
+          orderBy: { version: "desc" },
+          select: { id: true, translatedTitle: true, translatedBody: true },
+        });
+        if (existingPayload?.translatedTitle) {
+          console.debug(`[DB] Translation already exists for ${postId}:${targetLang}, skipping Gemini call`);
+          return {
+            lang: targetLang,
+            translatedTitle: existingPayload.translatedTitle,
+            translatedBody: existingPayload.translatedBody,
+            status: "completed" as const,
+            payloadId: existingPayload.id,
+          };
+        }
+
         const prompt = buildTextTranslationPrompt(
           sourceLanguage,
           targetLang,

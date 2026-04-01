@@ -2,6 +2,7 @@
 
 import React from "react";
 import { useEffect, useRef, useState, useCallback } from "react";
+import { useSession } from "next-auth/react";
 import FeedCard from "./FeedCard";
 import CountryRaceWidget from "./CountryRaceWidget";
 import BattleCard from "@/components/battle/BattleCard";
@@ -179,8 +180,10 @@ export default function FeedList({
   filters,
 }: FeedListProps) {
   const { t } = useTranslation();
+  const { data: session } = useSession();
   const resolvedEmptyMessage = emptyMessage || t("feed.empty");
   const [posts, setPosts] = useState<FeedPost[]>([]);
+  const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
   const [hasMore, setHasMore] = useState(true);
@@ -193,6 +196,18 @@ export default function FeedList({
   const abortRef = useRef<AbortController | null>(null);
 
   const filtersJson = JSON.stringify(filters);
+
+  // Batch-fetch bookmarked post IDs once on mount
+  useEffect(() => {
+    if (!session?.user) return;
+    fetch("/api/bookmarks?limit=200")
+      .then((r) => r.ok ? r.json() : { bookmarks: [] })
+      .then((data) => {
+        const ids = new Set<string>((data.bookmarks || data.postIds || []).map((b: any) => typeof b === "string" ? b : b.postId));
+        setBookmarkedIds(ids);
+      })
+      .catch(() => {});
+  }, [session?.user]);
 
   const fetchPosts = useCallback(async (page: number, lang: string, signal?: AbortSignal) => {
     if (fetchingRef.current) return;
@@ -342,6 +357,7 @@ export default function FeedList({
         <React.Fragment key={post.id}>
           <FeedCard
             {...post}
+            isBookmarked={bookmarkedIds.has(post.id)}
             onDelete={(deletedId) => setPosts((prev) => prev.filter((p) => p.id !== deletedId))}
           />
           {/* Country Race Widget after 2nd post */}

@@ -68,6 +68,10 @@ export async function POST(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
 
+    if (post.authorId === user.id) {
+      return NextResponse.json({ error: "Cannot vote on your own post" }, { status: 403 });
+    }
+
     // Wrap read + conditional write in a transaction to avoid TOCTOU race
     let karmaDelta = 0;
 

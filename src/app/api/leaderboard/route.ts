@@ -344,10 +344,10 @@ async function handleSeasonLeaderboard(
 // Realtime leaderboard (no season — aggregate from posts/users directly)
 // ---------------------------------------------------------------------------
 async function handleRealtimeLeaderboard(type: string, limit: number, lang: string | null = null) {
-  // Current month boundaries for "this month's" rankings
+  // Current year boundaries for yearly rankings (resets only at year-end)
   const now = new Date();
-  const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const thisYearStart = new Date(now.getFullYear(), 0, 1); // Jan 1
+  const nextYearStart = new Date(now.getFullYear() + 1, 0, 1); // Jan 1 next year
 
   switch (type) {
     case "country": {
@@ -355,7 +355,7 @@ async function handleRealtimeLeaderboard(type: string, limit: number, lang: stri
       const countryReactions = await prisma.postReaction.groupBy({
         by: ["postId"],
         where: {
-          createdAt: { gte: thisMonthStart, lt: nextMonthStart },
+          createdAt: { gte: thisYearStart, lt: nextYearStart },
           post: {
             status: "PUBLISHED",
             visibility: "PUBLIC",
@@ -433,7 +433,7 @@ async function handleRealtimeLeaderboard(type: string, limit: number, lang: stri
           status: "PUBLISHED",
           visibility: "PUBLIC",
           countryId: { in: countryIds },
-          createdAt: { gte: thisMonthStart, lt: nextMonthStart },
+          createdAt: { gte: thisYearStart, lt: nextYearStart },
         },
       });
       const activeUsersMap = new Map<string, number>();

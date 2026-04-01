@@ -47,8 +47,23 @@ const USE_R2 = !!(
 );
 const USE_BLOB = !USE_R2 && !!process.env.BLOB_READ_WRITE_TOKEN;
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-const genAI2 = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+let genAI: GoogleGenerativeAI | null = null;
+function getGenAI() {
+  if (!genAI) {
+    if (!process.env.GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not configured");
+    genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+  }
+  return genAI;
+}
+
+let genAI2: GoogleGenAI | null = null;
+function getGenAI2() {
+  if (!genAI2) {
+    if (!process.env.GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not configured");
+    genAI2 = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+  }
+  return genAI2;
+}
 
 // ---------------------------------------------------------------------------
 // Language-specific translation instructions
@@ -385,7 +400,10 @@ async function generateCleanImagesForPost(
   for (let i = 0; i < postImages.length && i < imageDataList.length; i++) {
     const dbImage = postImages[i];
     const imgData = imageDataList[i];
-    if (dbImage.cleanUrl || !imgData.base64) continue; // Skip if already has clean or no data
+    if (dbImage.cleanUrl || !imgData.base64) {
+      console.debug(`[CleanImage] Skipping postImage ${dbImage.id} — already cached or no data`);
+      continue; // Skip if already has clean image cached or no data
+    }
 
     try {
       let cleanUrl: string | null = null;
@@ -459,7 +477,7 @@ async function generateCleanImage(
   mimeType: string
 ): Promise<string | null> {
   try {
-    const response = await genAI2.models.generateContent({
+    const response = await getGenAI2().models.generateContent({
       model: "gemini-2.5-flash-image",
       contents: [
         {
@@ -941,13 +959,34 @@ export async function POST(request: NextRequest) {
     for (const targetLang of targetLanguages) {
       if (targetLang === sourceLanguage) continue;
 
+      // --- DB check: skip if a COMPLETED translation already exists for this language ---
+      const existingPayload = await prisma.translationPayload.findFirst({
+        where: {
+          postId,
+          targetLanguage: targetLang as LanguageCode,
+          status: { in: ["COMPLETED", "APPROVED"] },
+        },
+        orderBy: { version: "desc" },
+        select: { id: true, version: true, translatedTitle: true },
+      });
+      if (existingPayload) {
+        console.debug(`[DB] Translation already exists for ${postId}:${targetLang} (v${existingPayload.version}), skipping Gemini call`);
+        results[targetLang] = {
+          payloadId: existingPayload.id,
+          version: existingPayload.version,
+          segmentCount: 0,
+          confidence: null,
+        };
+        continue;
+      }
+
       const systemPrompt = buildTranslationSystemPrompt(sourceLanguage, targetLang);
 
       try {
         // Check Redis cache before running Gemini analysis
         const cachedResult = await getCachedTranslation(postId, targetLang);
 
-        const model = genAI.getGenerativeModel({
+        const model = getGenAI().getGenerativeModel({
           model: "gemini-2.5-flash",
           systemInstruction: systemPrompt,
           generationConfig: {
@@ -1099,13 +1138,13 @@ export async function POST(request: NextRequest) {
           isUppercase: undefined,
         }));
 
-        // Translate title & body text (in parallel)
+        // Translate title & body text (in parallel) — uses lighter model for cost savings
         const targetName = LANGUAGE_INSTRUCTIONS[targetLang]?.split(":")[0] || targetLang;
         const textTranslations = await Promise.allSettled([
-          // Title translation
+          // Title translation (gemini-2.5-flash-lite — cheaper, sufficient quality for text)
           (post.title && sourceLanguage !== targetLang) ? (async () => {
-            const m = genAI.getGenerativeModel({
-              model: "gemini-2.5-flash",
+            const m = getGenAI().getGenerativeModel({
+              model: "gemini-2.5-flash-lite",
               generationConfig: { temperature: 0.3, maxOutputTokens: 512 },
             });
             const r = await m.generateContent(
@@ -1113,10 +1152,10 @@ export async function POST(request: NextRequest) {
             );
             return r.response.text().trim();
           })() : Promise.resolve(null),
-          // Body translation
+          // Body translation (gemini-2.5-flash-lite — cheaper, sufficient quality for text)
           (post.body && sourceLanguage !== targetLang) ? (async () => {
-            const m = genAI.getGenerativeModel({
-              model: "gemini-2.5-flash",
+            const m = getGenAI().getGenerativeModel({
+              model: "gemini-2.5-flash-lite",
               generationConfig: { temperature: 0.3, maxOutputTokens: 1024 },
             });
             const r = await m.generateContent(

@@ -150,6 +150,7 @@ export default function TopNav() {
 
   // Real-time notifications via SSE, with polling fallback
   const eventSourceRef = useRef<EventSource | null>(null);
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (status !== "authenticated") return;
@@ -206,7 +207,7 @@ export default function TopNav() {
           startPolling();
           return;
         }
-        setTimeout(() => {
+        reconnectTimeoutRef.current = setTimeout(() => {
           if (!cancelled) {
             connectSSE();
           }
@@ -276,6 +277,10 @@ export default function TopNav() {
 
     return () => {
       cancelled = true;
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
       if (eventSourceRef.current) {
         eventSourceRef.current.close();
         eventSourceRef.current = null;

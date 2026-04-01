@@ -29,3 +29,5 @@ tsconfig.tsbuildinfo
 *.iws
 .idea/
 #.vscode/
+.vercel
+.env*.local

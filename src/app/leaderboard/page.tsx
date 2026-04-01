@@ -7,6 +7,7 @@ import MainLayout from "@/components/layout/MainLayout";
 import LeaderboardTable from "@/components/competition/LeaderboardTable";
 import ErrorState from "@/components/ui/ErrorState";
 import ScoringExplanationModal from "@/components/competition/ScoringExplanationModal";
+import Avatar from "@/components/ui/Avatar";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -43,6 +44,18 @@ interface ApiMemeEntry {
 }
 
 interface ApiLeaderboardResponse { type: string; seasonId: string | null; entries: unknown[]; message?: string }
+
+interface MonthlyWinnerData {
+  id: string;
+  month: number;
+  year: number;
+  likeCount: number;
+  post: { id: string; title: string; reactionCount: number; images: { originalUrl: string }[] };
+  author: { id: string; username: string; displayName: string | null; avatarUrl: string | null; isChampion: boolean };
+  country: { id: string; nameEn: string; flagEmoji: string } | null;
+}
+
+const MONTH_ABBREV = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 // ---------------------------------------------------------------------------
 // Mappers
@@ -94,22 +107,25 @@ export default function LeaderboardPage() {
     id: string; title: string; imageUrl: string; battleWins: number; battleLosses: number;
     author: { username: string; displayName: string | null }; country: { flagEmoji: string } | null;
   }>>([]);
+  const [monthlyWinners, setMonthlyWinners] = useState<MonthlyWinnerData[]>([]);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
     setError(false);
     try {
-      const [countryRes, creatorRes, memeRes, battleRes] = await Promise.all([
+      const [countryRes, creatorRes, memeRes, battleRes, winnersRes] = await Promise.all([
         fetch("/api/leaderboard?type=country"),
         fetch("/api/leaderboard?type=creator"),
         fetch("/api/leaderboard?type=meme"),
         fetch("/api/leaderboard?type=battle&limit=5"),
+        fetch("/api/seasons/monthly-winner"),
       ]);
 
       const countryData: ApiLeaderboardResponse = await countryRes.json();
       const creatorData: ApiLeaderboardResponse = await creatorRes.json();
       const memeData: ApiLeaderboardResponse = await memeRes.json();
       const battleData = await battleRes.json().catch(() => ({ entries: [] }));
+      const winnersData = await winnersRes.json().catch(() => ({ winners: [] }));
 
       // Check if data is from realtime fallback
       if ((countryData as ApiLeaderboardResponse & { source?: string }).source === "realtime") {
@@ -124,6 +140,7 @@ export default function LeaderboardPage() {
       setCreators(mappedCreators);
       setMemes(mappedMemes);
       if (battleData.entries?.length > 0) setBattleMemes(battleData.entries);
+      if (winnersData.winners?.length > 0) setMonthlyWinners(winnersData.winners);
       if (mappedCountries.length === 0 && mappedCreators.length === 0 && mappedMemes.length === 0) setEmpty(true);
     } catch (err) {
       console.error("Failed to fetch leaderboard data:", err);
@@ -233,6 +250,59 @@ export default function LeaderboardPage() {
               <Link href="/upload" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#c9a84c] hover:bg-[#d4b65c] text-black font-medium text-sm transition-colors">
                 {t("nav.upload")}
               </Link>
+            </div>
+          )}
+
+          {/* Monthly Winners Gallery */}
+          {monthlyWinners.length > 0 && (
+            <div>
+              <h2 className="text-sm font-bold text-[#c9a84c] mb-3 flex items-center gap-2">
+                <span>{"\uD83C\uDFC6"}</span> {t("season.monthlyWinners")}
+              </h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                {monthlyWinners.map((winner) => (
+                  <Link
+                    key={winner.id}
+                    href={`/post/${winner.post.id}`}
+                    className="group bg-background-surface border-2 border-[#c9a84c]/30 rounded-xl overflow-hidden hover:border-[#c9a84c] transition-colors shadow-[0_0_8px_rgba(201,168,76,0.08)] hover:shadow-[0_0_16px_rgba(201,168,76,0.15)]"
+                  >
+                    <div className="aspect-[4/3] relative overflow-hidden bg-background-elevated">
+                      {winner.post.images[0]?.originalUrl && (
+                        <img
+                          src={winner.post.images[0].originalUrl}
+                          alt={winner.post.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      )}
+                      <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-sm px-2 py-1 rounded-lg">
+                        <span className="text-xs font-bold text-[#c9a84c]">{MONTH_ABBREV[winner.month - 1]}</span>
+                      </div>
+                      <div className="absolute top-2 right-2">
+                        <span className="text-lg drop-shadow-lg">{"\uD83D\uDC51"}</span>
+                      </div>
+                      <div className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-sm px-2 py-1 rounded-lg flex items-center gap-1">
+                        <span className="text-[10px]">{"\uD83D\uDD25"}</span>
+                        <span className="text-[10px] text-white font-medium">{winner.likeCount}</span>
+                      </div>
+                    </div>
+                    <div className="p-2.5">
+                      <p className="text-xs font-medium text-foreground truncate mb-1.5">{winner.post.title}</p>
+                      <div className="flex items-center gap-1.5">
+                        <Avatar
+                          src={winner.author.avatarUrl}
+                          alt={winner.author.displayName || winner.author.username}
+                          size="sm"
+                          isChampion={winner.author.isChampion}
+                        />
+                        <span className="text-[11px] text-foreground-muted truncate">
+                          {winner.author.displayName || winner.author.username}
+                        </span>
+                        {winner.country && <span className="text-xs ml-auto">{winner.country.flagEmoji}</span>}
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
             </div>
           )}
 

@@ -176,10 +176,12 @@ export async function POST(
     }
 
     // Karma: +1 for adding reaction, -1 for removing
-    if (action === "added") {
-      updateKarma(post.authorId, "post", 1).catch(() => {});
-    } else {
-      updateKarma(post.authorId, "post", -1).catch(() => {});
+    if (post.authorId !== user.id) {
+      if (action === "added") {
+        updateKarma(post.authorId, "post", 1).catch(() => {});
+      } else {
+        updateKarma(post.authorId, "post", -1).catch(() => {});
+      }
     }
 
     // Return updated counts
