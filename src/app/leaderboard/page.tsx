@@ -50,8 +50,8 @@ interface MonthlyWinnerData {
   month: number;
   year: number;
   likeCount: number;
-  post: { id: string; title: string; reactionCount: number; images: { originalUrl: string }[] };
-  author: { id: string; username: string; displayName: string | null; avatarUrl: string | null; isChampion: boolean };
+  post: { id: string; title: string; translatedTitle?: string | null; reactionCount: number; images: { originalUrl: string }[] };
+  author: { id: string; username: string; displayName: string | null; avatarUrl: string | null; isChampion: boolean } | null;
   country: { id: string; nameEn: string; flagEmoji: string } | null;
 }
 
@@ -94,7 +94,7 @@ function mapMemes(entries: ApiMemeEntry[]) {
 // ---------------------------------------------------------------------------
 
 export default function LeaderboardPage() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const [showScoring, setShowScoring] = useState(false);
   const [loading, setLoading] = useState(true);
   const [countries, setCountries] = useState<ReturnType<typeof mapCountries>>([]);
@@ -118,7 +118,7 @@ export default function LeaderboardPage() {
         fetch("/api/leaderboard?type=creator"),
         fetch("/api/leaderboard?type=meme"),
         fetch("/api/leaderboard?type=battle&limit=5"),
-        fetch("/api/seasons/monthly-winner"),
+        fetch(`/api/seasons/monthly-winner?lang=${locale}`),
       ]);
 
       const countryData: ApiLeaderboardResponse = await countryRes.json();
@@ -286,16 +286,16 @@ export default function LeaderboardPage() {
                       </div>
                     </div>
                     <div className="p-2.5">
-                      <p className="text-xs font-medium text-foreground truncate mb-1.5">{winner.post.title}</p>
+                      <p className="text-xs font-medium text-foreground truncate mb-1.5">{winner.post.translatedTitle || winner.post.title}</p>
                       <div className="flex items-center gap-1.5">
                         <Avatar
-                          src={winner.author.avatarUrl}
-                          alt={winner.author.displayName || winner.author.username}
+                          src={winner.author?.avatarUrl}
+                          alt={winner.author?.displayName || winner.author?.username || ""}
                           size="sm"
-                          isChampion={winner.author.isChampion}
+                          isChampion={winner.author?.isChampion}
                         />
                         <span className="text-[11px] text-foreground-muted truncate">
-                          {winner.author.displayName || winner.author.username}
+                          {winner.author?.displayName || winner.author?.username || "Unknown"}
                         </span>
                         {winner.country && <span className="text-xs ml-auto">{winner.country.flagEmoji}</span>}
                       </div>

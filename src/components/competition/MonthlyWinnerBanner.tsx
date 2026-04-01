@@ -11,12 +11,14 @@ interface WinnerInfo {
   post: {
     id: string;
     title: string;
+    translatedTitle?: string | null;
+    sourceLanguage?: string | null;
     images: { originalUrl: string }[];
   };
   author: {
     displayName: string | null;
     username: string;
-  };
+  } | null;
   country: { flagEmoji: string; nameEn: string } | null;
   likeCount: number;
 }
@@ -27,7 +29,7 @@ const MONTH_NAMES = [
 ];
 
 export default function MonthlyWinnerBanner() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const [winner, setWinner] = useState<WinnerInfo | null>(null);
   const [dismissed, setDismissed] = useState(false);
 
@@ -36,7 +38,7 @@ export default function MonthlyWinnerBanner() {
     const key = `mw-dismissed-${new Date().getFullYear()}-${new Date().getMonth() + 1}`;
     if (sessionStorage.getItem(key)) return;
 
-    fetch("/api/seasons/monthly-winner")
+    fetch(`/api/seasons/monthly-winner?lang=${locale}`)
       .then((r) => r.json())
       .then((data) => {
         const winners = data.winners || [];
@@ -53,7 +55,7 @@ export default function MonthlyWinnerBanner() {
         }
       })
       .catch((e) => { console.error("Failed to fetch monthly winner:", e); });
-  }, []);
+  }, [locale]);
 
   const handleDismiss = () => {
     setDismissed(true);
@@ -108,10 +110,10 @@ export default function MonthlyWinnerBanner() {
             href={`/post/${winner.post.id}`}
             className="text-sm font-medium text-foreground hover:text-[#c9a84c] transition-colors truncate block"
           >
-            {winner.post.title}
+            {(winner.post.sourceLanguage !== locale && winner.post.translatedTitle) || winner.post.title}
           </Link>
           <p className="text-xs text-foreground-subtle mt-0.5">
-            by {winner.author.displayName || winner.author.username}
+            by {winner.author?.displayName || winner.author?.username || "Unknown"}
             {winner.country && ` ${winner.country.flagEmoji}`}
             {" · "}🔥 {winner.likeCount}
           </p>

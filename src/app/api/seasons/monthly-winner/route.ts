@@ -27,6 +27,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ winners: [], season: null });
     }
 
+    // Support translated titles via ?lang= parameter
+    const lang = searchParams.get("lang");
+    const VALID_LANGS = ["ko", "en", "ja", "zh", "es", "hi", "ar"];
+    const targetLang = lang && VALID_LANGS.includes(lang) ? lang : null;
+
     const winners = await prisma.monthlyWinner.findMany({
       where: { seasonId: season.id },
       orderBy: { month: "asc" },
@@ -35,8 +40,19 @@ export async function GET(request: NextRequest) {
           select: {
             id: true,
             title: true,
+            sourceLanguage: true,
             reactionCount: true,
             images: { select: { originalUrl: true }, take: 1 },
+            translationPayloads: targetLang ? {
+              where: {
+                targetLanguage: targetLang as any,
+                status: { in: ["COMPLETED", "APPROVED"] },
+                translatedTitle: { not: null },
+              },
+              orderBy: { version: "desc" as const },
+              take: 1,
+              select: { translatedTitle: true },
+            } : false,
           },
         },
         author: {
@@ -55,8 +71,20 @@ export async function GET(request: NextRequest) {
       },
     });
 
+    // Map winners to include translatedTitle at top level for convenience
+    const mappedWinners = winners.map((w) => {
+      const post = w.post as any;
+      const translatedTitle = post?.translationPayloads?.[0]?.translatedTitle || null;
+      // Remove translationPayloads from response to keep it clean
+      const { translationPayloads, ...cleanPost } = post || {};
+      return {
+        ...w,
+        post: { ...cleanPost, translatedTitle },
+      };
+    });
+
     return NextResponse.json({
-      winners,
+      winners: mappedWinners,
       season: {
         id: season.id,
         name: season.name,
