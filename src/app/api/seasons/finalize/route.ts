@@ -53,9 +53,11 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    if (!winningMW) {
-      return NextResponse.json({ error: "Winning entry not found" }, { status: 500 });
+    if (!winningMW || !winningMW.authorId) {
+      return NextResponse.json({ error: "Winning entry or author not found" }, { status: 500 });
     }
+
+    const winnerAuthorId: string = winningMW.authorId;
 
     // =====================================================================
     // 2. COUNTRY OF THE YEAR — Total reactions received during the season
@@ -110,14 +112,14 @@ export async function POST(request: NextRequest) {
         data: {
           status: "COMPLETED",
           championPostId: winningMW.postId,
-          championUserId: winningMW.authorId,
+          championUserId: winnerAuthorId,
           championCountryId: championCountryId, // Country by total 🔥, not meme winner's country
         },
       });
 
       // Mark meme winner as champion
       await tx.user.update({
-        where: { id: winningMW.authorId },
+        where: { id: winnerAuthorId },
         data: {
           isChampion: true,
           championSeasonId: seasonId,
@@ -131,7 +133,7 @@ export async function POST(request: NextRequest) {
           type: "GOLD",
           scope: "MEME",
           label: `${season.name} — Meme of the Year`,
-          userId: winningMW.authorId,
+          userId: winnerAuthorId,
           countryId: winningMW.countryId,
           postId: winningMW.postId,
         },
@@ -144,7 +146,7 @@ export async function POST(request: NextRequest) {
           type: "GOLD",
           scope: "CREATOR",
           label: `${season.name} — Meme of the Year Creator`,
-          userId: winningMW.authorId,
+          userId: winnerAuthorId,
         },
       });
 
