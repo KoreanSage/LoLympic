@@ -8,6 +8,7 @@ import SeasonBar from "@/components/competition/SeasonBar";
 import Avatar from "@/components/ui/Avatar";
 import { useToast } from "@/components/ui/Toast";
 import { useTranslation } from "@/i18n";
+import type { Locale } from "@/i18n/provider";
 
 interface NotificationData {
   id: string;
@@ -94,7 +95,7 @@ function notifIcon(type: string): string {
 
 export default function TopNav() {
   const { data: session, status } = useSession();
-  const { t } = useTranslation();
+  const { t, locale, setLocale } = useTranslation();
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showNotifications, setShowNotifications] = useState(false);
@@ -109,6 +110,21 @@ export default function TopNav() {
   const searchRef = useRef<HTMLInputElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
+
+  const UI_LANGS: { code: Locale; flag: string }[] = [
+    { code: "en", flag: "\uD83C\uDDFA\uD83C\uDDF8" },
+    { code: "ko", flag: "\uD83C\uDDF0\uD83C\uDDF7" },
+    { code: "ja", flag: "\uD83C\uDDEF\uD83C\uDDF5" },
+    { code: "zh", flag: "\uD83C\uDDE8\uD83C\uDDF3" },
+    { code: "es", flag: "\uD83C\uDDEA\uD83C\uDDF8" },
+    { code: "hi", flag: "\uD83C\uDDEE\uD83C\uDDF3" },
+    { code: "ar", flag: "\uD83C\uDDF8\uD83C\uDDE6" },
+  ];
+  const handleLocaleChange = useCallback((newLocale: Locale) => {
+    setLocale(newLocale);
+    localStorage.setItem("uiLanguage", newLocale);
+    localStorage.setItem("preferredLanguage", newLocale);
+  }, [setLocale]);
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -450,6 +466,24 @@ export default function TopNav() {
               <span className="hidden sm:inline">{t("nav.search")}</span>
             </button>
           )}
+
+          {/* Language Switcher */}
+          <div className="flex items-center gap-0.5 overflow-x-auto scrollbar-hide shrink-0">
+            {UI_LANGS.map((lang) => (
+              <button
+                key={lang.code}
+                onClick={() => handleLocaleChange(lang.code)}
+                title={lang.code.toUpperCase()}
+                className={`w-7 h-7 text-sm rounded-md transition-all flex items-center justify-center shrink-0 ${
+                  locale === lang.code
+                    ? "bg-[#c9a84c]/20 ring-1 ring-[#c9a84c]/50 scale-110"
+                    : "opacity-50 hover:opacity-100 hover:bg-background-elevated"
+                }`}
+              >
+                {lang.flag}
+              </button>
+            ))}
+          </div>
 
           {/* DM Messages */}
           {status === "authenticated" && (
