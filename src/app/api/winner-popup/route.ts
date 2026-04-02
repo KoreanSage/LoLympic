@@ -49,20 +49,21 @@ export async function GET(req: NextRequest) {
         },
       });
 
-      // Fetch translated title if language is specified and different from source
+      // Fetch translated title and image if language is specified and different from source
       let translatedTitle: string | null = null;
+      let translatedImageUrl: string | null = null;
       if (lang && championPost && championPost.sourceLanguage !== lang) {
         const tp = await prisma.translationPayload.findFirst({
           where: {
             postId: completedSeason.championPostId,
             targetLanguage: lang as any,
             status: { in: ["COMPLETED", "APPROVED"] },
-            translatedTitle: { not: null },
           },
           orderBy: { createdAt: "desc" },
-          select: { translatedTitle: true },
+          select: { translatedTitle: true, translatedImageUrl: true },
         });
         translatedTitle = tp?.translatedTitle || null;
+        translatedImageUrl = tp?.translatedImageUrl || null;
       }
 
       // Get country champion data
@@ -107,6 +108,7 @@ export async function GET(req: NextRequest) {
               id: championPost.id,
               title: championPost.title,
               translatedTitle,
+              translatedImageUrl,
               sourceLanguage: championPost.sourceLanguage,
               imageUrl: championPost.images[0]?.originalUrl || "",
             },
@@ -150,20 +152,21 @@ export async function GET(req: NextRequest) {
     });
 
     if (recentMonthlyWinner) {
-      // Fetch translated title if language is specified and different from source
+      // Fetch translated title and image if language is specified and different from source
       let monthlyTranslatedTitle: string | null = null;
+      let monthlyTranslatedImageUrl: string | null = null;
       if (lang && recentMonthlyWinner.post.sourceLanguage !== lang) {
         const tp = await prisma.translationPayload.findFirst({
           where: {
             postId: recentMonthlyWinner.post.id,
             targetLanguage: lang as any,
             status: { in: ["COMPLETED", "APPROVED"] },
-            translatedTitle: { not: null },
           },
           orderBy: { createdAt: "desc" },
-          select: { translatedTitle: true },
+          select: { translatedTitle: true, translatedImageUrl: true },
         });
         monthlyTranslatedTitle = tp?.translatedTitle || null;
+        monthlyTranslatedImageUrl = tp?.translatedImageUrl || null;
       }
 
       return NextResponse.json({
@@ -175,6 +178,7 @@ export async function GET(req: NextRequest) {
             id: recentMonthlyWinner.post.id,
             title: recentMonthlyWinner.post.title,
             translatedTitle: monthlyTranslatedTitle,
+            translatedImageUrl: monthlyTranslatedImageUrl,
             sourceLanguage: recentMonthlyWinner.post.sourceLanguage,
             imageUrl: recentMonthlyWinner.post.images[0]?.originalUrl || "",
           },
