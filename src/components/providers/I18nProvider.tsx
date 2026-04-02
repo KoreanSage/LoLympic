@@ -98,6 +98,8 @@ export default function I18nProvider({ children }: { children: React.ReactNode }
     localStorage.setItem("preferredLanguage", newLocale);
     // Sync meme translation language
     localStorage.setItem("mimzy_preferredLanguage", newLocale);
+    // Dispatch storage event so other components (feed, popups) pick up the change
+    window.dispatchEvent(new StorageEvent("storage", { key: "mimzy_preferredLanguage", newValue: newLocale }));
     setShowLanguageModal(false);
   }, []);
 
