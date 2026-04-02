@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
 /**
- * GET /api/winner-popup
+ * GET /api/winner-popup?lang=es
  * Returns the most recent winner announcement that the user may not have seen yet.
  * Checks for:
  *   1. Yearly champion (tournament final decided) — highest priority
@@ -10,7 +10,8 @@ import prisma from "@/lib/prisma";
  *
  * The client uses localStorage to track which announcements the user has dismissed.
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const lang = req.nextUrl.searchParams.get("lang") || "";
   try {
     const now = new Date();
 
@@ -40,12 +41,29 @@ export async function GET() {
         select: {
           id: true,
           title: true,
+          sourceLanguage: true,
           reactionCount: true,
           images: { take: 1, orderBy: { orderIndex: "asc" }, select: { originalUrl: true } },
           author: { select: { username: true, displayName: true } },
           country: { select: { flagEmoji: true, nameEn: true } },
         },
       });
+
+      // Fetch translated title if language is specified and different from source
+      let translatedTitle: string | null = null;
+      if (lang && championPost && championPost.sourceLanguage !== lang) {
+        const tp = await prisma.translationPayload.findFirst({
+          where: {
+            postId: completedSeason.championPostId,
+            targetLanguage: lang as any,
+            status: { in: ["COMPLETED", "APPROVED"] },
+            translatedTitle: { not: null },
+          },
+          orderBy: { createdAt: "desc" },
+          select: { translatedTitle: true },
+        });
+        translatedTitle = tp?.translatedTitle || null;
+      }
 
       // Get country champion data
       let championCountry = null;
@@ -88,6 +106,8 @@ export async function GET() {
             post: {
               id: championPost.id,
               title: championPost.title,
+              translatedTitle,
+              sourceLanguage: championPost.sourceLanguage,
               imageUrl: championPost.images[0]?.originalUrl || "",
             },
             author: {
@@ -115,6 +135,7 @@ export async function GET() {
           select: {
             id: true,
             title: true,
+            sourceLanguage: true,
             reactionCount: true,
             images: { take: 1, orderBy: { orderIndex: "asc" }, select: { originalUrl: true } },
           },
@@ -129,6 +150,22 @@ export async function GET() {
     });
 
     if (recentMonthlyWinner) {
+      // Fetch translated title if language is specified and different from source
+      let monthlyTranslatedTitle: string | null = null;
+      if (lang && recentMonthlyWinner.post.sourceLanguage !== lang) {
+        const tp = await prisma.translationPayload.findFirst({
+          where: {
+            postId: recentMonthlyWinner.post.id,
+            targetLanguage: lang as any,
+            status: { in: ["COMPLETED", "APPROVED"] },
+            translatedTitle: { not: null },
+          },
+          orderBy: { createdAt: "desc" },
+          select: { translatedTitle: true },
+        });
+        monthlyTranslatedTitle = tp?.translatedTitle || null;
+      }
+
       return NextResponse.json({
         winner: {
           type: "monthly",
@@ -137,6 +174,8 @@ export async function GET() {
           post: {
             id: recentMonthlyWinner.post.id,
             title: recentMonthlyWinner.post.title,
+            translatedTitle: monthlyTranslatedTitle,
+            sourceLanguage: recentMonthlyWinner.post.sourceLanguage,
             imageUrl: recentMonthlyWinner.post.images[0]?.originalUrl || "",
           },
           author: recentMonthlyWinner.author

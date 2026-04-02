@@ -12,6 +12,8 @@ interface WinnerData {
   post?: {
     id: string;
     title: string;
+    translatedTitle?: string | null;
+    sourceLanguage?: string | null;
     imageUrl: string;
   };
   author?: {
@@ -32,23 +34,27 @@ interface WinnerData {
   seasonName?: string;
 }
 
-function getMonthName(month: number): string {
-  return new Date(2000, month - 1).toLocaleDateString(undefined, { month: 'long' });
+function getMonthName(month: number, locale: string): string {
+  const localeMap: Record<string, string> = {
+    en: "en-US", ko: "ko-KR", ja: "ja-JP", zh: "zh-CN",
+    es: "es-ES", hi: "hi-IN", ar: "ar-SA",
+  };
+  return new Date(2000, month - 1).toLocaleDateString(localeMap[locale] || locale, { month: 'long' });
 }
 
 export default function WinnerPopup() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const [winner, setWinner] = useState<WinnerData | null>(null);
   const [visible, setVisible] = useState(false);
   const [animateIn, setAnimateIn] = useState(false);
 
   useEffect(() => {
     checkForWinner();
-  }, []);
+  }, [locale]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function checkForWinner() {
     try {
-      const res = await fetch("/api/winner-popup");
+      const res = await fetch(`/api/winner-popup?lang=${locale}`);
       if (!res.ok) return;
       const data = await res.json();
 
@@ -134,7 +140,7 @@ export default function WinnerPopup() {
             <h2 className={`text-lg font-bold ${isYearly ? "text-[#FFD700]" : "text-[#c9a84c]"}`}>
               {isYearly
                 ? `${winner.seasonName || winner.year} ${t("winner.champion")}`
-                : `${getMonthName(winner.month || 1)} ${t("winner.monthlyWinner")}`
+                : `${getMonthName(winner.month || 1, locale)} ${t("winner.monthlyWinner")}`
               }
             </h2>
             {isYearly && (
@@ -164,7 +170,7 @@ export default function WinnerPopup() {
           <div className="px-6 pb-4 text-center">
             {winner.post && (
               <p className="text-sm font-medium text-foreground mb-1 line-clamp-2">
-                {winner.post.title}
+                {(winner.post.sourceLanguage !== locale && winner.post.translatedTitle) || winner.post.title}
               </p>
             )}
             <p className="text-xs text-foreground-muted">
