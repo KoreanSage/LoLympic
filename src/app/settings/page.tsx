@@ -249,9 +249,12 @@ export default function SettingsPage() {
       }
       // Refresh session to pick up updated values
       await updateSession();
-      // Also store preferredLanguage in localStorage for immediate availability
+      // Sync all localStorage keys so TopNav/feed pick up the change immediately
       if (activeTab === "language") {
+        localStorage.setItem("uiLanguage", uiLanguage);
+        localStorage.setItem("preferredLanguage", preferredLang);
         localStorage.setItem("mimzy_preferredLanguage", preferredLang);
+        window.dispatchEvent(new StorageEvent("storage", { key: "mimzy_preferredLanguage", newValue: preferredLang }));
       }
       toast(t("settings.saved"), "success");
     } catch (err: any) {
