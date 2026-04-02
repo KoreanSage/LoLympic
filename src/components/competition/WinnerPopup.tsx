@@ -13,6 +13,7 @@ interface WinnerData {
     id: string;
     title: string;
     translatedTitle?: string | null;
+    translatedImageUrl?: string | null;
     sourceLanguage?: string | null;
     imageUrl: string;
   };
@@ -157,8 +158,8 @@ export default function WinnerPopup() {
                 }`}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={winner.post.imageUrl}
-                    alt={winner.post.title}
+                    src={(winner.post.sourceLanguage !== locale && winner.post.translatedImageUrl) || winner.post.imageUrl}
+                    alt={(winner.post.sourceLanguage !== locale && winner.post.translatedTitle) || winner.post.title}
                     className="w-full aspect-[4/3] object-cover"
                   />
                 </div>
