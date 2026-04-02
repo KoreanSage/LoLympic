@@ -132,6 +132,12 @@ export default function TopNav() {
     // Dispatch storage event so other components (HomePage) pick up the change
     window.dispatchEvent(new StorageEvent("storage", { key: "mimzy_preferredLanguage", newValue: newLocale }));
     setShowLangDropdown(false);
+    // Persist to DB so settings page stays in sync
+    fetch("/api/users/me", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ uiLanguage: newLocale, preferredLanguage: newLocale }),
+    }).catch(() => {});
   }, [setLocale]);
 
   // Close lang dropdown on outside click
