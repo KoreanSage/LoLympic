@@ -103,7 +103,7 @@ const legalEN: LegalContent = {
         {
           title: "4. User Content",
           content:
-            "You retain ownership of content you upload. By posting content, you grant mimzy a worldwide, non-exclusive, royalty-free license to use, display, reproduce, and distribute your content on the platform. You represent that you have the right to share any content you upload.",
+            "You retain ownership of content you upload. By posting content, you grant mimzy a worldwide, non-exclusive, royalty-free license to use, display, reproduce, and distribute your content on the platform and on mimzy's official social media channels (including but not limited to Instagram, TikTok, YouTube, and X/Twitter) for promotional purposes. You represent that you have the right to share any content you upload.",
         },
         {
           title: "5. AI Translation",
@@ -360,7 +360,7 @@ const legalKO: LegalContent = {
         {
           title: "4. 사용자 콘텐츠",
           content:
-            "귀하가 업로드한 콘텐츠의 소유권은 귀하에게 있습니다. 콘텐츠를 게시함으로써 귀하는 mimzy에 플랫폼에서 해당 콘텐츠를 사용, 표시, 복제 및 배포할 수 있는 전 세계적, 비독점적, 무상의 라이선스를 부여합니다. 귀하는 업로드하는 모든 콘텐츠를 공유할 권리가 있음을 보증합니다.",
+            "귀하가 업로드한 콘텐츠의 소유권은 귀하에게 있습니다. 콘텐츠를 게시함으로써 귀하는 mimzy에 플랫폼 및 mimzy의 공식 소셜 미디어 채널(Instagram, TikTok, YouTube, X/Twitter 등을 포함하되 이에 국한되지 않음)에서 홍보 목적으로 해당 콘텐츠를 사용, 표시, 복제 및 배포할 수 있는 전 세계적, 비독점적, 무상의 라이선스를 부여합니다. 귀하는 업로드하는 모든 콘텐츠를 공유할 권리가 있음을 보증합니다.",
         },
         {
           title: "5. AI 번역",
@@ -617,7 +617,7 @@ const legalJA: LegalContent = {
         {
           title: "4. ユーザーコンテンツ",
           content:
-            "お客様がアップロードしたコンテンツの所有権はお客様に帰属します。コンテンツを投稿することにより、お客様はmimzyに対し、プラットフォーム上でコンテンツを使用、表示、複製、配布するための全世界的、非独占的、無償のライセンスを付与するものとします。お客様はアップロードするすべてのコンテンツを共有する権利を有していることを表明するものとします。",
+            "お客様がアップロードしたコンテンツの所有権はお客様に帰属します。コンテンツを投稿することにより、お客様はmimzyに対し、プラットフォーム上およびmimzyの公式ソーシャルメディアチャンネル（Instagram、TikTok、YouTube、X/Twitterなどを含むがこれに限定されない）でプロモーション目的でコンテンツを使用、表示、複製、配布するための全世界的、非独占的、無償のライセンスを付与するものとします。お客様はアップロードするすべてのコンテンツを共有する権利を有していることを表明するものとします。",
         },
         {
           title: "5. AI翻訳",
@@ -874,7 +874,7 @@ const legalZH: LegalContent = {
         {
           title: "4. 用户内容",
           content:
-            "您保留所上传内容的所有权。发布内容即表示您授予mimzy在平台上使用、展示、复制和分发您内容的全球性、非排他性、免版税的许可。您声明有权分享您上传的所有内容。",
+            "您保留所上传内容的所有权。发布内容即表示您授予mimzy在平台上以及mimzy的官方社交媒体渠道（包括但不限于Instagram、TikTok、YouTube和X/Twitter）上出于推广目的使用、展示、复制和分发您内容的全球性、非排他性、免版税的许可。您声明有权分享您上传的所有内容。",
         },
         {
           title: "5. AI翻译",
@@ -1131,7 +1131,7 @@ const legalES: LegalContent = {
         {
           title: "4. Contenido del Usuario",
           content:
-            "Usted conserva la propiedad del contenido que sube. Al publicar contenido, otorga a mimzy una licencia mundial, no exclusiva y libre de regalías para usar, mostrar, reproducir y distribuir su contenido en la plataforma. Usted declara que tiene derecho a compartir cualquier contenido que suba.",
+            "Usted conserva la propiedad del contenido que sube. Al publicar contenido, otorga a mimzy una licencia mundial, no exclusiva y libre de regalías para usar, mostrar, reproducir y distribuir su contenido en la plataforma y en los canales oficiales de redes sociales de mimzy (incluyendo, entre otros, Instagram, TikTok, YouTube y X/Twitter) con fines promocionales. Usted declara que tiene derecho a compartir cualquier contenido que suba.",
         },
         {
           title: "5. Traducción con IA",
@@ -1388,7 +1388,7 @@ const legalHI: LegalContent = {
         {
           title: "4. उपयोगकर्ता सामग्री",
           content:
-            "आपके द्वारा अपलोड की गई सामग्री का स्वामित्व आपके पास रहता है। सामग्री पोस्ट करके, आप mimzy को प्लेटफ़ॉर्म पर आपकी सामग्री का उपयोग, प्रदर्शन, पुनरुत्पादन और वितरण करने के लिए विश्वव्यापी, गैर-विशिष्ट, रॉयल्टी-मुक्त लाइसेंस प्रदान करते हैं। आप प्रतिनिधित्व करते हैं कि आपके पास अपलोड की गई किसी भी सामग्री को साझा करने का अधिकार है।",
+            "आपके द्वारा अपलोड की गई सामग्री का स्वामित्व आपके पास रहता है। सामग्री पोस्ट करके, आप mimzy को प्लेटफ़ॉर्म पर और mimzy के आधिकारिक सोशल मीडिया चैनलों (Instagram, TikTok, YouTube, और X/Twitter सहित लेकिन इन तक सीमित नहीं) पर प्रचार उद्देश्यों के लिए आपकी सामग्री का उपयोग, प्रदर्शन, पुनरुत्पादन और वितरण करने के लिए विश्वव्यापी, गैर-विशिष्ट, रॉयल्टी-मुक्त लाइसेंस प्रदान करते हैं। आप प्रतिनिधित्व करते हैं कि आपके पास अपलोड की गई किसी भी सामग्री को साझा करने का अधिकार है।",
         },
         {
           title: "5. AI अनुवाद",
@@ -1645,7 +1645,7 @@ const legalAR: LegalContent = {
         {
           title: "4. محتوى المستخدم",
           content:
-            "تحتفظ بملكية المحتوى الذي تقوم بتحميله. بنشر المحتوى، فإنك تمنح mimzy ترخيصًا عالميًا وغير حصري وخاليًا من حقوق الملكية لاستخدام وعرض واستنساخ وتوزيع محتواك على المنصة. أنت تقر بأن لديك الحق في مشاركة أي محتوى تقوم بتحميله.",
+            "تحتفظ بملكية المحتوى الذي تقوم بتحميله. بنشر المحتوى، فإنك تمنح mimzy ترخيصًا عالميًا وغير حصري وخاليًا من حقوق الملكية لاستخدام وعرض واستنساخ وتوزيع محتواك على المنصة وعلى قنوات التواصل الاجتماعي الرسمية لـ mimzy (بما في ذلك على سبيل المثال لا الحصر Instagram وTikTok وYouTube وX/Twitter) لأغراض ترويجية. أنت تقر بأن لديك الحق في مشاركة أي محتوى تقوم بتحميله.",
         },
         {
           title: "5. الترجمة بالذكاء الاصطناعي",
