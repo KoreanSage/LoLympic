@@ -56,7 +56,8 @@ function getStreakMessage(streak: number, t: (key: any) => string): string {
 function BattleCardInner({ onDismiss }: BattleCardProps) {
   const { t } = useTranslation();
   const { data: session } = useSession();
-  const userLang = session?.user?.preferredLanguage || (typeof window !== "undefined" ? localStorage.getItem("mimzy_preferredLanguage") : null) || "en";
+  // localStorage first (TopNav updates this immediately), then session fallback
+  const userLang = (typeof window !== "undefined" ? localStorage.getItem("mimzy_preferredLanguage") : null) || session?.user?.preferredLanguage || "en";
   const [left, setLeft] = useState<BattlePost | null>(null);
   const [right, setRight] = useState<BattlePost | null>(null);
   const [loading, setLoading] = useState(true);

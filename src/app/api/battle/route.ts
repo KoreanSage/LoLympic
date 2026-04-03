@@ -23,7 +23,7 @@ async function getRandomPair(excludePostIds: string[], userId?: string, userLang
   };
 
   // Filter by user's preferred language: show posts that have translations for their language
-  // This ensures the battle is meaningful — users see content they can understand
+  // Only show posts with COMPLETED translations that have translated images
   if (userLanguage) {
     where.OR = [
       { sourceLanguage: userLanguage }, // Posts already in user's language
@@ -32,6 +32,7 @@ async function getRandomPair(excludePostIds: string[], userId?: string, userLang
           some: {
             targetLanguage: userLanguage,
             status: { in: ["COMPLETED", "APPROVED"] },
+            translatedImageUrl: { not: null }, // Must have translated image
           },
         },
       },
@@ -90,12 +91,13 @@ async function getRandomPair(excludePostIds: string[], userId?: string, userLang
     },
   };
 
-  // Include translation for user's language if available
+  // Include translation for user's language if available (must have image)
   if (userLanguage) {
     select.translationPayloads = {
       where: {
         targetLanguage: userLanguage,
         status: { in: ["COMPLETED", "APPROVED"] },
+        translatedImageUrl: { not: null },
       },
       orderBy: { version: "desc" as const },
       take: 1,
@@ -182,12 +184,13 @@ async function getRandomPairFallback(excludePostIds: string[], userId?: string, 
     country: { select: { id: true, flagEmoji: true, nameEn: true } },
   };
 
-  // Still fetch translations so we can show translated title/image
+  // Still fetch translations so we can show translated title/image (must have image)
   if (userLanguage) {
     select.translationPayloads = {
       where: {
         targetLanguage: userLanguage,
         status: { in: ["COMPLETED", "APPROVED"] },
+        translatedImageUrl: { not: null },
       },
       orderBy: { version: "desc" as const },
       take: 1,

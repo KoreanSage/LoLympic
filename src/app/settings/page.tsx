@@ -8,18 +8,8 @@ import Avatar from "@/components/ui/Avatar";
 import Button from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { useTheme } from "@/components/providers/ThemeProvider";
-import { useTranslation, type TranslationKeys, type Locale } from "@/i18n";
+import { useTranslation, type TranslationKeys } from "@/i18n";
 import Link from "next/link";
-
-const LANGUAGES = [
-  { code: "ko", label: "한국어", icon: "한" },
-  { code: "en", label: "English", icon: "A" },
-  { code: "ja", label: "日本語", icon: "あ" },
-  { code: "zh", label: "中文", icon: "字" },
-  { code: "es", label: "Español", icon: "Ñ" },
-  { code: "hi", label: "हिन्दी", icon: "अ" },
-  { code: "ar", label: "العربية", icon: "ع" },
-];
 
 const COUNTRIES = [
   { code: "KR", label: "South Korea", flag: "\u{1F1F0}\u{1F1F7}" },
@@ -42,24 +32,22 @@ const COUNTRIES = [
   { code: "AE", label: "UAE", flag: "\u{1F1E6}\u{1F1EA}" },
 ];
 
-type SettingsTab = "profile" | "account" | "notifications" | "language" | "blocked" | "about";
+type SettingsTab = "profile" | "account" | "notifications" | "blocked" | "about";
 
 const TAB_ICONS: Record<SettingsTab, string> = {
   profile: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z",
   account: "M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z",
   notifications: "M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9",
-  language: "M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129",
   blocked: "M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636",
   about: "M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
 };
 
-const TAB_IDS: SettingsTab[] = ["profile", "account", "notifications", "language", "blocked", "about"];
+const TAB_IDS: SettingsTab[] = ["profile", "account", "notifications", "blocked", "about"];
 
 const TAB_LABEL_KEYS: Record<SettingsTab, string> = {
   profile: "settings.profile",
   account: "settings.account",
   notifications: "settings.notifications",
-  language: "settings.language",
   blocked: "block.blockedUsers",
   about: "settings.about",
 };
@@ -69,7 +57,7 @@ export default function SettingsPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { theme, toggleTheme } = useTheme();
-  const { t, setLocale } = useTranslation();
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<SettingsTab>("profile");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -101,9 +89,7 @@ export default function SettingsPage() {
   const [notifSuggestions, setNotifSuggestions] = useState(true);
   const [notifSeason, setNotifSeason] = useState(true);
 
-  // Language state
-  const [uiLanguage, setUiLanguage] = useState("en");
-  const [preferredLang, setPreferredLang] = useState("ko");
+  // Language state (read-only, managed by TopNav)
   const [autoTranslate, setAutoTranslate] = useState(true);
 
   // Blocked users state
@@ -126,8 +112,6 @@ export default function SettingsPage() {
           setBio(data.bio || "");
           setCountry(data.countryId || "KR");
           setAvatarUrl(data.avatarUrl || null);
-          setPreferredLang(data.preferredLanguage || "ko");
-          setUiLanguage(data.uiLanguage || "en");
           setHasPassword(!!data.hasPassword);
           setEmailVerified(!!data.emailVerified);
         }
@@ -223,11 +207,6 @@ export default function SettingsPage() {
         payload.bio = bio;
         payload.countryId = country;
         payload.avatarUrl = avatarUrl;
-      } else if (activeTab === "language") {
-        payload.uiLanguage = uiLanguage;
-        payload.preferredLanguage = preferredLang;
-        // Update the i18n locale so the UI re-renders in the new language
-        setLocale(uiLanguage as Locale);
       } else if (activeTab === "notifications") {
         // Notification preferences are stored locally for now
         localStorage.setItem("mimzy_notif_prefs", JSON.stringify({
@@ -249,13 +228,6 @@ export default function SettingsPage() {
       }
       // Refresh session to pick up updated values
       await updateSession();
-      // Sync all localStorage keys so TopNav/feed pick up the change immediately
-      if (activeTab === "language") {
-        localStorage.setItem("uiLanguage", uiLanguage);
-        localStorage.setItem("preferredLanguage", preferredLang);
-        localStorage.setItem("mimzy_preferredLanguage", preferredLang);
-        window.dispatchEvent(new StorageEvent("storage", { key: "mimzy_preferredLanguage", newValue: preferredLang }));
-      }
       toast(t("settings.saved"), "success");
     } catch (err: any) {
       toast(err.message || t("settings.saveFailed"), "error");
@@ -622,52 +594,6 @@ export default function SettingsPage() {
                     </div>
                   </div>
                 </div>
-
-                <Button onClick={handleSave} loading={saving}>
-                  {t("settings.savePrefs")}
-                </Button>
-              </div>
-            )}
-
-            {/* Language */}
-            {activeTab === "language" && (
-              <div className="bg-background-surface border border-border rounded-xl p-6 space-y-5">
-                <h2 className="text-lg font-semibold text-foreground">{t("settings.langTranslation")}</h2>
-
-                <div>
-                  <label className="block text-xs font-medium text-foreground-muted mb-1.5">{t("settings.interfaceLang")}</label>
-                  <select
-                    value={uiLanguage}
-                    onChange={(e) => setUiLanguage(e.target.value)}
-                    className="w-full bg-background-elevated border border-border-hover rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-[#c9a84c]/50 transition-colors"
-                  >
-                    {LANGUAGES.map((l) => (
-                      <option key={l.code} value={l.code}>{l.icon} {l.label}</option>
-                    ))}
-                  </select>
-                  <p className="text-[10px] text-foreground-subtle mt-1">{t("settings.interfaceLangDesc")}</p>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-foreground-muted mb-1.5">{t("settings.preferredLang")}</label>
-                  <select
-                    value={preferredLang}
-                    onChange={(e) => setPreferredLang(e.target.value)}
-                    className="w-full bg-background-elevated border border-border-hover rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-[#c9a84c]/50 transition-colors"
-                  >
-                    {LANGUAGES.map((l) => (
-                      <option key={l.code} value={l.code}>{l.icon} {l.label}</option>
-                    ))}
-                  </select>
-                  <p className="text-[10px] text-foreground-subtle mt-1">{t("settings.preferredLangDesc")}</p>
-                </div>
-
-                <ToggleRow
-                  label={t("settings.autoTranslation")}
-                  description={t("settings.autoTranslationDesc")}
-                  checked={autoTranslate}
-                  onChange={setAutoTranslate}
-                />
 
                 <Button onClick={handleSave} loading={saving}>
                   {t("settings.savePrefs")}
