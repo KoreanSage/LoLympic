@@ -230,31 +230,71 @@ function mapFontFamily(hint?: string): string {
 // Watermark helpers
 // ---------------------------------------------------------------------------
 
-const WATERMARK_HEIGHT_RATIO = 0.035; // 3.5% of image height
-const WATERMARK_MIN_HEIGHT = 20;
-const WATERMARK_MAX_HEIGHT = 48;
+import * as path from "path";
+import * as fs from "fs";
+
+const WATERMARK_HEIGHT_RATIO = 0.05; // 5% of image height for the bar
+const WATERMARK_MIN_HEIGHT = 28;
+const WATERMARK_MAX_HEIGHT = 56;
 const WATERMARK_BG_COLOR = "#000000";
-const WATERMARK_TEXT_COLOR = "#FFFFFF";
-const WATERMARK_TEXT_OPACITY = 0.55;
 const WATERMARK_SEPARATOR_COLOR = "#333333";
-const WATERMARK_TEXT = ".mimzy.gg";
+
+/** Cached watermark logo buffer (loaded once) */
+let _watermarkLogoCache: Buffer | null = null;
 
 /**
- * Build an SVG watermark bar: black strip with a subtle top separator and
- * ".mimzy.gg" centered.
+ * Load the watermark logo PNG from public/watermark-logo.png.
+ * Cached in memory after first load.
  */
-function buildWatermarkSvg(imageWidth: number, barHeight: number): string {
-  const fontSize = Math.max(9, Math.round(barHeight * 0.45));
-  const separatorHeight = Math.max(1, Math.round(barHeight * 0.04));
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${imageWidth}" height="${barHeight}">
-  <rect width="${imageWidth}" height="${barHeight}" fill="${WATERMARK_BG_COLOR}"/>
-  <rect width="${imageWidth}" height="${separatorHeight}" fill="${WATERMARK_SEPARATOR_COLOR}"/>
-  <text x="${imageWidth / 2}" y="${barHeight / 2 + fontSize * 0.35}"
-    font-family="'SF Pro Display', 'Helvetica Neue', Arial, sans-serif"
-    font-size="${fontSize}" font-weight="500" letter-spacing="2"
-    text-anchor="middle" fill="${WATERMARK_TEXT_COLOR}"
-    opacity="${WATERMARK_TEXT_OPACITY}">${WATERMARK_TEXT}</text>
-</svg>`;
+function loadWatermarkLogo(): Buffer {
+  if (_watermarkLogoCache) return _watermarkLogoCache;
+  const logoPath = path.join(process.cwd(), "public", "watermark-logo.png");
+  _watermarkLogoCache = fs.readFileSync(logoPath);
+  return _watermarkLogoCache;
+}
+
+/**
+ * Build watermark bar: black strip with separator + centered logo image.
+ * Returns the composited bar as a Buffer.
+ */
+async function buildWatermarkBar(imageWidth: number, barHeight: number): Promise<Buffer> {
+  const logo = loadWatermarkLogo();
+
+  // Resize logo to fit within bar (60% of bar height, maintain aspect ratio)
+  const logoTargetHeight = Math.max(10, Math.round(barHeight * 0.5));
+  const resizedLogo = await sharp(logo)
+    .resize({ height: logoTargetHeight, fit: "inside" })
+    .png()
+    .toBuffer();
+
+  const logoMeta = await sharp(resizedLogo).metadata();
+  const logoWidth = logoMeta.width || 100;
+  const logoHeight = logoMeta.height || logoTargetHeight;
+
+  // Center the logo in the bar
+  const logoLeft = Math.round((imageWidth - logoWidth) / 2);
+  const logoTop = Math.round((barHeight - logoHeight) / 2);
+  const separatorHeight = Math.max(1, Math.round(barHeight * 0.03));
+
+  // Build separator SVG
+  const separatorSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${imageWidth}" height="${separatorHeight}">
+    <rect width="${imageWidth}" height="${separatorHeight}" fill="${WATERMARK_SEPARATOR_COLOR}"/>
+  </svg>`;
+
+  return sharp({
+    create: {
+      width: imageWidth,
+      height: barHeight,
+      channels: 4,
+      background: WATERMARK_BG_COLOR,
+    },
+  })
+    .composite([
+      { input: Buffer.from(separatorSvg), top: 0, left: 0 },
+      { input: resizedLogo, top: logoTop, left: logoLeft },
+    ])
+    .png()
+    .toBuffer();
 }
 
 // ---------------------------------------------------------------------------
@@ -305,10 +345,10 @@ export async function composeTranslatedImage(
     composites.push({ input: Buffer.from(svgOverlay), top: 0, left: 0 });
   }
 
-  // Build watermark bar
+  // Build watermark bar (image-based logo)
   if (watermark && barHeight > 0) {
-    const wmSvg = buildWatermarkSvg(width, barHeight);
-    composites.push({ input: Buffer.from(wmSvg), top: height, left: 0 });
+    const wmBar = await buildWatermarkBar(width, barHeight);
+    composites.push({ input: wmBar, top: height, left: 0 });
   }
 
   // Extend canvas downward to fit watermark, then composite everything
