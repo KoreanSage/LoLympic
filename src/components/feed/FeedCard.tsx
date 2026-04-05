@@ -651,15 +651,14 @@ function FeedCardInner({
               ) : showTranslation && effectiveTranslatedImageUrl ? (
                 <Image src={effectiveTranslatedImageUrl} alt={title} width={800} height={800} className="w-full h-auto object-contain" sizes="(max-width: 768px) 100vw, 600px" unoptimized />
               ) : isTypeB && segments.length > 0 ? (
-                showTranslation ? (
-                  <ScreenshotRenderer
-                    segments={segments.filter((s: any) => (s.imageIndex ?? 0) === 0)}
-                    showTranslation={showTranslation}
-                    originalImageUrl={imageUrl}
-                  />
-                ) : (
-                  <Image src={imageUrl} alt={title} width={800} height={800} className="w-full h-auto object-contain" sizes="(max-width: 768px) 100vw, 600px" unoptimized />
-                )
+                <MemeRenderer
+                  imageUrl={imageUrl}
+                  cleanImageUrl={cleanImageUrl}
+                  translatedImageUrl={effectiveTranslatedImageUrl}
+                  segments={segments.filter((s: any) => (s.imageIndex ?? 0) === 0)}
+                  showTranslation={showTranslation}
+                  maxHeight={undefined}
+                />
               ) : isGif ? (
                 <Image src={imageUrl} alt={title} width={800} height={800} className="w-full h-auto object-contain" sizes="(max-width: 768px) 100vw, 600px" unoptimized />
               ) : (
