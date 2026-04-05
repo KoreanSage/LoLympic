@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useTranslation } from "@/i18n";
 import { fetchCurrentUser } from "@/lib/user-cache";
@@ -28,54 +28,26 @@ export default function FeedFilters({
   const { t } = useTranslation();
   const { data: session } = useSession();
   const [sort, setSort] = useState("trending");
-  const [postType, setPostType] = useState("");
   const [country, setCountry] = useState("");
   const [language, setLanguage] = useState("");
-  const [category, setCategory] = useState("");
-  const [showRightFade, setShowRightFade] = useState(false);
-  const [userCountryId, setUserCountryId] = useState<string | null>(null);
-  const [userCountryFlag, setUserCountryFlag] = useState<string | null>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Fetch user's country
+  // Auto-set user's country on mount
   useEffect(() => {
     if (!session?.user) return;
     fetchCurrentUser()
       .then((data) => {
         if (data?.countryId) {
-          setUserCountryId(data.countryId);
-          setUserCountryFlag(data.country?.flagEmoji || null);
+          // Don't auto-filter, just keep ready for "My Country" if needed later
         }
       })
       .catch(() => {});
   }, [session?.user]);
-
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const checkOverflow = () => {
-      setShowRightFade(el.scrollWidth > el.clientWidth && el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
-    };
-    checkOverflow();
-    el.addEventListener("scroll", checkOverflow, { passive: true });
-    const ro = new ResizeObserver(checkOverflow);
-    ro.observe(el);
-    return () => {
-      el.removeEventListener("scroll", checkOverflow);
-      ro.disconnect();
-    };
-  }, []);
 
   const SORT_OPTIONS: FilterOption[] = [
     { value: "trending", label: t("filter.trending") },
     { value: "recent", label: t("filter.recent") },
     { value: "top", label: t("filter.top") },
     ...(session?.user ? [{ value: "following", label: t("feed.following") }] : []),
-  ];
-
-  const POST_TYPE_OPTIONS: FilterOption[] = [
-    { value: "", label: t("filter.allCategories") },
-    { value: "meme", label: "😂 Memes" },
   ];
 
   const COUNTRY_OPTIONS: FilterOption[] = [
@@ -111,26 +83,12 @@ export default function FeedFilters({
     { value: "ar", label: "ع العربية" },
   ];
 
-  const CATEGORY_OPTIONS: FilterOption[] = [
-    { value: "", label: t("filter.allCategories") },
-    { value: "daily", label: "☕ Daily" },
-    { value: "sports", label: "⚽ Sports" },
-    { value: "politics", label: "🏛️ Politics" },
-    { value: "anime", label: "🎌 Anime" },
-    { value: "gaming", label: "🎮 Gaming" },
-    { value: "entertainment", label: "🎬 Entertainment" },
-  ];
-
   const handleChange = (key: string, value: string) => {
-    const newFilters: { country: string; language: string; category: string; postType: string; sort: string } = { country, language, category, postType, sort };
+    const newFilters = { country, language, category: "", postType: "", sort };
     switch (key) {
       case "sort":
         setSort(value);
         newFilters.sort = value;
-        break;
-      case "postType":
-        setPostType(value);
-        newFilters.postType = value;
         break;
       case "country":
         setCountry(value);
@@ -140,105 +98,55 @@ export default function FeedFilters({
         setLanguage(value);
         newFilters.language = value;
         break;
-      case "category":
-        setCategory(value);
-        newFilters.category = value;
-        break;
     }
     onFilterChange?.(newFilters);
   };
 
-  const hasActiveFilter = country || language || category;
+  const hasActiveFilter = country || language;
 
   return (
-    <div
-      className={`border-b border-border py-2.5 -mx-4 px-4 ${className}`}
-    >
-      <div className="relative">
-        <div ref={scrollRef} className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
-          {/* Sort tabs */}
-          <div className="flex items-center gap-0.5 bg-background-surface rounded-lg p-0.5 border border-border shrink-0">
-            {SORT_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => handleChange("sort", opt.value)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
-                  sort === opt.value
-                    ? "bg-background-overlay text-foreground"
-                    : "text-foreground-subtle hover:text-foreground-muted"
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-
-          <span className="text-border shrink-0">|</span>
-
-          {/* Post type pills */}
-          {POST_TYPE_OPTIONS.filter((o) => o.value !== "").map((opt) => (
+    <div className={`border-b border-border py-2.5 -mx-4 px-4 ${className}`}>
+      <div className="flex items-center gap-2 flex-wrap">
+        {/* Sort tabs */}
+        <div className="flex items-center gap-0.5 bg-background-surface rounded-lg p-0.5 border border-border shrink-0">
+          {SORT_OPTIONS.map((opt) => (
             <button
               key={opt.value}
-              onClick={() => handleChange("postType", postType === opt.value ? "" : opt.value)}
-              className={`px-2.5 py-1 text-xs font-medium rounded-full transition-all whitespace-nowrap shrink-0 ${
-                postType === opt.value
-                  ? "bg-[#c9a84c]/15 text-[#c9a84c] border border-[#c9a84c]/30"
-                  : "text-foreground-subtle hover:text-foreground-muted border border-transparent"
+              onClick={() => handleChange("sort", opt.value)}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                sort === opt.value
+                  ? "bg-background-overlay text-foreground"
+                  : "text-foreground-subtle hover:text-foreground-muted"
               }`}
             >
               {opt.label}
             </button>
           ))}
-
-          <span className="text-border shrink-0">|</span>
-
-          {/* Dropdown filters */}
-          <FilterSelect
-            value={country}
-            options={COUNTRY_OPTIONS}
-            onChange={(v) => handleChange("country", v)}
-          />
-          <FilterSelect
-            value={language}
-            options={LANGUAGE_OPTIONS}
-            onChange={(v) => handleChange("language", v)}
-          />
-          <FilterSelect
-            value={category}
-            options={CATEGORY_OPTIONS}
-            onChange={(v) => handleChange("category", v)}
-          />
-
-          {/* My Country quick filter */}
-          {userCountryId && (
-            <button
-              onClick={() => handleChange("country", country === userCountryId ? "" : userCountryId)}
-              className={`px-2.5 py-1 text-xs font-medium rounded-full border transition-all whitespace-nowrap shrink-0 ${
-                country === userCountryId
-                  ? "border-[#c9a84c] bg-[#c9a84c]/15 text-[#c9a84c]"
-                  : "border-[#c9a84c]/30 text-[#c9a84c]/70 hover:border-[#c9a84c] hover:text-[#c9a84c]"
-              }`}
-            >
-              {userCountryFlag || "\uD83C\uDFF3\uFE0F"} {t("filter.myCountry")}
-            </button>
-          )}
-
-          {/* Clear filters */}
-          {hasActiveFilter && (
-            <button
-              onClick={() => {
-                handleChange("country", "");
-                handleChange("language", "");
-                handleChange("category", "");
-              }}
-              className="px-2 py-1 text-[10px] text-foreground-subtle hover:text-foreground-muted transition-colors shrink-0"
-            >
-              Clear
-            </button>
-          )}
         </div>
-        {showRightFade && (
-          <div className="absolute right-0 top-0 bottom-0 w-8 pointer-events-none bg-gradient-to-l from-background to-transparent" />
+
+        {/* Dropdown filters */}
+        <FilterSelect
+          value={country}
+          options={COUNTRY_OPTIONS}
+          onChange={(v) => handleChange("country", v)}
+        />
+        <FilterSelect
+          value={language}
+          options={LANGUAGE_OPTIONS}
+          onChange={(v) => handleChange("language", v)}
+        />
+
+        {/* Clear filters */}
+        {hasActiveFilter && (
+          <button
+            onClick={() => {
+              handleChange("country", "");
+              handleChange("language", "");
+            }}
+            className="px-2 py-1 text-[10px] text-foreground-subtle hover:text-foreground-muted transition-colors shrink-0"
+          >
+            Clear
+          </button>
         )}
       </div>
     </div>
