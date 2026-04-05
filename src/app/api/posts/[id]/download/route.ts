@@ -66,24 +66,41 @@ export async function GET(
     const imgWidth = metadata.width || 800;
     const imgHeight = metadata.height || 800;
 
-    // Add "mimzy.gg" watermark bar at bottom
-    const barHeight = Math.max(32, Math.round(imgHeight * 0.05));
+    // Add "mimzy.gg" watermark bar at bottom using logo image
+    const barHeight = Math.min(56, Math.max(28, Math.round(imgHeight * 0.05)));
     let result: Buffer;
     try {
-      // Create dark bar with centered gold dot pattern as brand mark
-      const dotR = Math.max(2, Math.round(barHeight * 0.12));
-      const gap = Math.round(dotR * 3.5);
-      const cx = Math.round(imgWidth / 2);
-      const cy = Math.round(barHeight / 2);
-      // 8 gold dots in a line (simple, no font dependency)
-      const dots = [-3.5, -2.5, -1.5, -0.5, 0.5, 1.5, 2.5, 3.5]
-        .map(i => `<circle cx="${cx + i * gap}" cy="${cy}" r="${dotR}" fill="#C9A84C"/>`)
-        .join("");
-      const barSvg = `<svg width="${imgWidth}" height="${barHeight}" xmlns="http://www.w3.org/2000/svg"><rect width="${imgWidth}" height="${barHeight}" fill="#0D0D0D"/>${dots}</svg>`;
+      // Load watermark logo
+      const logoPath = path.join(process.cwd(), "public", "watermark-logo.png");
+      const logoBuf = await fs.readFile(logoPath);
+
+      // Resize logo to fit bar (50% of bar height)
+      const logoTargetH = Math.max(10, Math.round(barHeight * 0.5));
+      const resizedLogo = await sharp(logoBuf)
+        .resize({ height: logoTargetH, fit: "inside" })
+        .png()
+        .toBuffer();
+      const logoMeta = await sharp(resizedLogo).metadata();
+      const logoW = logoMeta.width || 100;
+      const logoH = logoMeta.height || logoTargetH;
+
+      // Separator + logo composited onto black bar
+      const sepH = Math.max(1, Math.round(barHeight * 0.03));
+      const sepSvg = `<svg width="${imgWidth}" height="${sepH}" xmlns="http://www.w3.org/2000/svg"><rect width="${imgWidth}" height="${sepH}" fill="#333"/></svg>`;
+
+      const barBuffer = await sharp({
+        create: { width: imgWidth, height: barHeight, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 255 } },
+      })
+        .composite([
+          { input: Buffer.from(sepSvg), top: 0, left: 0 },
+          { input: resizedLogo, top: Math.round((barHeight - logoH) / 2), left: Math.round((imgWidth - logoW) / 2) },
+        ])
+        .png()
+        .toBuffer();
 
       result = await sharp(imageBuffer)
-        .extend({ bottom: barHeight, background: { r: 13, g: 13, b: 13, alpha: 1 } })
-        .composite([{ input: Buffer.from(barSvg), gravity: "south" }])
+        .extend({ bottom: barHeight, background: { r: 0, g: 0, b: 0, alpha: 1 } })
+        .composite([{ input: barBuffer, gravity: "south" }])
         .webp({ quality: 85 })
         .toBuffer();
     } catch (wmErr) {
