@@ -453,7 +453,15 @@ export default function TopNav() {
             <NavLink href="/leaderboard" label={t("nav.leaderboard")} />
             <NavLink href="/championship" label={`🏆 ${t("nav.championship")}`} isGold={new Date().getMonth() === 11} />
             <NavLink href="/community" label={t("nav.community")} />
-            <NavLink href="/upload" label={t("nav.upload")} />
+            <Link
+              href="/upload"
+              className="px-4 py-1.5 rounded-lg text-sm font-bold bg-[#c9a84c] text-black hover:bg-[#d4b85c] active:bg-[#b8963f] transition-colors flex items-center gap-1.5"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+              {t("nav.upload")}
+            </Link>
             {isAdmin && <NavLink href="/admin" label={t("nav.admin")} />}
           </div>
         </div>
