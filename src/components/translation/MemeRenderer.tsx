@@ -372,15 +372,15 @@ export default function MemeRenderer({
       }
 
       // When using clean image as base, NO backdrop needed (original text already removed)
-      // When using original image, use semi-transparent backdrop to soften original text
+      // When using original image, use OPAQUE backdrop to fully hide original text
       if (!usingCleanBase) {
-        const padX = bw * 0.1;
-        const padY = bh * 0.15;
+        const padX = bw * 0.15;
+        const padY = bh * 0.2;
         const bgX = Math.max(0, bx - padX);
         const bgY = Math.max(0, by - padY);
         const bgW = Math.min(displayW - bgX, bw + padX * 2);
         const bgH = Math.min(displayH - bgY, bh + padY * 2);
-        const borderRadius = Math.min(bgH * 0.15, 8);
+        const borderRadius = Math.min(bgH * 0.12, 6);
 
         // Draw rounded rect backdrop
         ctx.beginPath();
@@ -395,10 +395,10 @@ export default function MemeRenderer({
         ctx.quadraticCurveTo(bgX, bgY, bgX + borderRadius, bgY);
         ctx.closePath();
 
-        // Semi-transparent backdrop — lets background show through slightly
+        // Fully opaque backdrop matched to surrounding background color
         ctx.fillStyle = seg.backgroundColor || (brightness > 128
-          ? `rgba(${Math.min(255, r + 10)},${Math.min(255, g + 10)},${Math.min(255, b + 10)}, 0.75)`
-          : `rgba(${Math.max(0, r - 5)},${Math.max(0, g - 5)},${Math.max(0, b - 5)}, 0.75)`);
+          ? `rgb(${Math.min(255, r + 15)},${Math.min(255, g + 15)},${Math.min(255, b + 15)})`
+          : `rgb(${Math.max(0, r - 10)},${Math.max(0, g - 10)},${Math.max(0, b - 10)})`);
         ctx.fill();
       }
 
