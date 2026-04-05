@@ -688,10 +688,9 @@ async function generateTranslatedImageForPayload(
 
     // Convert clean image to PNG data URI for Satori embedding
     // (Satori only supports PNG/JPEG, so decode WebP → PNG if needed)
-    let satoriBuffer = cleanBuffer;
-    if (metadata.format === "webp") {
-      satoriBuffer = await sharp(cleanBuffer).png().toBuffer();
-    }
+    const satoriBuffer = metadata.format === "webp"
+      ? Buffer.from(await sharp(cleanBuffer).png().toBuffer())
+      : cleanBuffer;
     const cleanBase64 = satoriBuffer.toString("base64");
     const cleanMime = metadata.format === "jpeg" ? "image/jpeg" : "image/png";
     const cleanDataUri = `data:${cleanMime};base64,${cleanBase64}`;
