@@ -33,6 +33,11 @@ const hi: Record<TranslationKeys, string> = {
   "notif.seasonEnd": "Season खत्म हो गया",
   "notif.monthlyWinner": "🏆 {month} का Meme of the Month चुन लिया गया!",
   "notif.system": "System announcement",
+  "notif.rewardGranted": "आपको नया इनाम मिला!",
+  "notif.directMessage": "{actor} ने आपको मैसेज भेजा",
+  "notif.forward": "{actor} ने आपको एक मीम भेजा",
+  "notif.rankChange": "आपकी रैंकिंग बदल गई!",
+  "notif.translationRequest": "{actor} ने अनुवाद का अनुरोध किया",
   "notif.new_notification": "नई notification",
 
   // ── Sidebar ────────────────────────────────────────────────────────────────

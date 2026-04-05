@@ -239,14 +239,29 @@ function extractMimeType(filePathOrUrl: string): string {
 }
 
 // Helper: Save generated image (R2 > Blob > local)
+// Compresses to WebP before saving for smaller file sizes
 async function saveGeneratedImage(
   buffer: Buffer,
   prefix: string,
   ext: string
 ): Promise<string> {
-  const filename = `uploads/${prefix}_${crypto.randomUUID()}${ext}`;
-  const mimeMap: Record<string, string> = { ".png": "image/png", ".jpg": "image/jpeg" };
-  const contentType = mimeMap[ext] || "image/jpeg";
+  // Compress generated images to WebP (60-80% smaller than PNG)
+  let finalBuffer = buffer;
+  let finalExt = ext;
+  let contentType = ext === ".png" ? "image/png" : "image/jpeg";
+
+  try {
+    const optimized = await sharp(buffer).webp({ quality: 80 }).toBuffer();
+    if (optimized.length < buffer.length) {
+      finalBuffer = optimized;
+      finalExt = ".webp";
+      contentType = "image/webp";
+    }
+  } catch {
+    // Fallback to original if compression fails
+  }
+
+  const filename = `uploads/${prefix}_${crypto.randomUUID()}${finalExt}`;
 
   if (USE_R2) {
     const { S3Client, PutObjectCommand } = await import("@aws-sdk/client-s3");
@@ -261,16 +276,18 @@ async function saveGeneratedImage(
     await s3.send(new PutObjectCommand({
       Bucket: process.env.R2_BUCKET_NAME!,
       Key: filename,
-      Body: buffer,
+      Body: finalBuffer,
       ContentType: contentType,
+      CacheControl: "public, max-age=31536000, immutable",
     }));
     const publicUrl = process.env.R2_PUBLIC_URL?.replace(/\/$/, "");
     return `${publicUrl}/${filename}`;
   } else if (USE_BLOB) {
     const { put } = await import("@vercel/blob");
-    const blob = await put(filename, buffer, {
+    const blob = await put(filename, finalBuffer, {
       access: "public",
       contentType,
+      cacheControlMaxAge: 31536000,
     });
     return blob.url;
   } else {
@@ -278,7 +295,7 @@ async function saveGeneratedImage(
     const fs = await import("fs/promises");
     const uploadDir = process.env.UPLOAD_DIR || "./uploads";
     const filePath = path.join(path.resolve(uploadDir), filename);
-    await fs.writeFile(filePath, buffer);
+    await fs.writeFile(filePath, finalBuffer);
     return `/api/uploads/${filename}`;
   }
 }
@@ -1044,8 +1061,8 @@ export async function POST(request: NextRequest) {
 
               const cleaned = stripMarkdownFences(text);
               const parsed = JSON.parse(cleaned) as AITranslationResult;
-              if (!Array.isArray(parsed.segments) || parsed.segments.length === 0) continue;
-
+              if (!Array.isArray(parsed.segments)) continue;
+              // Empty segments = no text detected in meme (valid result)
               return { parsed, imgIdx };
             } catch (err) {
               console.warn(`Translate attempt ${attempt + 1} failed for ${targetLang} image ${imgIdx}:`, err instanceof Error ? err.message : String(err));
@@ -1088,9 +1105,21 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        if (allSegments.length === 0 || !firstParsed) {
+        if (!firstParsed) {
           console.error(`All translation attempts failed for ${targetLang}`);
           results[targetLang] = { error: `Translation failed for all images` };
+          continue;
+        }
+
+        // No text detected in any image — skip translation, return original as-is
+        if (allSegments.length === 0) {
+          console.debug(`[NoText] No text detected in meme for ${postId}:${targetLang}, skipping translation`);
+          results[targetLang] = {
+            payloadId: undefined,
+            version: undefined,
+            segmentCount: 0,
+            confidence: null,
+          };
           continue;
         }
 
@@ -1112,10 +1141,21 @@ export async function POST(request: NextRequest) {
 
         } // --- End Gemini else block ---
 
-        if (allSegments.length === 0 || !firstParsed) {
-          // Already handled inside the else block with `continue`, but guard for cache path too
+        if (!firstParsed) {
           console.error(`No segments available for ${targetLang}`);
           results[targetLang] = { error: `Translation failed for ${targetLang}` };
+          continue;
+        }
+
+        // No text detected — skip translation, return original as-is
+        if (allSegments.length === 0) {
+          console.debug(`[NoText] No text in meme for ${postId}:${targetLang}, returning original`);
+          results[targetLang] = {
+            payloadId: undefined,
+            version: undefined,
+            segmentCount: 0,
+            confidence: null,
+          };
           continue;
         }
 

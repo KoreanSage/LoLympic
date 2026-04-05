@@ -384,8 +384,8 @@ export default function FeedList({
         </div>
       )}
 
-      {/* Infinite scroll sentinel */}
-      {hasMore && <div ref={sentinelRef} className="h-1" />}
+      {/* Infinite scroll sentinel — always mounted so the observer can attach */}
+      <div ref={sentinelRef} className="h-1" />
 
       {/* End of feed */}
       {!hasMore && posts.length > 0 && (

@@ -33,6 +33,11 @@ const es: Record<TranslationKeys, string> = {
   "notif.seasonEnd": "La temporada ha terminado",
   "notif.monthlyWinner": "🏆 ¡Se eligió el Meme del Mes de {month}!",
   "notif.system": "Anuncio del sistema",
+  "notif.rewardGranted": "¡Recibiste una nueva recompensa!",
+  "notif.directMessage": "{actor} te envió un mensaje",
+  "notif.forward": "{actor} te compartió un meme",
+  "notif.rankChange": "¡Tu ranking ha cambiado!",
+  "notif.translationRequest": "{actor} solicitó una traducción",
   "notif.new_notification": "Nueva notificación",
 
   // ── Sidebar ────────────────────────────────────────────────────────────────

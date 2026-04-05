@@ -33,6 +33,11 @@ const ja: Record<TranslationKeys, string> = {
   "notif.seasonEnd": "シーズンが終了しました",
   "notif.monthlyWinner": "🏆 {month}の月間ベストミームが選ばれました！",
   "notif.system": "システムからのお知らせ",
+  "notif.rewardGranted": "新しい報酬を獲得しました！",
+  "notif.directMessage": "{actor}からメッセージが届きました",
+  "notif.forward": "{actor}がミームを共有しました",
+  "notif.rankChange": "ランキングが変動しました！",
+  "notif.translationRequest": "{actor}が翻訳をリクエストしました",
   "notif.new_notification": "新しい通知",
 
   // ── Sidebar ────────────────────────────────────────────────────────────────

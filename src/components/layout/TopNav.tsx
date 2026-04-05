@@ -65,6 +65,16 @@ function notifText(n: NotificationData, t: (key: any, params?: any) => string): 
       return t("notif.seasonStart");
     case "SEASON_END":
       return t("notif.seasonEnd");
+    case "REWARD_GRANTED":
+      return t("notif.rewardGranted");
+    case "DIRECT_MESSAGE":
+      return t("notif.directMessage", { actor });
+    case "FORWARD":
+      return t("notif.forward", { actor });
+    case "RANK_CHANGE":
+      return t("notif.rankChange");
+    case "TRANSLATION_REQUEST":
+      return t("notif.translationRequest", { actor });
     case "SYSTEM": {
       const meta = n.metadata as Record<string, unknown> | null;
       if (meta?.subtype === "MONTHLY_WINNER") {
@@ -86,6 +96,11 @@ function notifIcon(type: string): string {
     SUGGESTION_APPROVED: "\u2705",
     FOLLOW: "\u{1F464}",
     MEDAL_AWARDED: "\u{1F3C5}",
+    REWARD_GRANTED: "\u{1F381}",
+    DIRECT_MESSAGE: "\u{1F4E9}",
+    FORWARD: "\u{1F4E8}",
+    RANK_CHANGE: "\u{1F4CA}",
+    TRANSLATION_REQUEST: "\u{1F30D}",
     SEASON_START: "\u{1F3C6}",
     SEASON_END: "\u{1F3C6}",
     SYSTEM: "\u{1F514}",
@@ -469,7 +484,7 @@ export default function TopNav() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={t("nav.searchMemes")}
-                className="w-48 px-3 py-1.5 rounded-lg bg-background-elevated border border-border-active text-sm text-foreground placeholder-foreground-subtle focus:outline-none focus:border-[#c9a84c]/50"
+                className="w-[calc(100vw-8rem)] max-w-48 px-3 py-1.5 rounded-lg bg-background-elevated border border-border-active text-sm text-foreground placeholder-foreground-subtle focus:outline-none focus:border-[#c9a84c]/50"
                 onBlur={() => {
                   if (!searchQuery) setShowSearch(false);
                 }}

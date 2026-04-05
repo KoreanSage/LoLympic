@@ -33,6 +33,11 @@ const zh: Record<TranslationKeys, string> = {
   "notif.seasonEnd": "赛季已结束",
   "notif.monthlyWinner": "🏆 {month}月度最佳表情包已揭晓！",
   "notif.system": "系统公告",
+  "notif.rewardGranted": "获得了新奖励！",
+  "notif.directMessage": "{actor}给你发了消息",
+  "notif.forward": "{actor}分享了一个梗图给你",
+  "notif.rankChange": "你的排名发生了变化！",
+  "notif.translationRequest": "{actor}请求了翻译",
   "notif.new_notification": "新通知",
 
   // ── Sidebar ────────────────────────────────────────────────────────────────

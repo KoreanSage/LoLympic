@@ -526,6 +526,9 @@ export async function DELETE(
       });
     }
 
+    // Recalculate ranking score after comment removal
+    updateRankingScore(postId).catch((e) => { console.error("Failed to update ranking score after comment delete:", e); });
+
     return NextResponse.json({ message: "Comment deleted" });
   } catch (error) {
     console.error("Error deleting comment:", error);

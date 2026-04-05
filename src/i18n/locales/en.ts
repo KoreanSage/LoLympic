@@ -31,6 +31,11 @@ const en = {
   "notif.seasonEnd": "The season has ended",
   "notif.monthlyWinner": "🏆 {month} Meme of the Month has been selected!",
   "notif.system": "System announcement",
+  "notif.rewardGranted": "You received a new reward!",
+  "notif.directMessage": "{actor} sent you a message",
+  "notif.forward": "{actor} forwarded a meme to you",
+  "notif.rankChange": "Your ranking has changed!",
+  "notif.translationRequest": "{actor} requested a translation",
   "notif.new_notification": "New notification",
 
   // ── Sidebar ────────────────────────────────────────────────────────────────

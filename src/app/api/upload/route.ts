@@ -92,24 +92,52 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const buffer = Buffer.from(await file.arrayBuffer());
+    let buffer = Buffer.from(await file.arrayBuffer());
 
-    // Get image dimensions using sharp
+    // Optimize image with sharp: resize large images + compress
     let width: number | null = null;
     let height: number | null = null;
+    let optimizedMime = file.type;
 
     try {
       const sharp = (await import("sharp")).default;
       const metadata = await sharp(buffer).metadata();
       width = metadata.width ?? null;
       height = metadata.height ?? null;
+
+      // Skip optimization for GIFs (animated) and small images
+      const isGif = file.type === "image/gif";
+      const isSmall = buffer.length < 200 * 1024; // < 200KB already small
+
+      if (!isGif && !isSmall && width && height) {
+        // Cap dimensions to 2048px (preserving aspect ratio)
+        const MAX_DIM = 2048;
+        let pipeline = sharp(buffer);
+
+        if (width > MAX_DIM || height > MAX_DIM) {
+          pipeline = pipeline.resize(MAX_DIM, MAX_DIM, { fit: "inside", withoutEnlargement: true });
+        }
+
+        // Convert to WebP for best compression (80% quality ≈ JPEG 90% visual quality)
+        const optimized = await pipeline.webp({ quality: 80 }).toBuffer();
+
+        // Only use optimized if it's actually smaller
+        if (optimized.length < buffer.length) {
+          buffer = Buffer.from(optimized);
+          optimizedMime = "image/webp";
+          // Update dimensions after resize
+          const newMeta = await sharp(buffer).metadata();
+          width = newMeta.width ?? width;
+          height = newMeta.height ?? height;
+        }
+      }
     } catch {
-      console.warn("Could not read image metadata with sharp");
+      console.warn("Could not optimize image with sharp, uploading original");
     }
 
     // Generate unique filename
     const hash = crypto.randomBytes(16).toString("hex");
-    const ext = mimeToExt(file.type);
+    const ext = optimizedMime === "image/webp" ? ".webp" : mimeToExt(file.type);
     const baseName = `${Date.now()}-${hash}${ext}`;
     const filename = `uploads/${baseName}`; // R2/Blob key
 
@@ -136,7 +164,8 @@ export async function POST(request: NextRequest) {
           Bucket: process.env.R2_BUCKET_NAME!,
           Key: filename,
           Body: buffer,
-          ContentType: file.type,
+          ContentType: optimizedMime,
+          CacheControl: "public, max-age=31536000, immutable",
         })
       );
 
@@ -154,7 +183,8 @@ export async function POST(request: NextRequest) {
       const { put } = await import("@vercel/blob");
       const blob = await put(filename, buffer, {
         access: "public",
-        contentType: file.type,
+        contentType: optimizedMime,
+        cacheControlMaxAge: 31536000,
       });
       url = blob.url;
     } else {
@@ -175,8 +205,8 @@ export async function POST(request: NextRequest) {
       filename,
       width,
       height,
-      mimeType: file.type,
-      fileSizeBytes: file.size,
+      mimeType: optimizedMime,
+      fileSizeBytes: buffer.length,
     });
   } catch (error) {
     console.error("Upload error:", error);

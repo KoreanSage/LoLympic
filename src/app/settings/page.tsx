@@ -568,6 +568,7 @@ export default function SettingsPage() {
               <div className="bg-background-surface border border-border rounded-xl p-6 space-y-5">
                 <h2 className="text-lg font-semibold text-foreground">{t("settings.notifPrefs")}</h2>
                 <p className="text-sm text-foreground-subtle">Choose what notifications you want to receive.</p>
+                <p className="text-[10px] text-foreground-subtle/60">These preferences are saved to this browser only.</p>
 
                 <div className="space-y-4">
                   <ToggleRow label={t("settings.notifReactions")} description="When someone reacts to your meme" checked={notifReactions} onChange={setNotifReactions} />

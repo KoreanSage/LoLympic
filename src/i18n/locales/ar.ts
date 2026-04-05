@@ -33,6 +33,11 @@ const ar: Record<TranslationKeys, string> = {
   "notif.seasonEnd": "الموسم خلص",
   "notif.monthlyWinner": "🏆 ميم الشهر لـ {month} اتختار!",
   "notif.system": "إعلان من النظام",
+  "notif.rewardGranted": "حصلت على مكافأة جديدة!",
+  "notif.directMessage": "{actor} أرسل لك رسالة",
+  "notif.forward": "{actor} شارك معك ميم",
+  "notif.rankChange": "ترتيبك تغير!",
+  "notif.translationRequest": "{actor} طلب ترجمة",
   "notif.new_notification": "إشعار جديد",
 
   // ── Sidebar ────────────────────────────────────────────────────────────────

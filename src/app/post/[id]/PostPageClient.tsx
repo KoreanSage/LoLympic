@@ -19,6 +19,7 @@ export default function PostPageClient() {
   const [clientTranslatedBody, setClientTranslatedBody] = useState<string | null>(null);
   const titleBackfillAttempted = useRef(false);
   const cleanImageAttempted = useRef(false);
+  const translationRetryAttempted = useRef(false);
 
   // Resolve preferredLanguage: localStorage (instant) > DB > session JWT
   // Use a synchronous initial value from localStorage to avoid double-fetch
@@ -64,6 +65,7 @@ export default function PostPageClient() {
     setClientTranslatedBody(null);
     titleBackfillAttempted.current = false;
     cleanImageAttempted.current = false;
+    translationRetryAttempted.current = false;
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000);
@@ -145,11 +147,12 @@ export default function PostPageClient() {
     if (!post || cleanImageAttempted.current) return;
     const payload = post.translationPayloads?.[0];
     if (!payload?.segments?.length) return;
-    // Check if any image is missing cleanUrl
+    // Check if any image is missing cleanUrl OR if translated image is missing
     const hasImageWithoutClean = (post.images || []).some(
       (img: any) => !img.cleanUrl
     );
-    if (!hasImageWithoutClean) return;
+    const missingTranslatedImage = payload && !payload.translatedImageUrl;
+    if (!hasImageWithoutClean && !missingTranslatedImage) return;
 
     cleanImageAttempted.current = true;
     fetch("/api/translate/generate-image", {
@@ -159,8 +162,8 @@ export default function PostPageClient() {
     })
       .then((r) => r.ok ? r.json() : null)
       .then((data) => {
-        if (data?.images?.some((img: any) => img.cleanUrl)) {
-          // Reload the post to get updated clean URLs
+        if (data?.images?.some((img: any) => img.cleanUrl) || data?.translatedImageUrl) {
+          // Reload the post to get updated URLs
           fetch(`/api/posts/${id}?lang=${preferredLang}`)
             .then((r) => r.ok ? r.json() : null)
             .then((freshPost) => {
@@ -169,8 +172,42 @@ export default function PostPageClient() {
             .catch((e) => { console.error("Failed to refresh post data:", e); });
         }
       })
-      .catch((e) => { console.error("Failed to check clean image status:", e); });
+      .catch((e) => { console.error("Failed to generate translated image:", e); });
   }, [post, id, preferredLang]);
+
+  // Auto-retry translation if post has images but no translation payload for user's language
+  // This handles cases where the initial upload translation failed silently
+  useEffect(() => {
+    if (!post || !session?.user || translationRetryAttempted.current) return;
+    // Only for image posts
+    if (!post.images?.length) return;
+    // Already has translations
+    if (post.translationPayloads?.length > 0) return;
+    // Same language — no translation needed
+    if (post.sourceLanguage === preferredLang) return;
+
+    translationRetryAttempted.current = true;
+    fetch("/api/translate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        postId: post.id,
+        sourceLanguage: post.sourceLanguage || "ko",
+        targetLanguages: [preferredLang],
+      }),
+    })
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data?.translations?.[preferredLang]?.payloadId) {
+          // Reload post to pick up new translation
+          fetch(`/api/posts/${id}?lang=${preferredLang}`)
+            .then((r) => r.ok ? r.json() : null)
+            .then((freshPost) => { if (freshPost) setPost(freshPost); })
+            .catch(() => {});
+        }
+      })
+      .catch((e) => { console.warn("Auto-retry translation failed:", e); });
+  }, [post, session?.user, preferredLang, id]);
 
   if (loading) {
     return (

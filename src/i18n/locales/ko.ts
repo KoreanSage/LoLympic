@@ -33,6 +33,11 @@ const ko: Record<TranslationKeys, string> = {
   "notif.seasonEnd": "시즌이 종료되었습니다",
   "notif.monthlyWinner": "🏆 {month} 이달의 밈이 선정되었습니다!",
   "notif.system": "시스템 공지",
+  "notif.rewardGranted": "새로운 보상을 받았습니다!",
+  "notif.directMessage": "{actor}님이 메시지를 보냈습니다",
+  "notif.forward": "{actor}님이 밈을 공유했습니다",
+  "notif.rankChange": "순위가 변동되었습니다!",
+  "notif.translationRequest": "{actor}님이 번역을 요청했습니다",
   "notif.new_notification": "새 알림",
 
   // ── Sidebar ────────────────────────────────────────────────────────────────

@@ -579,7 +579,7 @@ export default function UploadStudio() {
             <div className="rounded-xl overflow-hidden border border-border bg-background-surface">
               <ImageCarousel>
                 {imagePreviews.map((preview, i) => (
-                  <div key={i} className="relative bg-black/5 dark:bg-black/20 flex items-center justify-center h-[400px]">
+                  <div key={i} className="relative bg-black/5 dark:bg-black/20 flex items-center justify-center h-[280px] sm:h-[400px]">
                     {imageFiles[i]?.type.startsWith("video/") ? (
                       <video src={preview} className="max-w-full max-h-full object-contain" controls muted playsInline />
                     ) : (

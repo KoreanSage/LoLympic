@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useTranslation } from "@/i18n";
 import MainLayout from "@/components/layout/MainLayout";
@@ -30,6 +30,8 @@ interface BookmarkedPost {
   tags?: string[];
 }
 
+const BATCH_SIZE = 10;
+
 function getBookmarkIds(): string[] {
   if (typeof window === "undefined") return [];
   try {
@@ -40,17 +42,70 @@ function getBookmarkIds(): string[] {
   }
 }
 
+function mapPost(post: any): BookmarkedPost {
+  const image = post.images?.[0];
+  const payload = post.translationPayloads?.[0];
+  return {
+    id: post.id,
+    title: post.title,
+    author: {
+      username: post.author?.username || "unknown",
+      displayName: post.author?.displayName,
+      avatarUrl: post.author?.avatarUrl,
+    },
+    country: post.country
+      ? { flagEmoji: post.country.flagEmoji, nameEn: post.country.nameEn }
+      : null,
+    imageUrl: image?.originalUrl || "",
+    cleanImageUrl: image?.cleanUrl || undefined,
+    translatedImageUrl: payload?.translatedImageUrl || undefined,
+    mimeType: image?.mimeType || undefined,
+    segments: (payload?.segments ?? []).map((s: any) => ({
+      sourceText: s.sourceText ?? "",
+      translatedText: s.translatedText ?? "",
+      boxX: s.boxX,
+      boxY: s.boxY,
+      boxWidth: s.boxWidth,
+      boxHeight: s.boxHeight,
+    })),
+    reactionCount: post._count?.reactions ?? post.reactionCount ?? 0,
+    commentCount: post._count?.comments ?? post.commentCount ?? 0,
+    shareCount: post.shareCount ?? 0,
+    createdAt: post.createdAt,
+    tags: post.tags || [],
+  } as BookmarkedPost;
+}
+
+async function fetchBatch(ids: string[]): Promise<BookmarkedPost[]> {
+  const results = await Promise.allSettled(
+    ids.map((id) =>
+      fetch(`/api/posts/${id}`)
+        .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
+        .then(mapPost)
+    )
+  );
+  return results
+    .filter((r): r is PromiseFulfilledResult<BookmarkedPost> => r.status === "fulfilled")
+    .map((r) => r.value)
+    .filter((p) => p.imageUrl);
+}
+
 export default function BookmarksPage() {
   const { t } = useTranslation();
   const { status } = useSession();
   const [posts, setPosts] = useState<BookmarkedPost[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const allIdsRef = useRef<string[]>([]);
+  const loadedCountRef = useRef(0);
+  const loadingMoreRef = useRef(false);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     async function loadBookmarks() {
       let ids: string[];
 
-      // When logged in, fetch bookmark IDs from the API; fall back to localStorage
       if (status === "authenticated") {
         try {
           const res = await fetch("/api/bookmarks");
@@ -67,60 +122,20 @@ export default function BookmarksPage() {
         ids = getBookmarkIds();
       }
 
+      allIdsRef.current = ids;
+      loadedCountRef.current = 0;
+
       if (ids.length === 0) {
         setLoading(false);
         return;
       }
 
-      // Fetch each bookmarked post
-      const results = await Promise.allSettled(
-        ids.map((id) =>
-          fetch(`/api/posts/${id}`)
-            .then((r) => {
-              if (!r.ok) throw new Error();
-              return r.json();
-            })
-            .then((post) => {
-              const image = post.images?.[0];
-              const payload = post.translationPayloads?.[0];
-              return {
-                id: post.id,
-                title: post.title,
-                author: {
-                  username: post.author?.username || "unknown",
-                  displayName: post.author?.displayName,
-                  avatarUrl: post.author?.avatarUrl,
-                },
-                country: post.country
-                  ? { flagEmoji: post.country.flagEmoji, nameEn: post.country.nameEn }
-                  : null,
-                imageUrl: image?.originalUrl || "",
-                cleanImageUrl: image?.cleanUrl || undefined,
-                translatedImageUrl: payload?.translatedImageUrl || undefined,
-                mimeType: image?.mimeType || undefined,
-                segments: (payload?.segments ?? []).map((s: any) => ({
-                  sourceText: s.sourceText ?? "",
-                  translatedText: s.translatedText ?? "",
-                  boxX: s.boxX,
-                  boxY: s.boxY,
-                  boxWidth: s.boxWidth,
-                  boxHeight: s.boxHeight,
-                })),
-                reactionCount: post._count?.reactions ?? post.reactionCount ?? 0,
-                commentCount: post._count?.comments ?? post.commentCount ?? 0,
-                shareCount: post.shareCount ?? 0,
-                createdAt: post.createdAt,
-                tags: post.tags || [],
-              } as BookmarkedPost;
-            })
-        )
-      );
-
-      const successPosts = results
-        .filter((r): r is PromiseFulfilledResult<BookmarkedPost> => r.status === "fulfilled")
-        .map((r) => r.value)
-        .filter((p) => p.imageUrl);
-      setPosts(successPosts);
+      // Load first batch
+      const firstBatch = ids.slice(0, BATCH_SIZE);
+      const fetched = await fetchBatch(firstBatch);
+      loadedCountRef.current = firstBatch.length;
+      setPosts(fetched);
+      setHasMore(loadedCountRef.current < ids.length);
       setLoading(false);
     }
 
@@ -128,6 +143,41 @@ export default function BookmarksPage() {
       loadBookmarks();
     }
   }, [status]);
+
+  const loadMore = useCallback(async () => {
+    if (loadingMoreRef.current) return;
+    const start = loadedCountRef.current;
+    if (start >= allIdsRef.current.length) return;
+    loadingMoreRef.current = true;
+    setLoadingMore(true);
+    const nextBatch = allIdsRef.current.slice(start, start + BATCH_SIZE);
+    if (nextBatch.length === 0) {
+      setHasMore(false);
+      loadingMoreRef.current = false;
+      setLoadingMore(false);
+      return;
+    }
+    const fetched = await fetchBatch(nextBatch);
+    loadedCountRef.current = start + nextBatch.length;
+    setPosts((prev) => [...prev, ...fetched]);
+    const moreAvailable = loadedCountRef.current < allIdsRef.current.length;
+    setHasMore(moreAvailable);
+    loadingMoreRef.current = false;
+    setLoadingMore(false);
+  }, []);
+
+  // IntersectionObserver for infinite scroll
+  useEffect(() => {
+    if (!sentinelRef.current) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) loadMore();
+      },
+      { rootMargin: "200px" }
+    );
+    observer.observe(sentinelRef.current);
+    return () => observer.disconnect();
+  }, [loadMore]);
 
   return (
     <MainLayout showSidebar={false}>
@@ -185,6 +235,13 @@ export default function BookmarksPage() {
                 onDelete={(deletedId) => setPosts((prev) => prev.filter((p) => p.id !== deletedId))}
               />
             ))}
+            {/* Infinite scroll sentinel */}
+            <div ref={sentinelRef} className="h-1" />
+            {loadingMore && (
+              <div className="flex justify-center py-4">
+                <div className="w-6 h-6 border-2 border-[#c9a84c] border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
           </div>
         )}
       </div>
