@@ -439,9 +439,8 @@ async function generateCleanImagesForPost(
             // Download the clean image from LaMa output URL
             const cleanRes = await fetch(lamaOutputUrl);
             if (cleanRes.ok) {
-              const cleanRaw = Buffer.from(await cleanRes.arrayBuffer());
-              const cleanBuffer = await sharp(cleanRaw).webp({ quality: 85 }).toBuffer();
-              cleanUrl = await saveGeneratedImage(cleanBuffer, "clean_lama", ".webp");
+              const cleanBuffer = Buffer.from(await cleanRes.arrayBuffer());
+              cleanUrl = await saveGeneratedImage(cleanBuffer, "clean_lama", ".png");
               console.debug(`[LaMa] Clean image generated for postImage ${dbImage.id}`);
             }
           }
@@ -520,9 +519,9 @@ Replace each removed text area with the background that would naturally be behin
 
     for (const part of parts) {
       if (part.inlineData?.data) {
-        const cleanImageRaw = Buffer.from(part.inlineData.data, "base64");
-        const cleanImageBuffer = await sharp(cleanImageRaw).webp({ quality: 85 }).toBuffer();
-        return await saveGeneratedImage(cleanImageBuffer, "clean", ".webp");
+        const cleanImageBuffer = Buffer.from(part.inlineData.data, "base64");
+        const ext = part.inlineData.mimeType?.includes("png") ? ".png" : ".jpg";
+        return await saveGeneratedImage(cleanImageBuffer, "clean", ext);
       }
     }
 
@@ -775,37 +774,26 @@ async function generateTranslatedImageForPayload(
       },
     };
 
-    // Satori + Resvg rendering with 15s timeout to prevent hanging
-    const satoriTimeout = 15000;
-    const renderImage = async () => {
-      const svg = await satori(element as React.ReactNode, {
-        width: safeW,
-        height: safeH,
-        fonts: [
-          {
-            name: "Noto Sans",
-            data: Buffer.from(fontBuffer),
-            style: "normal" as const,
-            weight: 900,
-          },
-        ],
-      });
-      const resvg = new Resvg(svg, {
-        fitTo: { mode: "width" as const, value: safeW },
-      });
-      const pngBuffer = Buffer.from(resvg.render().asPng());
-      return sharp(pngBuffer).webp({ quality: 82 }).toBuffer();
-    };
+    const svg = await satori(element as React.ReactNode, {
+      width: safeW,
+      height: safeH,
+      fonts: [
+        {
+          name: "Noto Sans",
+          data: Buffer.from(fontBuffer),
+          style: "normal" as const,
+          weight: 900,
+        },
+      ],
+    });
 
-    const composedBuffer = await Promise.race([
-      renderImage(),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("Satori render timeout (15s)")), satoriTimeout)
-      ),
-    ]);
+    const resvg = new Resvg(svg, {
+      fitTo: { mode: "width" as const, value: safeW },
+    });
+    const composedBuffer = Buffer.from(resvg.render().asPng());
 
     // 5. Save the composed image to Blob storage
-    const url = await saveGeneratedImage(composedBuffer, `translated_satori_${targetLanguage}`, ".webp");
+    const url = await saveGeneratedImage(composedBuffer, `translated_satori_${targetLanguage}`, ".png");
 
     // 6. Update DB
     await prisma.translationPayload.update({
@@ -936,26 +924,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Read all images as base64 — skip failed reads instead of sending empty data
+    // Read all images as base64
     const imageDataList: Array<{ base64: string; mimeType: string }> = [];
     for (const url of imageUrls) {
       try {
         const imageData = await readImageAsBase64(url);
-        if (imageData.base64) {
-          imageDataList.push(imageData);
-        } else {
-          console.warn(`Empty image data for ${url}, skipping`);
-        }
+        imageDataList.push(imageData);
       } catch (err) {
-        console.error(`Failed to read image ${url}, skipping:`, err);
+        console.error(`Failed to read image ${url}:`, err);
+        imageDataList.push({ base64: "", mimeType: "image/jpeg" }); // placeholder for failed reads
       }
-    }
-
-    if (imageDataList.length === 0) {
-      return NextResponse.json(
-        { error: "Failed to read any images for translation" },
-        { status: 400 }
-      );
     }
 
     // Process each target language
@@ -1013,8 +991,8 @@ export async function POST(request: NextRequest) {
           systemInstruction: systemPrompt,
           generationConfig: {
             responseMimeType: "application/json",
-            temperature: 0.3,
-            maxOutputTokens: 4096,
+            temperature: 0.7,
+            maxOutputTokens: 8192,
           },
         });
 
@@ -1351,13 +1329,8 @@ export async function POST(request: NextRequest) {
         }
       }
     }
-    // Wait for compose tasks with 25s timeout to stay under Vercel 60s limit
-    // Image composition is nice-to-have — client can fall back to canvas rendering
-    const composeTimeout = new Promise<void>((resolve) => setTimeout(resolve, 25000));
-    await Promise.race([
-      Promise.all(composePromises),
-      composeTimeout,
-    ]);
+    // Wait for all compose tasks (parallel) — critical for Vercel Hobby
+    await Promise.all(composePromises);
 
     // Update ranking score after translations complete
     updateRankingScore(postId).catch((e) => { console.error("Failed to update ranking score:", e); });
