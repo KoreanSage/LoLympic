@@ -246,11 +246,20 @@ export async function POST(request: NextRequest) {
     // Phase 1: Translate English first if any language needs pivot (and English is a target)
     let englishRef: string | undefined;
     if (pivotLangs.length > 0 && sourceLanguage !== "en") {
-      // Translate English first (or retrieve from DB)
-      const enResult = await translateOne("en");
-      if (enResult.status === "completed" && enResult.translatedTitle) {
+      // Translate English first (or retrieve from DB) — retry once on failure
+      let enResult;
+      try {
+        enResult = await translateOne("en");
+      } catch {
+        console.warn("[Pivot] English translation failed, retrying once...");
+        await new Promise((r) => setTimeout(r, 1000));
+        try { enResult = await translateOne("en"); } catch { /* give up */ }
+      }
+      if (enResult?.status === "completed" && enResult.translatedTitle) {
         englishRef = buildEnglishReferenceForText(enResult.translatedTitle, enResult.translatedBody);
         console.debug(`[Pivot] English reference ready for ${pivotLangs.join(",")} (post ${postId})`);
+      } else {
+        console.warn(`[Pivot] English reference unavailable — pivot languages will use direct translation`);
       }
       // Remove "en" from directLangs if it was there (already translated)
       const enIdx = directLangs.indexOf("en");

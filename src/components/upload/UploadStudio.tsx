@@ -410,13 +410,17 @@ export default function UploadStudio() {
           return true;
         };
 
-        // Process languages with concurrency limit of 2 + auto-retry
+        // Phase 1: Translate English FIRST (needed as reference for pivot languages)
+        // This ensures ar→ko, hi→ja etc. get English reference for better quality
         const CONCURRENCY = 4;
-        const langQueue = [...targetLangs];
         const failedLangs: Array<{ code: string; label: string }> = [];
 
         const processLang = async (lang: { code: string; label: string }) => {
           try {
+            setProgress((p) => {
+              if (!p) return p;
+              return { ...p, languages: { ...p.languages, [lang.code]: "translating" } };
+            });
             await translateOneLang(lang.code);
             setProgress((p) => {
               if (!p) return p;
@@ -431,7 +435,15 @@ export default function UploadStudio() {
           }
         };
 
-        // Run with concurrency limit
+        // English first (pivot reference) — only if English is a target
+        const englishLang = targetLangs.find((l) => l.code === "en");
+        const otherLangs = targetLangs.filter((l) => l.code !== "en");
+
+        if (englishLang && sourceLanguage !== "en") {
+          await processLang(englishLang);
+        }
+
+        // Phase 2: All other languages in parallel (with concurrency limit)
         const runWithConcurrency = async (items: Array<{ code: string; label: string }>, concurrency: number) => {
           const executing = new Set<Promise<void>>();
           for (const item of items) {
@@ -444,7 +456,7 @@ export default function UploadStudio() {
           await Promise.allSettled(executing);
         };
 
-        await runWithConcurrency(langQueue, CONCURRENCY);
+        await runWithConcurrency(otherLangs, CONCURRENCY);
 
         // Retry failed languages (one at a time with delay)
         if (failedLangs.length > 0) {

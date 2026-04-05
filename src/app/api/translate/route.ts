@@ -1329,8 +1329,13 @@ export async function POST(request: NextRequest) {
         }
       }
     }
-    // Wait for all compose tasks (parallel) — critical for Vercel Hobby
-    await Promise.all(composePromises);
+    // Wait for compose tasks with 25s timeout to stay under Vercel 60s limit
+    // Image composition is nice-to-have — client can fall back to canvas rendering
+    const composeTimeout = new Promise<void>((resolve) => setTimeout(resolve, 25000));
+    await Promise.race([
+      Promise.all(composePromises),
+      composeTimeout,
+    ]);
 
     // Update ranking score after translations complete
     updateRankingScore(postId).catch((e) => { console.error("Failed to update ranking score:", e); });
