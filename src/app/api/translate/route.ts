@@ -686,9 +686,14 @@ async function generateTranslatedImageForPayload(
     const safeW = Math.min(imgWidth, 2048);
     const safeH = Math.min(imgHeight, 2048);
 
-    // Convert clean image to base64 data URI for Satori embedding
-    const cleanBase64 = cleanBuffer.toString("base64");
-    const cleanMime = metadata.format === "png" ? "image/png" : "image/jpeg";
+    // Convert clean image to PNG data URI for Satori embedding
+    // (Satori only supports PNG/JPEG, so decode WebP → PNG if needed)
+    let satoriBuffer = cleanBuffer;
+    if (metadata.format === "webp") {
+      satoriBuffer = await sharp(cleanBuffer).png().toBuffer();
+    }
+    const cleanBase64 = satoriBuffer.toString("base64");
+    const cleanMime = metadata.format === "jpeg" ? "image/jpeg" : "image/png";
     const cleanDataUri = `data:${cleanMime};base64,${cleanBase64}`;
 
     // Build React-like element tree for Satori
