@@ -439,8 +439,9 @@ async function generateCleanImagesForPost(
             // Download the clean image from LaMa output URL
             const cleanRes = await fetch(lamaOutputUrl);
             if (cleanRes.ok) {
-              const cleanBuffer = Buffer.from(await cleanRes.arrayBuffer());
-              cleanUrl = await saveGeneratedImage(cleanBuffer, "clean_lama", ".png");
+              const cleanRaw = Buffer.from(await cleanRes.arrayBuffer());
+              const cleanBuffer = await sharp(cleanRaw).webp({ quality: 85 }).toBuffer();
+              cleanUrl = await saveGeneratedImage(cleanBuffer, "clean_lama", ".webp");
               console.debug(`[LaMa] Clean image generated for postImage ${dbImage.id}`);
             }
           }
@@ -519,9 +520,9 @@ Replace each removed text area with the background that would naturally be behin
 
     for (const part of parts) {
       if (part.inlineData?.data) {
-        const cleanImageBuffer = Buffer.from(part.inlineData.data, "base64");
-        const ext = part.inlineData.mimeType?.includes("png") ? ".png" : ".jpg";
-        return await saveGeneratedImage(cleanImageBuffer, "clean", ext);
+        const cleanImageRaw = Buffer.from(part.inlineData.data, "base64");
+        const cleanImageBuffer = await sharp(cleanImageRaw).webp({ quality: 85 }).toBuffer();
+        return await saveGeneratedImage(cleanImageBuffer, "clean", ".webp");
       }
     }
 
@@ -790,10 +791,12 @@ async function generateTranslatedImageForPayload(
     const resvg = new Resvg(svg, {
       fitTo: { mode: "width" as const, value: safeW },
     });
-    const composedBuffer = Buffer.from(resvg.render().asPng());
+    const pngBuffer = Buffer.from(resvg.render().asPng());
+    // Compress PNG → WebP for ~60% storage savings
+    const composedBuffer = await sharp(pngBuffer).webp({ quality: 82 }).toBuffer();
 
     // 5. Save the composed image to Blob storage
-    const url = await saveGeneratedImage(composedBuffer, `translated_satori_${targetLanguage}`, ".png");
+    const url = await saveGeneratedImage(composedBuffer, `translated_satori_${targetLanguage}`, ".webp");
 
     // 6. Update DB
     await prisma.translationPayload.update({

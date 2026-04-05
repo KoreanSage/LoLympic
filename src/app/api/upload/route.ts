@@ -23,9 +23,9 @@ async function ensureR2Cors() {
       Bucket: process.env.R2_BUCKET_NAME!,
       CORSConfiguration: {
         CORSRules: [{
-          AllowedOrigins: ["*"],
+          AllowedOrigins: ["https://mimzy.gg", "https://www.mimzy.gg", "http://localhost:3000"],
           AllowedMethods: ["GET", "HEAD"],
-          AllowedHeaders: ["*"],
+          AllowedHeaders: ["Content-Type"],
           MaxAgeSeconds: 86400,
         }],
       },
