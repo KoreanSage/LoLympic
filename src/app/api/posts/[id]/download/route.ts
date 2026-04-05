@@ -66,38 +66,55 @@ export async function GET(
     const imgWidth = metadata.width || 800;
     const imgHeight = metadata.height || 800;
 
-    // Create watermark bar using sharp's Pango text API (no SVG, no font dependency issues)
-    const barHeight = Math.max(36, Math.round(imgHeight * 0.055));
-    const fontSize = Math.max(14, Math.round(barHeight * 0.4));
+    // Create watermark bar with "mimzy.gg" text
+    const barHeight = Math.max(32, Math.round(imgHeight * 0.05));
 
-    // Render "mimzy.gg" text using sharp's built-in text support (Pango)
-    const textImage = await sharp({
-      text: {
-        text: `<span foreground="#C9A84C" font_weight="bold" letter_spacing="${1024 * 2}">mimzy.gg</span>`,
-        font: "sans",
-        dpi: Math.round(fontSize * 7),
-        rgba: true,
-      },
-    }).png().toBuffer();
+    let watermarkOverlay: Buffer | null = null;
+    try {
+      // Attempt 1: Pango text API (works locally, may fail on Vercel)
+      const textBuf = await sharp({
+        text: {
+          text: `<span foreground="#C9A84C" font_weight="bold" letter_spacing="${1024 * 2}">mimzy.gg</span>`,
+          font: "sans",
+          dpi: Math.round(barHeight * 3),
+          rgba: true,
+        },
+      }).png().toBuffer();
+      const meta = await sharp(textBuf).metadata();
+      if (meta.width && meta.width > 10) watermarkOverlay = textBuf;
+    } catch {
+      // Pango not available
+    }
 
-    // Get text dimensions to center it on the bar
-    const textMeta = await sharp(textImage).metadata();
-    const textW = textMeta.width || 100;
-    const textH = textMeta.height || 20;
+    if (!watermarkOverlay) {
+      try {
+        // Attempt 2: SVG text (may render garbled on Vercel)
+        const svg = `<?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg" width="${imgWidth}" height="${barHeight}"><text x="${imgWidth/2}" y="${barHeight/2 + 5}" font-size="14" fill="#C9A84C" text-anchor="middle" font-family="monospace" font-weight="bold">mimzy.gg</text></svg>`;
+        const svgBuf = await sharp(Buffer.from(svg)).png().toBuffer();
+        watermarkOverlay = svgBuf;
+      } catch {
+        // SVG also failed
+      }
+    }
 
-    // Compose: image + dark bar + centered text
-    const result = await sharp(imageBuffer)
-      .extend({
-        bottom: barHeight,
-        background: { r: 13, g: 13, b: 13, alpha: 1 },
-      })
-      .composite([{
-        input: textImage,
-        left: Math.round((imgWidth - textW) / 2),
-        top: imgHeight + Math.round((barHeight - textH) / 2),
-      }])
-      .webp({ quality: 85 })
-      .toBuffer();
+    // Compose: image + dark bar (+ text overlay if available)
+    const composites: sharp.OverlayOptions[] = [];
+    if (watermarkOverlay) {
+      const meta = await sharp(watermarkOverlay).metadata();
+      composites.push({
+        input: watermarkOverlay,
+        left: Math.round((imgWidth - (meta.width || 100)) / 2),
+        top: imgHeight + Math.round((barHeight - (meta.height || 16)) / 2),
+      });
+    }
+
+    const extended = await sharp(imageBuffer)
+      .extend({ bottom: barHeight, background: { r: 13, g: 13, b: 13, alpha: 1 } });
+
+    const result = await (composites.length > 0
+      ? extended.composite(composites)
+      : extended
+    ).webp({ quality: 85 }).toBuffer();
 
     // Increment share count (fire-and-forget)
     prisma.post.update({

@@ -809,8 +809,9 @@ function FeedCardInner({
           }
           count={0}
           onClick={() => {
+            const lang = localStorage.getItem("mimzy_preferredLanguage") || preferredLang || "en";
             const a = document.createElement("a");
-            a.href = `/api/posts/${id}/download`;
+            a.href = `/api/posts/${id}/download?lang=${lang}`;
             a.download = "";
             a.click();
           }}
