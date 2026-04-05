@@ -426,7 +426,7 @@ export default function TopNav() {
 
   return (
     <>
-    <header className="fixed top-0 left-0 right-0 z-50 bg-background/85 backdrop-blur-xl border-b border-border">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-background/90 backdrop-blur-xl border-b border-border shadow-[0_1px_8px_rgba(0,0,0,0.3)]">
       {/* Season bar — only on season-related pages, hides on scroll */}
       {(pathname === "/championship" || pathname?.startsWith("/seasons")) && (
         <div
@@ -485,6 +485,18 @@ export default function TopNav() {
               </svg>
             )}
           </button>
+
+          {/* Language Selector — prominent, easy to find */}
+          <select
+            value={locale}
+            onChange={(e) => handleLocaleChange(e.target.value as Locale)}
+            className="appearance-none bg-[#c9a84c]/10 border-2 border-[#c9a84c]/40 hover:border-[#c9a84c] rounded-xl px-4 py-2 text-sm font-bold text-[#c9a84c] cursor-pointer focus:outline-none focus:border-[#c9a84c] transition-colors"
+            aria-label="Change language"
+          >
+            {UI_LANGS.map((lang) => (
+              <option key={lang.code} value={lang.code}>{lang.flag} {lang.name}</option>
+            ))}
+          </select>
 
           {/* DM Messages */}
           {status === "authenticated" && (

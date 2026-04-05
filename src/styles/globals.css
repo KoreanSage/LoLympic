@@ -27,18 +27,18 @@
     --color-accent-gold-hover: 180 148 60;
   }
 
-  /* Dark mode */
+  /* Dark mode — deep, layered dark with subtle warmth */
   .dark {
-    --color-background: 0 0 0;
-    --color-background-surface: 10 10 10;
-    --color-background-elevated: 17 17 17;
-    --color-background-overlay: 26 26 26;
-    --color-foreground: 245 245 245;
-    --color-foreground-muted: 163 163 163;
-    --color-foreground-subtle: 115 115 115;
-    --color-border: 31 31 31;
-    --color-border-hover: 42 42 42;
-    --color-border-active: 51 51 51;
+    --color-background: 8 8 12;
+    --color-background-surface: 16 16 22;
+    --color-background-elevated: 24 24 32;
+    --color-background-overlay: 34 34 44;
+    --color-foreground: 240 240 245;
+    --color-foreground-muted: 170 170 180;
+    --color-foreground-subtle: 110 110 125;
+    --color-border: 36 36 48;
+    --color-border-hover: 50 50 65;
+    --color-border-active: 65 65 80;
     --color-accent-gold: 201 168 76;
     --color-accent-gold-hover: 212 184 94;
   }

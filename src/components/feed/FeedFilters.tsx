@@ -197,19 +197,6 @@ export default function FeedFilters({
           </button>
         )}
 
-        {/* UI Language — prominent button style */}
-        <div className="ml-auto shrink-0">
-          <select
-            value={locale}
-            onChange={(e) => handleLocaleChange(e.target.value as Locale)}
-            className="appearance-none bg-[#c9a84c]/10 border border-[#c9a84c]/30 hover:border-[#c9a84c] rounded-lg px-3 py-1.5 text-xs font-bold text-[#c9a84c] cursor-pointer focus:outline-none transition-colors"
-            aria-label="Site language"
-          >
-            {UI_LANGS.map((lang) => (
-              <option key={lang.code} value={lang.code}>{lang.flag} {lang.name}</option>
-            ))}
-          </select>
-        </div>
       </div>
     </div>
   );
