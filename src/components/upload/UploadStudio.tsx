@@ -47,11 +47,53 @@ interface PublishProgress {
   postId?: string;
 }
 
+// Compress image client-side before upload (reduces transfer time significantly)
+async function compressImage(file: File): Promise<File> {
+  // Skip compression for GIFs (animated) and videos
+  if (file.type === "image/gif" || file.type.startsWith("video/")) return file;
+  // Skip if already small enough (<500KB)
+  if (file.size < 500 * 1024) return file;
+
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const MAX_DIM = 1600;
+      let { width, height } = img;
+      if (width > MAX_DIM || height > MAX_DIM) {
+        const ratio = Math.min(MAX_DIM / width, MAX_DIM / height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) { resolve(file); return; }
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => {
+          if (blob && blob.size < file.size) {
+            resolve(new File([blob], file.name.replace(/\.\w+$/, ".webp"), { type: "image/webp" }));
+          } else {
+            resolve(file); // Original was smaller
+          }
+        },
+        "image/webp",
+        0.85
+      );
+    };
+    img.onerror = () => resolve(file);
+    img.src = URL.createObjectURL(file);
+  });
+}
+
 function uploadFileWithProgress(
   file: File,
   onProgress: (loaded: number, total: number) => void
 ): Promise<any> {
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
+    // Compress before upload
+    const compressed = await compressImage(file);
     const xhr = new XMLHttpRequest();
     xhr.open("POST", "/api/upload");
     xhr.upload.addEventListener("progress", (e) => {
@@ -68,7 +110,7 @@ function uploadFileWithProgress(
     xhr.addEventListener("error", () => reject(new Error("Upload failed")));
     xhr.addEventListener("abort", () => reject(new Error("Upload cancelled")));
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("file", compressed);
     xhr.send(formData);
   });
 }
@@ -243,29 +285,29 @@ export default function UploadStudio() {
         }> = [];
 
         const totalSize = imageFiles.reduce((sum, f) => sum + f.size, 0);
-        let completedSize = 0;
+        const progressPerFile = new Array(imageFiles.length).fill(0);
 
-        for (let idx = 0; idx < imageFiles.length; idx++) {
-          const file = imageFiles[idx];
-          const fileStartSize = completedSize;
-          const data = await uploadFileWithProgress(file, (loaded) => {
-            const overallProgress = Math.round(((fileStartSize + loaded) / totalSize) * 100);
-            setProgress((p) => p && { ...p, uploadProgress: Math.min(overallProgress, 99) });
-          });
-          completedSize += file.size;
-          setProgress((p) => p && {
-            ...p,
-            uploadProgress: Math.round((completedSize / totalSize) * 100),
-            uploadedCount: idx + 1,
-          });
-          uploadedImages.push({
-            url: data.url,
-            width: data.width,
-            height: data.height,
-            mimeType: data.mimeType,
-            fileSizeBytes: data.fileSizeBytes,
-          });
-        }
+        // Upload all images in parallel for speed
+        const uploadPromises = imageFiles.map((file, idx) =>
+          uploadFileWithProgress(file, (loaded) => {
+            progressPerFile[idx] = loaded;
+            const totalLoaded = progressPerFile.reduce((a, b) => a + b, 0);
+            setProgress((p) => p && { ...p, uploadProgress: Math.min(Math.round((totalLoaded / totalSize) * 100), 99) });
+          }).then((data) => {
+            setProgress((p) => p && { ...p, uploadedCount: (p.uploadedCount || 0) + 1 });
+            return {
+              url: data.url,
+              width: data.width,
+              height: data.height,
+              mimeType: data.mimeType,
+              fileSizeBytes: data.fileSizeBytes,
+            };
+          })
+        );
+
+        const results = await Promise.all(uploadPromises);
+        uploadedImages.push(...results);
+        setProgress((p) => p && { ...p, uploadProgress: 100 });
 
         // Step 2: Create post
         setProgress((p) => p && { ...p, phase: "creating" });
@@ -369,7 +411,7 @@ export default function UploadStudio() {
         };
 
         // Process languages with concurrency limit of 2 + auto-retry
-        const CONCURRENCY = 2;
+        const CONCURRENCY = 4;
         const langQueue = [...targetLangs];
         const failedLangs: Array<{ code: string; label: string }> = [];
 
