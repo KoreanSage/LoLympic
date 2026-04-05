@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import sharp from "sharp";
+import path from "path";
+import fs from "fs/promises";
 
 /**
  * GET /api/posts/[id]/download
@@ -54,8 +56,6 @@ export async function GET(
       if (!res.ok) return NextResponse.json({ error: "Failed to fetch image" }, { status: 502 });
       imageBuffer = Buffer.from(await res.arrayBuffer());
     } else {
-      const path = await import("path");
-      const fs = await import("fs/promises");
       const uploadDir = process.env.UPLOAD_DIR || "./uploads";
       const relativePath = imageUrl.replace(/^\/(api\/)?uploads\//, "");
       imageBuffer = await fs.readFile(path.join(path.resolve(uploadDir), relativePath));
@@ -66,55 +66,29 @@ export async function GET(
     const imgWidth = metadata.width || 800;
     const imgHeight = metadata.height || 800;
 
-    // Create watermark bar with "mimzy.gg" text
+    // Load pre-built watermark PNG and resize to fit image width
     const barHeight = Math.max(32, Math.round(imgHeight * 0.05));
-
-    let watermarkOverlay: Buffer | null = null;
+    let watermarkBuf: Buffer;
     try {
-      // Attempt 1: Pango text API (works locally, may fail on Vercel)
-      const textBuf = await sharp({
-        text: {
-          text: `<span foreground="#C9A84C" font_weight="bold" letter_spacing="${1024 * 2}">mimzy.gg</span>`,
-          font: "sans",
-          dpi: Math.round(barHeight * 3),
-          rgba: true,
-        },
-      }).png().toBuffer();
-      const meta = await sharp(textBuf).metadata();
-      if (meta.width && meta.width > 10) watermarkOverlay = textBuf;
+      const wmPath = path.join(process.cwd(), "public", "watermark.png");
+      const wmRaw = await fs.readFile(wmPath);
+      watermarkBuf = await sharp(wmRaw)
+        .resize({ width: imgWidth, height: barHeight, fit: "contain", background: { r: 13, g: 13, b: 13, alpha: 1 } })
+        .png()
+        .toBuffer();
     } catch {
-      // Pango not available
+      // Fallback: just a dark bar if watermark.png is missing
+      watermarkBuf = await sharp({
+        create: { width: imgWidth, height: barHeight, channels: 4, background: { r: 13, g: 13, b: 13, alpha: 255 } },
+      }).png().toBuffer();
     }
 
-    if (!watermarkOverlay) {
-      try {
-        // Attempt 2: SVG text (may render garbled on Vercel)
-        const svg = `<?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg" width="${imgWidth}" height="${barHeight}"><text x="${imgWidth/2}" y="${barHeight/2 + 5}" font-size="14" fill="#C9A84C" text-anchor="middle" font-family="monospace" font-weight="bold">mimzy.gg</text></svg>`;
-        const svgBuf = await sharp(Buffer.from(svg)).png().toBuffer();
-        watermarkOverlay = svgBuf;
-      } catch {
-        // SVG also failed
-      }
-    }
-
-    // Compose: image + dark bar (+ text overlay if available)
-    const composites: sharp.OverlayOptions[] = [];
-    if (watermarkOverlay) {
-      const meta = await sharp(watermarkOverlay).metadata();
-      composites.push({
-        input: watermarkOverlay,
-        left: Math.round((imgWidth - (meta.width || 100)) / 2),
-        top: imgHeight + Math.round((barHeight - (meta.height || 16)) / 2),
-      });
-    }
-
-    const extended = await sharp(imageBuffer)
-      .extend({ bottom: barHeight, background: { r: 13, g: 13, b: 13, alpha: 1 } });
-
-    const result = await (composites.length > 0
-      ? extended.composite(composites)
-      : extended
-    ).webp({ quality: 85 }).toBuffer();
+    // Compose: image + watermark bar at bottom
+    const result = await sharp(imageBuffer)
+      .extend({ bottom: barHeight, background: { r: 13, g: 13, b: 13, alpha: 1 } })
+      .composite([{ input: watermarkBuf, gravity: "south" }])
+      .webp({ quality: 85 })
+      .toBuffer();
 
     // Increment share count (fire-and-forget)
     prisma.post.update({
