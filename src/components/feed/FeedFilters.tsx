@@ -31,16 +31,9 @@ export default function FeedFilters({
   const [country, setCountry] = useState("");
   const [language, setLanguage] = useState("");
 
-  // Auto-set user's country on mount
   useEffect(() => {
     if (!session?.user) return;
-    fetchCurrentUser()
-      .then((data) => {
-        if (data?.countryId) {
-          // Don't auto-filter, just keep ready for "My Country" if needed later
-        }
-      })
-      .catch(() => {});
+    fetchCurrentUser().catch(() => {});
   }, [session?.user]);
 
   const SORT_OPTIONS: FilterOption[] = [
@@ -51,7 +44,7 @@ export default function FeedFilters({
   ];
 
   const COUNTRY_OPTIONS: FilterOption[] = [
-    { value: "", label: t("filter.allCountries") },
+    { value: "", label: "\u{1F30D} " + t("filter.allCountries") },
     { value: "KR", label: "\u{1F1F0}\u{1F1F7} " + t("filter.korea") },
     { value: "US", label: "\u{1F1FA}\u{1F1F8} " + t("filter.usa") },
     { value: "GB", label: "\u{1F1EC}\u{1F1E7} UK" },
@@ -73,31 +66,22 @@ export default function FeedFilters({
   ];
 
   const LANGUAGE_OPTIONS: FilterOption[] = [
-    { value: "", label: t("filter.allLanguages") },
-    { value: "ko", label: "한 " + t("filter.korean") },
-    { value: "en", label: "A " + t("filter.english") },
-    { value: "ja", label: "あ " + t("filter.japanese") },
-    { value: "zh", label: "字 " + t("filter.chinese") },
-    { value: "es", label: "Ñ " + t("filter.spanish") },
-    { value: "hi", label: "अ हिन्दी" },
-    { value: "ar", label: "ع العربية" },
+    { value: "", label: "\u{1F4AC} " + t("filter.allLanguages") },
+    { value: "ko", label: "\u{1F1F0}\u{1F1F7} " + t("filter.korean") },
+    { value: "en", label: "\u{1F1FA}\u{1F1F8} " + t("filter.english") },
+    { value: "ja", label: "\u{1F1EF}\u{1F1F5} " + t("filter.japanese") },
+    { value: "zh", label: "\u{1F1E8}\u{1F1F3} " + t("filter.chinese") },
+    { value: "es", label: "\u{1F1EA}\u{1F1F8} " + t("filter.spanish") },
+    { value: "hi", label: "\u{1F1EE}\u{1F1F3} \u0939\u093f\u0928\u094d\u0926\u0940" },
+    { value: "ar", label: "\u{1F1F8}\u{1F1E6} \u0627\u0644\u0639\u0631\u0628\u064a\u0629" },
   ];
 
   const handleChange = (key: string, value: string) => {
     const newFilters = { country, language, category: "", postType: "", sort };
     switch (key) {
-      case "sort":
-        setSort(value);
-        newFilters.sort = value;
-        break;
-      case "country":
-        setCountry(value);
-        newFilters.country = value;
-        break;
-      case "language":
-        setLanguage(value);
-        newFilters.language = value;
-        break;
+      case "sort": setSort(value); newFilters.sort = value; break;
+      case "country": setCountry(value); newFilters.country = value; break;
+      case "language": setLanguage(value); newFilters.language = value; break;
     }
     onFilterChange?.(newFilters);
   };
@@ -124,55 +108,48 @@ export default function FeedFilters({
           ))}
         </div>
 
-        {/* Dropdown filters */}
-        <FilterSelect
-          value={country}
-          options={COUNTRY_OPTIONS}
-          onChange={(v) => handleChange("country", v)}
-        />
-        <FilterSelect
-          value={language}
-          options={LANGUAGE_OPTIONS}
-          onChange={(v) => handleChange("language", v)}
-        />
+        <span className="text-border">|</span>
 
-        {/* Clear filters */}
+        {/* Country filter — prominent */}
+        <select
+          value={country}
+          onChange={(e) => handleChange("country", e.target.value)}
+          className={`rounded-lg px-3 py-1.5 text-xs font-medium appearance-none cursor-pointer transition-all shrink-0 ${
+            country
+              ? "bg-[#c9a84c]/15 border border-[#c9a84c]/40 text-[#c9a84c]"
+              : "bg-background-surface border border-border text-foreground-muted hover:border-[#c9a84c]/30 hover:text-foreground"
+          }`}
+        >
+          {COUNTRY_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+
+        {/* Language filter — prominent */}
+        <select
+          value={language}
+          onChange={(e) => handleChange("language", e.target.value)}
+          className={`rounded-lg px-3 py-1.5 text-xs font-medium appearance-none cursor-pointer transition-all shrink-0 ${
+            language
+              ? "bg-[#c9a84c]/15 border border-[#c9a84c]/40 text-[#c9a84c]"
+              : "bg-background-surface border border-border text-foreground-muted hover:border-[#c9a84c]/30 hover:text-foreground"
+          }`}
+        >
+          {LANGUAGE_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+
+        {/* Clear */}
         {hasActiveFilter && (
           <button
-            onClick={() => {
-              handleChange("country", "");
-              handleChange("language", "");
-            }}
-            className="px-2 py-1 text-[10px] text-foreground-subtle hover:text-foreground-muted transition-colors shrink-0"
+            onClick={() => { handleChange("country", ""); handleChange("language", ""); }}
+            className="px-2 py-1 text-[10px] text-foreground-subtle hover:text-red-400 transition-colors shrink-0"
           >
-            Clear
+            &times; Clear
           </button>
         )}
       </div>
     </div>
-  );
-}
-
-function FilterSelect({
-  value,
-  options,
-  onChange,
-}: {
-  value: string;
-  options: FilterOption[];
-  onChange: (value: string) => void;
-}) {
-  return (
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="bg-background-surface border border-border rounded-lg px-2.5 py-1.5 text-xs text-foreground-muted appearance-none cursor-pointer hover:border-border-active focus:outline-none focus:border-[#c9a84c]/50 transition-colors shrink-0"
-    >
-      {options.map((opt) => (
-        <option key={opt.value} value={opt.value}>
-          {opt.label}
-        </option>
-      ))}
-    </select>
   );
 }
