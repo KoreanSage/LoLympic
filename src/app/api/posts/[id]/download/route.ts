@@ -66,46 +66,36 @@ export async function GET(
     const imgWidth = metadata.width || 800;
     const imgHeight = metadata.height || 800;
 
-    // Create watermark bar — use sharp text API (Pango) for reliable font rendering
+    // Create watermark bar using sharp's Pango text API (no SVG, no font dependency issues)
     const barHeight = Math.max(36, Math.round(imgHeight * 0.055));
+    const fontSize = Math.max(14, Math.round(barHeight * 0.4));
 
-    // Build watermark with sharp's create + composite approach (no SVG text, no font dependency)
-    // Step 1: Dark bar background
-    const barBuffer = await sharp({
-      create: { width: imgWidth, height: barHeight, channels: 4, background: { r: 13, g: 13, b: 13, alpha: 255 } },
+    // Render "mimzy.gg" text using sharp's built-in text support (Pango)
+    const textImage = await sharp({
+      text: {
+        text: `<span foreground="#C9A84C" font_weight="bold" letter_spacing="${1024 * 2}">mimzy.gg</span>`,
+        font: "sans",
+        dpi: Math.round(fontSize * 7),
+        rgba: true,
+      },
     }).png().toBuffer();
 
-    // Step 2: Try to render text using sharp's SVG with explicit XML declaration
-    let textOverlay: Buffer;
-    try {
-      const fontSize = Math.max(14, Math.round(barHeight * 0.4));
-      const svg = `<?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg" width="${imgWidth}" height="${barHeight}"><text x="${imgWidth / 2}" y="${barHeight / 2 + fontSize * 0.35}" font-size="${fontSize}" font-weight="700" fill="#C9A84C" text-anchor="middle" letter-spacing="2" font-family="DejaVu Sans, Liberation Sans, Arial, sans-serif">mimzy.gg</text></svg>`;
-      // Test if rendered SVG actually contains visible pixels
-      const rendered = await sharp(Buffer.from(svg)).png().toBuffer();
-      const { channels, width } = await sharp(rendered).stats().then(s => ({ channels: s.channels, width: imgWidth })).catch(() => ({ channels: [], width: 0 }));
-      // If stats look valid, use it; otherwise fall back
-      if (width > 0) {
-        textOverlay = rendered;
-      } else {
-        throw new Error("SVG text render empty");
-      }
-    } catch {
-      // Fallback: simple "mimzy.gg" as centered dots pattern (graceful degradation)
-      const dotSize = Math.max(3, Math.round(barHeight * 0.08));
-      const fallbackSvg = `<?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg" width="${imgWidth}" height="${barHeight}"><circle cx="${imgWidth/2 - 20}" cy="${barHeight/2}" r="${dotSize}" fill="#C9A84C"/><circle cx="${imgWidth/2}" cy="${barHeight/2}" r="${dotSize}" fill="#C9A84C"/><circle cx="${imgWidth/2 + 20}" cy="${barHeight/2}" r="${dotSize}" fill="#C9A84C"/></svg>`;
-      textOverlay = Buffer.from(fallbackSvg);
-    }
+    // Get text dimensions to center it on the bar
+    const textMeta = await sharp(textImage).metadata();
+    const textW = textMeta.width || 100;
+    const textH = textMeta.height || 20;
 
-    // Compose: original image + dark bar + text
+    // Compose: image + dark bar + centered text
     const result = await sharp(imageBuffer)
       .extend({
         bottom: barHeight,
         background: { r: 13, g: 13, b: 13, alpha: 1 },
       })
-      .composite([
-        { input: barBuffer, gravity: "south" },
-        { input: textOverlay, gravity: "south" },
-      ])
+      .composite([{
+        input: textImage,
+        left: Math.round((imgWidth - textW) / 2),
+        top: imgHeight + Math.round((barHeight - textH) / 2),
+      }])
       .webp({ quality: 85 })
       .toBuffer();
 
