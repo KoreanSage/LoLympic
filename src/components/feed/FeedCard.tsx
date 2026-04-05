@@ -12,6 +12,7 @@ import MemeRenderer from "@/components/translation/MemeRenderer";
 import ScreenshotRenderer from "@/components/translation/ScreenshotRenderer";
 import TranslationToggle from "@/components/translation/TranslationToggle";
 import ImageCarousel from "@/components/ui/ImageCarousel";
+import ReactionUsersModal from "@/components/post/ReactionUsersModal";
 import { TranslationSegmentData } from "@/types/components";
 import { useToast } from "@/components/ui/Toast";
 import { useTranslation } from "@/i18n";
@@ -66,6 +67,7 @@ interface FeedCardProps {
   reactionCount: number;
   commentCount: number;
   shareCount: number;
+  viewCount?: number;
   createdAt: string;
   isEdited?: boolean;
   seasonBadge?: string;
@@ -111,6 +113,7 @@ function FeedCardInner({
   reactionCount,
   commentCount,
   shareCount,
+  viewCount,
   createdAt,
   isEdited,
   seasonBadge,
@@ -155,6 +158,7 @@ function FeedCardInner({
   const [bookmarked, setBookmarked] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [showForwardModal, setShowForwardModal] = useState(false);
+  const [showReactionsModal, setShowReactionsModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletePending, setDeletePending] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
@@ -750,11 +754,14 @@ function FeedCardInner({
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
             </svg>
           </button>
-          <span className={`text-xs font-bold min-w-[20px] text-center ${
-            voteScore > 0 ? "text-[#c9a84c]" : voteScore < 0 ? "text-blue-400" : "text-foreground-subtle"
-          }`}>
+          <button
+            onClick={() => setShowReactionsModal(true)}
+            className={`text-xs font-bold min-w-[20px] text-center hover:underline cursor-pointer ${
+              voteScore > 0 ? "text-[#c9a84c]" : voteScore < 0 ? "text-blue-400" : "text-foreground-subtle"
+            }`}
+          >
             {formatCount(voteScore)}
-          </span>
+          </button>
           <button
             aria-label="Downvote"
             onClick={() => handleVote(userVote === -1 ? 0 : -1)}
@@ -819,6 +826,15 @@ function FeedCardInner({
           onClick={() => setShowForwardModal(true)}
         />
         <div className="flex-1" />
+        {viewCount != null && viewCount > 0 && (
+          <span className="flex items-center gap-1 text-[10px] text-foreground-subtle mr-1">
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            {formatCount(viewCount)}
+          </span>
+        )}
         <button
           aria-label={bookmarked ? "Remove bookmark" : "Bookmark"}
           onClick={handleBookmark}
@@ -829,6 +845,11 @@ function FeedCardInner({
           </svg>
         </button>
       </div>
+
+      {/* Reactions modal */}
+      {showReactionsModal && (
+        <ReactionUsersModal postId={id} onClose={() => setShowReactionsModal(false)} />
+      )}
 
       {/* Forward modal */}
       {showForwardModal && (

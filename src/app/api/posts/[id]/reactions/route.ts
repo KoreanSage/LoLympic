@@ -6,6 +6,7 @@ import { updateRankingScore } from "@/lib/ranking";
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 import { awardXp, XP_AWARDS } from "@/lib/xp";
 import { updateKarma } from "@/lib/karma";
+import { createNotification } from "@/lib/notifications";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -66,11 +67,50 @@ export async function GET(
       // Not logged in
     }
 
+    // Optionally return user list (for "who reacted" modal)
+    const { searchParams } = new URL(request.url);
+    let users: any[] | undefined;
+    if (searchParams.get("users") === "true") {
+      const typeFilter = searchParams.get("type");
+      const where: any = { postId };
+      if (typeFilter && VALID_REACTIONS.includes(typeFilter as ReactionType)) {
+        where.type = typeFilter;
+      }
+      const reactionUsers = await prisma.postReaction.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        take: 50,
+        select: {
+          type: true,
+          createdAt: true,
+          user: {
+            select: {
+              username: true,
+              displayName: true,
+              avatarUrl: true,
+              country: { select: { flagEmoji: true } },
+            },
+          },
+        },
+      });
+      users = reactionUsers.map((r) => ({
+        type: r.type,
+        createdAt: r.createdAt,
+        user: {
+          username: r.user.username,
+          displayName: r.user.displayName,
+          avatarUrl: r.user.avatarUrl,
+          countryFlag: r.user.country?.flagEmoji || null,
+        },
+      }));
+    }
+
     return NextResponse.json({
       postId,
       counts: reactionCounts,
       total: Object.values(reactionCounts).reduce((a, b) => a + b, 0),
       userReactions,
+      ...(users !== undefined && { users }),
     });
   } catch (error) {
     console.error("Error fetching reactions:", error);
@@ -177,6 +217,22 @@ export async function POST(
     // Award XP to post author when they receive a reaction (not self-reactions)
     if (action === "added" && post.authorId !== user.id) {
       awardXp(post.authorId, XP_AWARDS.REACTION_RECEIVED).catch(() => {});
+
+      // Send notification with country flag
+      const actorWithCountry = await prisma.user.findUnique({
+        where: { id: user.id },
+        select: { country: { select: { flagEmoji: true } } },
+      });
+      createNotification({
+        recipientId: post.authorId,
+        type: "REACTION",
+        actorId: user.id,
+        postId,
+        metadata: {
+          reactionType,
+          countryFlag: actorWithCountry?.country?.flagEmoji || "",
+        },
+      }).catch(() => {});
     }
 
     // Karma: +1 for adding reaction, -1 for removing

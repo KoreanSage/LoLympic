@@ -17,6 +17,7 @@ import ImageCarousel from "@/components/ui/ImageCarousel";
 import { Pencil } from "lucide-react";
 import CultureNoteCard from "./CultureNoteCard";
 import SuggestionPanel from "./SuggestionPanel";
+import ReactionUsersModal from "./ReactionUsersModal";
 import CommentSection from "./CommentSection";
 import PostEditModal from "./PostEditModal";
 import ForwardModal from "./ForwardModal";
@@ -123,6 +124,7 @@ export default function PostDetail({
   mimeType,
   segments,
   memeType,
+  reactionCount,
   commentCount,
   shareCount,
   viewCount,
@@ -199,6 +201,7 @@ export default function PostDetail({
   // Edit and forward modal state
   const [showEditModal, setShowEditModal] = useState(false);
   const [showForwardModal, setShowForwardModal] = useState(false);
+  const [showReactionsModal, setShowReactionsModal] = useState(false);
 
   // More options menu state
   const [showMoreMenu, setShowMoreMenu] = useState(false);
@@ -636,10 +639,29 @@ export default function PostDetail({
 
       {/* Stats */}
       <div className="flex items-center gap-4 text-xs text-foreground-subtle -mb-1">
+        <button onClick={() => setShowReactionsModal(true)} className="hover:text-foreground-muted hover:underline transition-colors">
+          {reactionCount.toLocaleString()} reactions
+        </button>
         <span>{viewCount.toLocaleString()} {t("post.views")}</span>
         <span>{commentCount.toLocaleString()} {t("post.comments")}</span>
         <span>{shareCount.toLocaleString()} {t("post.shares")}</span>
+        <button
+          onClick={() => {
+            const a = document.createElement("a");
+            a.href = `/api/posts/${id}/stats-card`;
+            a.download = "mimzy-stats.png";
+            a.click();
+          }}
+          className="ml-auto text-[10px] text-[#c9a84c] hover:underline"
+        >
+          📊 Share Stats
+        </button>
       </div>
+
+      {/* Reactions modal */}
+      {showReactionsModal && (
+        <ReactionUsersModal postId={id} onClose={() => setShowReactionsModal(false)} />
+      )}
 
       {/* Action bar */}
       <div className="flex items-center gap-2 py-1.5 border-y border-border">

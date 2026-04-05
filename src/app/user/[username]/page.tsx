@@ -318,6 +318,18 @@ export default function UserProfilePage() {
                     {t("profile.message")}
                   </button>
                   <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(`${window.location.origin}/user/${username}`);
+                      toast("Profile link copied!", "success");
+                    }}
+                    className="p-1.5 rounded-lg bg-background-overlay text-foreground-muted hover:text-foreground border border-border-active transition-colors"
+                    title="Share profile"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m9.86-2.813a4.5 4.5 0 00-1.242-7.244l-4.5-4.5a4.5 4.5 0 00-6.364 6.364L4.757 8.813" />
+                    </svg>
+                  </button>
+                  <button
                     onClick={() => isBlocked ? handleBlock() : setShowBlockConfirm(true)}
                     disabled={blockPending}
                     className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors flex items-center gap-1.5 ${

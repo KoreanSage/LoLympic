@@ -62,6 +62,7 @@ interface FeedPost {
   reactionCount: number;
   commentCount: number;
   shareCount: number;
+  viewCount: number;
   createdAt: string;
   seasonBadge?: string;
   tags?: string[];
@@ -145,6 +146,7 @@ function mapApiPost(post: any): FeedPost {
     reactionCount: post.reactionCount ?? post._count?.reactions ?? 0,
     commentCount: post.commentCount ?? post._count?.comments ?? 0,
     shareCount: post.shareCount ?? 0,
+    viewCount: post.viewCount ?? 0,
     createdAt: String(post.createdAt || ""),
     tags: post.tags || [],
     images: (post.images || []).map((img: any) => ({

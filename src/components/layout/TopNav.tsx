@@ -47,8 +47,10 @@ function formatTimeAgo(dateStr: string): string {
 function notifText(n: NotificationData, t: (key: any, params?: any) => string): string {
   const actor = n.actor?.displayName || n.actor?.username || "Someone";
   switch (n.type) {
-    case "REACTION":
-      return t("notif.reaction", { actor });
+    case "REACTION": {
+      const flag = (n.metadata as any)?.countryFlag || "";
+      return `${flag} ${t("notif.reaction", { actor })}`.trim();
+    }
     case "COMMENT":
       return t("notif.comment", { actor });
     case "REPLY":
