@@ -991,8 +991,8 @@ export async function POST(request: NextRequest) {
           systemInstruction: systemPrompt,
           generationConfig: {
             responseMimeType: "application/json",
-            temperature: 0.7,
-            maxOutputTokens: 8192,
+            temperature: 0.3,
+            maxOutputTokens: 4096,
           },
         });
 
