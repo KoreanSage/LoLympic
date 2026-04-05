@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Avatar from "@/components/ui/Avatar";
+import MainLayout from "@/components/layout/MainLayout";
 import { useTranslation } from "@/i18n";
 
 interface ChampionData {
@@ -108,21 +109,24 @@ export default function HallOfFamePage() {
 
   if (loading) {
     return (
-      <div className="max-w-3xl mx-auto py-8 px-4">
-        <div className="animate-pulse space-y-6">
-          <div className="h-10 bg-background-elevated rounded w-48 mx-auto" />
-          {[...Array(2)].map((_, i) => (
-            <div key={i} className="h-48 bg-background-elevated rounded-xl" />
-          ))}
+      <MainLayout showSidebar={false}>
+        <div className="max-w-3xl mx-auto py-8 px-4">
+          <div className="animate-pulse space-y-6">
+            <div className="h-10 bg-background-elevated rounded w-48 mx-auto" />
+            {[...Array(2)].map((_, i) => (
+              <div key={i} className="h-48 bg-background-elevated rounded-xl" />
+            ))}
+          </div>
         </div>
-      </div>
+      </MainLayout>
     );
   }
 
   return (
-    <div className="max-w-3xl mx-auto py-8 px-4">
-      {/* Header */}
-      <div className="text-center mb-10">
+    <MainLayout showSidebar={false}>
+      <div className="max-w-3xl mx-auto py-8 px-4">
+        {/* Header */}
+        <div className="text-center mb-10">
         <h1 className="text-3xl font-bold text-foreground mb-2">
           <span className="text-[#c9a84c]">{t("hallOfFame.title").split(" ")[0]}</span> {t("hallOfFame.title").split(" ").slice(1).join(" ")}
         </h1>
@@ -217,6 +221,7 @@ export default function HallOfFamePage() {
           ))}
         </div>
       )}
-    </div>
+      </div>
+    </MainLayout>
   );
 }

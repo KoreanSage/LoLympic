@@ -12,6 +12,7 @@ import { GoogleGenAI } from "@google/genai";
 import { LanguageCode } from "@prisma/client";
 import crypto from "crypto";
 import { updateRankingScore } from "@/lib/ranking";
+import { needsPivot, buildEnglishReferenceForImage } from "@/lib/pivot-translation";
 import { runLamaInpainting } from "@/lib/replicate";
 import { generateInpaintingMask } from "@/lib/mask-generator";
 import sharp from "sharp";
@@ -575,7 +576,7 @@ async function fetchGoogleFont(fontFamily: string, text: string): Promise<ArrayB
 // ---------------------------------------------------------------------------
 function getFontFamilyForLang(lang: string): string {
   switch (lang) {
-    case "ko": return "Noto+Sans+KR";
+    case "ko": return "Black+Han+Sans";
     case "ja": return "Noto+Sans+JP";
     case "zh": return "Noto+Sans+SC";
     case "ar": return "Noto+Sans+Arabic";
@@ -751,13 +752,13 @@ async function generateTranslatedImageForPayload(
             // Use original text color if available, default to white with stroke
             const textColor = seg.color || "#FFFFFF";
             const isLight = textColor.toLowerCase() === "#ffffff" || textColor.toLowerCase() === "#fff" || textColor === "white";
+            // Thick meme-style text outline using CSS text-shadow
             const strokeShadow = isLight
-              ? "-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, " +
-                "-1px 0 0 #000, 1px 0 0 #000, 0 -1px 0 #000, 0 1px 0 #000"
-              : "-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff";
-
-            // Use original background color if available
-            const bgColor = seg.backgroundColor || "transparent";
+              ? "-3px -3px 0 #000, 3px -3px 0 #000, -3px 3px 0 #000, 3px 3px 0 #000, " +
+                "-2px 0 0 #000, 2px 0 0 #000, 0 -2px 0 #000, 0 2px 0 #000, " +
+                "-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000"
+              : "-2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff, 2px 2px 0 #fff, " +
+                "-1px 0 0 #fff, 1px 0 0 #fff, 0 -1px 0 #fff, 0 1px 0 #fff";
 
             return {
               type: "div",
@@ -772,14 +773,12 @@ async function generateTranslatedImageForPayload(
                   alignItems: "center",
                   justifyContent: seg.textAlign === "LEFT" ? "flex-start" : seg.textAlign === "RIGHT" ? "flex-end" : "center",
                   textAlign: "center" as const,
-                  fontFamily: "Noto Sans",
+                  fontFamily: fontFamily.replace(/\+/g, " "),
                   fontSize: `${fontSize}px`,
                   fontWeight: 900,
                   color: textColor,
-                  backgroundColor: bgColor,
                   textShadow: strokeShadow,
                   lineHeight: 1.2,
-                  padding: bgColor !== "transparent" ? "2px 6px" : "0",
                   wordBreak: "keep-all" as const,
                   overflowWrap: "break-word" as const,
                 },
@@ -973,7 +972,19 @@ export async function POST(request: NextRequest) {
       isUppercase?: boolean;
     }>> = {};
 
-    for (const targetLang of targetLanguages) {
+    // Reorder: process English first if any target language needs pivot translation
+    const sortedTargetLanguages = [...targetLanguages].sort((a, b) => {
+      if (a === sourceLanguage) return 1;
+      if (b === sourceLanguage) return -1;
+      if (a === "en") return -1;
+      if (b === "en") return 1;
+      return 0;
+    });
+
+    // Store English translation segments for pivot reference
+    let englishSegmentsForPivot: Array<{ sourceText: string; translatedText: string }> = [];
+
+    for (const targetLang of sortedTargetLanguages) {
       if (targetLang === sourceLanguage) continue;
 
       // --- DB check: skip if a COMPLETED translation already exists for this language ---
@@ -997,7 +1008,13 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      const systemPrompt = buildTranslationSystemPrompt(sourceLanguage, targetLang);
+      // Build system prompt, with English reference for pivot languages
+      const isPivot = needsPivot(sourceLanguage, targetLang) && englishSegmentsForPivot.length > 0;
+      const pivotRef = isPivot ? buildEnglishReferenceForImage(englishSegmentsForPivot) : "";
+      const systemPrompt = buildTranslationSystemPrompt(sourceLanguage, targetLang) + pivotRef;
+      if (isPivot) {
+        console.debug(`[Pivot] Using English reference for ${sourceLanguage}→${targetLang} (post ${postId})`);
+      }
 
       try {
         // Check Redis cache before running Gemini analysis
@@ -1177,6 +1194,14 @@ export async function POST(request: NextRequest) {
           strokeWidth: s.style.strokeWidth,
           isUppercase: undefined,
         }));
+
+        // Capture English segments for pivot reference
+        if (targetLang === "en" && allSegments.length > 0) {
+          englishSegmentsForPivot = allSegments.map((s) => ({
+            sourceText: s.sourceText,
+            translatedText: s.translatedText,
+          }));
+        }
 
         // Translate title & body text (in parallel) — uses lighter model for cost savings
         const targetName = LANGUAGE_INSTRUCTIONS[targetLang]?.split(":")[0] || targetLang;

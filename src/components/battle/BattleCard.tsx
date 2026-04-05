@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import Image from "next/image";
 import { useSession } from "next-auth/react";
 import Card from "@/components/ui/Card";
 import { useTranslation } from "@/i18n";
@@ -395,6 +394,7 @@ const BattleSide = React.memo(function BattleSide({
 }) {
   const isWinner = voted === side;
   const isLoser = voted !== null && voted !== side;
+  const [imgError, setImgError] = useState(false);
 
   return (
     <button
@@ -410,16 +410,21 @@ const BattleSide = React.memo(function BattleSide({
           : "border-border hover:border-[#c9a84c]/50 active:scale-[0.97]"
         }`}
     >
-      {/* Image — wider on mobile (full width), portrait on desktop (half width) */}
-      <div className="relative aspect-[3/2] sm:aspect-[4/5] bg-black/20">
-        <Image
-          src={post.imageUrl}
-          alt={post.title}
-          fill
-          sizes="(max-width: 640px) 90vw, 200px"
-          className="object-contain"
-          unoptimized
-        />
+      {/* Image — adapts to content, constrained by min/max height */}
+      <div className="relative bg-black/40 flex items-center justify-center min-h-[140px] max-h-[280px] sm:min-h-[200px] sm:max-h-[400px]">
+        {imgError ? (
+          <div className="flex items-center justify-center w-full h-[200px] text-foreground-subtle">
+            <span className="text-3xl">🖼️</span>
+          </div>
+        ) : (
+          <img
+            src={post.imageUrl}
+            alt={post.title}
+            className="w-full h-auto max-h-[280px] sm:max-h-[400px] object-contain"
+            onError={() => setImgError(true)}
+            loading="lazy"
+          />
+        )}
         {/* Multi-image badge */}
         {(post.imageCount ?? 0) > 1 && (
           <span className="absolute top-1.5 right-1.5 bg-black/70 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md backdrop-blur-sm">

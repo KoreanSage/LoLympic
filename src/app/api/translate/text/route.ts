@@ -5,6 +5,7 @@ import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { LanguageCode } from "@prisma/client";
 import { updateRankingScore } from "@/lib/ranking";
+import { needsPivot, buildEnglishReferenceForText } from "@/lib/pivot-translation";
 
 export const maxDuration = 60;
 
@@ -43,7 +44,8 @@ function buildTextTranslationPrompt(
   sourceLanguage: string,
   targetLanguage: string,
   title: string,
-  body: string | null
+  body: string | null,
+  englishReference?: string
 ): string {
   const sourceLangInstruction =
     LANGUAGE_INSTRUCTIONS[sourceLanguage] || `Source language: ${sourceLanguage}`;
@@ -56,7 +58,7 @@ If it's casual, keep it casual. If it's a question, keep the question format.
 
 Source language: ${sourceLangInstruction}
 Target language: ${targetLangInstruction}
-
+${englishReference || ""}
 Translate the following:
 Title: ${title}
 ${body ? `Body: ${body}` : "Body: (none)"}
@@ -153,86 +155,113 @@ export async function POST(request: NextRequest) {
       generationConfig: { temperature: 0.3, maxOutputTokens: 1024 },
     });
 
-    // Translate all languages in parallel with Promise.allSettled
-    const translationPromises = targetLanguages
-      .filter((lang) => lang !== sourceLanguage)
-      .map(async (targetLang) => {
-        // --- DB check: skip if translation already exists ---
-        const existingPayload = await prisma.translationPayload.findFirst({
+    // Helper: translate a single language and store result
+    const translateOne = async (
+      targetLang: string,
+      englishRef?: string
+    ) => {
+      // --- DB check: skip if translation already exists ---
+      const existingPayload = await prisma.translationPayload.findFirst({
+        where: {
+          postId,
+          targetLanguage: targetLang as LanguageCode,
+          status: { in: ["COMPLETED", "APPROVED"] },
+        },
+        orderBy: { version: "desc" },
+        select: { id: true, translatedTitle: true, translatedBody: true },
+      });
+      if (existingPayload?.translatedTitle) {
+        console.debug(`[DB] Translation already exists for ${postId}:${targetLang}, skipping Gemini call`);
+        return {
+          lang: targetLang,
+          translatedTitle: existingPayload.translatedTitle,
+          translatedBody: existingPayload.translatedBody,
+          status: "completed" as const,
+          payloadId: existingPayload.id,
+        };
+      }
+
+      const prompt = buildTextTranslationPrompt(
+        sourceLanguage,
+        targetLang,
+        post.title!,
+        post.body,
+        englishRef
+      );
+
+      const result = await model.generateContent(prompt);
+      const responseText = result.response.text();
+      const cleaned = stripMarkdownFences(responseText);
+      const parsed: { title: string; body: string | null } = JSON.parse(cleaned);
+
+      // Store TranslationPayload in DB with versioning
+      const payload = await prisma.$transaction(async (tx) => {
+        const latestPayload = await tx.translationPayload.findFirst({
           where: {
             postId,
             targetLanguage: targetLang as LanguageCode,
-            status: { in: ["COMPLETED", "APPROVED"] },
           },
           orderBy: { version: "desc" },
-          select: { id: true, translatedTitle: true, translatedBody: true },
         });
-        if (existingPayload?.translatedTitle) {
-          console.debug(`[DB] Translation already exists for ${postId}:${targetLang}, skipping Gemini call`);
-          return {
-            lang: targetLang,
-            translatedTitle: existingPayload.translatedTitle,
-            translatedBody: existingPayload.translatedBody,
-            status: "completed" as const,
-            payloadId: existingPayload.id,
-          };
-        }
+        const nextVersion = (latestPayload?.version ?? 0) + 1;
 
-        const prompt = buildTextTranslationPrompt(
-          sourceLanguage,
-          targetLang,
-          post.title!,
-          post.body
-        );
-
-        const result = await model.generateContent(prompt);
-        const responseText = result.response.text();
-        const cleaned = stripMarkdownFences(responseText);
-        const parsed: { title: string; body: string | null } = JSON.parse(cleaned);
-
-        // Store TranslationPayload in DB with versioning
-        const payload = await prisma.$transaction(async (tx) => {
-          const latestPayload = await tx.translationPayload.findFirst({
-            where: {
-              postId,
-              targetLanguage: targetLang as LanguageCode,
-            },
-            orderBy: { version: "desc" },
-          });
-          const nextVersion = (latestPayload?.version ?? 0) + 1;
-
-          const translationPayload = await tx.translationPayload.create({
-            data: {
-              postId,
-              sourceLanguage: sourceLanguage as LanguageCode,
-              targetLanguage: targetLang as LanguageCode,
-              version: nextVersion,
-              status: "COMPLETED",
-              memeType: "TEXT",
-              translatedTitle: parsed.title,
-              translatedBody: parsed.body,
-              creatorType: "AI",
-              creatorId: null,
-            },
-          });
-
-          // Update post translation count
-          await tx.post.update({
-            where: { id: postId },
-            data: { translationCount: { increment: 1 } },
-          });
-
-          return translationPayload;
+        const translationPayload = await tx.translationPayload.create({
+          data: {
+            postId,
+            sourceLanguage: sourceLanguage as LanguageCode,
+            targetLanguage: targetLang as LanguageCode,
+            version: nextVersion,
+            status: "COMPLETED",
+            memeType: "TEXT",
+            translatedTitle: parsed.title,
+            translatedBody: parsed.body,
+            creatorType: "AI",
+            creatorId: null,
+          },
         });
 
-        return {
-          lang: targetLang,
-          translatedTitle: parsed.title,
-          translatedBody: parsed.body,
-          status: "completed" as const,
-          payloadId: payload.id,
-        };
+        // Update post translation count
+        await tx.post.update({
+          where: { id: postId },
+          data: { translationCount: { increment: 1 } },
+        });
+
+        return translationPayload;
       });
+
+      return {
+        lang: targetLang,
+        translatedTitle: parsed.title,
+        translatedBody: parsed.body,
+        status: "completed" as const,
+        payloadId: payload.id,
+      };
+    };
+
+    // Separate languages into direct vs pivot groups
+    const langs = targetLanguages.filter((lang) => lang !== sourceLanguage);
+    const pivotLangs = langs.filter((lang) => needsPivot(sourceLanguage, lang));
+    const directLangs = langs.filter((lang) => !needsPivot(sourceLanguage, lang));
+
+    // Phase 1: Translate English first if any language needs pivot (and English is a target)
+    let englishRef: string | undefined;
+    if (pivotLangs.length > 0 && sourceLanguage !== "en") {
+      // Translate English first (or retrieve from DB)
+      const enResult = await translateOne("en");
+      if (enResult.status === "completed" && enResult.translatedTitle) {
+        englishRef = buildEnglishReferenceForText(enResult.translatedTitle, enResult.translatedBody);
+        console.debug(`[Pivot] English reference ready for ${pivotLangs.join(",")} (post ${postId})`);
+      }
+      // Remove "en" from directLangs if it was there (already translated)
+      const enIdx = directLangs.indexOf("en");
+      if (enIdx !== -1) directLangs.splice(enIdx, 1);
+    }
+
+    // Phase 2: Translate all remaining languages in parallel
+    const translationPromises = [
+      ...directLangs.map((lang) => translateOne(lang)),
+      ...pivotLangs.map((lang) => translateOne(lang, englishRef)),
+    ];
 
     const settled = await Promise.allSettled(translationPromises);
 
