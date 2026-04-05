@@ -31,20 +31,45 @@ function isRTL(text: string): boolean {
 const WEB_SAFE_FONTS = new Set([
   "Noto Sans KR", "Noto Sans JP", "Noto Sans SC",
   "Noto Sans Devanagari", "Noto Sans Arabic",
+  "Black Han Sans",
   "Impact", "Inter", "JetBrains Mono",
 ]);
 
+// Bold "Impact-like" fonts for meme overlay text per language
+const MEME_OVERLAY_FONTS: Record<string, string> = {
+  ko: "Black Han Sans",
+  ja: "Noto Sans JP",
+  zh: "Noto Sans SC",
+  en: "Impact",
+  es: "Impact",
+  hi: "Noto Sans Devanagari",
+  ar: "Noto Sans Arabic",
+};
+
+// Semantic roles that indicate bold overlay text (Impact font style)
+const OVERLAY_ROLES = new Set(["HEADLINE", "CAPTION", "OVERLAY", "SUBTITLE"]);
+
 function resolveFont(segment: TranslationSegmentData): string {
-  // 1. Always detect language from actual translated text first (most reliable)
   const lang = detectLanguageFromText(segment.translatedText);
+
+  // For overlay/headline segments (Impact-style meme text), use bold meme fonts
+  const isOverlay = OVERLAY_ROLES.has(segment.semanticRole || "")
+    || (segment.fontWeight && segment.fontWeight >= 700)
+    || (segment.strokeColor || segment.strokeWidth);
+
+  if (isOverlay && lang && MEME_OVERLAY_FONTS[lang]) {
+    return MEME_OVERLAY_FONTS[lang];
+  }
+
+  // For regular text segments, use standard language fonts
   if (lang && LANGUAGE_FONT_DEFAULTS[lang]) return LANGUAGE_FONT_DEFAULTS[lang];
 
-  // 2. If fontFamily from DB is a known web-safe font, use it
+  // If fontFamily from DB is a known web-safe font, use it
   if (segment.fontFamily && WEB_SAFE_FONTS.has(segment.fontFamily)) {
     return segment.fontFamily;
   }
 
-  // 3. Try fontHint
+  // Try fontHint
   if (segment.fontHint) {
     const hint = segment.fontHint.toLowerCase();
     for (const [, font] of Object.entries(LANGUAGE_FONT_DEFAULTS)) {

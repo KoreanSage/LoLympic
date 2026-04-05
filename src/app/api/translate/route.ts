@@ -576,7 +576,7 @@ async function fetchGoogleFont(fontFamily: string, text: string): Promise<ArrayB
 // ---------------------------------------------------------------------------
 function getFontFamilyForLang(lang: string): string {
   switch (lang) {
-    case "ko": return "Noto+Sans+KR";
+    case "ko": return "Black+Han+Sans";
     case "ja": return "Noto+Sans+JP";
     case "zh": return "Noto+Sans+SC";
     case "ar": return "Noto+Sans+Arabic";
@@ -773,7 +773,7 @@ async function generateTranslatedImageForPayload(
                   alignItems: "center",
                   justifyContent: seg.textAlign === "LEFT" ? "flex-start" : seg.textAlign === "RIGHT" ? "flex-end" : "center",
                   textAlign: "center" as const,
-                  fontFamily: "Noto Sans",
+                  fontFamily: fontFamily.replace(/\+/g, " "),
                   fontSize: `${fontSize}px`,
                   fontWeight: 900,
                   color: textColor,
