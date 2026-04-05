@@ -280,35 +280,53 @@ export default function FeedList({
     fetchPosts(pageRef.current, translateTo);
   }, [hasMore, fetchPosts, translateTo]);
 
-  // Keep a stable ref so the observer callback always calls the latest loadMore
+  // Stable ref so callbacks always use latest loadMore
   const loadMoreRef = useRef(loadMore);
-  useEffect(() => {
-    loadMoreRef.current = loadMore;
-  }, [loadMore]);
+  useEffect(() => { loadMoreRef.current = loadMore; }, [loadMore]);
 
-  // Infinite scroll observer — created once, uses ref for stable callback
+  // Infinite scroll — IntersectionObserver + scroll fallback
+  // Re-creates observer whenever posts change (sentinel may move in DOM)
   useEffect(() => {
     const sentinel = sentinelRef.current;
     if (!sentinel) return;
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) loadMoreRef.current();
       },
-      { rootMargin: "400px" }
+      { rootMargin: "600px" }
     );
     observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // After fetch completes, re-check if sentinel is still visible (handles race condition)
+    // Scroll-based fallback — catches cases where observer misses
+    const onScroll = () => {
+      if (!sentinelRef.current) return;
+      const rect = sentinelRef.current.getBoundingClientRect();
+      if (rect.top < window.innerHeight + 600) {
+        loadMoreRef.current();
+      }
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, [posts.length]); // re-attach when posts change
+
+  // After fetch completes, check if sentinel is still visible (short page / few posts)
   useEffect(() => {
-    if (loading || !sentinelRef.current) return;
-    const sentinel = sentinelRef.current;
-    const rect = sentinel.getBoundingClientRect();
-    const inView = rect.top < window.innerHeight + 400;
-    if (inView && hasMore && !fetchingRef.current) {
-      loadMore();
-    }
+    if (loading || !hasMore || fetchingRef.current) return;
+    // Small delay to let DOM settle after render
+    const timer = setTimeout(() => {
+      const sentinel = sentinelRef.current;
+      if (!sentinel) return;
+      const rect = sentinel.getBoundingClientRect();
+      if (rect.top < window.innerHeight + 600) {
+        loadMore();
+      }
+    }, 100);
+    return () => clearTimeout(timer);
   }, [loading, hasMore, loadMore]);
 
   // Error state with retry

@@ -216,7 +216,7 @@ export default function LeaderboardPage() {
                             <span className={`${flagSize} mb-1`}>{c.flagEmoji}</span>
                             <div className={`${w} rounded-t-lg flex flex-col items-center justify-end p-2`} style={{ height, background: `linear-gradient(to top, ${from}, ${to})` }}>
                               <span className={`${textSize} font-bold text-white`}>{pos}</span>
-                              <span className="text-[10px] text-white/80 truncate w-full text-center">{c.name}</span>
+                              <span className="text-[10px] text-white/80 truncate w-full text-center">{c.name.replace("United States", "USA").replace("United Kingdom", "UK").replace("South Korea", "S. Korea")}</span>
                               <span className={`${textSize} font-bold text-white mt-0.5`}>{(c.perUserScore ?? c.totalScore)?.toLocaleString()}</span>
                               <span className="text-[8px] text-white/60">pts/user</span>
                             </div>

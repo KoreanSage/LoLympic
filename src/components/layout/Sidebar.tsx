@@ -289,7 +289,14 @@ export default function Sidebar() {
           authorUsername: e.post.author.username,
           reactionCount: e.post.reactionCount ?? 0,
         }));
-        setHotMemes(mapped);
+        // Deduplicate by id (same post can appear multiple times)
+        const seen = new Set<string>();
+        const deduped = mapped.filter((m) => {
+          if (seen.has(m.id)) return false;
+          seen.add(m.id);
+          return true;
+        });
+        setHotMemes(deduped);
         setMonthlyContenders(
           mapped.slice(0, 3).map((m) => ({
             id: m.id,
@@ -398,17 +405,17 @@ export default function Sidebar() {
     <aside className="sticky top-[7.5rem] max-h-[calc(100vh-8.5rem)] overflow-y-auto space-y-4 scrollbar-hide pr-0.5">
       {/* Upload Streak */}
       {session?.user && (
-        <div className="bg-background-surface border border-border rounded-xl px-3 py-2 text-center">
+        <Link href="/upload" className="block bg-background-surface border border-border hover:border-[#c9a84c]/50 rounded-xl px-3 py-2.5 text-center transition-colors group">
           {uploadStreak > 0 ? (
             <p className="text-xs text-[#c9a84c] font-medium">
               🔥 {uploadStreak}-day upload streak!
             </p>
           ) : (
-            <p className="text-xs text-foreground-subtle">
-              Upload today to start your streak!
+            <p className="text-xs text-foreground-subtle group-hover:text-[#c9a84c] transition-colors">
+              ✨ Upload today to start your streak!
             </p>
           )}
-        </div>
+        </Link>
       )}
 
       {/* VS Event Banner */}
