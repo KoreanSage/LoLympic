@@ -601,7 +601,7 @@ function FeedCardInner({
       {!isCommunity && !isTextOnly && (
         <Link href={`/post/${id}`} className="block" onClick={isVideo ? (e: any) => e.preventDefault() : undefined}>
           <div className="px-4 pb-2">
-            <div className={`overflow-hidden border border-border flex items-center justify-center bg-black/20 relative max-h-[500px] ${(segments.length > 0 || effectiveTranslatedImageUrl) ? "rounded-b-lg border-t-0" : "rounded-lg"}`}>
+            <div className={`overflow-hidden border border-border flex items-center justify-center bg-black/20 relative ${(segments.length > 0 || effectiveTranslatedImageUrl) ? "rounded-b-lg border-t-0" : "rounded-lg"}`}>
               {/* Video playback */}
               {isVideo ? (
                 <video
