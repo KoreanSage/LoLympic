@@ -752,13 +752,13 @@ async function generateTranslatedImageForPayload(
             // Use original text color if available, default to white with stroke
             const textColor = seg.color || "#FFFFFF";
             const isLight = textColor.toLowerCase() === "#ffffff" || textColor.toLowerCase() === "#fff" || textColor === "white";
+            // Thick meme-style text outline using CSS text-shadow
             const strokeShadow = isLight
-              ? "-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, " +
-                "-1px 0 0 #000, 1px 0 0 #000, 0 -1px 0 #000, 0 1px 0 #000"
-              : "-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff";
-
-            // Use original background color if available
-            const bgColor = seg.backgroundColor || "transparent";
+              ? "-3px -3px 0 #000, 3px -3px 0 #000, -3px 3px 0 #000, 3px 3px 0 #000, " +
+                "-2px 0 0 #000, 2px 0 0 #000, 0 -2px 0 #000, 0 2px 0 #000, " +
+                "-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000"
+              : "-2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff, 2px 2px 0 #fff, " +
+                "-1px 0 0 #fff, 1px 0 0 #fff, 0 -1px 0 #fff, 0 1px 0 #fff";
 
             return {
               type: "div",
@@ -777,10 +777,8 @@ async function generateTranslatedImageForPayload(
                   fontSize: `${fontSize}px`,
                   fontWeight: 900,
                   color: textColor,
-                  backgroundColor: bgColor,
                   textShadow: strokeShadow,
                   lineHeight: 1.2,
-                  padding: bgColor !== "transparent" ? "2px 6px" : "0",
                   wordBreak: "keep-all" as const,
                   overflowWrap: "break-word" as const,
                 },
