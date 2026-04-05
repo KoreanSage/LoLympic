@@ -47,58 +47,11 @@ interface PublishProgress {
   postId?: string;
 }
 
-// Compress image client-side before upload (reduces transfer time significantly)
-async function compressImage(file: File): Promise<File> {
-  // Skip compression for GIFs (animated) and videos
-  if (file.type === "image/gif" || file.type.startsWith("video/")) return file;
-  // Skip if already small enough (<500KB)
-  if (file.size < 500 * 1024) return file;
-
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => {
-      const MAX_DIM = 1600;
-      let { width, height } = img;
-      if (width > MAX_DIM || height > MAX_DIM) {
-        const ratio = Math.min(MAX_DIM / width, MAX_DIM / height);
-        width = Math.round(width * ratio);
-        height = Math.round(height * ratio);
-      }
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) { resolve(file); return; }
-      ctx.drawImage(img, 0, 0, width, height);
-      canvas.toBlob(
-        (blob) => {
-          if (blob && blob.size < file.size) {
-            resolve(new File([blob], file.name.replace(/\.\w+$/, ".webp"), { type: "image/webp" }));
-          } else {
-            resolve(file); // Original was smaller
-          }
-        },
-        "image/webp",
-        0.85
-      );
-    };
-    img.onerror = () => resolve(file);
-    img.src = URL.createObjectURL(file);
-  });
-}
-
-async function uploadFileWithProgress(
+function uploadFileWithProgress(
   file: File,
   onProgress: (loaded: number, total: number) => void
 ): Promise<any> {
-  // Compress before upload (safe — falls back to original on any error)
-  let compressed: File;
-  try {
-    compressed = await compressImage(file);
-  } catch {
-    compressed = file;
-  }
-
+  // Server handles compression via sharp — no client-side compression needed
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("POST", "/api/upload");
@@ -116,7 +69,7 @@ async function uploadFileWithProgress(
     xhr.addEventListener("error", () => reject(new Error("Upload failed")));
     xhr.addEventListener("abort", () => reject(new Error("Upload cancelled")));
     const formData = new FormData();
-    formData.append("file", compressed);
+    formData.append("file", file);
     xhr.send(formData);
   });
 }
