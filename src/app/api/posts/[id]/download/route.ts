@@ -66,16 +66,16 @@ export async function GET(
     const imgWidth = metadata.width || 800;
     const imgHeight = metadata.height || 800;
 
-    // Create watermark bar
-    const barHeight = Math.max(28, Math.round(imgHeight * 0.045));
-    const fontSize = Math.max(14, Math.round(barHeight * 0.5));
+    // Create watermark bar — prominent and clearly visible
+    const barHeight = Math.max(40, Math.round(imgHeight * 0.06));
+    const fontSize = Math.max(18, Math.round(barHeight * 0.45));
 
     const watermarkSvg = Buffer.from(`
       <svg width="${imgWidth}" height="${barHeight}" xmlns="http://www.w3.org/2000/svg">
         <rect width="100%" height="100%" fill="#0D0D0D"/>
         <text x="${imgWidth / 2}" y="${barHeight / 2 + fontSize * 0.35}"
-          font-family="Arial, Helvetica, sans-serif" font-size="${fontSize}" font-weight="700"
-          fill="#C9A84C" text-anchor="middle" letter-spacing="1.5">mimzy.gg</text>
+          font-family="Arial, Helvetica, sans-serif" font-size="${fontSize}" font-weight="800"
+          fill="#C9A84C" text-anchor="middle" letter-spacing="2">mimzy.gg</text>
       </svg>
     `);
 

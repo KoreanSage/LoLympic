@@ -425,6 +425,7 @@ export default function TopNav() {
   }, []);
 
   return (
+    <>
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/85 backdrop-blur-xl border-b border-border">
       {/* Season bar — only on season-related pages, hides on scroll */}
       {(pathname === "/championship" || pathname?.startsWith("/seasons")) && (
@@ -722,6 +723,20 @@ export default function TopNav() {
         </div>
       </div>
     </header>
+
+      {/* Mobile FAB — floating upload button, always visible on mobile */}
+      {pathname !== "/upload" && pathname !== "/login" && pathname !== "/signup" && (
+        <Link
+          href="/upload"
+          className="md:hidden fixed bottom-6 right-4 z-50 w-14 h-14 rounded-full bg-[#c9a84c] hover:bg-[#d4b85c] active:bg-[#b8963f] text-black flex items-center justify-center shadow-[0_4px_20px_rgba(201,168,76,0.4)] transition-all active:scale-95"
+          aria-label="Upload meme"
+        >
+          <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+          </svg>
+        </Link>
+      )}
+    </>
   );
 }
 

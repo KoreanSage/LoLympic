@@ -680,22 +680,32 @@ export default function UploadStudio() {
           maxLength={5000}
         />
 
-        {/* Language selector — inline compact */}
-        <div className="flex items-center gap-2 flex-wrap">
-          {ALL_LANGUAGES.map((lang) => (
-            <button
-              key={lang.code}
-              type="button"
-              onClick={() => setSourceLanguage(lang.code)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                sourceLanguage === lang.code
-                  ? "bg-[#c9a84c] text-black"
-                  : "bg-background-surface border border-border text-foreground-muted hover:border-border-active"
-              }`}
-            >
-              {lang.icon}
-            </button>
-          ))}
+        {/* Language selector with guide */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-foreground-muted">🌐 Original language</span>
+            <span className="text-[10px] text-foreground-subtle">— select your meme&apos;s language</span>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            {ALL_LANGUAGES.map((lang) => (
+              <button
+                key={lang.code}
+                type="button"
+                onClick={() => setSourceLanguage(lang.code)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${
+                  sourceLanguage === lang.code
+                    ? "bg-[#c9a84c] text-black"
+                    : "bg-background-surface border border-border text-foreground-muted hover:border-border-active"
+                }`}
+              >
+                <span>{lang.icon}</span>
+                <span className="hidden sm:inline">{lang.label}</span>
+              </button>
+            ))}
+          </div>
+          <p className="text-[10px] text-[#c9a84c]/70">
+            ✨ Auto-translates to {ALL_LANGUAGES.length - 1} other languages after upload
+          </p>
         </div>
 
         {/* More options — collapsed by default */}
