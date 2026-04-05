@@ -7,8 +7,54 @@ import { backfillMissingTitleTranslations } from "@/lib/translate-backfill";
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 import { awardXp, XP_AWARDS } from "@/lib/xp";
 import { getBlockedUserIds } from "@/lib/block";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const VALID_LANGUAGES = ["ko", "en", "ja", "zh", "es", "hi", "ar"] as const;
+
+// ---------------------------------------------------------------------------
+// Auto-generate tags using Gemini (fire-and-forget after post creation)
+// ---------------------------------------------------------------------------
+async function autoGenerateTags(
+  postId: string,
+  title: string,
+  body: string | null | undefined,
+  imageUrl: string | null | undefined,
+) {
+  try {
+    if (!process.env.GEMINI_API_KEY) return;
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.5-flash-lite",
+      generationConfig: { temperature: 0.2, maxOutputTokens: 256 },
+    });
+
+    const prompt = `Generate 3-5 relevant tags for this meme post. Tags should be lowercase, single words or short phrases (no spaces, use hyphens), in English.
+Title: "${title}"${body ? `\nBody: "${body}"` : ""}
+Return ONLY a JSON array of strings, no markdown. Example: ["funny","relatable","work-life"]`;
+
+    const result = await model.generateContent(prompt);
+    const text = result.response.text().trim();
+    const cleaned = text.replace(/^```(?:json)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
+    const tags: string[] = JSON.parse(cleaned);
+
+    if (Array.isArray(tags) && tags.length > 0) {
+      const safeTags = tags
+        .filter((t) => typeof t === "string" && t.length <= 30)
+        .map((t) => t.toLowerCase().replace(/[^a-z0-9-]/g, ""))
+        .filter(Boolean)
+        .slice(0, 5);
+
+      if (safeTags.length > 0) {
+        await prisma.post.update({
+          where: { id: postId },
+          data: { tags: safeTags },
+        });
+      }
+    }
+  } catch (err) {
+    console.warn("Auto-tag generation failed:", err instanceof Error ? err.message : String(err));
+  }
+}
 
 const createPostSchema = z.object({
   title: z.string().min(1, "Title is required").max(200, "Title must be under 200 characters"),
@@ -313,6 +359,11 @@ export async function POST(request: NextRequest) {
 
     // Award XP for creating a post (fire and forget)
     awardXp(user.id, XP_AWARDS.POST_CREATED).catch(() => {});
+
+    // Auto-generate tags if user didn't provide any (fire and forget)
+    if (!tags || tags.length === 0) {
+      autoGenerateTags(post.id, title, postBody, post.images?.[0]?.originalUrl).catch(() => {});
+    }
 
     return NextResponse.json({ post }, { status: 201 });
   } catch (error) {
