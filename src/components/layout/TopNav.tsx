@@ -519,41 +519,19 @@ export default function TopNav() {
             </button>
           )}
 
-          {/* Language Dropdown */}
-          <div ref={langDropdownRef} className="relative shrink-0">
-            <button
-              onClick={() => setShowLangDropdown(!showLangDropdown)}
-              className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-background-elevated border border-border hover:border-border-active transition-colors text-sm"
+          {/* Language Selector — inline select for clarity */}
+          <div className="relative shrink-0">
+            <select
+              value={locale}
+              onChange={(e) => handleLocaleChange(e.target.value as Locale)}
+              className="appearance-none bg-background-elevated border border-border hover:border-[#c9a84c]/50 rounded-lg pl-8 pr-3 py-1.5 text-xs font-medium text-foreground-muted cursor-pointer focus:outline-none focus:border-[#c9a84c]/50 transition-colors"
               aria-label="Change language"
             >
-              <span className="text-base leading-none">{UI_LANGS.find((l) => l.code === locale)?.flag}</span>
-              <svg className="w-3 h-3 text-foreground-subtle" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-            {showLangDropdown && (
-              <div className="absolute right-0 top-full mt-1 w-44 bg-background-elevated border border-border rounded-lg shadow-lg overflow-hidden z-50">
-                {UI_LANGS.map((lang) => (
-                  <button
-                    key={lang.code}
-                    onClick={() => handleLocaleChange(lang.code)}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors ${
-                      locale === lang.code
-                        ? "bg-[#c9a84c]/15 text-[#c9a84c]"
-                        : "text-foreground-muted hover:bg-background-surface"
-                    }`}
-                  >
-                    <span className="text-base">{lang.flag}</span>
-                    <span>{lang.name}</span>
-                    {locale === lang.code && (
-                      <svg className="w-4 h-4 ml-auto text-[#c9a84c]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
+              {UI_LANGS.map((lang) => (
+                <option key={lang.code} value={lang.code}>{lang.flag} {lang.name}</option>
+              ))}
+            </select>
+            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm pointer-events-none">{UI_LANGS.find((l) => l.code === locale)?.flag}</span>
           </div>
 
           {/* DM Messages */}
