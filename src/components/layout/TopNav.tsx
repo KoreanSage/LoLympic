@@ -486,39 +486,6 @@ export default function TopNav() {
             )}
           </button>
 
-          {/* Search */}
-          {showSearch ? (
-            <form onSubmit={handleSearch} className="flex items-center gap-1">
-              <input
-                ref={searchRef}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={t("nav.searchMemes")}
-                className="w-[calc(100vw-8rem)] max-w-48 px-3 py-1.5 rounded-lg bg-background-elevated border border-border-active text-sm text-foreground placeholder-foreground-subtle focus:outline-none focus:border-[#c9a84c]/50"
-                onBlur={() => {
-                  if (!searchQuery) setShowSearch(false);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Escape") {
-                    setShowSearch(false);
-                    setSearchQuery("");
-                  }
-                }}
-              />
-            </form>
-          ) : (
-            <button
-              onClick={() => setShowSearch(true)}
-              aria-label={t("nav.search")}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-background-elevated border border-border text-foreground-subtle hover:border-border-active hover:text-foreground-muted transition-colors text-sm"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              <span className="hidden sm:inline">{t("nav.search")}</span>
-            </button>
-          )}
-
           {/* DM Messages */}
           {status === "authenticated" && (
             <Link
