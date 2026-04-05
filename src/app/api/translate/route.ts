@@ -245,7 +245,7 @@ async function saveGeneratedImage(
   ext: string
 ): Promise<string> {
   const filename = `uploads/${prefix}_${crypto.randomUUID()}${ext}`;
-  const mimeMap: Record<string, string> = { ".png": "image/png", ".jpg": "image/jpeg" };
+  const mimeMap: Record<string, string> = { ".png": "image/png", ".jpg": "image/jpeg", ".webp": "image/webp" };
   const contentType = mimeMap[ext] || "image/jpeg";
 
   if (USE_R2) {
@@ -439,8 +439,14 @@ async function generateCleanImagesForPost(
             // Download the clean image from LaMa output URL
             const cleanRes = await fetch(lamaOutputUrl);
             if (cleanRes.ok) {
-              const cleanBuffer = Buffer.from(await cleanRes.arrayBuffer());
-              cleanUrl = await saveGeneratedImage(cleanBuffer, "clean_lama", ".png");
+              const cleanRaw = Buffer.from(await cleanRes.arrayBuffer());
+              // Compress to WebP for ~97% storage savings
+              const sharp = (await import("sharp")).default;
+              const cleanBuffer = await sharp(cleanRaw).webp({ quality: 85 }).toBuffer();
+              // Verify the WebP is valid
+              const meta = await sharp(cleanBuffer).metadata();
+              if (!meta.width || !meta.height) throw new Error("WebP validation failed");
+              cleanUrl = await saveGeneratedImage(cleanBuffer, "clean_lama", ".webp");
               console.debug(`[LaMa] Clean image generated for postImage ${dbImage.id}`);
             }
           }
@@ -519,9 +525,13 @@ Replace each removed text area with the background that would naturally be behin
 
     for (const part of parts) {
       if (part.inlineData?.data) {
-        const cleanImageBuffer = Buffer.from(part.inlineData.data, "base64");
-        const ext = part.inlineData.mimeType?.includes("png") ? ".png" : ".jpg";
-        return await saveGeneratedImage(cleanImageBuffer, "clean", ext);
+        const cleanImageRaw = Buffer.from(part.inlineData.data, "base64");
+        // Compress to WebP for storage savings
+        const sharp = (await import("sharp")).default;
+        const cleanImageBuffer = await sharp(cleanImageRaw).webp({ quality: 85 }).toBuffer();
+        const meta = await sharp(cleanImageBuffer).metadata();
+        if (!meta.width || !meta.height) throw new Error("WebP validation failed");
+        return await saveGeneratedImage(cleanImageBuffer, "clean", ".webp");
       }
     }
 
@@ -790,10 +800,14 @@ async function generateTranslatedImageForPayload(
     const resvg = new Resvg(svg, {
       fitTo: { mode: "width" as const, value: safeW },
     });
-    const composedBuffer = Buffer.from(resvg.render().asPng());
+    const composedRaw = Buffer.from(resvg.render().asPng());
 
-    // 5. Save the composed image to Blob storage
-    const url = await saveGeneratedImage(composedBuffer, `translated_satori_${targetLanguage}`, ".png");
+    // 5. Compress to WebP + save to storage
+    const sharpMod = (await import("sharp")).default;
+    const composedBuffer = await sharpMod(composedRaw).webp({ quality: 85 }).toBuffer();
+    const composedMeta = await sharpMod(composedBuffer).metadata();
+    if (!composedMeta.width || !composedMeta.height) throw new Error("Translated WebP validation failed");
+    const url = await saveGeneratedImage(composedBuffer, `translated_satori_${targetLanguage}`, ".webp");
 
     // 6. Update DB
     await prisma.translationPayload.update({
