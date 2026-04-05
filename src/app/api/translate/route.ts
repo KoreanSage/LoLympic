@@ -925,16 +925,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Read all images as base64
+    // Read all images as base64 — skip failed reads instead of sending empty data to Gemini
     const imageDataList: Array<{ base64: string; mimeType: string }> = [];
     for (const url of imageUrls) {
       try {
         const imageData = await readImageAsBase64(url);
-        imageDataList.push(imageData);
+        if (imageData.base64) {
+          imageDataList.push(imageData);
+        } else {
+          console.warn(`Empty image data for ${url}, skipping`);
+        }
       } catch (err) {
-        console.error(`Failed to read image ${url}:`, err);
-        imageDataList.push({ base64: "", mimeType: "image/jpeg" }); // placeholder for failed reads
+        console.error(`Failed to read image ${url}, skipping:`, err);
       }
+    }
+    if (imageDataList.length === 0) {
+      return NextResponse.json({ error: "Failed to read any images for translation" }, { status: 400 });
     }
 
     // Process each target language
