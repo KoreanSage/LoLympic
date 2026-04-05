@@ -227,12 +227,43 @@ function mapFontFamily(hint?: string): string {
 }
 
 // ---------------------------------------------------------------------------
+// Watermark helpers
+// ---------------------------------------------------------------------------
+
+const WATERMARK_HEIGHT_RATIO = 0.035; // 3.5% of image height
+const WATERMARK_MIN_HEIGHT = 20;
+const WATERMARK_MAX_HEIGHT = 48;
+const WATERMARK_BG_COLOR = "#000000";
+const WATERMARK_TEXT_COLOR = "#FFFFFF";
+const WATERMARK_TEXT_OPACITY = 0.55;
+const WATERMARK_SEPARATOR_COLOR = "#333333";
+const WATERMARK_TEXT = ".mimzy.gg";
+
+/**
+ * Build an SVG watermark bar: black strip with a subtle top separator and
+ * ".mimzy.gg" centered.
+ */
+function buildWatermarkSvg(imageWidth: number, barHeight: number): string {
+  const fontSize = Math.max(9, Math.round(barHeight * 0.45));
+  const separatorHeight = Math.max(1, Math.round(barHeight * 0.04));
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${imageWidth}" height="${barHeight}">
+  <rect width="${imageWidth}" height="${barHeight}" fill="${WATERMARK_BG_COLOR}"/>
+  <rect width="${imageWidth}" height="${separatorHeight}" fill="${WATERMARK_SEPARATOR_COLOR}"/>
+  <text x="${imageWidth / 2}" y="${barHeight / 2 + fontSize * 0.35}"
+    font-family="'SF Pro Display', 'Helvetica Neue', Arial, sans-serif"
+    font-size="${fontSize}" font-weight="500" letter-spacing="2"
+    text-anchor="middle" fill="${WATERMARK_TEXT_COLOR}"
+    opacity="${WATERMARK_TEXT_OPACITY}">${WATERMARK_TEXT}</text>
+</svg>`;
+}
+
+// ---------------------------------------------------------------------------
 // Main composer function
 // ---------------------------------------------------------------------------
 
 /**
  * Compose a translated meme image:
- *   Clean image (background) + SVG text overlay → final image
+ *   Clean image (background) + SVG text overlay + watermark bar → final image
  *
  * @param cleanImageBuffer - The clean image (text removed via inpainting)
  * @param segments - Translated text segments with positioning
@@ -245,9 +276,10 @@ export async function composeTranslatedImage(
   options: {
     format?: "png" | "jpeg" | "webp";
     quality?: number;
+    watermark?: boolean;
   } = {},
 ): Promise<Buffer> {
-  const { format = "png", quality = 90 } = options;
+  const { format = "png", quality = 90, watermark = true } = options;
 
   // Get image dimensions
   const metadata = await sharp(cleanImageBuffer).metadata();
@@ -259,19 +291,36 @@ export async function composeTranslatedImage(
     (s) => s.semanticRole !== "LABEL" && s.semanticRole !== "WATERMARK" && s.translatedText?.trim()
   );
 
-  if (translatableSegments.length === 0) {
-    // No text to overlay — return the clean image as-is
-    return cleanImageBuffer;
+  // Watermark bar dimensions
+  const barHeight = watermark
+    ? Math.min(WATERMARK_MAX_HEIGHT, Math.max(WATERMARK_MIN_HEIGHT, Math.round(height * WATERMARK_HEIGHT_RATIO)))
+    : 0;
+  const finalHeight = height + barHeight;
+
+  // Build text overlay (on original image area)
+  const composites: sharp.OverlayOptions[] = [];
+
+  if (translatableSegments.length > 0) {
+    const svgOverlay = buildSvgOverlay(translatableSegments, width, height);
+    composites.push({ input: Buffer.from(svgOverlay), top: 0, left: 0 });
   }
 
-  // Build SVG overlay
-  const svgOverlay = buildSvgOverlay(translatableSegments, width, height);
-  const svgBuffer = Buffer.from(svgOverlay);
+  // Build watermark bar
+  if (watermark && barHeight > 0) {
+    const wmSvg = buildWatermarkSvg(width, barHeight);
+    composites.push({ input: Buffer.from(wmSvg), top: height, left: 0 });
+  }
 
-  // Composite: clean image + text overlay
-  let pipeline = sharp(cleanImageBuffer).composite([
-    { input: svgBuffer, top: 0, left: 0 },
-  ]);
+  // Extend canvas downward to fit watermark, then composite everything
+  let pipeline = sharp(cleanImageBuffer)
+    .extend({
+      top: 0,
+      bottom: barHeight,
+      left: 0,
+      right: 0,
+      background: WATERMARK_BG_COLOR,
+    })
+    .composite(composites);
 
   // Output format
   if (format === "jpeg") {
