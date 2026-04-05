@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useTranslation } from "@/i18n";
+import type { Locale } from "@/i18n/provider";
 import { fetchCurrentUser } from "@/lib/user-cache";
 
 interface FilterOption {
@@ -21,11 +22,21 @@ interface FeedFiltersProps {
   className?: string;
 }
 
+const UI_LANGS = [
+  { code: "en", flag: "\u{1F1FA}\u{1F1F8}", name: "English" },
+  { code: "ko", flag: "\u{1F1F0}\u{1F1F7}", name: "\uD55C\uAD6D\uC5B4" },
+  { code: "ja", flag: "\u{1F1EF}\u{1F1F5}", name: "\u65E5\u672C\u8A9E" },
+  { code: "zh", flag: "\u{1F1E8}\u{1F1F3}", name: "\u4E2D\u6587" },
+  { code: "es", flag: "\u{1F1EA}\u{1F1F8}", name: "Espa\u00F1ol" },
+  { code: "hi", flag: "\u{1F1EE}\u{1F1F3}", name: "\u0939\u093F\u0928\u094D\u0926\u0940" },
+  { code: "ar", flag: "\u{1F1F8}\u{1F1E6}", name: "\u0627\u0644\u0639\u0631\u0628\u064A\u0629" },
+];
+
 export default function FeedFilters({
   onFilterChange,
   className = "",
 }: FeedFiltersProps) {
-  const { t } = useTranslation();
+  const { t, locale, setLocale } = useTranslation();
   const { data: session } = useSession();
   const [sort, setSort] = useState("trending");
   const [country, setCountry] = useState("");
@@ -35,6 +46,18 @@ export default function FeedFilters({
     if (!session?.user) return;
     fetchCurrentUser().catch(() => {});
   }, [session?.user]);
+
+  const handleLocaleChange = useCallback((newLocale: Locale) => {
+    setLocale(newLocale);
+    localStorage.setItem("uiLanguage", newLocale);
+    localStorage.setItem("mimzy_preferredLanguage", newLocale);
+    window.dispatchEvent(new StorageEvent("storage", { key: "mimzy_preferredLanguage", newValue: newLocale }));
+    fetch("/api/users/me", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ preferredLanguage: newLocale }),
+    }).catch(() => {});
+  }, [setLocale]);
 
   const SORT_OPTIONS: FilterOption[] = [
     { value: "trending", label: t("filter.trending") },
@@ -87,6 +110,7 @@ export default function FeedFilters({
   };
 
   const hasActiveFilter = country || language;
+  const currentLang = UI_LANGS.find((l) => l.code === locale);
 
   return (
     <div className={`border-b border-border py-2.5 -mx-4 px-4 ${className}`}>
@@ -110,14 +134,14 @@ export default function FeedFilters({
 
         <span className="text-border">|</span>
 
-        {/* Country filter — prominent */}
+        {/* Country filter */}
         <select
           value={country}
           onChange={(e) => handleChange("country", e.target.value)}
           className={`rounded-lg px-3 py-1.5 text-xs font-medium appearance-none cursor-pointer transition-all shrink-0 ${
             country
               ? "bg-[#c9a84c]/15 border border-[#c9a84c]/40 text-[#c9a84c]"
-              : "bg-background-surface border border-border text-foreground-muted hover:border-[#c9a84c]/30 hover:text-foreground"
+              : "bg-background-surface border border-border text-foreground-muted hover:border-[#c9a84c]/30"
           }`}
         >
           {COUNTRY_OPTIONS.map((opt) => (
@@ -125,14 +149,14 @@ export default function FeedFilters({
           ))}
         </select>
 
-        {/* Language filter — prominent */}
+        {/* Language filter */}
         <select
           value={language}
           onChange={(e) => handleChange("language", e.target.value)}
           className={`rounded-lg px-3 py-1.5 text-xs font-medium appearance-none cursor-pointer transition-all shrink-0 ${
             language
               ? "bg-[#c9a84c]/15 border border-[#c9a84c]/40 text-[#c9a84c]"
-              : "bg-background-surface border border-border text-foreground-muted hover:border-[#c9a84c]/30 hover:text-foreground"
+              : "bg-background-surface border border-border text-foreground-muted hover:border-[#c9a84c]/30"
           }`}
         >
           {LANGUAGE_OPTIONS.map((opt) => (
@@ -149,6 +173,20 @@ export default function FeedFilters({
             &times; Clear
           </button>
         )}
+
+        {/* UI Language — prominent button style */}
+        <div className="ml-auto shrink-0">
+          <select
+            value={locale}
+            onChange={(e) => handleLocaleChange(e.target.value as Locale)}
+            className="appearance-none bg-[#c9a84c]/10 border border-[#c9a84c]/30 hover:border-[#c9a84c] rounded-lg px-3 py-1.5 text-xs font-bold text-[#c9a84c] cursor-pointer focus:outline-none transition-colors"
+            aria-label="Site language"
+          >
+            {UI_LANGS.map((lang) => (
+              <option key={lang.code} value={lang.code}>{lang.flag} {lang.name}</option>
+            ))}
+          </select>
+        </div>
       </div>
     </div>
   );
