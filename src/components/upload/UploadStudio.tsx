@@ -87,13 +87,19 @@ async function compressImage(file: File): Promise<File> {
   });
 }
 
-function uploadFileWithProgress(
+async function uploadFileWithProgress(
   file: File,
   onProgress: (loaded: number, total: number) => void
 ): Promise<any> {
-  return new Promise(async (resolve, reject) => {
-    // Compress before upload
-    const compressed = await compressImage(file);
+  // Compress before upload (safe — falls back to original on any error)
+  let compressed: File;
+  try {
+    compressed = await compressImage(file);
+  } catch {
+    compressed = file;
+  }
+
+  return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("POST", "/api/upload");
     xhr.upload.addEventListener("progress", (e) => {
@@ -287,7 +293,7 @@ export default function UploadStudio() {
         const totalSize = imageFiles.reduce((sum, f) => sum + f.size, 0);
         const progressPerFile = new Array(imageFiles.length).fill(0);
 
-        // Upload all images in parallel for speed
+        // Upload all images in parallel — use allSettled so one failure doesn't kill all
         const uploadPromises = imageFiles.map((file, idx) =>
           uploadFileWithProgress(file, (loaded) => {
             progressPerFile[idx] = loaded;
@@ -305,8 +311,14 @@ export default function UploadStudio() {
           })
         );
 
-        const results = await Promise.all(uploadPromises);
-        uploadedImages.push(...results);
+        const settled = await Promise.allSettled(uploadPromises);
+        for (const r of settled) {
+          if (r.status === "fulfilled") uploadedImages.push(r.value);
+          else console.error("Image upload failed:", r.reason);
+        }
+        if (uploadedImages.length === 0) {
+          throw new Error("All image uploads failed. Please try again.");
+        }
         setProgress((p) => p && { ...p, uploadProgress: 100 });
 
         // Step 2: Create post
