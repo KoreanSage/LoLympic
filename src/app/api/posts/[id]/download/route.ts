@@ -66,26 +66,27 @@ export async function GET(
     const imgWidth = metadata.width || 800;
     const imgHeight = metadata.height || 800;
 
-    // Create watermark bar — prominent and clearly visible
-    const barHeight = Math.max(40, Math.round(imgHeight * 0.06));
-    const fontSize = Math.max(18, Math.round(barHeight * 0.45));
+    // Create watermark bar with text overlay
+    const barHeight = Math.max(36, Math.round(imgHeight * 0.055));
+    const fontSize = Math.max(16, Math.round(barHeight * 0.42));
 
-    const watermarkSvg = Buffer.from(`
-      <svg width="${imgWidth}" height="${barHeight}" xmlns="http://www.w3.org/2000/svg">
-        <rect width="100%" height="100%" fill="#0D0D0D"/>
-        <text x="${imgWidth / 2}" y="${barHeight / 2 + fontSize * 0.35}"
-          font-family="Arial, Helvetica, sans-serif" font-size="${fontSize}" font-weight="800"
-          fill="#C9A84C" text-anchor="middle" letter-spacing="2">mimzy.gg</text>
-      </svg>
-    `);
+    // Generate text as SVG with explicit UTF-8 encoding and safe font stack
+    const svgText = `<svg width="${imgWidth}" height="${barHeight}" xmlns="http://www.w3.org/2000/svg">
+  <rect width="${imgWidth}" height="${barHeight}" fill="#0D0D0D"/>
+  <text x="${imgWidth / 2}" y="${barHeight / 2 + fontSize * 0.35}" font-family="sans-serif" font-size="${fontSize}" font-weight="bold" fill="#C9A84C" text-anchor="middle" letter-spacing="2">mimzy.gg</text>
+</svg>`;
+    const watermarkBuffer = Buffer.from(svgText, "utf-8");
 
-    // Compose: original + watermark bar
+    // Compose: original + watermark bar at bottom
     const result = await sharp(imageBuffer)
       .extend({
         bottom: barHeight,
         background: { r: 13, g: 13, b: 13, alpha: 1 },
       })
-      .composite([{ input: watermarkSvg, gravity: "south" }])
+      .composite([{
+        input: watermarkBuffer,
+        gravity: "south",
+      }])
       .webp({ quality: 85 })
       .toBuffer();
 
