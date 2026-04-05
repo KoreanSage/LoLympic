@@ -548,8 +548,11 @@ const zh: Record<TranslationKeys, string> = {
 
   // ── Hero Banner ──────────────────────────────────────────────────────
   "hero.tagline": "你的梗图。7种语言。一个全球舞台。",
-  "hero.subtitle": "上传梗图，为国家而战，用幽默连接文化",
-  "hero.cta": "开始创作",
+  "hero.subtitle": "\u4E0A\u4F20\u6897\u56FE\uFF0CAI\u7ACB\u523B\u7FFB\u8BD1\u62107\u79CD\u8BED\u8A00",
+  "hero.cta": "\u52A0\u5165\u5168\u7403\u6897\u56FE\u5965\u6797\u5339\u514B",
+  "hero.stat.languages": "7\u79CD\u8BED\u8A00",
+  "hero.stat.champions": "\u6708\u5EA6\u51A0\u519B",
+  "hero.stat.battle": "\u56FD\u5BB6\u5BF9\u6218",
 
   // ── Onboarding ───────────────────────────────────────────────────────
   "onboarding.skip": "跳过",

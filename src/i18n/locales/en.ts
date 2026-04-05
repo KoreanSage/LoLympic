@@ -557,8 +557,11 @@ const en = {
 
   // ── Hero Banner ──────────────────────────────────────────────────────
   "hero.tagline": "Your Memes. 7 Languages. One Global Stage.",
-  "hero.subtitle": "Upload memes, compete for your country, and connect cultures through humor",
-  "hero.cta": "Start Creating",
+  "hero.subtitle": "Upload a meme and AI translates it to 7 languages instantly",
+  "hero.cta": "Join the Global Meme Olympics",
+  "hero.stat.languages": "7 Languages",
+  "hero.stat.champions": "Monthly Champions",
+  "hero.stat.battle": "Country vs Country",
 
   // ── Onboarding ───────────────────────────────────────────────────────
   "onboarding.skip": "Skip",

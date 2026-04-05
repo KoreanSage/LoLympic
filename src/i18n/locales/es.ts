@@ -548,8 +548,11 @@ const es: Record<TranslationKeys, string> = {
 
   // ── Hero Banner ──────────────────────────────────────────────────────
   "hero.tagline": "Tus Memes. 7 Idiomas. Un Escenario Global.",
-  "hero.subtitle": "Sube memes, compite por tu pa\u00EDs y conecta culturas a trav\u00E9s del humor",
-  "hero.cta": "Empezar a Crear",
+  "hero.subtitle": "Sube un meme y la IA lo traduce a 7 idiomas al instante",
+  "hero.cta": "\u00DAnete a las Olimpiadas de Memes",
+  "hero.stat.languages": "7 Idiomas",
+  "hero.stat.champions": "Campeones Mensuales",
+  "hero.stat.battle": "Pa\u00EDs vs Pa\u00EDs",
 
   // ── Onboarding ───────────────────────────────────────────────────────
   "onboarding.skip": "Saltar",

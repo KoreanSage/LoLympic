@@ -548,8 +548,11 @@ const ja: Record<TranslationKeys, string> = {
 
   // ── Hero Banner ──────────────────────────────────────────────────────
   "hero.tagline": "あなたのミーム。7言語。一つのグローバルステージ。",
-  "hero.subtitle": "ミームを投稿し、国を代表して競い、ユーモアで文化をつなごう",
-  "hero.cta": "作成開始",
+  "hero.subtitle": "\u30DF\u30FC\u30E0\u3092\u30A2\u30C3\u30D7\u3059\u308B\u3068AI\u304C\u77AC\u6642\u306B7\u8A00\u8A9E\u306B\u7FFB\u8A33",
+  "hero.cta": "\u30B0\u30ED\u30FC\u30D0\u30EB\u30DF\u30FC\u30E0\u30AA\u30EA\u30F3\u30D4\u30C3\u30AF\u306B\u53C2\u52A0",
+  "hero.stat.languages": "7\u8A00\u8A9E",
+  "hero.stat.champions": "\u6708\u9593\u30C1\u30E3\u30F3\u30D4\u30AA\u30F3",
+  "hero.stat.battle": "\u56FD vs \u56FD",
 
   // ── Onboarding ───────────────────────────────────────────────────────
   "onboarding.skip": "スキップ",

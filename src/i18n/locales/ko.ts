@@ -554,8 +554,11 @@ const ko: Record<TranslationKeys, string> = {
 
   // ── Hero Banner ──────────────────────────────────────────────────────
   "hero.tagline": "당신의 밈. 7개 언어. 하나의 글로벌 무대.",
-  "hero.subtitle": "밈을 올리고, 국가를 대표해 경쟁하고, 유머로 문화를 연결하세요",
-  "hero.cta": "밈 만들기",
+  "hero.subtitle": "\uBC00\uC744 \uC62C\uB9AC\uBA74 AI\uAC00 \uC989\uC2DC 7\uAC1C \uC5B8\uC5B4\uB85C \uBC88\uC5ED\uD569\uB2C8\uB2E4",
+  "hero.cta": "\uAE00\uB85C\uBC8C \uBC00 \uC62C\uB9BC\uD53D \uCC38\uAC00\uD558\uAE30",
+  "hero.stat.languages": "7\uAC1C \uC5B8\uC5B4",
+  "hero.stat.champions": "\uC6D4\uAC04 \uCC54\uD53C\uC5B8",
+  "hero.stat.battle": "\uAD6D\uAC00 \uB300 \uAD6D\uAC00",
 
   // ── Onboarding ───────────────────────────────────────────────────────
   "onboarding.skip": "건너뛰기",
