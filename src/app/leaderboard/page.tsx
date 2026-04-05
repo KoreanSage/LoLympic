@@ -38,7 +38,7 @@ interface ApiCreatorEntry {
 
 interface ApiMemeEntry {
   rank: number;
-  post: { id: string; title: string; author: { username: string }; images: Array<{ originalUrl: string }>; reactionCount: number };
+  post: { id: string; title: string; translatedTitle?: string | null; author: { username: string }; images: Array<{ originalUrl: string }>; reactionCount: number };
   medal: "GOLD" | "SILVER" | "BRONZE" | null;
   score: number;
 }
@@ -83,7 +83,7 @@ function mapCreators(entries: ApiCreatorEntry[]) {
 
 function mapMemes(entries: ApiMemeEntry[]) {
   return entries.map((e) => ({
-    rank: e.rank, postId: e.post.id, title: e.post.title,
+    rank: e.rank, postId: e.post.id, title: e.post.translatedTitle || e.post.title,
     thumbnailUrl: e.post.images?.[0]?.originalUrl, authorUsername: e.post.author.username,
     totalScore: e.score, medal: e.medal ?? undefined, reactionCount: e.post.reactionCount ?? 0,
   }));
@@ -116,7 +116,7 @@ export default function LeaderboardPage() {
       const [countryRes, creatorRes, memeRes, battleRes, winnersRes] = await Promise.all([
         fetch("/api/leaderboard?type=country"),
         fetch("/api/leaderboard?type=creator"),
-        fetch("/api/leaderboard?type=meme"),
+        fetch(`/api/leaderboard?type=meme&lang=${locale}`),
         fetch("/api/leaderboard?type=battle&limit=5"),
         fetch(`/api/seasons/monthly-winner?lang=${locale}`),
       ]);

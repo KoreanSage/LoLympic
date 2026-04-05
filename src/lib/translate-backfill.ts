@@ -1,5 +1,6 @@
 import prisma from "@/lib/prisma";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { needsPivot } from "@/lib/pivot-translation";
 
 const VALID_LANGUAGES = ["ko", "en", "ja", "zh", "es", "hi", "ar"];
 
@@ -68,8 +69,20 @@ export async function backfillMissingTitleTranslations(
         continue;
       }
 
+      // For pivot pairs, include English reference in prompt
+      let pivotHint = "";
+      if (needsPivot(item.sourceLanguage, targetLang)) {
+        const enPayload = await prisma.translationPayload.findFirst({
+          where: { postId: (freshPayload as any)?.postId, targetLanguage: "en", status: { in: ["COMPLETED", "APPROVED"] } },
+          select: { translatedTitle: true },
+        });
+        if (enPayload?.translatedTitle) {
+          pivotHint = `\nEnglish reference (for accuracy): "${enPayload.translatedTitle}"\nUse both the original and English reference for the best translation.`;
+        }
+      }
+
       const result = await model.generateContent(
-        `Translate the following meme title to ${targetName}. Output ONLY the translated text, nothing else. Keep the humor and tone.\n\n${item.title}`
+        `Translate the following meme title to ${targetName}. Output ONLY the translated text, nothing else. Keep the humor and tone.${pivotHint}\n\n${item.title}`
       );
       const translatedTitle = result.response.text().trim();
       if (translatedTitle) {
@@ -114,8 +127,20 @@ export async function backfillSinglePostTitle(
       generationConfig: { temperature: 0.3, maxOutputTokens: 512 },
     });
 
+    // For pivot pairs, include English reference in prompt
+    let pivotHint = "";
+    if (needsPivot(post.sourceLanguage || "ko", targetLang)) {
+      const enPayload = await prisma.translationPayload.findFirst({
+        where: { postId: post.id, targetLanguage: "en", status: { in: ["COMPLETED", "APPROVED"] } },
+        select: { translatedTitle: true, translatedBody: true },
+      });
+      if (enPayload?.translatedTitle) {
+        pivotHint = `\nEnglish reference (for accuracy): "${enPayload.translatedTitle}"\nUse both the original and English reference for the best translation.`;
+      }
+    }
+
     const result = await model.generateContent(
-      `Translate the following meme title to ${targetName}. Output ONLY the translated text, nothing else. Keep the humor and tone.\n\n${post.title}`
+      `Translate the following meme title to ${targetName}. Output ONLY the translated text, nothing else. Keep the humor and tone.${pivotHint}\n\n${post.title}`
     );
     const translatedTitle = result.response.text().trim();
     let translatedBody: string | undefined;
@@ -128,7 +153,7 @@ export async function backfillSinglePostTitle(
       // Also update body if missing
       if (!payload.translatedBody && post.body) {
         const bodyResult = await model.generateContent(
-          `Translate the following meme description to ${targetName}. Output ONLY the translated text, nothing else. Keep the humor and tone.\n\n${post.body}`
+          `Translate the following meme description to ${targetName}. Output ONLY the translated text, nothing else. Keep the humor and tone.${pivotHint}\n\n${post.body}`
         );
         translatedBody = bodyResult.response.text().trim();
         if (translatedBody) {

@@ -280,18 +280,36 @@ export default function FeedList({
     fetchPosts(pageRef.current, translateTo);
   }, [hasMore, fetchPosts, translateTo]);
 
-  // Infinite scroll observer
+  // Keep a stable ref so the observer callback always calls the latest loadMore
+  const loadMoreRef = useRef(loadMore);
   useEffect(() => {
-    if (!sentinelRef.current) return;
+    loadMoreRef.current = loadMore;
+  }, [loadMore]);
+
+  // Infinite scroll observer — created once, uses ref for stable callback
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) loadMore();
+        if (entry.isIntersecting) loadMoreRef.current();
       },
-      { rootMargin: "200px" }
+      { rootMargin: "400px" }
     );
-    observer.observe(sentinelRef.current);
+    observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [loadMore]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // After fetch completes, re-check if sentinel is still visible (handles race condition)
+  useEffect(() => {
+    if (loading || !sentinelRef.current) return;
+    const sentinel = sentinelRef.current;
+    const rect = sentinel.getBoundingClientRect();
+    const inView = rect.top < window.innerHeight + 400;
+    if (inView && hasMore && !fetchingRef.current) {
+      loadMore();
+    }
+  }, [loading, hasMore, loadMore]);
 
   // Error state with retry
   if (fetchError && posts.length === 0 && !loading) {

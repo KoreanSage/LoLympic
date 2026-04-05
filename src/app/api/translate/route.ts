@@ -12,6 +12,7 @@ import { GoogleGenAI } from "@google/genai";
 import { LanguageCode } from "@prisma/client";
 import crypto from "crypto";
 import { updateRankingScore } from "@/lib/ranking";
+import { needsPivot, buildEnglishReferenceForImage } from "@/lib/pivot-translation";
 import { runLamaInpainting } from "@/lib/replicate";
 import { generateInpaintingMask } from "@/lib/mask-generator";
 import sharp from "sharp";
@@ -973,7 +974,19 @@ export async function POST(request: NextRequest) {
       isUppercase?: boolean;
     }>> = {};
 
-    for (const targetLang of targetLanguages) {
+    // Reorder: process English first if any target language needs pivot translation
+    const sortedTargetLanguages = [...targetLanguages].sort((a, b) => {
+      if (a === sourceLanguage) return 1;
+      if (b === sourceLanguage) return -1;
+      if (a === "en") return -1;
+      if (b === "en") return 1;
+      return 0;
+    });
+
+    // Store English translation segments for pivot reference
+    let englishSegmentsForPivot: Array<{ sourceText: string; translatedText: string }> = [];
+
+    for (const targetLang of sortedTargetLanguages) {
       if (targetLang === sourceLanguage) continue;
 
       // --- DB check: skip if a COMPLETED translation already exists for this language ---
@@ -997,7 +1010,13 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      const systemPrompt = buildTranslationSystemPrompt(sourceLanguage, targetLang);
+      // Build system prompt, with English reference for pivot languages
+      const isPivot = needsPivot(sourceLanguage, targetLang) && englishSegmentsForPivot.length > 0;
+      const pivotRef = isPivot ? buildEnglishReferenceForImage(englishSegmentsForPivot) : "";
+      const systemPrompt = buildTranslationSystemPrompt(sourceLanguage, targetLang) + pivotRef;
+      if (isPivot) {
+        console.debug(`[Pivot] Using English reference for ${sourceLanguage}→${targetLang} (post ${postId})`);
+      }
 
       try {
         // Check Redis cache before running Gemini analysis
@@ -1177,6 +1196,14 @@ export async function POST(request: NextRequest) {
           strokeWidth: s.style.strokeWidth,
           isUppercase: undefined,
         }));
+
+        // Capture English segments for pivot reference
+        if (targetLang === "en" && allSegments.length > 0) {
+          englishSegmentsForPivot = allSegments.map((s) => ({
+            sourceText: s.sourceText,
+            translatedText: s.translatedText,
+          }));
+        }
 
         // Translate title & body text (in parallel) — uses lighter model for cost savings
         const targetName = LANGUAGE_INSTRUCTIONS[targetLang]?.split(":")[0] || targetLang;

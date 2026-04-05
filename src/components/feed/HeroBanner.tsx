@@ -81,7 +81,7 @@ export default function HeroBanner() {
             {/* AI Translating shimmer */}
             <div className="flex items-center gap-2 mb-3">
               <span className="relative text-xs font-medium text-[#c9a84c]">
-                <span className="animate-pulse">\u2728</span> AI translating...
+                <span className="animate-pulse">✨</span> AI translating...
                 <span className="absolute inset-0 bg-gradient-to-r from-transparent via-[#c9a84c]/20 to-transparent animate-[shimmer_2s_infinite] bg-[length:200%_100%]" />
               </span>
             </div>
@@ -145,7 +145,7 @@ export default function HeroBanner() {
             href="/signup"
             className="relative inline-flex items-center gap-2 px-8 py-3 rounded-xl bg-[#c9a84c] text-black text-sm md:text-base font-bold hover:bg-[#d4b85c] active:bg-[#b8973f] transition-all shadow-[0_0_20px_rgba(201,168,76,0.3)] hover:shadow-[0_0_30px_rgba(201,168,76,0.5)]"
           >
-            <span>\u2728</span>
+            <span>✨</span>
             {t("hero.cta")}
           </Link>
         </div>
