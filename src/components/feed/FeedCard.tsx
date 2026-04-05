@@ -601,7 +601,7 @@ function FeedCardInner({
       {!isCommunity && !isTextOnly && (
         <Link href={`/post/${id}`} className="block" onClick={isVideo ? (e: any) => e.preventDefault() : undefined}>
           <div className="px-4 pb-2">
-            <div className={`overflow-hidden border border-border flex items-center justify-center bg-black/5 ${(segments.length > 0 || effectiveTranslatedImageUrl) ? "rounded-b-lg border-t-0" : "rounded-lg"}`}>
+            <div className={`overflow-hidden border border-border flex items-center justify-center bg-black/20 relative max-h-[500px] ${(segments.length > 0 || effectiveTranslatedImageUrl) ? "rounded-b-lg border-t-0" : "rounded-lg"}`}>
               {/* Video playback */}
               {isVideo ? (
                 <video
@@ -672,6 +672,8 @@ function FeedCardInner({
                   maxHeight={undefined}
                 />
               )}
+              {/* Bottom gradient for readability */}
+              <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-black/30 to-transparent pointer-events-none" />
             </div>
           </div>
         </Link>
@@ -737,27 +739,27 @@ function FeedCardInner({
       )}
 
       {/* Vote + Action row */}
-      <div className="flex items-center gap-1 px-3 py-2 border-t border-border">
+      <div className="flex items-center gap-1.5 px-4 py-3 border-t border-border">
         {/* Reddit-style vote buttons */}
         <div className="flex items-center gap-0.5">
           <button
             aria-label="Upvote"
             onClick={() => handleVote(userVote === 1 ? 0 : 1)}
             disabled={votePending}
-            className={`p-1.5 rounded-lg transition-all duration-200 ${
+            className={`p-2 rounded-lg transition-all duration-200 active:scale-90 ${
               userVote === 1
-                ? "text-[#c9a84c] bg-[#c9a84c]/10"
-                : "text-foreground-subtle hover:text-foreground-muted hover:bg-background-elevated"
+                ? "text-[#c9a84c] bg-[#c9a84c]/15"
+                : "text-foreground-subtle hover:text-foreground hover:bg-background-elevated"
             }`}
           >
-            <svg className="w-4 h-4" fill={userVote === 1 ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="w-5 h-5" fill={userVote === 1 ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
             </svg>
           </button>
           <button
             onClick={() => setShowReactionsModal(true)}
-            className={`text-xs font-bold min-w-[20px] text-center hover:underline cursor-pointer ${
-              voteScore > 0 ? "text-[#c9a84c]" : voteScore < 0 ? "text-blue-400" : "text-foreground-subtle"
+            className={`text-sm font-bold min-w-[24px] text-center hover:underline cursor-pointer ${
+              voteScore > 0 ? "text-[#c9a84c]" : voteScore < 0 ? "text-blue-400" : "text-foreground-muted"
             }`}
           >
             {formatCount(voteScore)}
@@ -766,13 +768,13 @@ function FeedCardInner({
             aria-label="Downvote"
             onClick={() => handleVote(userVote === -1 ? 0 : -1)}
             disabled={votePending}
-            className={`p-1.5 rounded-lg transition-all duration-200 ${
+            className={`p-2 rounded-lg transition-all duration-200 active:scale-90 ${
               userVote === -1
-                ? "text-blue-400 bg-blue-400/10"
-                : "text-foreground-subtle hover:text-foreground-muted hover:bg-background-elevated"
+                ? "text-blue-400 bg-blue-400/15"
+                : "text-foreground-subtle hover:text-foreground hover:bg-background-elevated"
             }`}
           >
-            <svg className="w-4 h-4" fill={userVote === -1 ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="w-5 h-5" fill={userVote === -1 ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
             </svg>
           </button>
@@ -880,15 +882,15 @@ const ActionButton = React.memo(function ActionButton({
     <button
       aria-label={ariaLabel}
       onClick={onClick}
-      className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg transition-all duration-200 ${
+      className={`flex items-center gap-1.5 px-2.5 py-2 rounded-lg transition-all duration-200 active:scale-95 ${
         active
-          ? "text-[#c9a84c] bg-[#c9a84c]/10"
-          : "text-foreground-subtle hover:text-foreground-muted hover:bg-background-elevated"
+          ? "text-[#c9a84c] bg-[#c9a84c]/15"
+          : "text-foreground-subtle hover:text-foreground hover:bg-background-elevated"
       }`}
     >
       {icon}
       {count > 0 && (
-        <span className="text-xs">{formatCount(count)}</span>
+        <span className="text-sm font-medium">{formatCount(count)}</span>
       )}
     </button>
   );

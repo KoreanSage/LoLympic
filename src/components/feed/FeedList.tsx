@@ -390,14 +390,16 @@ export default function FeedList({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {posts.map((post, index) => (
         <React.Fragment key={post.id}>
+          <div className="animate-fade-in-up" style={{ animationDelay: `${Math.min(index * 50, 300)}ms` }}>
           <FeedCard
             {...post}
             isBookmarked={bookmarkedIds.has(post.id)}
             onDelete={(deletedId) => setPosts((prev) => prev.filter((p) => p.id !== deletedId))}
           />
+          </div>
           {/* Country Race Widget after 2nd post */}
           {index === 1 && <CountryRaceWidget />}
           {/* Ad slot insertion at configurable intervals */}

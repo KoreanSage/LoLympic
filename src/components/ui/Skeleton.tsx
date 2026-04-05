@@ -13,8 +13,6 @@ export default function Skeleton({
   width,
   height,
 }: SkeletonProps) {
-  const baseClasses = "animate-pulse bg-background-overlay rounded";
-
   const variantClasses = {
     text: "h-4 rounded",
     circular: "rounded-full",
@@ -23,31 +21,29 @@ export default function Skeleton({
 
   return (
     <div
-      className={`${baseClasses} ${variantClasses[variant]} ${className}`}
+      className={`relative overflow-hidden bg-background-overlay rounded ${variantClasses[variant]} ${className}`}
       style={{ width, height }}
-    />
+    >
+      <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/5 to-transparent" />
+    </div>
   );
 }
 
 export function CardSkeleton() {
   return (
-    <div className="bg-background-surface border border-border rounded-xl p-4 space-y-3">
+    <div className="bg-background-surface border border-border rounded-2xl p-4 space-y-4">
       <div className="flex items-center gap-3">
-        <Skeleton variant="circular" className="w-8 h-8" />
-        <div className="space-y-1 flex-1">
-          <Skeleton className="w-24 h-3" />
+        <Skeleton variant="circular" className="w-10 h-10" />
+        <div className="space-y-2 flex-1">
+          <Skeleton className="w-28 h-3.5" />
           <Skeleton className="w-16 h-2.5" />
         </div>
       </div>
-      <Skeleton variant="rectangular" className="w-full h-64" />
-      <div className="space-y-2">
-        <Skeleton className="w-3/4 h-3" />
-        <Skeleton className="w-1/2 h-3" />
-      </div>
-      <div className="flex gap-4 pt-2">
-        <Skeleton className="w-16 h-6" />
-        <Skeleton className="w-16 h-6" />
-        <Skeleton className="w-16 h-6" />
+      <Skeleton variant="rectangular" className="w-full h-72 rounded-xl" />
+      <div className="flex gap-4 pt-1">
+        <Skeleton className="w-20 h-8 rounded-lg" />
+        <Skeleton className="w-20 h-8 rounded-lg" />
+        <Skeleton className="w-20 h-8 rounded-lg" />
       </div>
     </div>
   );
