@@ -436,12 +436,11 @@ async function generateCleanImagesForPost(
             const maskBuffer = await generateInpaintingMask(segments, imgWidth, imgHeight);
             const lamaOutputUrl = await runLamaInpainting(imageBuffer, maskBuffer, imgData.mimeType);
 
-            // Download the clean image from LaMa output URL + compress to WebP
+            // Download the clean image from LaMa output URL
             const cleanRes = await fetch(lamaOutputUrl);
             if (cleanRes.ok) {
-              const cleanRaw = Buffer.from(await cleanRes.arrayBuffer());
-              const cleanBuffer = await sharp(cleanRaw).webp({ quality: 85 }).toBuffer();
-              cleanUrl = await saveGeneratedImage(cleanBuffer, "clean_lama", ".webp");
+              const cleanBuffer = Buffer.from(await cleanRes.arrayBuffer());
+              cleanUrl = await saveGeneratedImage(cleanBuffer, "clean_lama", ".png");
               console.debug(`[LaMa] Clean image generated for postImage ${dbImage.id}`);
             }
           }
@@ -520,9 +519,9 @@ Replace each removed text area with the background that would naturally be behin
 
     for (const part of parts) {
       if (part.inlineData?.data) {
-        const cleanImageRaw = Buffer.from(part.inlineData.data, "base64");
-        const cleanImageBuffer = await sharp(cleanImageRaw).webp({ quality: 85 }).toBuffer();
-        return await saveGeneratedImage(cleanImageBuffer, "clean", ".webp");
+        const cleanImageBuffer = Buffer.from(part.inlineData.data, "base64");
+        const ext = part.inlineData.mimeType?.includes("png") ? ".png" : ".jpg";
+        return await saveGeneratedImage(cleanImageBuffer, "clean", ext);
       }
     }
 

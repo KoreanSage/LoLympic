@@ -39,16 +39,6 @@ function stripMarkdownFences(text: string): string {
 // ---------------------------------------------------------------------------
 // Build prompt for text-only translation
 // ---------------------------------------------------------------------------
-// Distant language pairs that benefit from thinking in English first
-const DISTANT_PAIRS: Record<string, Set<string>> = {
-  ar: new Set(["ko", "ja", "zh", "hi"]),
-  hi: new Set(["ko", "ja", "zh", "ar"]),
-  es: new Set(["ko", "ja", "zh"]),
-  ko: new Set(["ar", "hi", "es"]),
-  ja: new Set(["ar", "hi", "es"]),
-  zh: new Set(["ar", "hi", "es"]),
-};
-
 function buildTextTranslationPrompt(
   sourceLanguage: string,
   targetLanguage: string,
@@ -60,19 +50,12 @@ function buildTextTranslationPrompt(
   const targetLangInstruction =
     LANGUAGE_INSTRUCTIONS[targetLanguage] || `Target language: ${targetLanguage}`;
 
-  // For distant language pairs, instruct the model to think via English
-  const isDistant = sourceLanguage !== "en" && targetLanguage !== "en"
-    && DISTANT_PAIRS[sourceLanguage]?.has(targetLanguage);
-  const pivotHint = isDistant
-    ? "\n\nIMPORTANT: Since this is a distant language pair, first understand the meaning in English internally, then produce the best natural translation in the target language. Do NOT output English — only output the target language."
-    : "";
-
   return `You are translating a community post on mimzy, a global meme translation platform.
 Translate naturally — match the tone and style of the original.
 If it's casual, keep it casual. If it's a question, keep the question format.
 
 Source language: ${sourceLangInstruction}
-Target language: ${targetLangInstruction}${pivotHint}
+Target language: ${targetLangInstruction}
 
 Translate the following:
 Title: ${title}
