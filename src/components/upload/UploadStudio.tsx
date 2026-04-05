@@ -51,7 +51,6 @@ function uploadFileWithProgress(
   file: File,
   onProgress: (loaded: number, total: number) => void
 ): Promise<any> {
-  // Server handles compression via sharp — no client-side compression needed
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("POST", "/api/upload");
@@ -244,35 +243,29 @@ export default function UploadStudio() {
         }> = [];
 
         const totalSize = imageFiles.reduce((sum, f) => sum + f.size, 0);
-        const progressPerFile = new Array(imageFiles.length).fill(0);
+        let completedSize = 0;
 
-        // Upload all images in parallel — use allSettled so one failure doesn't kill all
-        const uploadPromises = imageFiles.map((file, idx) =>
-          uploadFileWithProgress(file, (loaded) => {
-            progressPerFile[idx] = loaded;
-            const totalLoaded = progressPerFile.reduce((a, b) => a + b, 0);
-            setProgress((p) => p && { ...p, uploadProgress: Math.min(Math.round((totalLoaded / totalSize) * 100), 99) });
-          }).then((data) => {
-            setProgress((p) => p && { ...p, uploadedCount: (p.uploadedCount || 0) + 1 });
-            return {
-              url: data.url,
-              width: data.width,
-              height: data.height,
-              mimeType: data.mimeType,
-              fileSizeBytes: data.fileSizeBytes,
-            };
-          })
-        );
-
-        const settled = await Promise.allSettled(uploadPromises);
-        for (const r of settled) {
-          if (r.status === "fulfilled") uploadedImages.push(r.value);
-          else console.error("Image upload failed:", r.reason);
+        for (let idx = 0; idx < imageFiles.length; idx++) {
+          const file = imageFiles[idx];
+          const fileStartSize = completedSize;
+          const data = await uploadFileWithProgress(file, (loaded) => {
+            const overallProgress = Math.round(((fileStartSize + loaded) / totalSize) * 100);
+            setProgress((p) => p && { ...p, uploadProgress: Math.min(overallProgress, 99) });
+          });
+          completedSize += file.size;
+          setProgress((p) => p && {
+            ...p,
+            uploadProgress: Math.round((completedSize / totalSize) * 100),
+            uploadedCount: idx + 1,
+          });
+          uploadedImages.push({
+            url: data.url,
+            width: data.width,
+            height: data.height,
+            mimeType: data.mimeType,
+            fileSizeBytes: data.fileSizeBytes,
+          });
         }
-        if (uploadedImages.length === 0) {
-          throw new Error("All image uploads failed. Please try again.");
-        }
-        setProgress((p) => p && { ...p, uploadProgress: 100 });
 
         // Step 2: Create post
         setProgress((p) => p && { ...p, phase: "creating" });
@@ -375,17 +368,13 @@ export default function UploadStudio() {
           return true;
         };
 
-        // Phase 1: Translate English FIRST (needed as reference for pivot languages)
-        // This ensures ar→ko, hi→ja etc. get English reference for better quality
-        const CONCURRENCY = 4;
+        // Process languages with concurrency limit of 2 + auto-retry
+        const CONCURRENCY = 2;
+        const langQueue = [...targetLangs];
         const failedLangs: Array<{ code: string; label: string }> = [];
 
         const processLang = async (lang: { code: string; label: string }) => {
           try {
-            setProgress((p) => {
-              if (!p) return p;
-              return { ...p, languages: { ...p.languages, [lang.code]: "translating" } };
-            });
             await translateOneLang(lang.code);
             setProgress((p) => {
               if (!p) return p;
@@ -400,15 +389,7 @@ export default function UploadStudio() {
           }
         };
 
-        // English first (pivot reference) — only if English is a target
-        const englishLang = targetLangs.find((l) => l.code === "en");
-        const otherLangs = targetLangs.filter((l) => l.code !== "en");
-
-        if (englishLang && sourceLanguage !== "en") {
-          await processLang(englishLang);
-        }
-
-        // Phase 2: All other languages in parallel (with concurrency limit)
+        // Run with concurrency limit
         const runWithConcurrency = async (items: Array<{ code: string; label: string }>, concurrency: number) => {
           const executing = new Set<Promise<void>>();
           for (const item of items) {
@@ -421,7 +402,7 @@ export default function UploadStudio() {
           await Promise.allSettled(executing);
         };
 
-        await runWithConcurrency(otherLangs, CONCURRENCY);
+        await runWithConcurrency(langQueue, CONCURRENCY);
 
         // Retry failed languages (one at a time with delay)
         if (failedLangs.length > 0) {
@@ -699,32 +680,22 @@ export default function UploadStudio() {
           maxLength={5000}
         />
 
-        {/* Language selector with guide */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-medium text-foreground-muted">🌐 Original language</span>
-            <span className="text-[10px] text-foreground-subtle">— select your meme&apos;s language</span>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            {ALL_LANGUAGES.map((lang) => (
-              <button
-                key={lang.code}
-                type="button"
-                onClick={() => setSourceLanguage(lang.code)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${
-                  sourceLanguage === lang.code
-                    ? "bg-[#c9a84c] text-black"
-                    : "bg-background-surface border border-border text-foreground-muted hover:border-border-active"
-                }`}
-              >
-                <span>{lang.icon}</span>
-                <span className="hidden sm:inline">{lang.label}</span>
-              </button>
-            ))}
-          </div>
-          <p className="text-[10px] text-[#c9a84c]/70">
-            ✨ Auto-translates to {ALL_LANGUAGES.length - 1} other languages after upload
-          </p>
+        {/* Language selector — inline compact */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {ALL_LANGUAGES.map((lang) => (
+            <button
+              key={lang.code}
+              type="button"
+              onClick={() => setSourceLanguage(lang.code)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                sourceLanguage === lang.code
+                  ? "bg-[#c9a84c] text-black"
+                  : "bg-background-surface border border-border text-foreground-muted hover:border-border-active"
+              }`}
+            >
+              {lang.icon}
+            </button>
+          ))}
         </div>
 
         {/* More options — collapsed by default */}
