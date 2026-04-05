@@ -125,8 +125,8 @@ export default function HallOfFamePage() {
   return (
     <MainLayout showSidebar={false}>
       <div className="max-w-3xl mx-auto py-8 px-4">
-      {/* Header */}
-      <div className="text-center mb-10">
+        {/* Header */}
+        <div className="text-center mb-10">
         <h1 className="text-3xl font-bold text-foreground mb-2">
           <span className="text-[#c9a84c]">{t("hallOfFame.title").split(" ")[0]}</span> {t("hallOfFame.title").split(" ").slice(1).join(" ")}
         </h1>
