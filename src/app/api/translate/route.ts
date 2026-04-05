@@ -436,12 +436,11 @@ async function generateCleanImagesForPost(
             const maskBuffer = await generateInpaintingMask(segments, imgWidth, imgHeight);
             const lamaOutputUrl = await runLamaInpainting(imageBuffer, maskBuffer, imgData.mimeType);
 
-            // Download the clean image from LaMa output URL + compress to WebP
+            // Download the clean image from LaMa output URL
             const cleanRes = await fetch(lamaOutputUrl);
             if (cleanRes.ok) {
-              const cleanRaw = Buffer.from(await cleanRes.arrayBuffer());
-              const cleanBuffer = await sharp(cleanRaw).webp({ quality: 85 }).toBuffer();
-              cleanUrl = await saveGeneratedImage(cleanBuffer, "clean_lama", ".webp");
+              const cleanBuffer = Buffer.from(await cleanRes.arrayBuffer());
+              cleanUrl = await saveGeneratedImage(cleanBuffer, "clean_lama", ".png");
               console.debug(`[LaMa] Clean image generated for postImage ${dbImage.id}`);
             }
           }
@@ -520,9 +519,9 @@ Replace each removed text area with the background that would naturally be behin
 
     for (const part of parts) {
       if (part.inlineData?.data) {
-        const cleanImageRaw = Buffer.from(part.inlineData.data, "base64");
-        const cleanImageBuffer = await sharp(cleanImageRaw).webp({ quality: 85 }).toBuffer();
-        return await saveGeneratedImage(cleanImageBuffer, "clean", ".webp");
+        const cleanImageBuffer = Buffer.from(part.inlineData.data, "base64");
+        const ext = part.inlineData.mimeType?.includes("png") ? ".png" : ".jpg";
+        return await saveGeneratedImage(cleanImageBuffer, "clean", ext);
       }
     }
 
@@ -925,22 +924,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Read all images as base64 — skip failed reads instead of sending empty data to Gemini
+    // Read all images as base64
     const imageDataList: Array<{ base64: string; mimeType: string }> = [];
     for (const url of imageUrls) {
       try {
         const imageData = await readImageAsBase64(url);
-        if (imageData.base64) {
-          imageDataList.push(imageData);
-        } else {
-          console.warn(`Empty image data for ${url}, skipping`);
-        }
+        imageDataList.push(imageData);
       } catch (err) {
-        console.error(`Failed to read image ${url}, skipping:`, err);
+        console.error(`Failed to read image ${url}:`, err);
+        imageDataList.push({ base64: "", mimeType: "image/jpeg" }); // placeholder for failed reads
       }
-    }
-    if (imageDataList.length === 0) {
-      return NextResponse.json({ error: "Failed to read any images for translation" }, { status: 400 });
     }
 
     // Process each target language
