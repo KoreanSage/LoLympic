@@ -775,25 +775,34 @@ async function generateTranslatedImageForPayload(
       },
     };
 
-    const svg = await satori(element as React.ReactNode, {
-      width: safeW,
-      height: safeH,
-      fonts: [
-        {
-          name: "Noto Sans",
-          data: Buffer.from(fontBuffer),
-          style: "normal" as const,
-          weight: 900,
-        },
-      ],
-    });
+    // Satori + Resvg rendering with 15s timeout to prevent hanging
+    const satoriTimeout = 15000;
+    const renderImage = async () => {
+      const svg = await satori(element as React.ReactNode, {
+        width: safeW,
+        height: safeH,
+        fonts: [
+          {
+            name: "Noto Sans",
+            data: Buffer.from(fontBuffer),
+            style: "normal" as const,
+            weight: 900,
+          },
+        ],
+      });
+      const resvg = new Resvg(svg, {
+        fitTo: { mode: "width" as const, value: safeW },
+      });
+      const pngBuffer = Buffer.from(resvg.render().asPng());
+      return sharp(pngBuffer).webp({ quality: 82 }).toBuffer();
+    };
 
-    const resvg = new Resvg(svg, {
-      fitTo: { mode: "width" as const, value: safeW },
-    });
-    const pngBuffer = Buffer.from(resvg.render().asPng());
-    // Compress PNG → WebP for ~60% storage savings
-    const composedBuffer = await sharp(pngBuffer).webp({ quality: 82 }).toBuffer();
+    const composedBuffer = await Promise.race([
+      renderImage(),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Satori render timeout (15s)")), satoriTimeout)
+      ),
+    ]);
 
     // 5. Save the composed image to Blob storage
     const url = await saveGeneratedImage(composedBuffer, `translated_satori_${targetLanguage}`, ".webp");
@@ -927,16 +936,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Read all images as base64
+    // Read all images as base64 — skip failed reads instead of sending empty data
     const imageDataList: Array<{ base64: string; mimeType: string }> = [];
     for (const url of imageUrls) {
       try {
         const imageData = await readImageAsBase64(url);
-        imageDataList.push(imageData);
+        if (imageData.base64) {
+          imageDataList.push(imageData);
+        } else {
+          console.warn(`Empty image data for ${url}, skipping`);
+        }
       } catch (err) {
-        console.error(`Failed to read image ${url}:`, err);
-        imageDataList.push({ base64: "", mimeType: "image/jpeg" }); // placeholder for failed reads
+        console.error(`Failed to read image ${url}, skipping:`, err);
       }
+    }
+
+    if (imageDataList.length === 0) {
+      return NextResponse.json(
+        { error: "Failed to read any images for translation" },
+        { status: 400 }
+      );
     }
 
     // Process each target language

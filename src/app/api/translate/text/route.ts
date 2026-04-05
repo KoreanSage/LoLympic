@@ -220,11 +220,8 @@ export async function POST(request: NextRequest) {
           },
         });
 
-        // Update post translation count
-        await tx.post.update({
-          where: { id: postId },
-          data: { translationCount: { increment: 1 } },
-        });
+        // Note: translationCount is incremented by the main /api/translate route
+        // to avoid double-counting when both text and image APIs are called
 
         return translationPayload;
       });
