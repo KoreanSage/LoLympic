@@ -31,45 +31,20 @@ function isRTL(text: string): boolean {
 const WEB_SAFE_FONTS = new Set([
   "Noto Sans KR", "Noto Sans JP", "Noto Sans SC",
   "Noto Sans Devanagari", "Noto Sans Arabic",
-  "Black Han Sans",
   "Impact", "Inter", "JetBrains Mono",
 ]);
 
-// Bold "Impact-like" fonts for meme overlay text per language
-const MEME_OVERLAY_FONTS: Record<string, string> = {
-  ko: "Black Han Sans",
-  ja: "Noto Sans JP",
-  zh: "Noto Sans SC",
-  en: "Impact",
-  es: "Impact",
-  hi: "Noto Sans Devanagari",
-  ar: "Noto Sans Arabic",
-};
-
-// Semantic roles that indicate bold overlay text (Impact font style)
-const OVERLAY_ROLES = new Set(["HEADLINE", "CAPTION", "OVERLAY", "SUBTITLE"]);
-
 function resolveFont(segment: TranslationSegmentData): string {
+  // 1. Always detect language from actual translated text first (most reliable)
   const lang = detectLanguageFromText(segment.translatedText);
-
-  // For overlay/headline segments (Impact-style meme text), use bold meme fonts
-  const isOverlay = OVERLAY_ROLES.has(segment.semanticRole || "")
-    || (segment.fontWeight && segment.fontWeight >= 700)
-    || (segment.strokeColor || segment.strokeWidth);
-
-  if (isOverlay && lang && MEME_OVERLAY_FONTS[lang]) {
-    return MEME_OVERLAY_FONTS[lang];
-  }
-
-  // For regular text segments, use standard language fonts
   if (lang && LANGUAGE_FONT_DEFAULTS[lang]) return LANGUAGE_FONT_DEFAULTS[lang];
 
-  // If fontFamily from DB is a known web-safe font, use it
+  // 2. If fontFamily from DB is a known web-safe font, use it
   if (segment.fontFamily && WEB_SAFE_FONTS.has(segment.fontFamily)) {
     return segment.fontFamily;
   }
 
-  // Try fontHint
+  // 3. Try fontHint
   if (segment.fontHint) {
     const hint = segment.fontHint.toLowerCase();
     for (const [, font] of Object.entries(LANGUAGE_FONT_DEFAULTS)) {
@@ -372,8 +347,9 @@ export default function MemeRenderer({
       }
 
       // When using clean image as base, NO backdrop needed (original text already removed)
-      // When using original image, use OPAQUE backdrop to fully hide original text
+      // When using original image, use FULLY OPAQUE backdrop to completely hide original text
       if (!usingCleanBase) {
+        // Generous padding to fully cover original text (15% horizontal, 20% vertical)
         const padX = bw * 0.15;
         const padY = bh * 0.2;
         const bgX = Math.max(0, bx - padX);
@@ -395,10 +371,26 @@ export default function MemeRenderer({
         ctx.quadraticCurveTo(bgX, bgY, bgX + borderRadius, bgY);
         ctx.closePath();
 
-        // Fully opaque backdrop matched to surrounding background color
+        // FULLY OPAQUE backdrop matched to surrounding background
+        // Sample a wider area for more accurate color matching
         ctx.fillStyle = seg.backgroundColor || (brightness > 128
           ? `rgb(${Math.min(255, r + 15)},${Math.min(255, g + 15)},${Math.min(255, b + 15)})`
           : `rgb(${Math.max(0, r - 10)},${Math.max(0, g - 10)},${Math.max(0, b - 10)})`);
+        ctx.fill();
+
+        // Draw a second pass with slightly inset rect for smoother edges
+        const inset = 1;
+        ctx.beginPath();
+        ctx.moveTo(bgX + inset + borderRadius, bgY + inset);
+        ctx.lineTo(bgX + bgW - inset - borderRadius, bgY + inset);
+        ctx.quadraticCurveTo(bgX + bgW - inset, bgY + inset, bgX + bgW - inset, bgY + inset + borderRadius);
+        ctx.lineTo(bgX + bgW - inset, bgY + bgH - inset - borderRadius);
+        ctx.quadraticCurveTo(bgX + bgW - inset, bgY + bgH - inset, bgX + bgW - inset - borderRadius, bgY + bgH - inset);
+        ctx.lineTo(bgX + inset + borderRadius, bgY + bgH - inset);
+        ctx.quadraticCurveTo(bgX + inset, bgY + bgH - inset, bgX + inset, bgY + bgH - inset - borderRadius);
+        ctx.lineTo(bgX + inset, bgY + inset + borderRadius);
+        ctx.quadraticCurveTo(bgX + inset, bgY + inset, bgX + inset + borderRadius, bgY + inset);
+        ctx.closePath();
         ctx.fill();
       }
 
@@ -451,10 +443,10 @@ export default function MemeRenderer({
       ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}, sans-serif`;
       ctx.textBaseline = "top";
 
-      // Default to white text with black outline for meme-style readability
+      // Auto-detect text color based on background brightness
       const autoColor = brightness > 128 ? "#000000" : "#FFFFFF";
       const fillColor = seg.color || autoColor;
-      const contrastStroke = brightness > 128 ? "#FFFFFF" : "#000000";
+      const contrastStroke = brightness > 128 ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.4)";
 
       // Apply shadow if provided by AI
       if (seg.shadowColor) {
@@ -463,26 +455,26 @@ export default function MemeRenderer({
         ctx.shadowOffsetY = (seg.shadowOffsetY ?? 1) * Math.min(scaleX, scaleY);
         ctx.shadowBlur = (seg.shadowBlur ?? 2) * Math.min(scaleX, scaleY);
       } else {
-        // Drop shadow for depth — complements the thick stroke
-        ctx.shadowColor = "rgba(0,0,0,0.7)";
-        ctx.shadowOffsetX = 1;
-        ctx.shadowOffsetY = 1;
-        ctx.shadowBlur = Math.max(2, fontSize * 0.06);
+        // Default subtle shadow for readability
+        ctx.shadowColor = brightness > 128 ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.6)";
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
+        ctx.shadowBlur = Math.max(2, fontSize * 0.08);
       }
 
       for (let i = 0; i < lines.length; i++) {
         const ly = startY + i * lineHeight;
 
-        // Thick stroke for meme-style text outline
+        // Stroke for text edge definition
         if (seg.strokeColor || seg.strokeWidth) {
           ctx.strokeStyle = seg.strokeColor || contrastStroke;
-          ctx.lineWidth = (seg.strokeWidth || 3) * Math.min(scaleX, scaleY);
+          ctx.lineWidth = (seg.strokeWidth || 2) * Math.min(scaleX, scaleY);
           ctx.lineJoin = "round";
           ctx.strokeText(lines[i], anchorX, ly);
         } else {
-          // Bold meme-style outline — thick enough to be clearly visible
+          // Auto stroke for readability — thicker than before
           ctx.strokeStyle = contrastStroke;
-          ctx.lineWidth = Math.max(3, fontSize * 0.12);
+          ctx.lineWidth = Math.max(1.5, fontSize * 0.06);
           ctx.lineJoin = "round";
           ctx.strokeText(lines[i], anchorX, ly);
         }

@@ -12,7 +12,6 @@ import { GoogleGenAI } from "@google/genai";
 import { LanguageCode } from "@prisma/client";
 import crypto from "crypto";
 import { updateRankingScore } from "@/lib/ranking";
-import { needsPivot, buildEnglishReferenceForImage } from "@/lib/pivot-translation";
 import { runLamaInpainting } from "@/lib/replicate";
 import { generateInpaintingMask } from "@/lib/mask-generator";
 import sharp from "sharp";
@@ -240,29 +239,14 @@ function extractMimeType(filePathOrUrl: string): string {
 }
 
 // Helper: Save generated image (R2 > Blob > local)
-// Compresses to WebP before saving for smaller file sizes
 async function saveGeneratedImage(
   buffer: Buffer,
   prefix: string,
   ext: string
 ): Promise<string> {
-  // Compress generated images to WebP (60-80% smaller than PNG)
-  let finalBuffer = buffer;
-  let finalExt = ext;
-  let contentType = ext === ".png" ? "image/png" : "image/jpeg";
-
-  try {
-    const optimized = await sharp(buffer).webp({ quality: 80 }).toBuffer();
-    if (optimized.length < buffer.length) {
-      finalBuffer = optimized;
-      finalExt = ".webp";
-      contentType = "image/webp";
-    }
-  } catch {
-    // Fallback to original if compression fails
-  }
-
-  const filename = `uploads/${prefix}_${crypto.randomUUID()}${finalExt}`;
+  const filename = `uploads/${prefix}_${crypto.randomUUID()}${ext}`;
+  const mimeMap: Record<string, string> = { ".png": "image/png", ".jpg": "image/jpeg" };
+  const contentType = mimeMap[ext] || "image/jpeg";
 
   if (USE_R2) {
     const { S3Client, PutObjectCommand } = await import("@aws-sdk/client-s3");
@@ -277,18 +261,16 @@ async function saveGeneratedImage(
     await s3.send(new PutObjectCommand({
       Bucket: process.env.R2_BUCKET_NAME!,
       Key: filename,
-      Body: finalBuffer,
+      Body: buffer,
       ContentType: contentType,
-      CacheControl: "public, max-age=31536000, immutable",
     }));
     const publicUrl = process.env.R2_PUBLIC_URL?.replace(/\/$/, "");
     return `${publicUrl}/${filename}`;
   } else if (USE_BLOB) {
     const { put } = await import("@vercel/blob");
-    const blob = await put(filename, finalBuffer, {
+    const blob = await put(filename, buffer, {
       access: "public",
       contentType,
-      cacheControlMaxAge: 31536000,
     });
     return blob.url;
   } else {
@@ -296,7 +278,7 @@ async function saveGeneratedImage(
     const fs = await import("fs/promises");
     const uploadDir = process.env.UPLOAD_DIR || "./uploads";
     const filePath = path.join(path.resolve(uploadDir), filename);
-    await fs.writeFile(filePath, finalBuffer);
+    await fs.writeFile(filePath, buffer);
     return `/api/uploads/${filename}`;
   }
 }
@@ -576,7 +558,7 @@ async function fetchGoogleFont(fontFamily: string, text: string): Promise<ArrayB
 // ---------------------------------------------------------------------------
 function getFontFamilyForLang(lang: string): string {
   switch (lang) {
-    case "ko": return "Black+Han+Sans";
+    case "ko": return "Noto+Sans+KR";
     case "ja": return "Noto+Sans+JP";
     case "zh": return "Noto+Sans+SC";
     case "ar": return "Noto+Sans+Arabic";
@@ -752,13 +734,13 @@ async function generateTranslatedImageForPayload(
             // Use original text color if available, default to white with stroke
             const textColor = seg.color || "#FFFFFF";
             const isLight = textColor.toLowerCase() === "#ffffff" || textColor.toLowerCase() === "#fff" || textColor === "white";
-            // Thick meme-style text outline using CSS text-shadow
             const strokeShadow = isLight
-              ? "-3px -3px 0 #000, 3px -3px 0 #000, -3px 3px 0 #000, 3px 3px 0 #000, " +
-                "-2px 0 0 #000, 2px 0 0 #000, 0 -2px 0 #000, 0 2px 0 #000, " +
-                "-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000"
-              : "-2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff, 2px 2px 0 #fff, " +
-                "-1px 0 0 #fff, 1px 0 0 #fff, 0 -1px 0 #fff, 0 1px 0 #fff";
+              ? "-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, " +
+                "-1px 0 0 #000, 1px 0 0 #000, 0 -1px 0 #000, 0 1px 0 #000"
+              : "-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff";
+
+            // Use original background color if available
+            const bgColor = seg.backgroundColor || "transparent";
 
             return {
               type: "div",
@@ -773,12 +755,14 @@ async function generateTranslatedImageForPayload(
                   alignItems: "center",
                   justifyContent: seg.textAlign === "LEFT" ? "flex-start" : seg.textAlign === "RIGHT" ? "flex-end" : "center",
                   textAlign: "center" as const,
-                  fontFamily: fontFamily.replace(/\+/g, " "),
+                  fontFamily: "Noto Sans",
                   fontSize: `${fontSize}px`,
                   fontWeight: 900,
                   color: textColor,
+                  backgroundColor: bgColor,
                   textShadow: strokeShadow,
                   lineHeight: 1.2,
+                  padding: bgColor !== "transparent" ? "2px 6px" : "0",
                   wordBreak: "keep-all" as const,
                   overflowWrap: "break-word" as const,
                 },
@@ -972,19 +956,7 @@ export async function POST(request: NextRequest) {
       isUppercase?: boolean;
     }>> = {};
 
-    // Reorder: process English first if any target language needs pivot translation
-    const sortedTargetLanguages = [...targetLanguages].sort((a, b) => {
-      if (a === sourceLanguage) return 1;
-      if (b === sourceLanguage) return -1;
-      if (a === "en") return -1;
-      if (b === "en") return 1;
-      return 0;
-    });
-
-    // Store English translation segments for pivot reference
-    let englishSegmentsForPivot: Array<{ sourceText: string; translatedText: string }> = [];
-
-    for (const targetLang of sortedTargetLanguages) {
+    for (const targetLang of targetLanguages) {
       if (targetLang === sourceLanguage) continue;
 
       // --- DB check: skip if a COMPLETED translation already exists for this language ---
@@ -1008,13 +980,7 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      // Build system prompt, with English reference for pivot languages
-      const isPivot = needsPivot(sourceLanguage, targetLang) && englishSegmentsForPivot.length > 0;
-      const pivotRef = isPivot ? buildEnglishReferenceForImage(englishSegmentsForPivot) : "";
-      const systemPrompt = buildTranslationSystemPrompt(sourceLanguage, targetLang) + pivotRef;
-      if (isPivot) {
-        console.debug(`[Pivot] Using English reference for ${sourceLanguage}→${targetLang} (post ${postId})`);
-      }
+      const systemPrompt = buildTranslationSystemPrompt(sourceLanguage, targetLang);
 
       try {
         // Check Redis cache before running Gemini analysis
@@ -1078,8 +1044,8 @@ export async function POST(request: NextRequest) {
 
               const cleaned = stripMarkdownFences(text);
               const parsed = JSON.parse(cleaned) as AITranslationResult;
-              if (!Array.isArray(parsed.segments)) continue;
-              // Empty segments = no text detected in meme (valid result)
+              if (!Array.isArray(parsed.segments) || parsed.segments.length === 0) continue;
+
               return { parsed, imgIdx };
             } catch (err) {
               console.warn(`Translate attempt ${attempt + 1} failed for ${targetLang} image ${imgIdx}:`, err instanceof Error ? err.message : String(err));
@@ -1122,21 +1088,9 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        if (!firstParsed) {
+        if (allSegments.length === 0 || !firstParsed) {
           console.error(`All translation attempts failed for ${targetLang}`);
           results[targetLang] = { error: `Translation failed for all images` };
-          continue;
-        }
-
-        // No text detected in any image — skip translation, return original as-is
-        if (allSegments.length === 0) {
-          console.debug(`[NoText] No text detected in meme for ${postId}:${targetLang}, skipping translation`);
-          results[targetLang] = {
-            payloadId: undefined,
-            version: undefined,
-            segmentCount: 0,
-            confidence: null,
-          };
           continue;
         }
 
@@ -1158,21 +1112,10 @@ export async function POST(request: NextRequest) {
 
         } // --- End Gemini else block ---
 
-        if (!firstParsed) {
+        if (allSegments.length === 0 || !firstParsed) {
+          // Already handled inside the else block with `continue`, but guard for cache path too
           console.error(`No segments available for ${targetLang}`);
           results[targetLang] = { error: `Translation failed for ${targetLang}` };
-          continue;
-        }
-
-        // No text detected — skip translation, return original as-is
-        if (allSegments.length === 0) {
-          console.debug(`[NoText] No text in meme for ${postId}:${targetLang}, returning original`);
-          results[targetLang] = {
-            payloadId: undefined,
-            version: undefined,
-            segmentCount: 0,
-            confidence: null,
-          };
           continue;
         }
 
@@ -1194,14 +1137,6 @@ export async function POST(request: NextRequest) {
           strokeWidth: s.style.strokeWidth,
           isUppercase: undefined,
         }));
-
-        // Capture English segments for pivot reference
-        if (targetLang === "en" && allSegments.length > 0) {
-          englishSegmentsForPivot = allSegments.map((s) => ({
-            sourceText: s.sourceText,
-            translatedText: s.translatedText,
-          }));
-        }
 
         // Translate title & body text (in parallel) — uses lighter model for cost savings
         const targetName = LANGUAGE_INSTRUCTIONS[targetLang]?.split(":")[0] || targetLang;
