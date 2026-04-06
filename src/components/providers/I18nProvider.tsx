@@ -43,14 +43,22 @@ export default function I18nProvider({ children }: { children: React.ReactNode }
     }
   }, [session]);
 
-  // Sync with session's uiLanguage when available
+  // Sync with session's uiLanguage ONLY on initial login (not on every session refresh)
+  // This prevents overwriting the user's language choice during the same session.
+  const [hasInitializedFromSession, setHasInitializedFromSession] = useState(false);
   useEffect(() => {
+    if (hasInitializedFromSession) return;
     const sessionLang = session?.user?.uiLanguage as Locale | undefined;
-    if (sessionLang && ["en", "ko", "ja", "zh", "es", "hi", "ar"].includes(sessionLang) && sessionLang !== locale) {
+    const storedLang = localStorage.getItem("uiLanguage");
+    // Only sync from session if user hasn't manually set a language yet
+    if (sessionLang && !storedLang && ["en", "ko", "ja", "zh", "es", "hi", "ar"].includes(sessionLang)) {
       setLocaleState(sessionLang);
       localStorage.setItem("uiLanguage", sessionLang);
     }
-  }, [session]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (session?.user) {
+      setHasInitializedFromSession(true);
+    }
+  }, [session, hasInitializedFromSession]);
 
   // Load dictionary when locale changes
   useEffect(() => {

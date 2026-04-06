@@ -111,7 +111,7 @@ function notifIcon(type: string): string {
 }
 
 export default function TopNav() {
-  const { data: session, status } = useSession();
+  const { data: session, status, update: updateSession } = useSession();
   const { t, locale, setLocale } = useTranslation();
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -140,22 +140,30 @@ export default function TopNav() {
   const [showLangDropdown, setShowLangDropdown] = useState(false);
   const langDropdownRef = useRef<HTMLDivElement>(null);
 
-  const handleLocaleChange = useCallback((newLocale: Locale) => {
+  const handleLocaleChange = useCallback(async (newLocale: Locale) => {
+    // 1. Update UI immediately
     setLocale(newLocale);
     localStorage.setItem("uiLanguage", newLocale);
     localStorage.setItem("preferredLanguage", newLocale);
-    // Sync meme translation language
     localStorage.setItem("mimzy_preferredLanguage", newLocale);
-    // Dispatch storage event so other components (HomePage) pick up the change
     window.dispatchEvent(new StorageEvent("storage", { key: "mimzy_preferredLanguage", newValue: newLocale }));
     setShowLangDropdown(false);
-    // Persist to DB so settings page stays in sync
-    fetch("/api/users/me", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ uiLanguage: newLocale, preferredLanguage: newLocale }),
-    }).catch(() => {});
-  }, [setLocale]);
+
+    // 2. Persist to DB (with error handling)
+    try {
+      const res = await fetch("/api/users/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ uiLanguage: newLocale, preferredLanguage: newLocale }),
+      });
+      if (!res.ok) throw new Error(`API ${res.status}`);
+      // 3. Refresh session token so it carries the new language
+      await updateSession();
+    } catch (e) {
+      console.error("Failed to save language preference:", e);
+      // Still keep local change — will retry on next switch
+    }
+  }, [setLocale, updateSession]);
 
   // Close lang dropdown on outside click
   useEffect(() => {
