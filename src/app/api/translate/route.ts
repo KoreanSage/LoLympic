@@ -974,7 +974,33 @@ export async function POST(request: NextRequest) {
       isUppercase?: boolean;
     }>> = {};
 
-    for (const targetLang of targetLanguages) {
+    // --- Pivot translation: reorder languages so English is processed first ---
+    // For distant language pairs (ko→ar, ja→hi, etc.), we use English as a
+    // reference to improve translation quality. English must be translated first.
+    const { needsPivot, buildEnglishReferenceForImage, buildEnglishReferenceForText } = await import("@/lib/pivot-translation");
+    const hasDistantPairs = targetLanguages.some(tl => tl !== sourceLanguage && needsPivot(sourceLanguage, tl));
+    const needsEnglishFirst = hasDistantPairs && sourceLanguage !== "en";
+
+    // Reorder: English first if needed for pivot
+    const orderedTargetLanguages = [...targetLanguages];
+    if (needsEnglishFirst) {
+      const enIdx = orderedTargetLanguages.indexOf("en");
+      if (enIdx > 0) {
+        orderedTargetLanguages.splice(enIdx, 1);
+        orderedTargetLanguages.unshift("en");
+      } else if (enIdx === -1) {
+        // English not in target list but we need it for pivot — add as internal-only
+        orderedTargetLanguages.unshift("en");
+      }
+    }
+
+    // Cache for pivot: English translation results
+    let englishSegmentsForPivot: Array<{ sourceText: string; translatedText: string }> = [];
+    let englishTitle: string | null = null;
+    let englishBody: string | null = null;
+    const isEnglishInternalOnly = needsEnglishFirst && !targetLanguages.includes("en");
+
+    for (const targetLang of orderedTargetLanguages) {
       if (targetLang === sourceLanguage) continue;
 
       // --- DB check: skip if a COMPLETED translation already exists for this language ---
@@ -1042,8 +1068,12 @@ export async function POST(request: NextRequest) {
               if (attempt > 0) {
                 await new Promise((r) => setTimeout(r, 1500));
               }
+              // Build pivot reference if this is a distant language pair
+              const pivotRef = needsPivot(sourceLanguage, targetLang) && englishSegmentsForPivot.length > 0
+                ? "\n\n" + buildEnglishReferenceForImage(englishSegmentsForPivot)
+                : "";
               const result = await model.generateContent([
-                `Translate this meme from ${sourceLanguage} to ${targetLang}. Analyze the image, detect all text regions, and provide transcendent translations. Respond ONLY with valid JSON, no markdown fences.${imageDataList.length > 1 ? ` This is image ${imgIdx + 1} of ${imageDataList.length} in a multi-image post.` : ""}`,
+                `Translate this meme from ${sourceLanguage} to ${targetLang}. Analyze the image, detect all text regions, and provide transcendent translations. Respond ONLY with valid JSON, no markdown fences.${imageDataList.length > 1 ? ` This is image ${imgIdx + 1} of ${imageDataList.length} in a multi-image post.` : ""}${pivotRef}`,
                 {
                   inlineData: {
                     data: imgData.base64,
@@ -1156,6 +1186,14 @@ export async function POST(request: NextRequest) {
           isUppercase: undefined,
         }));
 
+        // Cache English segments for pivot translation of distant languages
+        if (targetLang === "en") {
+          englishSegmentsForPivot = allSegments.map(s => ({
+            sourceText: s.sourceText,
+            translatedText: s.translatedText,
+          }));
+        }
+
         // Translate title & body text (in parallel) — uses lighter model for cost savings
         const targetName = LANGUAGE_INSTRUCTIONS[targetLang]?.split(":")[0] || targetLang;
         let translatedTitle: string | null = null;
@@ -1183,8 +1221,11 @@ export async function POST(request: NextRequest) {
                 model: "gemini-2.5-flash-lite",
                 generationConfig: { temperature: 0.3, maxOutputTokens: 512 },
               });
+              const pivotHint = needsPivot(sourceLanguage, targetLang) && englishTitle
+                ? `\n\nEnglish reference (for accuracy): "${englishTitle}"`
+                : "";
               const r = await m.generateContent(
-                `Translate the following meme title to ${targetName}. Output ONLY the translated text, nothing else. Keep the humor and tone.\n\n${post.title}`
+                `Translate the following meme title to ${targetName}. Output ONLY the translated text, nothing else. Keep the humor and tone.\n\n${post.title}${pivotHint}`
               );
               return r.response.text().trim();
             })() : Promise.resolve(null),
@@ -1194,14 +1235,29 @@ export async function POST(request: NextRequest) {
                 model: "gemini-2.5-flash-lite",
                 generationConfig: { temperature: 0.3, maxOutputTokens: 1024 },
               });
+              const pivotHint = needsPivot(sourceLanguage, targetLang) && englishBody
+                ? `\n\nEnglish reference (for accuracy): "${englishBody}"`
+                : "";
               const r = await m.generateContent(
-                `Translate the following meme description to ${targetName}. Output ONLY the translated text, nothing else. Keep the humor and tone.\n\n${post.body}`
+                `Translate the following meme description to ${targetName}. Output ONLY the translated text, nothing else. Keep the humor and tone.\n\n${post.body}${pivotHint}`
               );
               return r.response.text().trim();
             })() : Promise.resolve(null),
           ]);
           translatedTitle = textTranslations[0].status === "fulfilled" ? textTranslations[0].value : null;
           translatedBody = textTranslations[1].status === "fulfilled" ? textTranslations[1].value : null;
+        }
+
+        // Cache English title/body for pivot translation of distant languages
+        if (targetLang === "en") {
+          englishTitle = translatedTitle;
+          englishBody = translatedBody;
+        }
+
+        // If English was internal-only (not requested by user), skip DB storage
+        if (targetLang === "en" && isEnglishInternalOnly) {
+          console.debug(`[Pivot] English translation completed (internal-only, not saving to DB)`);
+          continue;
         }
 
         // Merge culture notes from all images into one combined note

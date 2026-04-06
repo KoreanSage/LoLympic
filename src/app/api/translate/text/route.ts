@@ -153,9 +153,41 @@ export async function POST(request: NextRequest) {
       generationConfig: { temperature: 0.3, maxOutputTokens: 1024 },
     });
 
+    // --- Pivot translation: translate English first for distant language pairs ---
+    const { needsPivot, buildEnglishReferenceForText } = await import("@/lib/pivot-translation");
+    const filteredLangs = targetLanguages.filter((lang) => lang !== sourceLanguage);
+    const hasDistantPairs = filteredLangs.some(tl => needsPivot(sourceLanguage, tl));
+    const needsEnglishFirst = hasDistantPairs && sourceLanguage !== "en";
+
+    // Translate English first if needed for pivot
+    let pivotEnTitle: string | null = null;
+    let pivotEnBody: string | null = null;
+
+    if (needsEnglishFirst) {
+      // Check if English translation already exists
+      const existingEn = await prisma.translationPayload.findFirst({
+        where: { postId, targetLanguage: "en" as LanguageCode, status: { in: ["COMPLETED", "APPROVED"] } },
+        orderBy: { version: "desc" },
+        select: { translatedTitle: true, translatedBody: true },
+      });
+      if (existingEn?.translatedTitle) {
+        pivotEnTitle = existingEn.translatedTitle;
+        pivotEnBody = existingEn.translatedBody;
+      } else {
+        try {
+          const enPrompt = buildTextTranslationPrompt(sourceLanguage, "en", post.title!, post.body);
+          const enResult = await model.generateContent(enPrompt);
+          const enParsed = JSON.parse(stripMarkdownFences(enResult.response.text()));
+          pivotEnTitle = enParsed.title;
+          pivotEnBody = enParsed.body;
+        } catch (e) {
+          console.warn("[Pivot] English pre-translation failed, continuing without pivot:", e);
+        }
+      }
+    }
+
     // Translate all languages in parallel with Promise.allSettled
-    const translationPromises = targetLanguages
-      .filter((lang) => lang !== sourceLanguage)
+    const translationPromises = filteredLangs
       .map(async (targetLang) => {
         // --- DB check: skip if translation already exists ---
         const existingPayload = await prisma.translationPayload.findFirst({
@@ -178,12 +210,17 @@ export async function POST(request: NextRequest) {
           };
         }
 
+        // Add English reference for distant language pairs
+        const pivotContext = needsPivot(sourceLanguage, targetLang) && pivotEnTitle
+          ? buildEnglishReferenceForText(pivotEnTitle, pivotEnBody)
+          : "";
+
         const prompt = buildTextTranslationPrompt(
           sourceLanguage,
           targetLang,
           post.title!,
           post.body
-        );
+        ) + pivotContext;
 
         const result = await model.generateContent(prompt);
         const responseText = result.response.text();
