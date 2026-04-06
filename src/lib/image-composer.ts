@@ -404,7 +404,7 @@ export async function composeTranslatedImage(
       const fontBuf = Buffer.from(fontData.base64, "base64");
       const resvg = new Resvg(svgOverlay, {
         fitTo: { mode: "width" as const, value: width },
-        font: { loadSystemFonts: false, fontBuffers: [fontBuf] },
+        font: { loadSystemFonts: false, fontBuffers: [fontBuf] } as any,
       });
       const overlayPng = Buffer.from(resvg.render().asPng());
       composites.push({ input: overlayPng, top: 0, left: 0 });
