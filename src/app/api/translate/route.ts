@@ -1153,7 +1153,8 @@ export async function POST(request: NextRequest) {
 
               const cleaned = stripMarkdownFences(text);
               const parsed = JSON.parse(cleaned) as AITranslationResult;
-              if (!Array.isArray(parsed.segments) || parsed.segments.length === 0) continue;
+              if (!Array.isArray(parsed.segments)) continue;
+              // Empty segments is valid (image has no text) — don't retry
 
               return { parsed, imgIdx };
             } catch (err) {
@@ -1197,11 +1198,12 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        if (allSegments.length === 0 || !firstParsed) {
+        if (!firstParsed) {
           console.error(`All translation attempts failed for ${targetLang}`);
           results[targetLang] = { error: `Translation failed for all images` };
           continue;
         }
+        // Empty segments is valid — image may have no text to translate
 
         // Cache the successful Gemini result for future use
         if (!cachedResult) {
@@ -1222,9 +1224,9 @@ export async function POST(request: NextRequest) {
 
         } // --- End Gemini else block ---
 
-        if (allSegments.length === 0 || !firstParsed) {
+        if (!firstParsed) {
           // Already handled inside the else block with `continue`, but guard for cache path too
-          console.error(`No segments available for ${targetLang}`);
+          console.error(`No parsed result available for ${targetLang}`);
           results[targetLang] = { error: `Translation failed for ${targetLang}` };
           continue;
         }
