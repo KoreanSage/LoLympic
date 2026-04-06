@@ -369,7 +369,7 @@ export default function UploadStudio() {
         };
 
         // Process languages with concurrency limit of 2 + auto-retry
-        const CONCURRENCY = 2;
+        const CONCURRENCY = 3;
         const langQueue = [...targetLangs];
         const failedLangs: Array<{ code: string; label: string }> = [];
 

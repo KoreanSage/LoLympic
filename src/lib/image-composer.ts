@@ -195,10 +195,14 @@ function buildSvgOverlay(
     if (w <= 0 || h <= 0) continue;
 
     const text = seg.isUppercase ? seg.translatedText.toUpperCase() : seg.translatedText;
-    const color = seg.color || "#000000";
-    const fontWeight = seg.fontWeight || 400;
+    // Default to white text with black stroke for meme readability
+    // (Gemini often returns #000000 which is invisible on dark backgrounds)
+    const color = seg.color && seg.color !== "#000000" ? seg.color : "#FFFFFF";
+    const strokeColor = seg.strokeColor || "#000000";
+    const strokeWidth = seg.strokeWidth || 2;
+    const fontWeight = seg.fontWeight || 700;
     const fontFamily = mapFontFamily(seg.fontFamily);
-    const align = (seg.textAlign || "LEFT").toLowerCase();
+    const align = (seg.textAlign || "CENTER").toLowerCase();
 
     // Calculate font size
     const fontSize = estimateFontSize(text, w, h, seg.fontSizePixels);
@@ -228,15 +232,13 @@ function buildSvgOverlay(
       return `<tspan x="${textX}" y="${ly}">${escapeXml(line)}</tspan>`;
     }).join("");
 
-    // Stroke (outline) for overlay/meme text
-    if (seg.strokeColor && seg.strokeWidth) {
-      elements.push(
-        `<text font-family="${fontFamily}" font-size="${fontSize}" font-weight="${fontWeight}" ` +
-        `text-anchor="${textAnchor}" fill="${seg.strokeColor}" ` +
-        `stroke="${seg.strokeColor}" stroke-width="${seg.strokeWidth * 2}" stroke-linejoin="round" ` +
-        `paint-order="stroke">${tspans}</text>`
-      );
-    }
+    // Stroke (outline) for meme text readability
+    elements.push(
+      `<text font-family="${fontFamily}" font-size="${fontSize}" font-weight="${fontWeight}" ` +
+      `text-anchor="${textAnchor}" fill="${strokeColor}" ` +
+      `stroke="${strokeColor}" stroke-width="${strokeWidth * 2}" stroke-linejoin="round" ` +
+      `paint-order="stroke">${tspans}</text>`
+    );
 
     // Main text
     elements.push(
