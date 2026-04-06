@@ -673,7 +673,39 @@ async function generateTranslatedImageForPayload(
     const imgWidth = metadata.width || 800;
     const imgHeight = metadata.height || 800;
 
-    // 4. Inline Satori rendering (replaces self-fetch to /api/translate/compose-image)
+    // 4a. For Arabic: use Sharp-based image-composer (Satori can't handle Arabic ligatures)
+    if (targetLanguage === "ar") {
+      const { composeTranslatedImage } = await import("@/lib/image-composer");
+      const composerSegments = segments
+        .filter(s => s.semanticRole !== "WATERMARK" && s.translatedText?.trim())
+        .map(s => ({
+          translatedText: s.translatedText,
+          boxX: s.boxX,
+          boxY: s.boxY,
+          boxWidth: s.boxWidth,
+          boxHeight: s.boxHeight,
+          fontFamily: s.fontFamily,
+          fontWeight: s.fontWeight,
+          fontSizePixels: s.fontSizePixels,
+          color: s.color,
+          textAlign: s.textAlign,
+          strokeColor: s.strokeColor,
+          strokeWidth: s.strokeWidth,
+          isUppercase: s.isUppercase,
+          semanticRole: s.semanticRole,
+        }));
+      if (composerSegments.length === 0) return;
+
+      const composedRaw = await composeTranslatedImage(Buffer.from(cleanBuffer), composerSegments, { watermark: false });
+      const sharpMod = (await import("sharp")).default;
+      const composedBuffer = await sharpMod(composedRaw).webp({ quality: 85 }).toBuffer();
+      const url = await saveGeneratedImage(composedBuffer, `translated_sharp_${targetLanguage}`, ".webp");
+      await prisma.translationPayload.update({ where: { id: payloadId }, data: { translatedImageUrl: url } });
+      console.debug(`[Sharp] Arabic translated image saved for payload ${payloadId}: ${url}`);
+      return;
+    }
+
+    // 4b. Inline Satori rendering (for all other languages)
     const visibleSegments = segments.filter(
       (s) => s.semanticRole !== "WATERMARK" && s.translatedText?.trim()
     );
