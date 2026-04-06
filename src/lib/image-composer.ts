@@ -404,13 +404,22 @@ export async function composeTranslatedImage(
     const svgOverlay = buildSvgOverlay(translatableSegments, width, height);
 
     if (specialFont && fontData) {
-      // Use resvg-js with fontBuffers for non-Latin scripts (Arabic, Hindi)
-      // Sharp's librsvg cannot load custom fonts; resvg-js supports fontBuffers
-      const { Resvg } = await import("@resvg/resvg-js");
+      // Use resvg-js with font file for non-Latin scripts (Arabic, Hindi)
+      // Sharp's librsvg cannot load custom fonts.
+      // Write font to temp file — fontBuffers may not work on all resvg versions
+      const os = await import("os");
+      const fsp = await import("fs/promises");
+      const fontPath = path.join(os.tmpdir(), `mimzy-font-${specialFont.replace(/\+/g, "-")}.woff`);
       const fontBuf = Buffer.from(fontData.base64, "base64");
+      await fsp.writeFile(fontPath, fontBuf);
+
+      const { Resvg } = await import("@resvg/resvg-js");
       const resvg = new Resvg(svgOverlay, {
         fitTo: { mode: "width" as const, value: width },
-        font: { loadSystemFonts: false, fontBuffers: [fontBuf] } as any,
+        font: {
+          loadSystemFonts: false,
+          fontFiles: [fontPath],
+        },
       });
       const overlayPng = Buffer.from(resvg.render().asPng());
       composites.push({ input: overlayPng, top: 0, left: 0 });
