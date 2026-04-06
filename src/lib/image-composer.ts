@@ -69,12 +69,16 @@ function estimateFontSize(
   const hasCJK = /[\u4e00-\u9fff\uac00-\ud7af\u3040-\u30ff]/.test(text);
   const charWidthRatio = hasCJK ? 1.0 : 0.58;
 
-  // Start from original size or estimate from box height
-  let size = originalSize || Math.floor(boxHeightPx * 0.75);
+  // Ignore originalSize if it's too small relative to the box —
+  // Gemini often returns tiny font sizes based on source image
+  const minReasonableSize = Math.max(16, Math.floor(boxHeightPx * 0.35));
+  let size = (originalSize && originalSize >= minReasonableSize)
+    ? originalSize
+    : Math.floor(boxHeightPx * 0.65);
 
   // Estimate how many chars fit per line at this size
   const charsPerLine = Math.floor(boxWidthPx / (size * charWidthRatio));
-  if (charsPerLine <= 0) return Math.max(8, Math.floor(boxWidthPx * 0.8));
+  if (charsPerLine <= 0) return Math.max(16, Math.floor(boxWidthPx * 0.8));
 
   const lineCount = Math.ceil(text.length / Math.max(1, charsPerLine));
   const lineHeight = 1.35;
@@ -86,8 +90,8 @@ function estimateFontSize(
     size = Math.floor(size * scale);
   }
 
-  // Clamp
-  return Math.max(8, Math.min(size, 72));
+  // Clamp — minimum 16px for readability
+  return Math.max(16, Math.min(size, 120));
 }
 
 /**
