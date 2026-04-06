@@ -1423,27 +1423,23 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Generate clean images + translated images in background (fire-and-forget)
-    // This cuts ~20-30s from the response time. The cron job at
-    // /api/cron/generate-images will pick up any failures.
-    (async () => {
-      try {
-        await generateCleanImagesForPost(postId, imageDataList, imageUrls);
-        const composePromises: Promise<void>[] = [];
-        for (const tl of orderedTargetLanguages) {
-          const lr = results[tl];
-          if (lr?.payloadId && allSegmentsByLang[tl]?.length) {
-            composePromises.push(
-              generateTranslatedImageForPayload(lr.payloadId, postId, allSegmentsByLang[tl], tl)
-                .catch((e) => console.error(`Compose failed for ${tl}:`, e))
-            );
-          }
-        }
-        await Promise.all(composePromises);
-      } catch (e) {
-        console.error("Background image generation failed:", e);
+    // Generate clean images FIRST (must complete before compose)
+    await generateCleanImagesForPost(postId, imageDataList, imageUrls).catch(
+      (e) => console.error("Clean image generation failed:", e)
+    );
+
+    // Generate translated images for each language (parallel, awaited)
+    const composePromises: Promise<void>[] = [];
+    for (const tl of orderedTargetLanguages) {
+      const lr = results[tl];
+      if (lr?.payloadId && allSegmentsByLang[tl]?.length) {
+        composePromises.push(
+          generateTranslatedImageForPayload(lr.payloadId, postId, allSegmentsByLang[tl], tl)
+            .catch((e) => console.error(`Compose failed for ${tl}:`, e))
+        );
       }
-    })();
+    }
+    await Promise.all(composePromises);
 
     // Update ranking score after translations complete
     updateRankingScore(postId).catch((e) => { console.error("Failed to update ranking score:", e); });
