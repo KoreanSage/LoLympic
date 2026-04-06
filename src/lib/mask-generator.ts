@@ -20,7 +20,7 @@ export async function generateInpaintingMask(
 ): Promise<Buffer> {
   // Filter: exclude WATERMARK, require valid box coordinates
   const targetSegments = segments.filter(seg => {
-    if (seg.semanticRole === 'WATERMARK') return false;
+    if (seg.semanticRole === 'WATERMARK' || seg.semanticRole === 'LABEL') return false;
     if (seg.boxX == null || seg.boxY == null || seg.boxWidth == null || seg.boxHeight == null) return false;
     return true;
   });

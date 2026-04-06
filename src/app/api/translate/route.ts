@@ -417,9 +417,15 @@ async function generateCleanImagesForPost(
         const imageBuffer = Buffer.from(imgData.base64, "base64");
 
         // Get segments from DB to build the mask
-        const segments = await prisma.translationSegment.findMany({
+        // Get segments from ONE language only (avoid duplicates from multiple translations)
+        const onePayload = await prisma.translationPayload.findFirst({
+          where: { postId, status: { in: ["COMPLETED", "APPROVED"] } },
+          orderBy: { version: "desc" },
+          select: { id: true },
+        });
+        const segments = onePayload ? await prisma.translationSegment.findMany({
           where: {
-            translationPayload: { postId },
+            translationPayloadId: onePayload.id,
             imageIndex: dbImage.orderIndex,
           },
           select: {
@@ -429,7 +435,7 @@ async function generateCleanImagesForPost(
             boxHeight: true,
             semanticRole: true,
           },
-        });
+        }) : [];
 
         if (segments.length > 0) {
           const metadata = await sharp(imageBuffer).metadata();
