@@ -125,14 +125,18 @@ ${targetLangInstruction}
 
 First determine the meme type, then translate ALL relevant text for that type.
 
+## CRITICAL: Do NOT hallucinate text
+If the image contains NO readable text at all (just illustrations, photos, or icons without words), return an EMPTY segments array: "segments": []. NEVER invent, add, or imagine text that is not visually present in the image.
+
 ## Your Task
-1. Determine meme type (A, B, or C)
-2. Identify ALL text regions that need translation for that type
-3. For each region, provide bounding box as fractions 0.0-1.0 relative to image dimensions
+1. First, check if the image actually contains readable text. If not, return empty segments.
+2. Determine meme type (A, B, or C)
+3. Identify ALL text regions that need translation for that type
+4. For each region, provide bounding box as fractions 0.0-1.0 relative to image dimensions
    - IMPORTANT: Make bounding boxes GENEROUS — add ~5% padding on each side so the box fully covers all text including ascenders/descenders
    - It's better to have a slightly larger box than to clip any text
-4. Translate with cultural adaptation
-5. Match the original styling (size, weight, color, position)
+5. Translate with cultural adaptation
+6. Match the original styling (size, weight, color, position)
 
 ## IMPORTANT: Language for cultureNote
 Write cultureNote in the TARGET language (${targetLanguage}). Keep it SHORT.
@@ -1122,7 +1126,7 @@ export async function POST(request: NextRequest) {
                 ? "\n\n" + buildEnglishReferenceForImage(englishSegmentsForPivot)
                 : "";
               const result = await model.generateContent([
-                `Translate this meme from ${sourceLanguage} to ${targetLang}. Analyze the image, detect all text regions, and provide transcendent translations. Respond ONLY with valid JSON, no markdown fences.${imageDataList.length > 1 ? ` This is image ${imgIdx + 1} of ${imageDataList.length} in a multi-image post.` : ""}${pivotRef}`,
+                `Translate this meme from ${sourceLanguage} to ${targetLang}. Analyze the image and detect all EXISTING text regions. If the image has NO text at all, return empty segments array. NEVER invent or add text that is not in the image. Respond ONLY with valid JSON, no markdown fences.${imageDataList.length > 1 ? ` This is image ${imgIdx + 1} of ${imageDataList.length} in a multi-image post.` : ""}${pivotRef}`,
                 {
                   inlineData: {
                     data: imgData.base64,
