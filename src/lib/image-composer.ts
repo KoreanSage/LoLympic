@@ -133,12 +133,51 @@ function wrapText(
 }
 
 /**
+ * Fetch a Google Font and return it as a base64-encoded woff data URI.
+ * Used to embed fonts in SVG for server-side rendering where system fonts
+ * may not include Arabic, Hindi, etc.
+ */
+async function fetchFontAsBase64(fontFamily: string, text: string, weight: number = 700): Promise<{ base64: string; format: string } | null> {
+  try {
+    const encoded = encodeURIComponent(text);
+    const cssUrl = `https://fonts.googleapis.com/css2?family=${fontFamily}:wght@${weight}&text=${encoded}`;
+    const cssRes = await fetch(cssUrl, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10_6_8; de-at) AppleWebKit/533.21.1 (KHTML, like Gecko) Version/5.0.5 Safari/533.21.1",
+      },
+    });
+    if (!cssRes.ok) return null;
+    const css = await cssRes.text();
+    const match = css.match(/src: url\((.+)\) format\('(woff|woff2|truetype)'\)/);
+    if (!match?.[1]) return null;
+    const fontRes = await fetch(match[1]);
+    if (!fontRes.ok) return null;
+    const buf = Buffer.from(await fontRes.arrayBuffer());
+    return { base64: buf.toString("base64"), format: match[2] };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Detect if text contains characters that need a specific Noto Sans variant.
+ * Returns the Google Fonts family name if a special font is needed.
+ */
+function detectFontForText(text: string): string | null {
+  if (/[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]/.test(text)) return "Noto+Sans+Arabic";
+  if (/[\u0900-\u097F]/.test(text)) return "Noto+Sans+Devanagari";
+  return null;
+}
+
+/**
  * Generate an SVG text overlay for all segments.
+ * If embedFont is provided, it will be embedded as @font-face in the SVG.
  */
 function buildSvgOverlay(
   segments: TextSegment[],
   imageWidth: number,
   imageHeight: number,
+  embedFont?: { familyName: string; base64: string; format: string },
 ): string {
   const elements: string[] = [];
 
@@ -207,7 +246,12 @@ function buildSvgOverlay(
     );
   }
 
+  const fontFaceDef = embedFont
+    ? `<defs><style>@font-face { font-family: '${embedFont.familyName}'; src: url('data:font/${embedFont.format};base64,${embedFont.base64}') format('${embedFont.format}'); }</style></defs>`
+    : "";
+
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${imageWidth}" height="${imageHeight}" viewBox="0 0 ${imageWidth} ${imageHeight}">
+${fontFaceDef}
 ${elements.join("\n")}
 </svg>`;
 }
@@ -341,7 +385,24 @@ export async function composeTranslatedImage(
   const composites: sharp.OverlayOptions[] = [];
 
   if (translatableSegments.length > 0) {
-    const svgOverlay = buildSvgOverlay(translatableSegments, width, height);
+    // Detect if we need a special font (Arabic, Hindi, etc.)
+    const allText = translatableSegments.map(s => s.translatedText).join("");
+    const specialFont = detectFontForText(allText);
+    let embedFont: { familyName: string; base64: string; format: string } | undefined;
+
+    if (specialFont) {
+      const fontData = await fetchFontAsBase64(specialFont, allText);
+      if (fontData) {
+        const familyName = specialFont.replace(/\+/g, " ");
+        embedFont = { familyName, ...fontData };
+        // Override font family in segments to use the embedded font
+        for (const seg of translatableSegments) {
+          seg.fontFamily = familyName;
+        }
+      }
+    }
+
+    const svgOverlay = buildSvgOverlay(translatableSegments, width, height, embedFont);
     composites.push({ input: Buffer.from(svgOverlay), top: 0, left: 0 });
   }
 
