@@ -44,9 +44,9 @@ export async function generateInpaintingMask(
     const bw = seg.boxWidth! / normFactor;
     const bh = seg.boxHeight! / normFactor;
 
-    // 15% padding for cleaner inpainting
-    const padX = bw * imgWidth * 0.15;
-    const padY = bh * imgHeight * 0.15;
+    // 5% padding — tight to text, avoids damaging surrounding image
+    const padX = bw * imgWidth * 0.05;
+    const padY = bh * imgHeight * 0.05;
 
     const absX = Math.max(0, (x * imgWidth) - padX);
     const absY = Math.max(0, (y * imgHeight) - padY);

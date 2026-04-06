@@ -494,20 +494,22 @@ async function generateCleanImage(
           role: "user",
           parts: [
             {
-              text: `Remove ALL readable text content from this image using context-aware inpainting.
+              text: `Carefully remove ONLY the text overlay from this meme image using context-aware inpainting.
+
+CRITICAL: Be PRECISE and CONSERVATIVE. Only remove text pixels — do NOT damage or alter any part of the underlying image (characters, faces, objects, backgrounds).
 
 What to remove:
-- All text that conveys meaning (captions, post content, comments, dialogue, labels)
-- Both overlay text (bold meme captions) AND embedded text (forum posts, chat messages, tweets)
+- Bold overlay captions (top/bottom meme text)
+- Embedded text in posts, chat messages, tweets
 
-What to KEEP (do NOT remove):
+What to KEEP PERFECTLY (do NOT touch):
+- All artwork, illustrations, photos, characters
+- Faces, bodies, objects in the image
 - Profile pictures, avatars, icons
-- UI chrome (buttons, borders, layout frames)
-- Timestamps, numerical stats (likes, shares counts)
-- Usernames and handles
-- Background images and photos
+- UI chrome, buttons, borders, layout
+- Background images and textures
 
-Replace each removed text area with the background that would naturally be behind it. Keep the overall layout structure intact. Output only the modified image.`,
+For each text area, seamlessly fill with the background that would naturally be behind it. The result should look like the text was never there. Output only the modified image.`,
             },
             {
               inlineData: {
