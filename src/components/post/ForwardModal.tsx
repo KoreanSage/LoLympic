@@ -132,7 +132,7 @@ export default function ForwardModal({ postId, onClose }: ForwardModalProps) {
     }
   }, [selectedUser, message, postId, isSending, toast, t, onClose]);
 
-  const userList = query.trim() ? searchResults : conversations.map((c) => c.user);
+  const userList = query.trim() ? searchResults : conversations.map((c) => c.user).filter(Boolean);
 
   return (
     <div

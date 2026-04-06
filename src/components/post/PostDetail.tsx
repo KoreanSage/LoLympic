@@ -645,17 +645,6 @@ export default function PostDetail({
         <span>{viewCount.toLocaleString()} {t("post.views")}</span>
         <span>{commentCount.toLocaleString()} {t("post.comments")}</span>
         <span>{shareCount.toLocaleString()} {t("post.shares")}</span>
-        <button
-          onClick={() => {
-            const a = document.createElement("a");
-            a.href = `/api/posts/${id}/stats-card`;
-            a.download = "mimzy-stats.png";
-            a.click();
-          }}
-          className="ml-auto text-[10px] text-[#c9a84c] hover:underline"
-        >
-          📊 Share Stats
-        </button>
       </div>
 
       {/* Reactions modal */}

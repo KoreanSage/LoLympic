@@ -589,11 +589,7 @@ function FeedCardInner({
               )}
             </span>
           </div>
-          {sourceLanguage && (
-            <span className="text-[11px] text-foreground-subtle font-medium">
-              {langToFlag(sourceLanguage)}{"\u2192"}{langToFlag(preferredLang)}
-            </span>
-          )}
+          {/* Flag indicators removed */}
         </div>
       )}
 
