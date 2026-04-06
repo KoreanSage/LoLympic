@@ -83,6 +83,8 @@ export default function I18nProvider({ children }: { children: React.ReactNode }
   const setLocale = useCallback((newLocale: Locale) => {
     setLocaleState(newLocale);
     localStorage.setItem("uiLanguage", newLocale);
+    localStorage.setItem("preferredLanguage", newLocale);
+    localStorage.setItem("mimzy_preferredLanguage", newLocale);
   }, []);
 
   const t = useCallback(
@@ -101,15 +103,10 @@ export default function I18nProvider({ children }: { children: React.ReactNode }
   );
 
   const handleLanguageSelect = useCallback((newLocale: Locale) => {
-    setLocaleState(newLocale);
-    localStorage.setItem("uiLanguage", newLocale);
-    localStorage.setItem("preferredLanguage", newLocale);
-    // Sync meme translation language
-    localStorage.setItem("mimzy_preferredLanguage", newLocale);
-    // Dispatch storage event so other components (feed, popups) pick up the change
+    setLocale(newLocale);
     window.dispatchEvent(new StorageEvent("storage", { key: "mimzy_preferredLanguage", newValue: newLocale }));
     setShowLanguageModal(false);
-  }, []);
+  }, [setLocale]);
 
   const value = useMemo(() => ({ locale, t, setLocale }), [locale, t, setLocale]);
 

@@ -1038,6 +1038,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Kick off clean image generation early (runs in parallel with translations)
+    const cleanImagePromise = generateCleanImagesForPost(postId, imageDataList, imageUrls).catch(
+      (e) => console.error("Clean image generation failed:", e)
+    );
+
     // Cache for pivot: English translation results
     let englishSegmentsForPivot: Array<{ sourceText: string; translatedText: string }> = [];
     let englishTitle: string | null = null;
@@ -1094,7 +1099,7 @@ export async function POST(request: NextRequest) {
           console.debug(`[Cache] Using cached translation for ${postId}:${targetLang}`);
           firstParsed = cachedResult;
           for (const seg of cachedResult.segments) {
-            allSegments.push({ ...seg, imageIndex: 0 });
+            allSegments.push({ ...seg, imageIndex: (seg as any).imageIndex ?? 0 });
           }
           if (cachedResult.cultureNote) {
             allCultureNotes.push(cachedResult.cultureNote);
@@ -1196,6 +1201,7 @@ export async function POST(request: NextRequest) {
               semanticRole: s.semanticRole,
               box: s.box,
               style: s.style,
+              imageIndex: s.imageIndex,
             })),
             cultureNote: allCultureNotes.length > 0 ? allCultureNotes[0] : { summary: "", explanation: "" },
             confidence: firstParsed.confidence,
@@ -1423,10 +1429,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Generate clean images FIRST (must complete before compose)
-    await generateCleanImagesForPost(postId, imageDataList, imageUrls).catch(
-      (e) => console.error("Clean image generation failed:", e)
-    );
+    // Wait for clean images (started earlier, runs in parallel with translations)
+    await cleanImagePromise;
 
     // Generate translated images for each language (parallel, awaited)
     const composePromises: Promise<void>[] = [];

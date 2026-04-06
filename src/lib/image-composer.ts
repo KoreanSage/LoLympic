@@ -141,23 +141,37 @@ function wrapText(
  * Used to embed fonts in SVG for server-side rendering where system fonts
  * may not include Arabic, Hindi, etc.
  */
+/** In-memory font cache to avoid re-downloading per request */
+const _fontCache = new Map<string, { base64: string; format: string }>();
+
 async function fetchFontAsBase64(fontFamily: string, text: string, weight: number = 700): Promise<{ base64: string; format: string } | null> {
+  const cacheKey = `${fontFamily}:${weight}`;
+  const cached = _fontCache.get(cacheKey);
+  if (cached) return cached;
+
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000); // 8s timeout
+
     const encoded = encodeURIComponent(text);
     const cssUrl = `https://fonts.googleapis.com/css2?family=${fontFamily}:wght@${weight}&text=${encoded}`;
     const cssRes = await fetch(cssUrl, {
       headers: {
         "User-Agent": "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10_6_8; de-at) AppleWebKit/533.21.1 (KHTML, like Gecko) Version/5.0.5 Safari/533.21.1",
       },
+      signal: controller.signal,
     });
-    if (!cssRes.ok) return null;
+    if (!cssRes.ok) { clearTimeout(timeout); return null; }
     const css = await cssRes.text();
     const match = css.match(/src: url\((.+)\) format\('(woff|woff2|truetype)'\)/);
-    if (!match?.[1]) return null;
-    const fontRes = await fetch(match[1]);
+    if (!match?.[1]) { clearTimeout(timeout); return null; }
+    const fontRes = await fetch(match[1], { signal: controller.signal });
+    clearTimeout(timeout);
     if (!fontRes.ok) return null;
     const buf = Buffer.from(await fontRes.arrayBuffer());
-    return { base64: buf.toString("base64"), format: match[2] };
+    const result = { base64: buf.toString("base64"), format: match[2] };
+    _fontCache.set(cacheKey, result);
+    return result;
   } catch {
     return null;
   }
@@ -199,10 +213,11 @@ function buildSvgOverlay(
     if (w <= 0 || h <= 0) continue;
 
     const text = seg.isUppercase ? seg.translatedText.toUpperCase() : seg.translatedText;
-    // Default to white text with black stroke for meme readability
-    // (Gemini often returns #000000 which is invisible on dark backgrounds)
-    const color = seg.color && seg.color !== "#000000" ? seg.color : "#FFFFFF";
-    const strokeColor = seg.strokeColor || "#000000";
+    // Use provided color, default to white for meme overlay readability
+    const color = seg.color || "#FFFFFF";
+    // Always add contrasting stroke: dark text gets white stroke, light text gets black stroke
+    const isLightColor = /^#(f|e|d|c)/i.test(color) || color.toLowerCase() === "#ffffff" || color === "white";
+    const strokeColor = seg.strokeColor || (isLightColor ? "#000000" : "#FFFFFF");
     const strokeWidth = seg.strokeWidth || 2;
     const fontWeight = seg.fontWeight || 700;
     const fontFamily = mapFontFamily(seg.fontFamily);

@@ -14,9 +14,9 @@
 // Key = source language, Value = set of target languages that need pivot.
 // If a pair is NOT listed, direct translation is used (already high quality).
 const PIVOT_MAP: Record<string, Set<string>> = {
-  ar: new Set(["ko", "ja", "zh", "hi"]),
-  hi: new Set(["ko", "ja", "zh", "ar"]),
-  es: new Set(["ko", "ja", "zh"]),
+  ar: new Set(["ko", "ja", "zh", "hi", "es"]),
+  hi: new Set(["ko", "ja", "zh", "ar", "es"]),
+  es: new Set(["ko", "ja", "zh", "ar", "hi"]),
   ko: new Set(["ar", "hi", "es"]),
   ja: new Set(["ar", "hi", "es"]),
   zh: new Set(["ar", "hi", "es"]),

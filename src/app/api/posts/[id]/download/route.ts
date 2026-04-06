@@ -99,7 +99,7 @@ export async function GET(
         .toBuffer();
 
       result = await sharp(imageBuffer)
-        .extend({ bottom: barHeight, background: { r: 0, g: 0, b: 0, alpha: 1 } })
+        .extend({ bottom: barHeight, background: { r: 0, g: 0, b: 0, alpha: 255 } })
         .composite([{ input: barBuffer, gravity: "south" }])
         .webp({ quality: 85 })
         .toBuffer();

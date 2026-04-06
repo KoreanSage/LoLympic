@@ -141,11 +141,8 @@ export default function TopNav() {
   const langDropdownRef = useRef<HTMLDivElement>(null);
 
   const handleLocaleChange = useCallback(async (newLocale: Locale) => {
-    // 1. Update UI immediately
+    // 1. Update UI immediately (setLocale handles all localStorage writes)
     setLocale(newLocale);
-    localStorage.setItem("uiLanguage", newLocale);
-    localStorage.setItem("preferredLanguage", newLocale);
-    localStorage.setItem("mimzy_preferredLanguage", newLocale);
     window.dispatchEvent(new StorageEvent("storage", { key: "mimzy_preferredLanguage", newValue: newLocale }));
     setShowLangDropdown(false);
 
