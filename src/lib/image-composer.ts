@@ -177,7 +177,6 @@ function buildSvgOverlay(
   segments: TextSegment[],
   imageWidth: number,
   imageHeight: number,
-  embedFont?: { familyName: string; base64: string; format: string },
 ): string {
   const elements: string[] = [];
 
@@ -246,12 +245,7 @@ function buildSvgOverlay(
     );
   }
 
-  const fontFaceDef = embedFont
-    ? `<defs><style>@font-face { font-family: '${embedFont.familyName}'; src: url('data:font/${embedFont.format};base64,${embedFont.base64}') format('${embedFont.format}'); }</style></defs>`
-    : "";
-
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${imageWidth}" height="${imageHeight}" viewBox="0 0 ${imageWidth} ${imageHeight}">
-${fontFaceDef}
 ${elements.join("\n")}
 </svg>`;
 }
@@ -388,22 +382,35 @@ export async function composeTranslatedImage(
     // Detect if we need a special font (Arabic, Hindi, etc.)
     const allText = translatableSegments.map(s => s.translatedText).join("");
     const specialFont = detectFontForText(allText);
-    let embedFont: { familyName: string; base64: string; format: string } | undefined;
+    let fontData: { base64: string; format: string } | null = null;
 
     if (specialFont) {
-      const fontData = await fetchFontAsBase64(specialFont, allText);
+      fontData = await fetchFontAsBase64(specialFont, allText);
       if (fontData) {
         const familyName = specialFont.replace(/\+/g, " ");
-        embedFont = { familyName, ...fontData };
-        // Override font family in segments to use the embedded font
+        // Override font family in segments to match the fetched font
         for (const seg of translatableSegments) {
           seg.fontFamily = familyName;
         }
       }
     }
 
-    const svgOverlay = buildSvgOverlay(translatableSegments, width, height, embedFont);
-    composites.push({ input: Buffer.from(svgOverlay), top: 0, left: 0 });
+    const svgOverlay = buildSvgOverlay(translatableSegments, width, height);
+
+    if (specialFont && fontData) {
+      // Use resvg-js with fontBuffers for non-Latin scripts (Arabic, Hindi)
+      // Sharp's librsvg cannot load custom fonts; resvg-js supports fontBuffers
+      const { Resvg } = await import("@resvg/resvg-js");
+      const fontBuf = Buffer.from(fontData.base64, "base64");
+      const resvg = new Resvg(svgOverlay, {
+        fitTo: { mode: "width" as const, value: width },
+        font: { loadSystemFonts: false, fontBuffers: [fontBuf] },
+      });
+      const overlayPng = Buffer.from(resvg.render().asPng());
+      composites.push({ input: overlayPng, top: 0, left: 0 });
+    } else {
+      composites.push({ input: Buffer.from(svgOverlay), top: 0, left: 0 });
+    }
   }
 
   // Build watermark bar (image-based logo)
