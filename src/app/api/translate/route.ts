@@ -545,22 +545,31 @@ Replace each removed text area with the background that would naturally be behin
 // ---------------------------------------------------------------------------
 // Google Font fetcher for Satori (returns font ArrayBuffer)
 // ---------------------------------------------------------------------------
-async function fetchGoogleFont(fontFamily: string, text: string): Promise<ArrayBuffer> {
+async function fetchGoogleFont(fontFamily: string, text: string, weight: number = 900): Promise<ArrayBuffer> {
   const uniqueChars = Array.from(new Set(text.split(""))).join("");
-  const cssUrl = `https://fonts.googleapis.com/css2?family=${fontFamily}:wght@900&text=${encodeURIComponent(uniqueChars)}`;
-  const cssRes = await fetch(cssUrl, {
-    headers: {
-      // Use Safari 5 UA to get woff format (widely compatible)
-      "User-Agent": "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10_6_8; de-at) AppleWebKit/533.21.1 (KHTML, like Gecko) Version/5.0.5 Safari/533.21.1",
-    },
-  });
-  if (!cssRes.ok) throw new Error(`Failed to fetch Google Font CSS: ${cssRes.status}`);
-  const css = await cssRes.text();
-  const match = css.match(/src: url\((.+)\) format\('(woff|woff2|truetype)'\)/);
-  if (!match || !match[1]) throw new Error("Could not extract font URL from Google Fonts CSS");
-  const fontRes = await fetch(match[1]);
-  if (!fontRes.ok) throw new Error(`Failed to fetch font file: ${fontRes.status}`);
-  return fontRes.arrayBuffer();
+  // Try requested weight first, fall back to 700 then 400
+  const weights = [weight, 700, 400].filter((v, i, a) => a.indexOf(v) === i);
+
+  for (const w of weights) {
+    try {
+      const cssUrl = `https://fonts.googleapis.com/css2?family=${fontFamily}:wght@${w}&text=${encodeURIComponent(uniqueChars)}`;
+      const cssRes = await fetch(cssUrl, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10_6_8; de-at) AppleWebKit/533.21.1 (KHTML, like Gecko) Version/5.0.5 Safari/533.21.1",
+        },
+      });
+      if (!cssRes.ok) continue;
+      const css = await cssRes.text();
+      const match = css.match(/src: url\((.+)\) format\('(woff|woff2|truetype)'\)/);
+      if (!match || !match[1]) continue;
+      const fontRes = await fetch(match[1]);
+      if (!fontRes.ok) continue;
+      return fontRes.arrayBuffer();
+    } catch {
+      continue;
+    }
+  }
+  throw new Error(`Failed to fetch Google Font ${fontFamily} at any weight`);
 }
 
 // ---------------------------------------------------------------------------
@@ -753,8 +762,11 @@ async function generateTranslatedImageForPayload(
                 "-1px 0 0 #000, 1px 0 0 #000, 0 -1px 0 #000, 0 1px 0 #000"
               : "-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff";
 
-            // Use original background color if available
-            const bgColor = seg.backgroundColor || "transparent";
+            // Background color: skip gray/semi-transparent backgrounds that degrade quality
+            // Only keep truly intentional backgrounds (solid white/black for screenshot memes)
+            const rawBg = (seg.backgroundColor || "transparent").toLowerCase();
+            const isGrayish = /^(#[89a-f][0-9a-f]{5}|#[89a-f]{3}|rgba?\(.*(128|150|170|180|190|200).*\)|gray|grey)/i.test(rawBg);
+            const bgColor = (rawBg === "transparent" || isGrayish) ? "transparent" : rawBg;
 
             return {
               type: "div",
