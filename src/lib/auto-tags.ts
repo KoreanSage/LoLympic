@@ -64,7 +64,7 @@ Example output: ["funny","relatable","work","monday mood"]`,
     }
   }
 
-  const model = ai.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
+  const model = ai.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
   const result = await model.generateContent({
     contents: [{ role: "user", parts }],
