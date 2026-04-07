@@ -136,7 +136,7 @@ export default function WinnerPopup() {
           {/* Header */}
           <div className="text-center pt-6 pb-3 px-6">
             <div className={`text-4xl mb-2 ${isYearly ? "animate-bounce" : ""}`}>
-              {isYearly ? "👑" : "🏆"}
+              {isYearly ? <span className="text-[#FFD700] font-bold">★</span> : <span className="text-[#c9a84c] font-bold">★</span>}
             </div>
             <h2 className={`text-lg font-bold ${isYearly ? "text-[#FFD700]" : "text-[#c9a84c]"}`}>
               {isYearly
@@ -179,7 +179,7 @@ export default function WinnerPopup() {
               {winner.author?.displayName || winner.author?.username}
               {winner.fireCount && (
                 <span className="text-[#c9a84c] ml-2">
-                  🔥 {winner.fireCount.toLocaleString()}
+                  {winner.fireCount.toLocaleString()}
                 </span>
               )}
             </p>
@@ -195,7 +195,7 @@ export default function WinnerPopup() {
                 {winner.championCountry.flagEmoji} {winner.championCountry.nameEn}
               </p>
               <p className="text-xs text-foreground-subtle">
-                🔥 {winner.championCountry.totalReactions.toLocaleString()}
+                {winner.championCountry.totalReactions.toLocaleString()}
               </p>
             </div>
           )}

@@ -42,11 +42,11 @@ const STREAK_KEYS = [
   "battle.streak.legendary",
 ] as const;
 
-// Streak emojis paired with each milestone
-const STREAK_EMOJIS = ["", "", "🎯", "🔥", "🎩", "⚡", "💀", "👑"];
+// Streak labels paired with each milestone (clean, no emojis)
+const STREAK_EMOJIS = ["", "", "", "", "", "", "", ""];
 
 function getStreakMessage(streak: number, t: (key: any) => string): string {
-  if (streak >= STREAK_KEYS.length) return `${t("battle.streak.godMode")} 🌟`;
+  if (streak >= STREAK_KEYS.length) return t("battle.streak.godMode");
   const key = STREAK_KEYS[streak];
   if (!key) return "";
   return `${t(key)} ${STREAK_EMOJIS[streak] || ""}`;
@@ -213,7 +213,6 @@ function BattleCardInner({ onDismiss }: BattleCardProps) {
         className="w-full py-3 px-4 bg-background-surface border border-[#c9a84c]/30 rounded-xl flex items-center justify-between hover:border-[#c9a84c]/60 transition-colors"
       >
         <div className="flex items-center gap-2">
-          <span className="text-sm">⚔️</span>
           <span className="text-xs font-bold text-[#c9a84c]">
             {t("battle.title")}
           </span>
@@ -224,7 +223,7 @@ function BattleCardInner({ onDismiss }: BattleCardProps) {
           )}
           {winStreak >= 2 && (
             <span className="text-[10px] text-[#c9a84c]">
-              🔥 {winStreak} streak
+              {winStreak} streak
             </span>
           )}
         </div>
@@ -241,7 +240,6 @@ function BattleCardInner({ onDismiss }: BattleCardProps) {
       <Card noPadding>
         <div className="p-4">
           <div className="flex items-center gap-2 mb-3">
-            <span className="text-lg">⚔️</span>
             <span className="text-sm font-bold text-[#c9a84c]">
               {t("battle.title")}
             </span>
@@ -272,7 +270,6 @@ function BattleCardInner({ onDismiss }: BattleCardProps) {
         {/* Header */}
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
-            <span className="text-lg">⚔️</span>
             <span className="text-sm font-bold text-[#c9a84c]">
               {t("battle.title")}
             </span>
@@ -313,7 +310,7 @@ function BattleCardInner({ onDismiss }: BattleCardProps) {
           </p>
           {winStreak >= 2 && (
             <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold transition-all duration-300 ${streakBadgeClass}`}>
-              <span>🔥 {winStreak}</span>
+              <span>{winStreak}x</span>
               {streakMsg && <span className="ml-0.5">{streakMsg}</span>}
             </div>
           )}
@@ -360,9 +357,9 @@ function BattleCardInner({ onDismiss }: BattleCardProps) {
         {/* Session stats footer */}
         {totalVotes >= 3 && (
           <div className="mt-3 pt-2 border-t border-border flex items-center justify-center gap-4 text-[10px] text-foreground-subtle">
-            <span>🗳️ {totalVotes} battles judged</span>
+            <span>{totalVotes} battles judged</span>
             {winStreak >= 2 && (
-              <span>🏆 Best: {winStreak} streak</span>
+              <span>Best: {winStreak} streak</span>
             )}
           </div>
         )}
@@ -414,7 +411,7 @@ const BattleSide = React.memo(function BattleSide({
       <div className="relative bg-black/40 flex items-center justify-center min-h-[140px] max-h-[280px] sm:min-h-[200px] sm:max-h-[400px]">
         {imgError ? (
           <div className="flex items-center justify-center w-full h-[200px] text-foreground-subtle">
-            <span className="text-3xl">🖼️</span>
+            <span className="text-xl text-foreground-subtle">IMG</span>
           </div>
         ) : (
           <img
@@ -428,7 +425,7 @@ const BattleSide = React.memo(function BattleSide({
         {/* Multi-image badge */}
         {(post.imageCount ?? 0) > 1 && (
           <span className="absolute top-1.5 right-1.5 bg-black/70 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md backdrop-blur-sm">
-            📸 {post.imageCount}
+            +{post.imageCount}
           </span>
         )}
       </div>
@@ -447,7 +444,7 @@ const BattleSide = React.memo(function BattleSide({
           </span>
         </div>
         <div className="flex items-center gap-2 text-[10px] text-foreground-subtle">
-          <span>🔥 {formatCount(post.reactionCount)}</span>
+          <span>{formatCount(post.reactionCount)} reactions</span>
           {post.battleWins > 0 && (
             <span className="text-[#c9a84c]">
               {post.battleWins}W
@@ -460,9 +457,8 @@ const BattleSide = React.memo(function BattleSide({
       {isWinner && (
         <div className="absolute inset-0 flex items-center justify-center bg-[#c9a84c]/15 backdrop-blur-[1px] animate-in fade-in duration-200">
           <div className="text-center animate-in zoom-in-50 duration-300">
-            <div className="text-4xl mb-1 drop-shadow-lg">👑</div>
-            <span className="text-xs font-bold text-[#c9a84c] bg-black/70 px-2.5 py-1 rounded-full">
-              WINNER +5🔥
+            <span className="text-xs font-bold text-[#c9a84c] bg-black/70 px-3 py-1.5 rounded-full border border-[#c9a84c]/40">
+              WINNER +5
             </span>
           </div>
         </div>
@@ -471,7 +467,7 @@ const BattleSide = React.memo(function BattleSide({
       {/* Loser overlay */}
       {isLoser && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/30 animate-in fade-in duration-200">
-          <span className="text-2xl opacity-60">💀</span>
+          <span className="text-xs font-bold text-foreground-subtle/60 bg-black/50 px-2 py-1 rounded-full">LOST</span>
         </div>
       )}
     </button>

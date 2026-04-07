@@ -359,7 +359,7 @@ export default function FeedList({
   if (posts.length === 0 && !loading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center px-4">
-        <span className="text-5xl mb-4">{emptyIcon || "🌍"}</span>
+        {emptyIcon ? <span className="text-5xl mb-4">{emptyIcon}</span> : <span className="text-5xl mb-4 text-foreground-subtle">&#8212;</span>}
         <h3 className="text-lg font-bold text-foreground mb-2">{resolvedEmptyMessage}</h3>
         <p className="text-sm text-foreground-subtle mb-6 max-w-sm">
           {emptySubtext || "Be the first to share a meme and get it translated into 7 languages!"}

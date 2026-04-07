@@ -4,12 +4,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 const CATEGORIES = [
   { key: "", label: "All" },
-  { key: "gaming", label: "🎮 Gaming" },
-  { key: "animals", label: "🐾 Animals" },
-  { key: "politics", label: "🏛️ Politics" },
-  { key: "trending", label: "📈 Trending" },
-  { key: "sports", label: "⚽ Sports" },
-  { key: "other", label: "💬 Other" },
+  { key: "gaming", label: "Gaming" },
+  { key: "animals", label: "Animals" },
+  { key: "politics", label: "Politics" },
+  { key: "trending", label: "Trending" },
+  { key: "sports", label: "Sports" },
+  { key: "other", label: "Other" },
 ] as const;
 
 export default function CategoryTabs() {

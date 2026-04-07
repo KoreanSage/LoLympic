@@ -137,7 +137,7 @@ export default function CountryRaceWidget() {
 
       {/* Header */}
       <div className="flex items-center gap-2 mb-3">
-        <span className="text-lg">🏆</span>
+        <span className="text-xs font-bold text-[#c9a84c] w-6 h-6 rounded-full bg-[#c9a84c]/15 flex items-center justify-center flex-shrink-0">R</span>
         <div className="flex-1">
           {isLeading ? (
             <div>

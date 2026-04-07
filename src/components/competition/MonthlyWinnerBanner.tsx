@@ -103,7 +103,7 @@ export default function MonthlyWinnerBanner() {
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs">🏆</span>
+            <span className="text-[10px] font-bold text-[#c9a84c]">★</span>
             <span className="text-xs font-bold text-[#c9a84c]">
               {t("season.memeOfTheMonth", { month: MONTH_NAMES[winner.month - 1] })}
             </span>
@@ -117,7 +117,7 @@ export default function MonthlyWinnerBanner() {
           <p className="text-xs text-foreground-subtle mt-0.5">
             by {winner.author?.displayName || winner.author?.username || "Unknown"}
             {winner.country && ` ${winner.country.flagEmoji}`}
-            {" · "}🔥 {winner.likeCount}
+            {" · "}{winner.likeCount}
           </p>
         </div>
 

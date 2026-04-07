@@ -103,14 +103,14 @@ export default function ChampionshipBattleGrid({
                   )}
                   {/* Rank overlay */}
                   {post.finalRank && post.finalRank <= 3 && (
-                    <div className="absolute top-2 left-2 w-8 h-8 rounded-full flex items-center justify-center text-lg bg-black/50 backdrop-blur-sm">
-                      {post.finalRank === 1 ? "🥇" : post.finalRank === 2 ? "🥈" : "🥉"}
+                    <div className="absolute top-2 left-2 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold bg-black/50 backdrop-blur-sm text-white">
+                      {post.finalRank === 1 ? "1st" : post.finalRank === 2 ? "2nd" : "3rd"}
                     </div>
                   )}
                 </div>
               ) : (
                 <div className="aspect-[3/2] bg-background-elevated flex items-center justify-center">
-                  <span className="text-4xl text-foreground-subtle">🖼️</span>
+                  <span className="text-sm text-foreground-subtle font-medium">No image</span>
                 </div>
               )}
             </Link>

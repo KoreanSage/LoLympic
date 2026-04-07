@@ -56,7 +56,7 @@ export default function ChampionshipResultCard({ rankings, championUserId }: Cha
     scale: string;
   }> = {
     1: {
-      medal: "🥇",
+      medal: "1st",
       bg: "bg-gradient-to-b from-[#c9a84c]/20 to-[#c9a84c]/5",
       border: "border-[#c9a84c]/50",
       glow: "shadow-[0_0_30px_rgba(201,168,76,0.3)]",
@@ -65,7 +65,7 @@ export default function ChampionshipResultCard({ rankings, championUserId }: Cha
       scale: "scale-105",
     },
     2: {
-      medal: "🥈",
+      medal: "2nd",
       bg: "bg-gradient-to-b from-gray-400/15 to-gray-400/5",
       border: "border-gray-400/30",
       glow: "",
@@ -74,7 +74,7 @@ export default function ChampionshipResultCard({ rankings, championUserId }: Cha
       scale: "",
     },
     3: {
-      medal: "🥉",
+      medal: "3rd",
       bg: "bg-gradient-to-b from-amber-700/15 to-amber-700/5",
       border: "border-amber-700/30",
       glow: "",
@@ -102,7 +102,7 @@ export default function ChampionshipResultCard({ rankings, championUserId }: Cha
               } ${config.scale}`}
             >
               {/* Medal */}
-              <span className={`mb-1 ${isChampion ? "text-4xl" : "text-2xl sm:text-3xl"}`}>
+              <span className={`mb-1 font-bold ${isChampion ? "text-xl text-[#c9a84c]" : "text-base sm:text-lg text-foreground-muted"}`}>
                 {config.medal}
               </span>
 
@@ -116,8 +116,8 @@ export default function ChampionshipResultCard({ rankings, championUserId }: Cha
                   />
                 </div>
                 {isChampion && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-lg">
-                    👑
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-[10px] font-bold text-[#c9a84c] bg-[#c9a84c]/15 rounded-full w-5 h-5 flex items-center justify-center border border-[#c9a84c]/30">
+                    ★
                   </div>
                 )}
               </div>

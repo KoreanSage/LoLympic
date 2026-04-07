@@ -28,7 +28,7 @@ export default function CountryChampionBadge({
       role="img"
       aria-label={t("countryChampion.badge")}
     >
-      <span>👑</span>
+      <span className="font-bold text-[#c9a84c]">★</span>
       {countryFlag && <span>{countryFlag}</span>}
     </span>
   );

@@ -164,9 +164,9 @@ export default function OnboardingFlow() {
       {/* Visual: Championship flow */}
       <div className="space-y-3 w-full max-w-xs">
         {[
-          { icon: "🏳️", text: t("onboarding.step7ChampCountry") },
-          { icon: "📊", text: t("onboarding.step7ChampScore") },
-          { icon: "🏆", text: t("onboarding.step7ChampBattle") },
+          { icon: "1", text: t("onboarding.step7ChampCountry") },
+          { icon: "2", text: t("onboarding.step7ChampScore") },
+          { icon: "3", text: t("onboarding.step7ChampBattle") },
         ].map((item, i) => (
           <div key={i} className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-[#c9a84c]/10 flex items-center justify-center text-xl flex-shrink-0">

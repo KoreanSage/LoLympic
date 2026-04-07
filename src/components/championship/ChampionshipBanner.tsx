@@ -72,7 +72,7 @@ export default function ChampionshipBanner({ phase, year, qualifiedCountries }: 
 
         <div className="relative">
           <div className="flex items-center gap-3">
-            <span className="text-2xl">🏆</span>
+            <span className="text-sm font-bold text-[#c9a84c] w-8 h-8 rounded-full bg-[#c9a84c]/15 flex items-center justify-center">C</span>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-[#c9a84c]">
                 {year} {t("championship.title")}

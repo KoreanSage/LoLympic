@@ -204,7 +204,7 @@ export default function LeaderboardPage() {
               href="/championship"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-border bg-background-surface hover:border-[#c9a84c]/30 transition-all text-sm font-medium text-foreground-subtle hover:text-[#c9a84c]"
             >
-              {"\u{1F3C6}"} {t("nav.championship")}
+              {t("nav.championship")}
               <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
             </Link>
           </div>
@@ -248,7 +248,7 @@ export default function LeaderboardPage() {
                           </Link>
                         ) : (
                           <div key={pos} className="flex flex-col items-center opacity-25">
-                            <span className={`${flagSize} mb-1`}>🏳️</span>
+                            <span className={`${flagSize} mb-1 opacity-30`}>-</span>
                             <div className={`${w} rounded-t-lg flex items-center justify-center p-2`} style={{ height, background: `linear-gradient(to top, ${from}40, ${to}40)` }}>
                               <span className={`${textSize} text-foreground-subtle`}>{pos}</span>
                             </div>
@@ -283,7 +283,7 @@ export default function LeaderboardPage() {
               {mvpData.weeklyMvp && (
                 <Link href={`/user/${mvpData.weeklyMvp.username}`} className="bg-background-surface border border-[#c9a84c]/20 rounded-xl p-4 hover:border-[#c9a84c]/50 transition-colors">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-sm">{"\u2B50"}</span>
+                    <span className="text-xs font-bold text-[#c9a84c]">MVP</span>
                     <span className="text-xs font-bold text-[#c9a84c] uppercase">{t("leaderboard.weeklyMvp") || "Weekly MVP"}</span>
                   </div>
                   <div className="flex items-center gap-3">
@@ -297,7 +297,7 @@ export default function LeaderboardPage() {
                         {mvpData.weeklyMvp.countryFlag && <span className="text-sm">{mvpData.weeklyMvp.countryFlag}</span>}
                         <span className="text-sm font-medium text-foreground truncate">{mvpData.weeklyMvp.displayName || mvpData.weeklyMvp.username}</span>
                       </div>
-                      <span className="text-xs text-foreground-subtle">{mvpData.weeklyMvp.reactionCount.toLocaleString()} {"\uD83D\uDD25"}</span>
+                      <span className="text-xs text-foreground-subtle">{mvpData.weeklyMvp.reactionCount.toLocaleString()} pts</span>
                     </div>
                   </div>
                 </Link>
@@ -305,7 +305,7 @@ export default function LeaderboardPage() {
               {mvpData.monthlyMvp && (
                 <Link href={`/user/${mvpData.monthlyMvp.username}`} className="bg-background-surface border border-[#c9a84c]/20 rounded-xl p-4 hover:border-[#c9a84c]/50 transition-colors">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-sm">{"\uD83C\uDFC5"}</span>
+                    <span className="text-xs font-bold text-[#c9a84c]">MVP</span>
                     <span className="text-xs font-bold text-[#c9a84c] uppercase">{t("leaderboard.monthlyMvp") || "Monthly MVP"}</span>
                   </div>
                   <div className="flex items-center gap-3">
@@ -319,7 +319,7 @@ export default function LeaderboardPage() {
                         {mvpData.monthlyMvp.countryFlag && <span className="text-sm">{mvpData.monthlyMvp.countryFlag}</span>}
                         <span className="text-sm font-medium text-foreground truncate">{mvpData.monthlyMvp.displayName || mvpData.monthlyMvp.username}</span>
                       </div>
-                      <span className="text-xs text-foreground-subtle">{mvpData.monthlyMvp.reactionCount.toLocaleString()} {"\uD83D\uDD25"}</span>
+                      <span className="text-xs text-foreground-subtle">{mvpData.monthlyMvp.reactionCount.toLocaleString()} pts</span>
                     </div>
                   </div>
                 </Link>
@@ -331,7 +331,7 @@ export default function LeaderboardPage() {
           {matchup && matchup.length === 2 && (
             <div className="bg-background-surface border border-border rounded-xl p-4">
               <h3 className="text-xs font-bold text-[#c9a84c] uppercase text-center mb-3">
-                {"\u2694\uFE0F"} {t("leaderboard.countryMatchup") || "Country vs Country"} - {t("leaderboard.thisWeek") || "This Week"}
+                {t("leaderboard.countryMatchup") || "Country vs Country"} - {t("leaderboard.thisWeek") || "This Week"}
               </h3>
               <div className="flex items-center gap-3">
                 <div className="flex-1 text-center">
@@ -365,7 +365,7 @@ export default function LeaderboardPage() {
 
           {empty && (
             <div className="text-center py-8">
-              <span className="text-3xl mb-3 block">{"\u{1F30D}"}</span>
+              <span className="text-sm text-foreground-subtle mb-3 block">No data yet</span>
               <p className="text-sm text-foreground-subtle mb-4">{t("leaderboard.noActivity")}</p>
               <Link href="/upload" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#c9a84c] hover:bg-[#d4b65c] text-black font-medium text-sm transition-colors">
                 {t("nav.upload")}
@@ -377,7 +377,7 @@ export default function LeaderboardPage() {
           {monthlyWinners.length > 0 && (
             <div>
               <h2 className="text-sm font-bold text-[#c9a84c] mb-3 flex items-center gap-2">
-                <span>{"\uD83C\uDFC6"}</span> {t("season.monthlyWinners")}
+                {t("season.monthlyWinners")}
               </h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                 {monthlyWinners.map((winner) => (
@@ -398,10 +398,10 @@ export default function LeaderboardPage() {
                         <span className="text-xs font-bold text-[#c9a84c]">{MONTH_ABBREV[winner.month - 1]}</span>
                       </div>
                       <div className="absolute top-2 right-2">
-                        <span className="text-lg drop-shadow-lg">{"\uD83D\uDC51"}</span>
+                        <span className="text-[10px] font-bold text-[#c9a84c] bg-black/70 px-1.5 py-0.5 rounded">1st</span>
                       </div>
                       <div className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-sm px-2 py-1 rounded-lg flex items-center gap-1">
-                        <span className="text-[10px]">{"\uD83D\uDD25"}</span>
+                        <span className="text-[10px]"></span>
                         <span className="text-[10px] text-white font-medium">{winner.likeCount}</span>
                       </div>
                     </div>
@@ -433,7 +433,7 @@ export default function LeaderboardPage() {
           {battleMemes.length > 0 && (
             <div>
               <h2 className="text-sm font-bold text-[#c9a84c] mb-3 flex items-center gap-2">
-                <span>{"\u2694\uFE0F"}</span> {t("battle.hotBattle")}
+                {t("battle.hotBattle")}
               </h2>
               <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
                 {battleMemes.map((meme) => (
@@ -444,7 +444,7 @@ export default function LeaderboardPage() {
                         {meme.country && <span className="text-xs">{meme.country.flagEmoji}</span>}
                         <span className="text-[10px] text-foreground-muted truncate">{meme.author?.displayName || meme.author?.username}</span>
                       </div>
-                      <div className="text-[10px] text-[#c9a84c] font-medium">{"\u2694\uFE0F"} {meme.battleWins}W / {meme.battleLosses}L</div>
+                      <div className="text-[10px] text-[#c9a84c] font-medium">{meme.battleWins}W / {meme.battleLosses}L</div>
                     </div>
                   </Link>
                 ))}

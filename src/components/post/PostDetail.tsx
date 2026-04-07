@@ -502,7 +502,7 @@ export default function PostDetail({
       {/* Category badge */}
       {isTextOnly && category && category !== "meme" && (
         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-background-surface border border-border text-foreground-muted w-fit">
-          {category === "community" ? "💬 Community" : category}
+          {category === "community" ? "Community" : category}
         </span>
       )}
 
