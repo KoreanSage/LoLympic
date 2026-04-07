@@ -369,7 +369,7 @@ export default function ChampionshipPage() {
   }
 
   // Countdown timer for inactive state
-  const [countdown, setCountdown] = useState("");
+  const [countdown, setCountdown] = useState<string>("");
   useEffect(() => {
     if (championship) return;
     // Countdown to December 1 of current year (or next year if past Dec 1)
@@ -396,9 +396,11 @@ export default function ChampionshipPage() {
   // Find user's country in top 8
   const userCountryRank = useMemo(() => {
     if (!userCountryId || top8Countries.length === 0) return null;
-    const idx = top8Countries.findIndex((e) => e.country.id === userCountryId);
+    const idx = top8Countries.findIndex((e) => e?.country?.id === userCountryId);
     if (idx === -1) return null;
-    return { rank: idx + 1, country: top8Countries[idx].country, eligible: idx < 8 };
+    const c = top8Countries[idx]?.country;
+    if (!c) return null;
+    return { rank: idx + 1, countryName: c.nameEn || "", flagEmoji: c.flagEmoji || "", eligible: idx < 8 };
   }, [userCountryId, top8Countries]);
 
   // Inactive state (no championship running)
@@ -412,7 +414,7 @@ export default function ChampionshipPage() {
           <p className="text-foreground-subtle">{t("championship.comingDecember")}</p>
           {countdown && (
             <div className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#c9a84c]/10 border border-[#c9a84c]/30">
-              <span className="text-sm">{"\u23F3"}</span>
+              <span className="text-sm">⏳</span>
               <span className="text-lg font-mono font-bold text-[#c9a84c]">{countdown}</span>
             </div>
           )}
@@ -424,22 +426,22 @@ export default function ChampionshipPage() {
         {userCountryRank && (
           <div className="bg-background-surface border border-[#c9a84c]/20 rounded-xl p-4 mb-6">
             <h2 className="text-sm font-bold text-foreground mb-2 flex items-center gap-2">
-              <span>{"\uD83C\uDFF3\uFE0F"}</span>
+              <span>🏳️</span>
               {t("championship.yourCountryStatus") || "Your Country Status"}
             </h2>
             <div className="flex items-center gap-3">
-              <span className="text-2xl">{userCountryRank.country.flagEmoji}</span>
+              <span className="text-2xl">{userCountryRank.flagEmoji}</span>
               <div className="flex-1">
-                <span className="text-sm font-medium text-foreground">{userCountryRank.country.nameEn}</span>
+                <span className="text-sm font-medium text-foreground">{userCountryRank.countryName}</span>
                 <span className="text-xs text-foreground-subtle ml-2">#{userCountryRank.rank}</span>
               </div>
               {userCountryRank.eligible ? (
                 <span className="px-2 py-1 text-xs font-bold rounded-lg bg-green-500/10 text-green-500 border border-green-500/20">
-                  {t("championship.eligible") || "Eligible"} {"\u2705"}
+                  {t("championship.eligible") || "Eligible"} ✅
                 </span>
               ) : (
                 <span className="px-2 py-1 text-xs font-bold rounded-lg bg-red-500/10 text-red-500 border border-red-500/20">
-                  {t("championship.needTop8") || "Top 8 needed"} {"\u274C"}
+                  {t("championship.needTop8") || "Top 8 needed"} ❌
                 </span>
               )}
             </div>
