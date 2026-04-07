@@ -227,29 +227,29 @@ export default function LeaderboardPage() {
               {/* Podium — shows real data when available, placeholders for missing slots */}
               {(() => {
                 const podiumSlots = [
-                  { pos: "2nd", idx: 1, height: 100, from: "#8a8a8a", to: "#c0c0c0", textSize: "text-xs", flagSize: "text-3xl", w: "w-20" },
-                  { pos: "1st", idx: 0, height: 140, from: "#a07c1c", to: "#c9a84c", textSize: "text-sm", flagSize: "text-4xl", w: "w-24" },
-                  { pos: "3rd", idx: 2, height: 80,  from: "#8B4513", to: "#CD7F32", textSize: "text-xs", flagSize: "text-2xl", w: "w-20" },
+                  { pos: "2nd", idx: 1, height: 80, heightSm: 100, from: "#8a8a8a", to: "#c0c0c0", textSize: "text-[10px] sm:text-xs", flagSize: "text-2xl sm:text-3xl", w: "w-[72px] sm:w-20" },
+                  { pos: "1st", idx: 0, height: 110, heightSm: 140, from: "#a07c1c", to: "#c9a84c", textSize: "text-xs sm:text-sm", flagSize: "text-3xl sm:text-4xl", w: "w-20 sm:w-24" },
+                  { pos: "3rd", idx: 2, height: 64, heightSm: 80,  from: "#8B4513", to: "#CD7F32", textSize: "text-[10px] sm:text-xs", flagSize: "text-xl sm:text-2xl", w: "w-[72px] sm:w-20" },
                 ];
                 return (
-                  <div className="bg-background-surface border border-border rounded-xl p-6">
-                    <div className="flex items-end justify-center gap-3">
-                      {podiumSlots.map(({ pos, idx, height, from, to, textSize, flagSize, w }) => {
+                  <div className="bg-background-surface border border-border rounded-xl p-4 sm:p-6">
+                    <div className="flex items-end justify-center gap-2 sm:gap-3">
+                      {podiumSlots.map(({ pos, idx, height, heightSm, from, to, textSize, flagSize, w }) => {
                         const c = countries[idx];
                         return c ? (
                           <Link key={pos} href={`/?country=${c.countryId}`} className="flex flex-col items-center hover:opacity-80 transition-opacity">
                             <span className={`${flagSize} mb-1`}>{c.flagEmoji}</span>
-                            <div className={`${w} rounded-t-lg flex flex-col items-center justify-end p-2`} style={{ height, background: `linear-gradient(to top, ${from}, ${to})` }}>
+                            <div className={`${w} rounded-t-lg flex flex-col items-center justify-end p-1.5 sm:p-2`} style={{ height, background: `linear-gradient(to top, ${from}, ${to})` }}>
                               <span className={`${textSize} font-bold text-white`}>{pos}</span>
-                              <span className="text-[10px] text-white/80 truncate w-full text-center">{c.name.replace("United States", "USA").replace("United Kingdom", "UK").replace("South Korea", "S. Korea")}</span>
+                              <span className="text-[9px] sm:text-[10px] text-white/80 truncate w-full text-center">{c.name.replace("United States", "USA").replace("United Kingdom", "UK").replace("South Korea", "S. Korea")}</span>
                               <span className={`${textSize} font-bold text-white mt-0.5`}>{(c.perUserScore ?? c.totalScore)?.toLocaleString()}</span>
-                              <span className="text-[8px] text-white/60">pts/user</span>
+                              <span className="text-[9px] sm:text-[10px] text-white/60">pts/user</span>
                             </div>
                           </Link>
                         ) : (
                           <div key={pos} className="flex flex-col items-center opacity-25">
                             <span className={`${flagSize} mb-1 opacity-30`}>-</span>
-                            <div className={`${w} rounded-t-lg flex items-center justify-center p-2`} style={{ height, background: `linear-gradient(to top, ${from}40, ${to}40)` }}>
+                            <div className={`${w} rounded-t-lg flex items-center justify-center p-1.5 sm:p-2`} style={{ height, background: `linear-gradient(to top, ${from}40, ${to}40)` }}>
                               <span className={`${textSize} text-foreground-subtle`}>{pos}</span>
                             </div>
                           </div>

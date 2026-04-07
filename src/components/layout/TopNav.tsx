@@ -496,7 +496,7 @@ export default function TopNav() {
           <select
             value={locale}
             onChange={(e) => handleLocaleChange(e.target.value as Locale)}
-            className="appearance-none bg-[#c9a84c]/10 border-2 border-[#c9a84c]/40 hover:border-[#c9a84c] rounded-xl px-4 py-2 text-sm font-bold text-[#c9a84c] cursor-pointer focus:outline-none focus:border-[#c9a84c] transition-colors"
+            className="appearance-none bg-[#c9a84c]/10 border-2 border-[#c9a84c]/40 hover:border-[#c9a84c] rounded-xl px-2 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold text-[#c9a84c] cursor-pointer focus:outline-none focus:border-[#c9a84c] transition-colors max-w-[72px] sm:max-w-none"
             aria-label="Change language"
           >
             {UI_LANGS.map((lang) => (
