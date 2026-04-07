@@ -555,7 +555,7 @@ export default function PostDetail({
             </div>
             <button
               onClick={() => setShowCompare(!showCompare)}
-              className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-foreground-subtle hover:text-foreground-muted hover:bg-background-elevated border border-border transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-foreground-subtle hover:text-foreground-muted hover:bg-background-elevated border border-border transition-colors"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7" />
@@ -566,8 +566,19 @@ export default function PostDetail({
         )}
 
         {/* Image(s) */}
-        {/* Priority 1: translatedImageUrl takes precedence for ALL meme types */}
-        {showTranslation && translatedImageUrl ? (
+        {/* Priority 0: Compare mode (side-by-side original + translated) */}
+        {showCompare && translatedImageUrl ? (
+          <div className={`overflow-hidden border border-border rounded-b-xl border-t-0`}>
+            <div className="grid grid-cols-2 gap-0.5 bg-border">
+              <div className="bg-black/5 flex items-center justify-center">
+                <Image src={imageUrl} alt="Original" width={800} height={800} className="w-full h-full object-contain" unoptimized />
+              </div>
+              <div className="bg-black/5 flex items-center justify-center">
+                <Image src={translatedImageUrl} alt="Translated" width={800} height={800} className="w-full h-full object-contain" unoptimized />
+              </div>
+            </div>
+          </div>
+        ) : showTranslation && translatedImageUrl ? (
           <div className={`overflow-hidden border border-border flex items-center justify-center bg-black/5 ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-xl border-t-0" : "rounded-xl"}`}>
             <Image src={translatedImageUrl} alt={title} width={800} height={800} className="w-full h-full object-contain" unoptimized />
           </div>
@@ -612,8 +623,6 @@ export default function PostDetail({
           <div className={`overflow-hidden border border-border flex items-center justify-center bg-black/5 ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-xl border-t-0" : "rounded-xl"}`}>
             <Image src={imageUrl} alt={title} width={800} height={800} className="w-full h-full object-contain" unoptimized />
           </div>
-        ) : showCompare ? (
-          <CompareMode imageUrl={imageUrl} segments={segments} />
         ) : (
           <div className={`overflow-hidden border border-border flex items-center justify-center ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-xl border-t-0" : "rounded-xl"}`}>
             <MemeRenderer
