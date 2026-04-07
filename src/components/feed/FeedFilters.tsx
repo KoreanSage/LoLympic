@@ -137,7 +137,7 @@ export default function FeedFilters({
         />
       </form>
 
-      <div className="flex items-center gap-2 flex-wrap">
+      <div className="flex items-center gap-2 flex-wrap overflow-x-auto">
         {/* Sort tabs */}
         <div className="flex items-center gap-0.5 bg-background-surface rounded-lg p-0.5 border border-border shrink-0">
           {SORT_OPTIONS.map((opt) => (
