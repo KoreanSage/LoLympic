@@ -7,10 +7,13 @@ import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 // Helper: pick a random battle pair
 // ---------------------------------------------------------------------------
 async function getRandomPair(excludePostIds: string[], userId?: string, userLanguage?: string) {
-  // Build where clause
+  // Build where clause — only recent posts for better image quality
+  const BATTLE_RECENT_DAYS = 7;
+  const recentCutoff = new Date(Date.now() - BATTLE_RECENT_DAYS * 24 * 60 * 60 * 1000);
   const where: any = {
     status: "PUBLISHED",
     visibility: "PUBLIC",
+    createdAt: { gte: recentCutoff },
     // Must have at least one translatable image (not video, not GIF)
     images: {
       some: {
@@ -145,9 +148,13 @@ async function getRandomPair(excludePostIds: string[], userId?: string, userLang
 // Fallback: no language WHERE filter, but still fetch translations for display
 // ---------------------------------------------------------------------------
 async function getRandomPairFallback(excludePostIds: string[], userId?: string, userLanguage?: string) {
+  // Fallback: expand to 30 days if 7-day pool is too small
+  const FALLBACK_DAYS = 30;
+  const fallbackCutoff = new Date(Date.now() - FALLBACK_DAYS * 24 * 60 * 60 * 1000);
   const where: any = {
     status: "PUBLISHED",
     visibility: "PUBLIC",
+    createdAt: { gte: fallbackCutoff },
     images: {
       some: {
         OR: [
