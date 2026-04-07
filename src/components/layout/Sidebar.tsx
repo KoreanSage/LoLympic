@@ -106,16 +106,20 @@ function MemesSkeleton() {
 // Medal & rank helpers
 // ---------------------------------------------------------------------------
 
-const MEDAL_EMOJI: Record<string, string> = {
-  GOLD: "\u{1F947}",
-  SILVER: "\u{1F948}",
-  BRONZE: "\u{1F949}",
+const MEDAL_COLORS: Record<string, string> = {
+  GOLD: "text-[#c9a84c]",
+  SILVER: "text-[#c0c0c0]",
+  BRONZE: "text-[#CD7F32]",
 };
 
 function RankBadge({ rank }: { rank: number }) {
   if (rank <= 3) {
     const medal = ["GOLD", "SILVER", "BRONZE"][rank - 1];
-    return <span className="text-base w-5 text-center">{MEDAL_EMOJI[medal]}</span>;
+    return (
+      <span className={`text-xs w-5 text-center font-bold ${MEDAL_COLORS[medal]}`}>
+        {rank}
+      </span>
+    );
   }
   return (
     <span className="text-xs text-foreground-subtle w-5 text-center font-mono">
@@ -408,11 +412,11 @@ export default function Sidebar() {
         <Link href="/upload" className="block bg-background-surface border border-border hover:border-[#c9a84c]/50 rounded-xl px-3 py-2.5 text-center transition-colors group">
           {uploadStreak > 0 ? (
             <p className="text-xs text-[#c9a84c] font-medium">
-              🔥 {uploadStreak}-day upload streak!
+              {uploadStreak}-day upload streak
             </p>
           ) : (
             <p className="text-xs text-foreground-subtle group-hover:text-[#c9a84c] transition-colors">
-              ✨ Upload today to start your streak!
+              Upload today to start your streak
             </p>
           )}
         </Link>
@@ -430,7 +434,7 @@ export default function Sidebar() {
       <Card>
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-            <span>🏆</span> {t("sidebar.countryRankings")}
+            {t("sidebar.countryRankings")}
           </h3>
           <Link
             href="/leaderboard"
@@ -463,7 +467,7 @@ export default function Sidebar() {
                     <RankBadge rank={c.rank} />
                     <span className="text-sm">{c.flag}</span>
                     <span className="text-xs text-foreground-muted flex-1 truncate">
-                      {c.rank === 1 && "👑 "}{c.name}
+                      {c.name}
                     </span>
                     {/* Rank change indicator */}
                     {c.rankChange === "up" && (
@@ -511,7 +515,6 @@ export default function Sidebar() {
       {championshipPhase && championshipPhase !== "COMPLETED" && (
         <Card>
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-base">🏆</span>
             <h3 className="text-sm font-semibold text-[#c9a84c]">{t("sidebar.championshipWidget")}</h3>
           </div>
           <p className="text-xs text-foreground-muted mb-2">
@@ -555,7 +558,7 @@ export default function Sidebar() {
         return (
           <div className="bg-[#c9a84c]/10 border border-[#c9a84c]/20 rounded-xl px-3 py-2 text-center">
             <p className="text-xs text-[#c9a84c] font-medium">
-              🎯 Only <strong>{diff.toLocaleString()} pts</strong> behind {above.flag} {above.name}!
+              Only <strong>{diff.toLocaleString()} pts</strong> behind {above.flag} {above.name}
             </p>
             <p className="text-[10px] text-foreground-subtle mt-0.5">Post more to climb to #{myRank - 1}</p>
           </div>
@@ -565,7 +568,7 @@ export default function Sidebar() {
       {/* Hot Memes */}
       <Card>
         <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-1.5">
-          <span>🔥</span> {t("sidebar.hotMemes")}
+          {t("sidebar.hotMemes")}
         </h3>
         {loadingMemes ? (
           <MemesSkeleton />
@@ -590,8 +593,8 @@ export default function Sidebar() {
                     className="w-10 h-10 rounded-lg object-cover bg-background-elevated flex-shrink-0"
                   />
                 ) : (
-                  <div className="w-10 h-10 rounded-lg bg-background-elevated flex-shrink-0 flex items-center justify-center text-foreground-subtle text-lg">
-                    {i === 0 ? "🥇" : i === 1 ? "🥈" : "🥉"}
+                  <div className="w-10 h-10 rounded-lg bg-background-elevated flex-shrink-0 flex items-center justify-center text-foreground-subtle text-xs font-bold">
+                    #{i + 1}
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
@@ -599,7 +602,7 @@ export default function Sidebar() {
                     {meme.translatedTitle ?? meme.title}
                   </p>
                   <p className="text-[10px] text-foreground-subtle">
-                    @{meme.authorUsername} · ❤️ {meme.reactionCount}
+                    @{meme.authorUsername} · {meme.reactionCount}
                   </p>
                 </div>
               </Link>
@@ -613,7 +616,7 @@ export default function Sidebar() {
         <Card>
           <div className="flex items-center justify-between mb-2.5">
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-              <span>{"\u{1F4CA}"}</span> {t("monthly.votingStatus")}
+              {t("monthly.votingStatus")}
             </h3>
             {monthlyDaysLeft > 0 && (
               <span className="text-[10px] text-foreground-subtle flex items-center gap-1">
@@ -647,7 +650,7 @@ export default function Sidebar() {
                       {post.translatedTitle ?? post.title}
                     </span>
                     <span className="text-[10px] text-foreground-subtle tabular-nums flex-shrink-0">
-                      {"\u{1F525}"} {post.reactionCount}
+                      {post.reactionCount}
                     </span>
                   </div>
                   <div className="ml-[26px] mt-0.5">
@@ -676,7 +679,7 @@ export default function Sidebar() {
       {/* Top Creators */}
       <Card>
         <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-1.5">
-          <span>⭐</span> {t("sidebar.topCreators")}
+          {t("sidebar.topCreators")}
         </h3>
         {loadingCreators ? (
           <RankingSkeleton rows={5} />
@@ -738,7 +741,7 @@ export default function Sidebar() {
       {!loadingTags && trendingTags.length > 0 && (
         <Card>
           <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-1.5">
-            <span>📈</span> {t("sidebar.trending")}
+            {t("sidebar.trending")}
           </h3>
           <div className="flex flex-wrap gap-1.5">
             {trendingTags.map((tag) => (

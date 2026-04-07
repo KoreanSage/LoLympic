@@ -19,11 +19,11 @@ interface ChampionshipTimelineProps {
 }
 
 const PHASES = [
-  { key: "NOMINATION", labelKey: "championship.phase.nomination", dates: "12/1-10", icon: "📋" },
-  { key: "REPRESENTATIVE", labelKey: "championship.phase.vote", dates: "12/1-15", icon: "🗳️" },
-  { key: "UPLOAD", labelKey: "championship.phase.upload", dates: "12/16-20", icon: "📤" },
-  { key: "CHAMPIONSHIP", labelKey: "championship.phase.battle", dates: "12/21-30", icon: "⚔️" },
-  { key: "COMPLETED", labelKey: "championship.phase.results", dates: "12/31", icon: "👑" },
+  { key: "NOMINATION", labelKey: "championship.phase.nomination", dates: "12/1-10", icon: "1" },
+  { key: "REPRESENTATIVE", labelKey: "championship.phase.vote", dates: "12/1-15", icon: "2" },
+  { key: "UPLOAD", labelKey: "championship.phase.upload", dates: "12/16-20", icon: "3" },
+  { key: "CHAMPIONSHIP", labelKey: "championship.phase.battle", dates: "12/21-30", icon: "4" },
+  { key: "COMPLETED", labelKey: "championship.phase.results", dates: "12/31", icon: "5" },
 ];
 
 function formatRemaining(ms: number): string {

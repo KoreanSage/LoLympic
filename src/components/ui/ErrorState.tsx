@@ -9,7 +9,7 @@ export default function ErrorState({
 }) {
   return (
     <div className="text-center py-16">
-      <p className="text-3xl mb-3">😵</p>
+      <p className="text-lg text-foreground-subtle mb-3">Oops</p>
       <p className="text-foreground font-medium mb-1">
         {message || "Something went wrong"}
       </p>

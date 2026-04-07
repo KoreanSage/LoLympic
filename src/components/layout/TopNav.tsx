@@ -91,23 +91,23 @@ function notifText(n: NotificationData, t: (key: any, params?: any) => string): 
 
 function notifIcon(type: string): string {
   const icons: Record<string, string> = {
-    REACTION: "\u{1F525}",
-    COMMENT: "\u{1F4AC}",
-    REPLY: "\u{1F4AC}",
-    SUGGESTION: "\u{1F30D}",
-    SUGGESTION_APPROVED: "\u2705",
-    FOLLOW: "\u{1F464}",
-    MEDAL_AWARDED: "\u{1F3C5}",
-    REWARD_GRANTED: "\u{1F381}",
-    DIRECT_MESSAGE: "\u{1F4E9}",
-    FORWARD: "\u{1F4E8}",
-    RANK_CHANGE: "\u{1F4CA}",
-    TRANSLATION_REQUEST: "\u{1F30D}",
-    SEASON_START: "\u{1F3C6}",
-    SEASON_END: "\u{1F3C6}",
-    SYSTEM: "\u{1F514}",
+    REACTION: "\u2764",
+    COMMENT: "\u2192",
+    REPLY: "\u2192",
+    SUGGESTION: "\u2022",
+    SUGGESTION_APPROVED: "\u2713",
+    FOLLOW: "\u002B",
+    MEDAL_AWARDED: "\u2605",
+    REWARD_GRANTED: "\u2605",
+    DIRECT_MESSAGE: "\u2709",
+    FORWARD: "\u2192",
+    RANK_CHANGE: "\u2191",
+    TRANSLATION_REQUEST: "\u2022",
+    SEASON_START: "\u2022",
+    SEASON_END: "\u2022",
+    SYSTEM: "\u2022",
   };
-  return icons[type] || "\u{1F514}";
+  return icons[type] || "\u2022";
 }
 
 export default function TopNav() {
@@ -455,8 +455,8 @@ export default function TopNav() {
 
           <div className="hidden md:flex items-center gap-1">
             <NavLink href="/" label={t("nav.explore")} />
-            <NavLink href="/leaderboard" label={`🏆 ${t("nav.leaderboard")}`} />
-            <NavLink href="/championship" label={`🥇 ${t("nav.championship") || "Championship"}`} />
+            <NavLink href="/leaderboard" label={t("nav.leaderboard")} />
+            <NavLink href="/championship" label={t("nav.championship") || "Championship"} />
             <NavLink href="/community" label={t("nav.community")} />
             <Link
               href="/upload"
@@ -657,16 +657,16 @@ export default function TopNav() {
       >
         <div className="border-t border-border bg-background/95 backdrop-blur-xl px-4 py-3 space-y-1">
           <MobileNavLink href="/" label={t("nav.explore")} active={pathname === "/"} />
-          <MobileNavLink href="/leaderboard" label={`🏆 ${t("nav.leaderboard")}`} active={pathname === "/leaderboard"} />
-          <MobileNavLink href="/championship" label={`🥇 ${t("nav.championship") || "Championship"}`} active={pathname === "/championship"} />
-          <MobileNavLink href="/community" label={`💬 ${t("nav.community")}`} active={pathname === "/community"} />
+          <MobileNavLink href="/leaderboard" label={t("nav.leaderboard")} active={pathname === "/leaderboard"} />
+          <MobileNavLink href="/championship" label={t("nav.championship") || "Championship"} active={pathname === "/championship"} />
+          <MobileNavLink href="/community" label={t("nav.community")} active={pathname === "/community"} />
           <MobileNavLink href="/upload" label={t("nav.upload")} active={pathname === "/upload"} />
           {session?.user && (
             <>
               <div className="border-t border-border my-1" />
-              <MobileNavLink href="/messages" label={`✉️ ${t("nav.messages")}`} active={pathname?.startsWith("/messages")} />
-              <MobileNavLink href="/bookmarks" label={`🔖 ${t("nav.bookmarks")}`} active={pathname === "/bookmarks"} />
-              <MobileNavLink href="/settings" label={`⚙️ ${t("nav.settings")}`} active={pathname === "/settings"} />
+              <MobileNavLink href="/messages" label={t("nav.messages")} active={pathname?.startsWith("/messages")} />
+              <MobileNavLink href="/bookmarks" label={t("nav.bookmarks")} active={pathname === "/bookmarks"} />
+              <MobileNavLink href="/settings" label={t("nav.settings")} active={pathname === "/settings"} />
               <button
                 onClick={() => signOut({ callbackUrl: "/" })}
                 className="block w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"

@@ -33,7 +33,7 @@ export default function VsEventBanner() {
     <div className="bg-background-surface border border-[#c9a84c]/30 rounded-xl p-3 space-y-2">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
-          <span className="text-sm">⚔️</span>
+          <span className="text-xs font-bold text-[#c9a84c]">VS</span>
           <span className="text-xs font-bold text-[#c9a84c]">{event.title}</span>
         </div>
         <span className="text-[10px] text-foreground-subtle">{daysLeft}d left</span>

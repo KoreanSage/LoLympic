@@ -120,7 +120,7 @@ export default function Avatar({
         <span
           className={`absolute -bottom-0.5 -right-0.5 ${flagSizeMap[size]} flex items-center justify-center leading-none`}
         >
-          🏆
+          <span className="text-[#c9a84c] font-bold" style={{ fontSize: '0.6em' }}>★</span>
         </span>
       )}
     </div>

@@ -70,7 +70,7 @@ export default function FeedFilters({
   ];
 
   const COUNTRY_OPTIONS: FilterOption[] = [
-    { value: "", label: "\u{1F30D} " + t("filter.allCountries") },
+    { value: "", label: t("filter.allCountries") },
     { value: "KR", label: "\u{1F1F0}\u{1F1F7} " + t("filter.korea") },
     { value: "US", label: "\u{1F1FA}\u{1F1F8} " + t("filter.usa") },
     { value: "GB", label: "\u{1F1EC}\u{1F1E7} UK" },
@@ -92,7 +92,7 @@ export default function FeedFilters({
   ];
 
   const LANGUAGE_OPTIONS: FilterOption[] = [
-    { value: "", label: "\u{1F4AC} " + t("filter.allLanguages") },
+    { value: "", label: t("filter.allLanguages") },
     { value: "ko", label: "\u{1F1F0}\u{1F1F7} " + t("filter.korean") },
     { value: "en", label: "\u{1F1FA}\u{1F1F8} " + t("filter.english") },
     { value: "ja", label: "\u{1F1EF}\u{1F1F5} " + t("filter.japanese") },

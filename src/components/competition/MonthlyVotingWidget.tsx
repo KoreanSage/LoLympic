@@ -99,7 +99,7 @@ export default function MonthlyVotingWidget() {
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <span className="text-base">📊</span>
+          <span className="text-xs font-bold text-[#c9a84c] w-5 h-5 rounded bg-[#c9a84c]/10 flex items-center justify-center">#</span>
           <h3 className="text-sm font-bold text-foreground">
             {t("monthly.votingStatus")}
           </h3>
@@ -119,14 +119,14 @@ export default function MonthlyVotingWidget() {
       <div className="space-y-2">
         {data.topPosts.map((post, i) => {
           const pct = Math.max(8, (post.reactionCount / maxScore) * 100);
-          const medals = ["🥇", "🥈", "🥉"];
+          const medals = ["1st", "2nd", "3rd"];
           return (
             <Link
               key={post.id}
               href={`/post/${post.id}`}
               className="flex items-center gap-2.5 group"
             >
-              <span className="text-sm w-5 text-center flex-shrink-0">{medals[i]}</span>
+              <span className="text-[10px] font-bold w-5 text-center flex-shrink-0 text-foreground-muted">{medals[i]}</span>
               {post.imageUrl && (
                 <div className="w-8 h-8 rounded-md overflow-hidden flex-shrink-0 border border-border">
                   <Image
@@ -156,7 +156,7 @@ export default function MonthlyVotingWidget() {
                 </div>
               </div>
               <span className="text-[10px] text-foreground-subtle tabular-nums flex-shrink-0 font-medium">
-                🔥 {post.reactionCount.toLocaleString()}
+                {post.reactionCount.toLocaleString()}
               </span>
             </Link>
           );

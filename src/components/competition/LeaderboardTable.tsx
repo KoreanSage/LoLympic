@@ -291,7 +291,7 @@ const MemeTable = React.memo(function MemeTable({ entries }: { entries: MemeEntr
             </span>
           </div>
           <span className="text-xs text-foreground-subtle hidden sm:inline">
-            {entry.reactionCount} ⬆️
+            {entry.reactionCount}
           </span>
           <span className="text-sm font-mono text-[#c9a84c]">
             {entry.totalScore.toLocaleString()}

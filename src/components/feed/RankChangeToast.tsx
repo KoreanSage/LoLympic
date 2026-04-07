@@ -66,7 +66,7 @@ export default function RankChangeToast() {
         if (currEntry.rank < prevEntry.rank) {
           // Moved up (lower rank number = better)
           setToast({
-            message: `🎉 ${t("rankChange.movedUp", {
+            message: `${t("rankChange.movedUp", {
               rank: String(currEntry.rank),
             })}`,
             type: "up",
