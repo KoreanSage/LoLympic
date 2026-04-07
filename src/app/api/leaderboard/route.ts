@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { LanguageCode } from "@prisma/client";
+import { getSessionUser } from "@/lib/auth";
 
 // ---------------------------------------------------------------------------
 // GET /api/leaderboard?type=country|creator|meme[&seasonId=xxx][&limit=10]
@@ -37,6 +38,148 @@ export async function GET(request: NextRequest) {
       } else {
         resolvedSeasonId = activeSeason.id;
       }
+    }
+
+    // My score breakdown
+    if (type === "my-score") {
+      const user = await getSessionUser();
+      if (!user) {
+        return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+      }
+
+      const postStats = await prisma.post.aggregate({
+        where: { authorId: user.id, status: "PUBLISHED", visibility: "PUBLIC" },
+        _sum: { reactionCount: true, commentCount: true, shareCount: true },
+      });
+      const reactions = postStats._sum.reactionCount ?? 0;
+      const comments = postStats._sum.commentCount ?? 0;
+      const shares = postStats._sum.shareCount ?? 0;
+      const totalScore = reactions + comments * 2 + shares * 3;
+
+      // Calculate rank
+      const allCreatorStats = await prisma.post.groupBy({
+        by: ["authorId"],
+        where: { status: "PUBLISHED", visibility: "PUBLIC" },
+        _sum: { reactionCount: true, commentCount: true, shareCount: true },
+      });
+      const scores = allCreatorStats.map((s) => {
+        const r = s._sum.reactionCount ?? 0;
+        const c = s._sum.commentCount ?? 0;
+        const sh = s._sum.shareCount ?? 0;
+        return r + c * 2 + sh * 3;
+      }).sort((a, b) => b - a);
+      const rank = scores.findIndex((s) => s <= totalScore) + 1;
+      const totalUsers = scores.length;
+
+      return NextResponse.json(
+        { reactions, comments, shares, totalScore, rank: rank || totalUsers, totalUsers },
+        { headers: LEADERBOARD_CACHE_HEADERS }
+      );
+    }
+
+    // MVP (weekly + monthly)
+    if (type === "mvp") {
+      const now = new Date();
+      const weekStart = new Date(now);
+      weekStart.setDate(now.getDate() - now.getDay());
+      weekStart.setHours(0, 0, 0, 0);
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+      const [weeklyReactions, monthlyReactions] = await Promise.all([
+        prisma.postReaction.groupBy({
+          by: ["postId"],
+          where: { createdAt: { gte: weekStart } },
+          _count: { id: true },
+        }),
+        prisma.postReaction.groupBy({
+          by: ["postId"],
+          where: { createdAt: { gte: monthStart } },
+          _count: { id: true },
+        }),
+      ]);
+
+      const getTopAuthor = async (reactions: Array<{ postId: string; _count: { id: number } }>) => {
+        if (reactions.length === 0) return null;
+        const postIds = reactions.map((r) => r.postId);
+        const posts = await prisma.post.findMany({
+          where: { id: { in: postIds }, status: "PUBLISHED", visibility: "PUBLIC" },
+          select: { id: true, authorId: true },
+        });
+        const postAuthorMap = new Map(posts.map((p) => [p.id, p.authorId]));
+        const authorScores = new Map<string, number>();
+        for (const r of reactions) {
+          const authorId = postAuthorMap.get(r.postId);
+          if (!authorId) continue;
+          authorScores.set(authorId, (authorScores.get(authorId) || 0) + r._count.id);
+        }
+        if (authorScores.size === 0) return null;
+        const topAuthorId = Array.from(authorScores.entries()).sort((a, b) => b[1] - a[1])[0];
+        const user = await prisma.user.findUnique({
+          where: { id: topAuthorId[0] },
+          select: { username: true, displayName: true, avatarUrl: true, country: { select: { flagEmoji: true } } },
+        });
+        if (!user) return null;
+        return { username: user.username, displayName: user.displayName, avatarUrl: user.avatarUrl, countryFlag: user.country?.flagEmoji, reactionCount: topAuthorId[1] };
+      }
+
+      const [weeklyMvp, monthlyMvp] = await Promise.all([
+        getTopAuthor(weeklyReactions),
+        getTopAuthor(monthlyReactions),
+      ]);
+
+      return NextResponse.json(
+        { weeklyMvp, monthlyMvp },
+        { headers: LEADERBOARD_CACHE_HEADERS }
+      );
+    }
+
+    // Country matchup (top 2 countries this week)
+    if (type === "country-matchup") {
+      const now = new Date();
+      const weekStart = new Date(now);
+      weekStart.setDate(now.getDate() - now.getDay());
+      weekStart.setHours(0, 0, 0, 0);
+
+      const weeklyReactions = await prisma.postReaction.groupBy({
+        by: ["postId"],
+        where: { createdAt: { gte: weekStart } },
+        _count: { id: true },
+      });
+
+      const postIds = weeklyReactions.map((r) => r.postId);
+      const posts = await prisma.post.findMany({
+        where: { id: { in: postIds }, status: "PUBLISHED", visibility: "PUBLIC", countryId: { not: null } },
+        select: { id: true, countryId: true },
+      });
+      const postCountryMap = new Map(posts.map((p) => [p.id, p.countryId]));
+
+      const countryScores = new Map<string, number>();
+      for (const r of weeklyReactions) {
+        const countryId = postCountryMap.get(r.postId);
+        if (!countryId) continue;
+        countryScores.set(countryId, (countryScores.get(countryId) || 0) + r._count.id);
+      }
+
+      const sorted = Array.from(countryScores.entries()).sort((a, b) => b[1] - a[1]).slice(0, 2);
+      if (sorted.length < 2) {
+        return NextResponse.json({ matchup: null }, { headers: LEADERBOARD_CACHE_HEADERS });
+      }
+
+      const countryDetails = await prisma.country.findMany({
+        where: { id: { in: sorted.map((s) => s[0]) } },
+        select: { id: true, nameEn: true, flagEmoji: true },
+      });
+      const countryMap = new Map(countryDetails.map((c) => [c.id, c]));
+
+      const matchup = sorted.map(([cid, count]) => ({
+        country: countryMap.get(cid) || { id: cid, nameEn: cid, flagEmoji: "" },
+        weeklyReactions: count,
+      }));
+
+      return NextResponse.json(
+        { matchup },
+        { headers: LEADERBOARD_CACHE_HEADERS }
+      );
     }
 
     // Battle leaderboard is always realtime (not season-dependent)

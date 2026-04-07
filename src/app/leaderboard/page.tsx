@@ -1,10 +1,13 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useTranslation } from "@/i18n";
 import MainLayout from "@/components/layout/MainLayout";
 import LeaderboardTable from "@/components/competition/LeaderboardTable";
+import ScoreBreakdown from "@/components/competition/ScoreBreakdown";
+import ActivityFeed from "@/components/competition/ActivityFeed";
 import ErrorState from "@/components/ui/ErrorState";
 import ScoringExplanationModal from "@/components/competition/ScoringExplanationModal";
 import Avatar from "@/components/ui/Avatar";
@@ -95,6 +98,7 @@ function mapMemes(entries: ApiMemeEntry[]) {
 
 export default function LeaderboardPage() {
   const { t, locale } = useTranslation();
+  const { data: session } = useSession();
   const [showScoring, setShowScoring] = useState(false);
   const [loading, setLoading] = useState(true);
   const [countries, setCountries] = useState<ReturnType<typeof mapCountries>>([]);
@@ -108,6 +112,9 @@ export default function LeaderboardPage() {
     author: { username: string; displayName: string | null }; country: { flagEmoji: string } | null;
   }>>([]);
   const [monthlyWinners, setMonthlyWinners] = useState<MonthlyWinnerData[]>([]);
+  const [myScore, setMyScore] = useState<{ reactions: number; comments: number; shares: number; totalScore: number; rank: number; totalUsers: number } | null>(null);
+  const [mvpData, setMvpData] = useState<{ weeklyMvp: { username: string; displayName?: string | null; avatarUrl?: string | null; countryFlag?: string; reactionCount: number } | null; monthlyMvp: { username: string; displayName?: string | null; avatarUrl?: string | null; countryFlag?: string; reactionCount: number } | null } | null>(null);
+  const [matchup, setMatchup] = useState<Array<{ country: { id: string; nameEn: string; flagEmoji: string }; weeklyReactions: number }> | null>(null);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -151,6 +158,24 @@ export default function LeaderboardPage() {
   }, [locale]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  // Fetch my score, MVP, and matchup data
+  useEffect(() => {
+    if (session?.user) {
+      fetch("/api/leaderboard?type=my-score")
+        .then((r) => r.ok ? r.json() : null)
+        .then((data) => { if (data && !data.error) setMyScore(data); })
+        .catch(() => {});
+    }
+    fetch("/api/leaderboard?type=mvp")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (data) setMvpData(data); })
+      .catch(() => {});
+    fetch("/api/leaderboard?type=country-matchup")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (data?.matchup) setMatchup(data.matchup); })
+      .catch(() => {});
+  }, [session?.user]);
 
   if (error) {
     return (<MainLayout showSidebar={false}><ErrorState message="Failed to load leaderboard" onRetry={fetchAll} /></MainLayout>);
@@ -240,8 +265,103 @@ export default function LeaderboardPage() {
 
             </div>
 
+          {/* My Score Breakdown (logged-in only) */}
+          {myScore && myScore.totalScore > 0 && (
+            <ScoreBreakdown
+              reactions={myScore.reactions}
+              comments={myScore.comments}
+              shares={myScore.shares}
+              totalScore={myScore.totalScore}
+              rank={myScore.rank}
+              totalUsers={myScore.totalUsers}
+            />
+          )}
+
+          {/* Weekly/Monthly MVP Cards */}
+          {mvpData && (mvpData.weeklyMvp || mvpData.monthlyMvp) && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {mvpData.weeklyMvp && (
+                <Link href={`/user/${mvpData.weeklyMvp.username}`} className="bg-background-surface border border-[#c9a84c]/20 rounded-xl p-4 hover:border-[#c9a84c]/50 transition-colors">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-sm">{"\u2B50"}</span>
+                    <span className="text-xs font-bold text-[#c9a84c] uppercase">{t("leaderboard.weeklyMvp") || "Weekly MVP"}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {mvpData.weeklyMvp.avatarUrl ? (
+                      <img src={mvpData.weeklyMvp.avatarUrl} alt="" className="w-10 h-10 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-background-elevated flex items-center justify-center text-foreground-subtle">{(mvpData.weeklyMvp.displayName || mvpData.weeklyMvp.username)[0]?.toUpperCase()}</div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        {mvpData.weeklyMvp.countryFlag && <span className="text-sm">{mvpData.weeklyMvp.countryFlag}</span>}
+                        <span className="text-sm font-medium text-foreground truncate">{mvpData.weeklyMvp.displayName || mvpData.weeklyMvp.username}</span>
+                      </div>
+                      <span className="text-xs text-foreground-subtle">{mvpData.weeklyMvp.reactionCount.toLocaleString()} {"\uD83D\uDD25"}</span>
+                    </div>
+                  </div>
+                </Link>
+              )}
+              {mvpData.monthlyMvp && (
+                <Link href={`/user/${mvpData.monthlyMvp.username}`} className="bg-background-surface border border-[#c9a84c]/20 rounded-xl p-4 hover:border-[#c9a84c]/50 transition-colors">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-sm">{"\uD83C\uDFC5"}</span>
+                    <span className="text-xs font-bold text-[#c9a84c] uppercase">{t("leaderboard.monthlyMvp") || "Monthly MVP"}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {mvpData.monthlyMvp.avatarUrl ? (
+                      <img src={mvpData.monthlyMvp.avatarUrl} alt="" className="w-10 h-10 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-background-elevated flex items-center justify-center text-foreground-subtle">{(mvpData.monthlyMvp.displayName || mvpData.monthlyMvp.username)[0]?.toUpperCase()}</div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        {mvpData.monthlyMvp.countryFlag && <span className="text-sm">{mvpData.monthlyMvp.countryFlag}</span>}
+                        <span className="text-sm font-medium text-foreground truncate">{mvpData.monthlyMvp.displayName || mvpData.monthlyMvp.username}</span>
+                      </div>
+                      <span className="text-xs text-foreground-subtle">{mvpData.monthlyMvp.reactionCount.toLocaleString()} {"\uD83D\uDD25"}</span>
+                    </div>
+                  </div>
+                </Link>
+              )}
+            </div>
+          )}
+
+          {/* Country vs Country Matchup */}
+          {matchup && matchup.length === 2 && (
+            <div className="bg-background-surface border border-border rounded-xl p-4">
+              <h3 className="text-xs font-bold text-[#c9a84c] uppercase text-center mb-3">
+                {"\u2694\uFE0F"} {t("leaderboard.countryMatchup") || "Country vs Country"} - {t("leaderboard.thisWeek") || "This Week"}
+              </h3>
+              <div className="flex items-center gap-3">
+                <div className="flex-1 text-center">
+                  <span className="text-3xl block mb-1">{matchup[0].country.flagEmoji}</span>
+                  <span className="text-xs font-medium text-foreground block truncate">{matchup[0].country.nameEn}</span>
+                  <span className="text-sm font-bold text-[#c9a84c]">{matchup[0].weeklyReactions.toLocaleString()}</span>
+                </div>
+                <div className="text-lg font-bold text-foreground-subtle">VS</div>
+                <div className="flex-1 text-center">
+                  <span className="text-3xl block mb-1">{matchup[1].country.flagEmoji}</span>
+                  <span className="text-xs font-medium text-foreground block truncate">{matchup[1].country.nameEn}</span>
+                  <span className="text-sm font-bold text-[#c9a84c]">{matchup[1].weeklyReactions.toLocaleString()}</span>
+                </div>
+              </div>
+              {/* Progress bar */}
+              {(() => {
+                const total = matchup[0].weeklyReactions + matchup[1].weeklyReactions;
+                const pct = total > 0 ? (matchup[0].weeklyReactions / total) * 100 : 50;
+                return (
+                  <div className="mt-3 flex gap-0.5 h-2 rounded-full overflow-hidden">
+                    <div className="h-full bg-[#c9a84c] rounded-l-full transition-all" style={{ width: `${pct}%` }} />
+                    <div className="h-full bg-foreground-subtle/30 rounded-r-full transition-all" style={{ width: `${100 - pct}%` }} />
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
           {/* Rankings Table — always show, even empty */}
-          <LeaderboardTable countries={countries} creators={creators} memes={memes} />
+          <LeaderboardTable countries={countries} creators={creators} memes={memes} currentUsername={session?.user?.username} />
 
           {empty && (
             <div className="text-center py-8">
@@ -305,6 +425,9 @@ export default function LeaderboardPage() {
               </div>
             </div>
           )}
+
+          {/* Live Activity Feed */}
+          <ActivityFeed />
 
           {/* Hot Battle Memes */}
           {battleMemes.length > 0 && (

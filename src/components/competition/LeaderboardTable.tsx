@@ -53,6 +53,7 @@ interface LeaderboardTableProps {
   countries?: CountryEntry[];
   creators?: CreatorEntry[];
   memes?: MemeEntry[];
+  currentUsername?: string;
   className?: string;
 }
 
@@ -64,6 +65,7 @@ export default function LeaderboardTable({
   countries = [],
   creators = [],
   memes = [],
+  currentUsername,
   className = "",
 }: LeaderboardTableProps) {
   const [activeTab, setActiveTab] = useState("countries");
@@ -85,7 +87,7 @@ export default function LeaderboardTable({
           <CountryTable entries={countries} />
         )}
         {activeTab === "creators" && (
-          <CreatorTable entries={creators} />
+          <CreatorTable entries={creators} currentUsername={currentUsername} />
         )}
         {activeTab === "memes" && (
           <MemeTable entries={memes} />
@@ -162,52 +164,90 @@ const CountryTable = React.memo(function CountryTable({ entries }: { entries: Co
   );
 });
 
-const CreatorTable = React.memo(function CreatorTable({ entries }: { entries: CreatorEntry[] }) {
+const CreatorTable = React.memo(function CreatorTable({ entries, currentUsername }: { entries: CreatorEntry[]; currentUsername?: string }) {
   const { t } = useTranslation();
   if (entries.length === 0) return <EmptyState />;
 
+  const myEntry = currentUsername ? entries.find((e) => e.username === currentUsername) : null;
+  const nextRankEntry = myEntry ? entries.find((e) => e.rank === myEntry.rank - 1) : null;
+  const pointsToNext = nextRankEntry ? nextRankEntry.totalScore - myEntry!.totalScore : null;
+
   return (
     <div className="space-y-1">
-      {entries.map((entry) => (
-        <Link
-          key={entry.username}
-          href={`/user/${entry.username}`}
-          className={`
-            flex items-center gap-2 md:gap-3 px-2 md:px-4 py-2 md:py-3 rounded-lg transition-colors cursor-pointer
-            ${
-              entry.medal
-                ? "bg-background-surface border border-border hover:border-[#c9a84c]"
-                : "hover:bg-background-surface"
-            }
-          `}
-        >
-          <span className="text-sm text-foreground-subtle font-mono w-6 text-right">
-            {entry.rank}
-          </span>
-          {entry.medal && <MedalBadge type={entry.medal} size="sm" />}
-          <Avatar
-            src={entry.avatarUrl}
-            alt={entry.username}
-            size="sm"
-            countryFlag={entry.countryFlag}
-          />
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5">
-              <span className="text-sm font-medium text-foreground truncate">
-                {entry.displayName || entry.username}
-              </span>
-              {entry.tier && <TierBadge tier={entry.tier} size="xs" />}
+      {entries.map((entry) => {
+        const isMe = currentUsername && entry.username === currentUsername;
+        return (
+          <Link
+            key={entry.username}
+            href={`/user/${entry.username}`}
+            className={`
+              flex items-center gap-2 md:gap-3 px-2 md:px-4 py-2 md:py-3 rounded-lg transition-colors cursor-pointer
+              ${isMe
+                ? "border-2 border-[#c9a84c] bg-[#c9a84c]/5"
+                : entry.medal
+                  ? "bg-background-surface border border-border hover:border-[#c9a84c]"
+                  : "hover:bg-background-surface"
+              }
+            `}
+          >
+            <span className="text-sm text-foreground-subtle font-mono w-6 text-right">
+              {entry.rank}
+            </span>
+            {entry.medal && <MedalBadge type={entry.medal} size="sm" />}
+            <Avatar
+              src={entry.avatarUrl}
+              alt={entry.username}
+              size="sm"
+              countryFlag={entry.countryFlag}
+            />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm font-medium text-foreground truncate">
+                  {entry.displayName || entry.username}
+                </span>
+                {isMe && (
+                  <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-[#c9a84c] text-black uppercase">
+                    You
+                  </span>
+                )}
+                {entry.tier && <TierBadge tier={entry.tier} size="xs" />}
+              </div>
+              <span className="text-xs text-foreground-subtle">@{entry.username}</span>
             </div>
-            <span className="text-xs text-foreground-subtle">@{entry.username}</span>
+            <span className="text-xs text-foreground-subtle hidden sm:inline">
+              {entry.totalPosts} {t("leaderboard.posts")}
+            </span>
+            <span className="text-sm font-mono text-[#c9a84c]">
+              {entry.totalScore.toLocaleString()}
+            </span>
+          </Link>
+        );
+      })}
+
+      {/* Next rank progress bar */}
+      {myEntry && pointsToNext !== null && pointsToNext > 0 && (
+        <div className="mt-3 px-2 md:px-4 py-3 rounded-lg bg-[#c9a84c]/5 border border-[#c9a84c]/20">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-xs text-foreground-subtle">
+              {t("leaderboard.nextRank") || "Next rank"}
+            </span>
+            <span className="text-xs font-mono text-[#c9a84c]">
+              {pointsToNext.toLocaleString()} pts away
+            </span>
           </div>
-          <span className="text-xs text-foreground-subtle hidden sm:inline">
-            {entry.totalPosts} {t("leaderboard.posts")}
-          </span>
-          <span className="text-sm font-mono text-[#c9a84c]">
-            {entry.totalScore.toLocaleString()}
-          </span>
-        </Link>
-      ))}
+          <div className="w-full h-2 bg-background-elevated rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-[#c9a84c] to-[#e8c84a] rounded-full transition-all duration-500"
+              style={{
+                width: `${Math.min(
+                  (myEntry.totalScore / (myEntry.totalScore + pointsToNext)) * 100,
+                  100
+                )}%`,
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 });

@@ -368,6 +368,39 @@ export default function ChampionshipPage() {
     );
   }
 
+  // Countdown timer for inactive state
+  const [countdown, setCountdown] = useState("");
+  useEffect(() => {
+    if (championship) return;
+    // Countdown to December 1 of current year (or next year if past Dec 1)
+    function updateCountdown() {
+      const now = new Date();
+      let targetYear = now.getFullYear();
+      let target = new Date(targetYear, 11, 1); // Dec 1
+      if (now >= target) {
+        target = new Date(targetYear + 1, 11, 1);
+      }
+      const diff = target.getTime() - now.getTime();
+      if (diff <= 0) { setCountdown(""); return; }
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      setCountdown(`${days}d ${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`);
+    }
+    updateCountdown();
+    const iv = setInterval(updateCountdown, 1000);
+    return () => clearInterval(iv);
+  }, [championship]);
+
+  // Find user's country in top 8
+  const userCountryRank = useMemo(() => {
+    if (!userCountryId || top8Countries.length === 0) return null;
+    const idx = top8Countries.findIndex((e) => e.country.id === userCountryId);
+    if (idx === -1) return null;
+    return { rank: idx + 1, country: top8Countries[idx].country, eligible: idx < 8 };
+  }, [userCountryId, top8Countries]);
+
   // Inactive state (no championship running)
   if (!championship) {
     return (
@@ -377,9 +410,41 @@ export default function ChampionshipPage() {
           <span className="text-5xl mb-4 block">🏆</span>
           <h1 className="text-2xl font-bold text-foreground mb-2">{t("championship.title")}</h1>
           <p className="text-foreground-subtle">{t("championship.comingDecember")}</p>
+          {countdown && (
+            <div className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#c9a84c]/10 border border-[#c9a84c]/30">
+              <span className="text-sm">{"\u23F3"}</span>
+              <span className="text-lg font-mono font-bold text-[#c9a84c]">{countdown}</span>
+            </div>
+          )}
         </div>
 
         <SeasonExplainer t={t} />
+
+        {/* Your Country Status */}
+        {userCountryRank && (
+          <div className="bg-background-surface border border-[#c9a84c]/20 rounded-xl p-4 mb-6">
+            <h2 className="text-sm font-bold text-foreground mb-2 flex items-center gap-2">
+              <span>{"\uD83C\uDFF3\uFE0F"}</span>
+              {t("championship.yourCountryStatus") || "Your Country Status"}
+            </h2>
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">{userCountryRank.country.flagEmoji}</span>
+              <div className="flex-1">
+                <span className="text-sm font-medium text-foreground">{userCountryRank.country.nameEn}</span>
+                <span className="text-xs text-foreground-subtle ml-2">#{userCountryRank.rank}</span>
+              </div>
+              {userCountryRank.eligible ? (
+                <span className="px-2 py-1 text-xs font-bold rounded-lg bg-green-500/10 text-green-500 border border-green-500/20">
+                  {t("championship.eligible") || "Eligible"} {"\u2705"}
+                </span>
+              ) : (
+                <span className="px-2 py-1 text-xs font-bold rounded-lg bg-red-500/10 text-red-500 border border-red-500/20">
+                  {t("championship.needTop8") || "Top 8 needed"} {"\u274C"}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Current Top 8 Preview */}
         {top8Countries.length > 0 && (

@@ -791,6 +791,16 @@ const en = {
   "leaderboard.total": "Total",
   "leaderboard.perUser": "Per User",
   "leaderboard.qualificationLine": "Championship Qualification Line",
+  "leaderboard.nextRank": "Next rank",
+  "leaderboard.myScore": "My Score",
+  "leaderboard.weeklyMvp": "Weekly MVP",
+  "leaderboard.monthlyMvp": "Monthly MVP",
+  "leaderboard.countryMatchup": "Country vs Country",
+  "leaderboard.thisWeek": "This Week",
+  "leaderboard.liveActivity": "Live Activity",
+  "championship.yourCountryStatus": "Your Country Status",
+  "championship.eligible": "Eligible",
+  "championship.needTop8": "Top 8 needed",
 
   // ── Onboarding championship ──────────────────────────────────────────────
   "onboarding.step7ChampionshipTitle": "Year-End Championship",
