@@ -8,7 +8,14 @@ import { updateRankingScore } from "@/lib/ranking";
 
 export const maxDuration = 60;
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+let _genAI: GoogleGenerativeAI | null = null;
+function getGenAI() {
+  if (!_genAI) {
+    if (!process.env.GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not configured");
+    _genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+  }
+  return _genAI;
+}
 
 // ---------------------------------------------------------------------------
 // Language-specific translation instructions
@@ -148,7 +155,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Set up Gemini model
-    const model = genAI.getGenerativeModel({
+    const model = getGenAI().getGenerativeModel({
       model: "gemini-2.5-flash-lite",
       generationConfig: { temperature: 0.3, maxOutputTokens: 1024 },
     });

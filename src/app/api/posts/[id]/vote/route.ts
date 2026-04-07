@@ -53,8 +53,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { id: postId } = await context.params;
-    const body = await request.json();
-    const value = body.value as number;
+    let body: any;
+    try { body = await request.json(); } catch { return NextResponse.json({ error: "Invalid JSON" }, { status: 400 }); }
+    const value = typeof body?.value === "number" ? body.value : NaN;
 
     if (![1, -1, 0].includes(value)) {
       return NextResponse.json({ error: "value must be 1, -1, or 0" }, { status: 400 });

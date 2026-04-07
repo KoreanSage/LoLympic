@@ -141,8 +141,9 @@ function wrapText(
  * Used to embed fonts in SVG for server-side rendering where system fonts
  * may not include Arabic, Hindi, etc.
  */
-/** In-memory font cache to avoid re-downloading per request */
+/** In-memory font cache with max 20 entries (LRU-style eviction) */
 const _fontCache = new Map<string, { base64: string; format: string }>();
+const FONT_CACHE_MAX = 20;
 
 async function fetchFontAsBase64(fontFamily: string, text: string, weight: number = 700): Promise<{ base64: string; format: string } | null> {
   const cacheKey = `${fontFamily}:${weight}`;
@@ -170,6 +171,10 @@ async function fetchFontAsBase64(fontFamily: string, text: string, weight: numbe
     if (!fontRes.ok) return null;
     const buf = Buffer.from(await fontRes.arrayBuffer());
     const result = { base64: buf.toString("base64"), format: match[2] };
+    if (_fontCache.size >= FONT_CACHE_MAX) {
+      const oldest = _fontCache.keys().next().value;
+      if (oldest) _fontCache.delete(oldest);
+    }
     _fontCache.set(cacheKey, result);
     return result;
   } catch {
@@ -251,9 +256,10 @@ function buildSvgOverlay(
       return `<tspan x="${textX}" y="${ly}">${escapeXml(line)}</tspan>`;
     }).join("");
 
+    const safeFontFamily = escapeXml(fontFamily);
     // Stroke (outline) for meme text readability
     elements.push(
-      `<text font-family="${fontFamily}" font-size="${fontSize}" font-weight="${fontWeight}" ` +
+      `<text font-family="${safeFontFamily}" font-size="${fontSize}" font-weight="${fontWeight}" ` +
       `text-anchor="${textAnchor}" fill="${strokeColor}" ` +
       `stroke="${strokeColor}" stroke-width="${strokeWidth * 2}" stroke-linejoin="round" ` +
       `paint-order="stroke">${tspans}</text>`
@@ -261,7 +267,7 @@ function buildSvgOverlay(
 
     // Main text
     elements.push(
-      `<text font-family="${fontFamily}" font-size="${fontSize}" font-weight="${fontWeight}" ` +
+      `<text font-family="${safeFontFamily}" font-size="${fontSize}" font-weight="${fontWeight}" ` +
       `text-anchor="${textAnchor}" fill="${color}">${tspans}</text>`
     );
   }
@@ -305,10 +311,11 @@ let _watermarkLogoCache: Buffer | null = null;
  * Load the watermark logo PNG from public/watermark-logo.png.
  * Cached in memory after first load.
  */
-function loadWatermarkLogo(): Buffer {
+async function loadWatermarkLogo(): Promise<Buffer> {
   if (_watermarkLogoCache) return _watermarkLogoCache;
+  const fsp = await import("fs/promises");
   const logoPath = path.join(process.cwd(), "public", "watermark-logo.png");
-  _watermarkLogoCache = fs.readFileSync(logoPath);
+  _watermarkLogoCache = await fsp.readFile(logoPath);
   return _watermarkLogoCache;
 }
 
@@ -317,7 +324,7 @@ function loadWatermarkLogo(): Buffer {
  * Returns the composited bar as a Buffer.
  */
 async function buildWatermarkBar(imageWidth: number, barHeight: number): Promise<Buffer> {
-  const logo = loadWatermarkLogo();
+  const logo = await loadWatermarkLogo();
 
   // Resize logo to fit within bar (60% of bar height, maintain aspect ratio)
   const logoTargetHeight = Math.max(10, Math.round(barHeight * 0.5));

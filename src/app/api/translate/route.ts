@@ -15,8 +15,7 @@ import { updateRankingScore } from "@/lib/ranking";
 import { runLamaInpainting } from "@/lib/replicate";
 import { generateInpaintingMask } from "@/lib/mask-generator";
 import sharp from "sharp";
-import satori from "satori";
-import { Resvg } from "@resvg/resvg-js";
+// satori and Resvg are imported dynamically where used to reduce cold-start
 
 const TRANSLATE_LANGUAGES = ["ko", "en", "ja", "zh", "es", "hi", "ar"] as const;
 
@@ -46,6 +45,23 @@ const USE_R2 = !!(
   process.env.R2_BUCKET_NAME
 );
 const USE_BLOB = !USE_R2 && !!process.env.BLOB_READ_WRITE_TOKEN;
+
+// Cached S3 client for R2 storage
+let _s3Client: any = null;
+async function getS3Client() {
+  if (!_s3Client) {
+    const { S3Client } = await import("@aws-sdk/client-s3");
+    _s3Client = new S3Client({
+      region: "auto",
+      endpoint: process.env.R2_ENDPOINT!,
+      credentials: {
+        accessKeyId: process.env.R2_ACCESS_KEY_ID!,
+        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
+      },
+    });
+  }
+  return _s3Client;
+}
 
 let genAI: GoogleGenerativeAI | null = null;
 function getGenAI() {
@@ -253,15 +269,8 @@ async function saveGeneratedImage(
   const contentType = mimeMap[ext] || "image/jpeg";
 
   if (USE_R2) {
-    const { S3Client, PutObjectCommand } = await import("@aws-sdk/client-s3");
-    const s3 = new S3Client({
-      region: "auto",
-      endpoint: process.env.R2_ENDPOINT!,
-      credentials: {
-        accessKeyId: process.env.R2_ACCESS_KEY_ID!,
-        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
-      },
-    });
+    const { PutObjectCommand } = await import("@aws-sdk/client-s3");
+    const s3 = await getS3Client();
     await s3.send(new PutObjectCommand({
       Bucket: process.env.R2_BUCKET_NAME!,
       Key: filename,
@@ -809,7 +818,16 @@ async function generateTranslatedImageForPayload(
             // Background color: skip gray/semi-transparent backgrounds that degrade quality
             // Only keep truly intentional backgrounds (solid white/black for screenshot memes)
             const rawBg = (seg.backgroundColor || "transparent").toLowerCase();
-            const isGrayish = /^(#[89a-f][0-9a-f]{5}|#[89a-f]{3}|rgba?\(.*(128|150|170|180|190|200).*\)|gray|grey)/i.test(rawBg);
+            // Detect gray-ish backgrounds: hex colors with R,G,B all between 100-220, or named grays
+            const isGrayish = (() => {
+              if (/^(gray|grey|silver)/i.test(rawBg)) return true;
+              const hexMatch = rawBg.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+              if (hexMatch) {
+                const [r, g, b] = [parseInt(hexMatch[1], 16), parseInt(hexMatch[2], 16), parseInt(hexMatch[3], 16)];
+                return r >= 100 && r <= 220 && g >= 100 && g <= 220 && b >= 100 && b <= 220;
+              }
+              return false;
+            })();
             const bgColor = (rawBg === "transparent" || isGrayish) ? "transparent" : rawBg;
 
             return {
@@ -844,6 +862,7 @@ async function generateTranslatedImageForPayload(
       },
     };
 
+    const { default: satori } = await import("satori");
     const svg = await satori(element as React.ReactNode, {
       width: safeW,
       height: safeH,
@@ -857,6 +876,7 @@ async function generateTranslatedImageForPayload(
       ],
     });
 
+    const { Resvg } = await import("@resvg/resvg-js");
     const resvg = new Resvg(svg, {
       fitTo: { mode: "width" as const, value: safeW },
     });

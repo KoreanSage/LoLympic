@@ -4,6 +4,9 @@ import sharp from "sharp";
 import path from "path";
 import fs from "fs/promises";
 
+/** Simple in-memory rate limiter for download endpoint */
+const downloadRateMap = new Map<string, number>();
+
 /**
  * GET /api/posts/[id]/download
  * Returns the meme image with a "mimzy.gg" watermark bar at the bottom.
@@ -15,6 +18,16 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Basic rate limiting via IP (10 downloads per minute)
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    const rateKey = `dl:${ip}`;
+    const dlCount = downloadRateMap.get(rateKey) || 0;
+    if (dlCount >= 10) {
+      return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
+    }
+    downloadRateMap.set(rateKey, dlCount + 1);
+    setTimeout(() => downloadRateMap.delete(rateKey), 60000);
+
     const { id } = await params;
     const { searchParams } = new URL(request.url);
     const lang = searchParams.get("lang");
@@ -119,7 +132,7 @@ export async function GET(
     return new NextResponse(Buffer.from(result) as unknown as BodyInit, {
       headers: {
         "Content-Type": "image/webp",
-        "Content-Disposition": `attachment; filename="mimzy-${safeTitle}.webp"`,
+        "Content-Disposition": `attachment; filename="mimzy-meme.webp"; filename*=UTF-8''mimzy-${encodeURIComponent(safeTitle)}.webp`,
         "Cache-Control": "public, max-age=3600",
       },
     });

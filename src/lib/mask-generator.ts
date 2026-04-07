@@ -36,7 +36,8 @@ export async function generateInpaintingMask(
   const maxCoord = Math.max(
     ...targetSegments.map(s => Math.max(s.boxX!, s.boxY!, s.boxX! + s.boxWidth!, s.boxY! + s.boxHeight!))
   );
-  const normFactor = maxCoord > 1.5 ? 1000 : 1; // Gemini sometimes uses 0-1000
+  // Detect coordinate range: 0-1 (fractional), 0-100 (percentage), or 0-1000
+  const normFactor = maxCoord > 100 ? 1000 : maxCoord > 1.5 ? 100 : 1;
 
   const svgRects = targetSegments.map(seg => {
     const x = seg.boxX! / normFactor;
