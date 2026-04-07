@@ -52,12 +52,20 @@ Example output: ["funny","relatable","work","monday mood"]`,
     try {
       const imgRes = await fetch(imageUrl, { signal: AbortSignal.timeout(5000) });
       if (imgRes.ok) {
-        const buffer = await imgRes.arrayBuffer();
-        const base64 = Buffer.from(buffer).toString("base64");
-        const mimeType = imgRes.headers.get("content-type") || "image/jpeg";
-        parts.push({
-          inlineData: { mimeType, data: base64 },
-        });
+        // Skip images larger than 5MB to avoid excessive memory usage
+        const contentLength = parseInt(imgRes.headers.get("content-length") || "0", 10);
+        if (contentLength > 0 && contentLength > 5 * 1024 * 1024) {
+          // Image too large, skip
+        } else {
+          const buffer = await imgRes.arrayBuffer();
+          if (buffer.byteLength <= 5 * 1024 * 1024) {
+            const base64 = Buffer.from(buffer).toString("base64");
+            const mimeType = imgRes.headers.get("content-type") || "image/jpeg";
+            parts.push({
+              inlineData: { mimeType, data: base64 },
+            });
+          }
+        }
       }
     } catch {
       // Skip image if fetch fails — still generate tags from text
@@ -66,13 +74,22 @@ Example output: ["funny","relatable","work","monday mood"]`,
 
   const model = ai.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
-  const result = await model.generateContent({
-    contents: [{ role: "user", parts }],
-    generationConfig: {
-      temperature: 0.3,
-      maxOutputTokens: 200,
-    },
-  });
+  // Timeout: abort if Gemini takes more than 15 seconds
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
+
+  let result;
+  try {
+    result = await model.generateContent({
+      contents: [{ role: "user", parts }],
+      generationConfig: {
+        temperature: 0.3,
+        maxOutputTokens: 200,
+      },
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
 
   const text = result.response.text().trim();
 
