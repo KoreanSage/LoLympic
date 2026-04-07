@@ -7,13 +7,12 @@ import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 // Helper: pick a random battle pair
 // ---------------------------------------------------------------------------
 async function getRandomPair(excludePostIds: string[], userId?: string, userLanguage?: string) {
-  // Build where clause — only recent posts for better image quality
-  const BATTLE_RECENT_DAYS = 7;
-  const recentCutoff = new Date(Date.now() - BATTLE_RECENT_DAYS * 24 * 60 * 60 * 1000);
+  // Only posts created after this date appear in battles (quality cutoff)
+  const BATTLE_CUTOFF = new Date("2026-04-06T00:00:00Z");
   const where: any = {
     status: "PUBLISHED",
     visibility: "PUBLIC",
-    createdAt: { gte: recentCutoff },
+    createdAt: { gte: BATTLE_CUTOFF },
     // Must have at least one translatable image (not video, not GIF)
     images: {
       some: {
@@ -148,13 +147,12 @@ async function getRandomPair(excludePostIds: string[], userId?: string, userLang
 // Fallback: no language WHERE filter, but still fetch translations for display
 // ---------------------------------------------------------------------------
 async function getRandomPairFallback(excludePostIds: string[], userId?: string, userLanguage?: string) {
-  // Fallback: expand to 30 days if 7-day pool is too small
-  const FALLBACK_DAYS = 30;
-  const fallbackCutoff = new Date(Date.now() - FALLBACK_DAYS * 24 * 60 * 60 * 1000);
+  // Fallback: same cutoff date, just without language filter
+  const BATTLE_CUTOFF = new Date("2026-04-06T00:00:00Z");
   const where: any = {
     status: "PUBLISHED",
     visibility: "PUBLIC",
-    createdAt: { gte: fallbackCutoff },
+    createdAt: { gte: BATTLE_CUTOFF },
     images: {
       some: {
         OR: [
