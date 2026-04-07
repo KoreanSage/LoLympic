@@ -7,6 +7,7 @@ import { backfillMissingTitleTranslations } from "@/lib/translate-backfill";
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 import { awardXp, XP_AWARDS } from "@/lib/xp";
 import { getBlockedUserIds } from "@/lib/block";
+import { generateAutoTags } from "@/lib/auto-tags";
 
 const VALID_LANGUAGES = ["ko", "en", "ja", "zh", "es", "hi", "ar"] as const;
 
@@ -310,6 +311,13 @@ export async function POST(request: NextRequest) {
 
     // If images are present and auto-translate is desired, the client should
     // call POST /api/translate separately after post creation.
+
+    // Auto-generate tags if none provided (fire and forget)
+    if (!tags || tags.length === 0) {
+      const imageUrl = post.images?.[0]?.originalUrl ?? null;
+      generateAutoTags({ postId: post.id, title, body: postBody ?? null, imageUrl })
+        .catch((e) => console.error("Auto-tag generation failed:", e));
+    }
 
     // Award XP for creating a post (fire and forget)
     awardXp(user.id, XP_AWARDS.POST_CREATED).catch(() => {});
