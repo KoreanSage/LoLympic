@@ -356,18 +356,6 @@ export default function ChampionshipPage() {
   const uploadedCount = posts.length;
   const totalReps = electedCandidates.length || 8;
 
-  if (loading) {
-    return (
-      <MainLayout showSidebar={false}>
-        <div className="max-w-4xl mx-auto px-4 py-8">
-          <div className="flex items-center justify-center py-20">
-            <div className="w-8 h-8 border-2 border-[#c9a84c] border-t-transparent rounded-full animate-spin" />
-          </div>
-        </div>
-      </MainLayout>
-    );
-  }
-
   // Countdown timer for inactive state
   const [countdown, setCountdown] = useState<string>("");
   useEffect(() => {
@@ -402,6 +390,18 @@ export default function ChampionshipPage() {
     if (!c) return null;
     return { rank: idx + 1, countryName: c.nameEn || "", flagEmoji: c.flagEmoji || "", eligible: idx < 8 };
   }, [userCountryId, top8Countries]);
+
+  if (loading) {
+    return (
+      <MainLayout showSidebar={false}>
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          <div className="flex items-center justify-center py-20">
+            <div className="w-8 h-8 border-2 border-[#c9a84c] border-t-transparent rounded-full animate-spin" />
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   // Inactive state (no championship running)
   if (!championship) {
