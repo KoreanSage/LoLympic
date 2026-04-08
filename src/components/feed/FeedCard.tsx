@@ -603,7 +603,7 @@ function FeedCardInner({
       {!isCommunity && !isTextOnly && (
         <Link href={`/post/${id}`} className="block" onClick={isVideo ? (e: any) => e.preventDefault() : undefined}>
           <div className="px-4 pb-2">
-            <div className={`overflow-hidden border border-border flex items-center justify-center bg-black/20 relative max-h-[600px] rounded-lg`}>
+            <div className={`overflow-hidden border border-border flex items-center justify-center bg-black/20 relative rounded-lg`}>
               {/* Floating translation toggle on image */}
               {(segments.length > 0 || effectiveTranslatedImageUrl) && (
                 <button
