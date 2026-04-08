@@ -459,7 +459,8 @@ model TranslationPayload {
   status           TranslationPayloadStatus @default(PENDING)
   confidence       Float?                   // AI confidence score 0.0–1.0
   memeType         String?                  // "A" (overlay), "B" (screenshot), "C" (multi-panel)
-  translatedImageUrl String?                // Pre-rendered image with translated text burned in
+  translatedImageUrl String?                // Pre-rendered image with translated text burned in (first image)
+  translatedImageUrls Json?                 // Multi-image: ["url0", "url1", "url2"] per imageIndex
   translatedTitle  String?                  // Translated post title
   translatedBody   String?                  // Translated post body
   creatorType      CreatorType              @default(AI)

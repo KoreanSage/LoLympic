@@ -344,7 +344,8 @@ export default function PostPageClient() {
         }
         imageUrl={image?.originalUrl || ""}
         cleanImageUrl={image?.cleanUrl || undefined}
-        translatedImageUrl={(post.images?.length ?? 0) > 1 ? undefined : (payload?.translatedImageUrl || undefined)}
+        translatedImageUrl={payload?.translatedImageUrl || undefined}
+        translatedImageUrls={payload?.translatedImageUrls as string[] | undefined}
         mimeType={image?.mimeType || undefined}
         segments={segments}
         memeType={payload?.memeType || undefined}

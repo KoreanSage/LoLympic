@@ -636,16 +636,25 @@ async function generateTranslatedImageForPayload(
     strokeWidth?: number;
     isUppercase?: boolean;
     backgroundColor?: string;
+    imageIndex?: number;
   }>,
   targetLanguage: string
 ): Promise<void> {
   try {
-    // 1. Find the image for this post (need dimensions + clean URL)
-    const postImage = await prisma.postImage.findFirst({
+    // 1. Find ALL images for this post (multi-image support)
+    const postImages = await prisma.postImage.findMany({
       where: { postId },
       orderBy: { orderIndex: "asc" },
-      select: { cleanUrl: true, originalUrl: true, mimeType: true },
+      select: { cleanUrl: true, originalUrl: true, mimeType: true, orderIndex: true },
     });
+
+    if (postImages.length === 0) {
+      console.warn(`No images found for post ${postId}, skipping translated image`);
+      return;
+    }
+
+    const postImage = postImages[0];
+    const isMultiImage = postImages.length > 1;
 
     if (!postImage) {
       console.warn(`No image found for post ${postId}, skipping translated image`);
@@ -889,16 +898,129 @@ async function generateTranslatedImageForPayload(
     if (!composedMeta.width || !composedMeta.height) throw new Error("Translated WebP validation failed");
     const url = await saveGeneratedImage(composedBuffer, `translated_satori_${targetLanguage}`, ".webp");
 
-    // 6. Update DB
+    // 6. Update DB — first image URL
+    const updateData: Record<string, any> = { translatedImageUrl: url };
+
+    // 7. Multi-image: render remaining images and store as translatedImageUrls
+    if (isMultiImage) {
+      const imageUrls: string[] = [url]; // index 0 already done
+
+      for (let imgIdx = 1; imgIdx < postImages.length; imgIdx++) {
+        try {
+          const img = postImages[imgIdx];
+          const imgSegs = segments.filter(s => (s.imageIndex ?? 0) === imgIdx);
+          if (imgSegs.length === 0 || !imgSegs.some(s => s.semanticRole !== "WATERMARK" && s.translatedText?.trim())) {
+            imageUrls.push(""); // no translation needed for this image
+            continue;
+          }
+
+          // Get base image (clean or original)
+          const imgBaseUrl = img.cleanUrl || img.originalUrl;
+          if (!imgBaseUrl) { imageUrls.push(""); continue; }
+
+          const resolvedImgUrl = imgBaseUrl.startsWith("http") ? imgBaseUrl : `${appUrl}${imgBaseUrl}`;
+          const imgRes = await fetch(resolvedImgUrl);
+          if (!imgRes.ok) { imageUrls.push(""); continue; }
+          const imgBuffer = Buffer.from(await imgRes.arrayBuffer());
+          const imgMeta = await sharp(imgBuffer).metadata();
+          const imgW = imgMeta.width || 800;
+          const imgH = imgMeta.height || 800;
+
+          const visSegs = imgSegs.filter(s => s.semanticRole !== "WATERMARK" && s.translatedText?.trim());
+          const imgFullText = visSegs.map(s => s.translatedText).join("");
+          const imgFontFamily = getFontFamilyForLang(targetLanguage);
+          const imgFontBuffer = await fetchGoogleFont(imgFontFamily, imgFullText);
+
+          const imgMaxCoord = Math.max(...visSegs.map(s => Math.max(s.boxX + s.boxWidth, s.boxY + s.boxHeight)));
+          const imgNorm = imgMaxCoord > 1.5 ? (imgMaxCoord > 100 ? 1000 : imgMaxCoord) : 1;
+          const imgSafeW = Math.min(imgW, 2048);
+          const imgSafeH = Math.min(imgH, 2048);
+
+          const imgSatoriBuf = imgMeta.format === "webp"
+            ? Buffer.from(await sharp(imgBuffer).png().toBuffer())
+            : imgBuffer;
+          const imgBase64 = imgSatoriBuf.toString("base64");
+          const imgMime = imgMeta.format === "jpeg" ? "image/jpeg" : "image/png";
+          const imgDataUri = `data:${imgMime};base64,${imgBase64}`;
+
+          const imgElement = {
+            type: "div",
+            props: {
+              style: { display: "flex", width: "100%", height: "100%", position: "relative" as const },
+              children: [
+                { type: "img", props: { src: imgDataUri, style: { position: "absolute" as const, top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover" as const } } },
+                ...visSegs.map((seg) => {
+                  const x = seg.boxX / imgNorm;
+                  const y = seg.boxY / imgNorm;
+                  const w = seg.boxWidth / imgNorm;
+                  const h = seg.boxHeight / imgNorm;
+                  const boxHPx = h * imgSafeH;
+                  const boxWPx = w * imgSafeW;
+                  const baseSize = boxHPx * 0.7;
+                  const cpl = Math.max(1, Math.floor(boxWPx / (baseSize * 0.55)));
+                  const lines = Math.ceil((seg.translatedText?.length || 1) / cpl);
+                  const fontSize = seg.fontSizePixels && seg.fontSizePixels > 8
+                    ? Math.max(12, Math.min(seg.fontSizePixels * 1.1, boxHPx * 0.85))
+                    : lines > 1 ? Math.max(12, boxHPx / (lines * 1.3)) : Math.max(12, Math.min(baseSize, 72));
+                  const textColor = seg.color || "#FFFFFF";
+                  const isLight = textColor.toLowerCase().includes("fff") || textColor === "white";
+                  const stroke = isLight
+                    ? "-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, -1px 0 0 #000, 1px 0 0 #000, 0 -1px 0 #000, 0 1px 0 #000"
+                    : "-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff";
+                  const rawBg = (seg.backgroundColor || "transparent").toLowerCase();
+                  const isGrayish = /^(gray|grey|silver)/i.test(rawBg) || (() => {
+                    const m = rawBg.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+                    return m ? [parseInt(m[1],16), parseInt(m[2],16), parseInt(m[3],16)].every(v => v >= 100 && v <= 220) : false;
+                  })();
+                  const bgColor = (rawBg === "transparent" || isGrayish) ? "transparent" : rawBg;
+                  return {
+                    type: "div",
+                    props: {
+                      style: {
+                        position: "absolute" as const, left: `${x*100}%`, top: `${y*100}%`, width: `${w*100}%`, height: `${h*100}%`,
+                        display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center" as const,
+                        fontFamily: "Noto Sans", fontSize: `${fontSize}px`, fontWeight: 900, color: textColor,
+                        backgroundColor: bgColor, textShadow: stroke, lineHeight: 1.2,
+                        padding: bgColor !== "transparent" ? "2px 6px" : "0",
+                        wordBreak: "keep-all" as const, overflowWrap: "break-word" as const,
+                      },
+                      children: seg.translatedText,
+                    },
+                  };
+                }),
+              ],
+            },
+          };
+
+          const { default: satoriLib } = await import("satori");
+          const imgSvg = await satoriLib(imgElement as any, {
+            width: imgSafeW, height: imgSafeH,
+            fonts: [{ name: "Noto Sans", data: Buffer.from(imgFontBuffer), style: "normal" as const, weight: 900 }],
+          });
+          const { Resvg: ResvgLib } = await import("@resvg/resvg-js");
+          const imgResvg = new ResvgLib(imgSvg, { fitTo: { mode: "width" as const, value: imgSafeW } });
+          const imgPng = Buffer.from(imgResvg.render().asPng());
+          const imgSharp = (await import("sharp")).default;
+          const imgWebp = await imgSharp(imgPng).webp({ quality: 70 }).toBuffer();
+          const imgUrl = await saveGeneratedImage(imgWebp, `translated_satori_${targetLanguage}_img${imgIdx}`, ".webp");
+          imageUrls.push(imgUrl);
+          console.debug(`[Multi] Image ${imgIdx} translated for ${payloadId}: ${imgUrl}`);
+        } catch (imgErr) {
+          console.error(`[Multi] Image ${imgIdx} failed:`, imgErr);
+          imageUrls.push("");
+        }
+      }
+
+      updateData.translatedImageUrls = imageUrls;
+    }
+
     await prisma.translationPayload.update({
       where: { id: payloadId },
-      data: { translatedImageUrl: url },
+      data: updateData,
     });
-    console.debug(`Translated image (Satori) saved for payload ${payloadId}: ${url}`);
+    console.debug(`Translated image(s) saved for payload ${payloadId}`);
   } catch (err) {
     console.error(`[Satori] Compose failed for payload ${payloadId}:`, err);
-    // No fallback — Satori + LaMa is the only pipeline.
-    // Frontend will use MemeRenderer canvas as client-side fallback.
   }
 }
 
@@ -1323,6 +1445,7 @@ Return JSON only (no markdown fences):
           strokeColor: s.style.strokeColor,
           strokeWidth: s.style.strokeWidth,
           isUppercase: undefined,
+          imageIndex: s.imageIndex,
         }));
 
         // Translate title & body (flash-lite)

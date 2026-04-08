@@ -43,6 +43,7 @@ interface PostDetailProps {
   imageUrl: string;
   cleanImageUrl?: string;
   translatedImageUrl?: string;
+  translatedImageUrls?: string[];
   mimeType?: string;
   segments: TranslationSegmentData[];
   memeType?: string;
@@ -121,6 +122,7 @@ export default function PostDetail({
   imageUrl,
   cleanImageUrl,
   translatedImageUrl,
+  translatedImageUrls,
   mimeType,
   segments,
   memeType,
@@ -642,21 +644,24 @@ export default function PostDetail({
             </div>
           </div>
         ) : images && images.length > 1 ? (
-          /* Multi-image carousel — show original images (no canvas overlay) */
+          /* Multi-image carousel with per-image translation support */
           <div className={`overflow-hidden border border-border rounded-xl`}>
             <ImageCarousel>
-              {images.map((img, i) => (
-                <div key={i} className="flex items-center justify-center bg-black/5 dark:bg-black/20">
-                  <Image
-                    src={img.originalUrl}
-                    alt={`${title} ${i + 1}`}
-                    width={800}
-                    height={800}
-                    className="w-full h-auto object-contain"
-                    unoptimized
-                  />
-                </div>
-              ))}
+              {images.map((img, i) => {
+                const translatedUrl = showTranslation && translatedImageUrls?.[i];
+                return (
+                  <div key={i} className="flex items-center justify-center bg-black/5 dark:bg-black/20">
+                    <Image
+                      src={translatedUrl || img.originalUrl}
+                      alt={`${title} ${i + 1}`}
+                      width={800}
+                      height={800}
+                      className="w-full h-auto object-contain"
+                      unoptimized
+                    />
+                  </div>
+                );
+              })}
             </ImageCarousel>
           </div>
         ) : (
