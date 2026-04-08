@@ -215,6 +215,7 @@ export default function PostDetail({
 
   const sessionUsername = session?.user?.username;
   const isOwnPost = sessionUsername === author.username;
+  const isAdmin = session?.user?.role === "ADMIN" || session?.user?.role === "SUPER_ADMIN";
 
   // Close more menu on outside click
   useEffect(() => {
@@ -385,6 +386,39 @@ export default function PostDetail({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2z" />
                   </svg>
                   {t("post.reportPost")}
+                </button>
+              )}
+              {isAdmin && (
+                <button
+                  onClick={async () => {
+                    setShowMoreMenu(false);
+                    try {
+                      toast("Deleting translations...", "info");
+                      const delRes = await fetch(`/api/posts/${id}/retranslate`, { method: "POST" });
+                      const delData = await delRes.json();
+                      if (!delRes.ok) { toast(`Error: ${delData.error}`, "error"); return; }
+                      toast(`Deleted ${delData.deletedPayloads} translations. Retranslating...`, "info");
+                      const allLangs = ["ko", "en", "ja", "zh", "es", "hi", "ar"].filter(l => l !== delData.sourceLanguage);
+                      const transRes = await fetch("/api/translate", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ postId: id, sourceLanguage: delData.sourceLanguage, targetLanguages: allLangs }),
+                      });
+                      if (transRes.ok) {
+                        toast("Retranslation complete! Refresh to see.", "success");
+                      } else {
+                        toast("Retranslation failed", "error");
+                      }
+                    } catch {
+                      toast("Retranslation failed", "error");
+                    }
+                  }}
+                  className="w-full px-4 py-2.5 text-left text-sm text-[#c9a84c] hover:bg-background-elevated transition-colors flex items-center gap-2 border-t border-border"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182" />
+                  </svg>
+                  Retranslate
                 </button>
               )}
             </div>
