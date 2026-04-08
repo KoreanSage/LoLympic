@@ -188,7 +188,8 @@ async function fetchFontAsBase64(fontFamily: string, text: string, weight: numbe
  */
 function detectFontForText(text: string): string | null {
   if (/[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]/.test(text)) return "Noto+Sans+Arabic";
-  if (/[\u0900-\u097F]/.test(text)) return "Noto+Sans+Devanagari";
+  // Hinglish uses Roman script, so Devanagari detection is no longer needed for Hindi translations
+  // if (/[\u0900-\u097F]/.test(text)) return "Noto+Sans+Devanagari";
   return null;
 }
 

@@ -35,7 +35,7 @@ LANGUAGE_INSTRUCTIONS: dict[str, str] = {
     "zh": "Chinese (中文): Compact, efficient. 网络用语, twisted four-character idioms, phonetic puns. Maximize impact per character.",
     "en": "English: Sarcastic, exaggerated. Irony, self-deprecation, absurdist escalation. Internet-native phrasing (all caps, deliberate misspellings).",
     "es": "Spanish (Español): Expressive, colloquial. Regional slang, diminutives for comedy, exaggerated emotion. Latin American / Iberian variations.",
-    "hi": "Hindi (हिन्दी): Bollywood-influenced. Hinglish mix, filmi dialogues. Colloquial Delhi/Mumbai street Hindi.",
+    "hi": "Hinglish (Roman script): CRITICAL — Write ALL Hindi in Roman/Latin script ONLY (e.g. 'Bhai ye kya hai' NOT Devanagari). Bollywood-influenced, filmi dialogues. Always Roman script.",
     "ar": "Arabic (العربية): Rich, expressive. MSA with dialect (Egyptian/Gulf). Internet-native Arabic expressions. Egyptian dialect when unsure.",
 }
 

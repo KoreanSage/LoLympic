@@ -81,7 +81,7 @@ const LANGUAGE_INSTRUCTIONS: Record<string, string> = {
   zh: "Chinese (中文): Compact and efficient. Chinese internet humor uses 网络用语, four-character idioms twisted for comedy, and phonetic puns. Keep character count low.",
   en: "English: Sarcastic and exaggerated. English memes lean into irony, self-deprecation, and absurdist escalation. Use internet-native phrasing.",
   es: "Spanish (Español): Expressive and colloquial. Spanish memes use regional slang, diminutives for comedic effect, and exaggerated emotion.",
-  hi: "Hindi (हिन्दी): Bollywood-influenced humor with dramatic flair. Hindi memes use Hinglish (Hindi-English mix), filmi dialogues, and cultural references.",
+  hi: "Hinglish (Roman script Hindi): CRITICAL — Write ALL Hindi in Roman/Latin script (e.g. 'Bhai ye kya hai' NOT Devanagari). Bollywood-influenced humor, filmi dialogues, cultural references. Always Roman script.",
   ar: "Arabic (العربية): Rich and expressive. Arabic memes blend Modern Standard Arabic with dialect (Egyptian/Gulf). Use internet-native Arabic expressions.",
 };
 

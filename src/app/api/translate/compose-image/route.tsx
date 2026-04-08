@@ -12,7 +12,7 @@ function getFontFamily(lang: string): string {
     case "ja": return "Noto+Sans+JP";
     case "zh": return "Noto+Sans+SC";
     case "ar": return "Noto+Sans+Arabic";
-    case "hi": return "Noto+Sans+Devanagari";
+    case "hi": return "Noto+Sans"; // Hinglish uses Roman/Latin script
     default:   return "Noto+Sans"; // en, es, etc.
   }
 }
