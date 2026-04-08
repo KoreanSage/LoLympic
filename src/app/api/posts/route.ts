@@ -155,6 +155,7 @@ export async function GET(request: NextRequest) {
                   id: true,
                   memeType: true,
                   translatedImageUrl: true,
+                  translatedImageUrls: true,
                   translatedTitle: true,
                   translatedBody: true,
                   segments: {
