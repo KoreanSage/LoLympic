@@ -564,40 +564,23 @@ function FeedCardInner({
         </div>
       )}
 
-      {/* Translation bar above image (meme posts only) */}
-      {!isCommunity && !isTextOnly && (segments.length > 0 || effectiveTranslatedImageUrl) && (
-        <div className="flex items-center justify-between mx-4 px-3 py-2 bg-background-surface border border-border rounded-t-lg">
-          <div className="flex items-center gap-2">
-            <TranslationToggle
-              showTranslation={showTranslation}
-              onChange={setShowTranslation}
-            />
-            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium ${
-              showTranslation
-                ? "bg-green-500/15 text-green-400"
-                : "bg-background-elevated text-foreground-subtle"
-            }`}>
-              {showTranslation ? (
-                <>
-                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  {t("feed.translated")}
-                </>
-              ) : (
-                t("feed.original")
-              )}
-            </span>
-          </div>
-          {/* Flag indicators removed */}
-        </div>
-      )}
-
       {/* Meme image(s) — only for non-community posts with images */}
       {!isCommunity && !isTextOnly && (
         <Link href={`/post/${id}`} className="block" onClick={isVideo ? (e: any) => e.preventDefault() : undefined}>
           <div className="px-4 pb-2">
-            <div className={`overflow-hidden border border-border flex items-center justify-center bg-black/20 relative ${(segments.length > 0 || effectiveTranslatedImageUrl) ? "rounded-b-lg border-t-0" : "rounded-lg"}`}>
+            <div className={`overflow-hidden border border-border flex items-center justify-center bg-black/20 relative max-h-[600px] rounded-lg`}>
+              {/* Floating translation toggle on image */}
+              {(segments.length > 0 || effectiveTranslatedImageUrl) && (
+                <button
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowTranslation(!showTranslation); }}
+                  className="absolute top-3 right-3 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm text-white text-xs font-medium hover:bg-black/75 transition-all shadow-lg"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+                  </svg>
+                  {showTranslation ? t("feed.original") : t("feed.translated")}
+                </button>
+              )}
               {/* Video playback */}
               {isVideo ? (
                 <video
@@ -645,7 +628,7 @@ function FeedCardInner({
                   })}
                 </ImageCarousel>
               ) : showTranslation && effectiveTranslatedImageUrl ? (
-                <Image src={effectiveTranslatedImageUrl} alt={title} width={800} height={800} className="w-full h-auto object-contain" sizes="(max-width: 768px) 100vw, 600px" unoptimized />
+                <Image src={effectiveTranslatedImageUrl} alt={title} width={800} height={800} className="w-full h-auto object-contain max-h-[600px]" sizes="(max-width: 768px) 100vw, 600px" unoptimized />
               ) : isTypeB && segments.length > 0 ? (
                 showTranslation ? (
                   <ScreenshotRenderer
@@ -654,10 +637,10 @@ function FeedCardInner({
                     originalImageUrl={imageUrl}
                   />
                 ) : (
-                  <Image src={imageUrl} alt={title} width={800} height={800} className="w-full h-auto object-contain" sizes="(max-width: 768px) 100vw, 600px" unoptimized />
+                  <Image src={imageUrl} alt={title} width={800} height={800} className="w-full h-auto object-contain max-h-[600px]" sizes="(max-width: 768px) 100vw, 600px" unoptimized />
                 )
               ) : isGif ? (
-                <Image src={imageUrl} alt={title} width={800} height={800} className="w-full h-auto object-contain" sizes="(max-width: 768px) 100vw, 600px" unoptimized />
+                <Image src={imageUrl} alt={title} width={800} height={800} className="w-full h-auto object-contain max-h-[600px]" sizes="(max-width: 768px) 100vw, 600px" unoptimized />
               ) : (
                 <MemeRenderer
                   imageUrl={imageUrl}
@@ -665,7 +648,7 @@ function FeedCardInner({
                   translatedImageUrl={effectiveTranslatedImageUrl}
                   segments={segments.filter((s: any) => (s.imageIndex ?? 0) === 0)}
                   showTranslation={showTranslation}
-                  maxHeight={undefined}
+                  maxHeight={600}
                 />
               )}
               {/* Bottom gradient for readability */}
