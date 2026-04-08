@@ -642,28 +642,21 @@ export default function PostDetail({
             </div>
           </div>
         ) : images && images.length > 1 ? (
-          /* Multi-image carousel (BEFORE single image check) */
+          /* Multi-image carousel — show original images (no canvas overlay) */
           <div className={`overflow-hidden border border-border rounded-xl`}>
             <ImageCarousel>
-              {images.map((img, i) => {
-                const imgIsGif = img.mimeType === "image/gif";
-                const imgSegments = segments.filter((s: any) => (s.imageIndex ?? 0) === i);
-                return (
-                  <div key={i} className="flex items-center justify-center bg-black/5 dark:bg-black/20">
-                    {imgIsGif ? (
-                      <Image src={img.originalUrl} alt={title} width={800} height={800} className="w-full h-auto object-contain" unoptimized />
-                    ) : (
-                      <MemeRenderer
-                        imageUrl={img.originalUrl}
-                        cleanImageUrl={img.cleanUrl || undefined}
-                        translatedImageUrl={i === 0 ? translatedImageUrl : undefined}
-                        segments={imgSegments}
-                        showTranslation={showTranslation}
-                      />
-                    )}
-                  </div>
-                );
-              })}
+              {images.map((img, i) => (
+                <div key={i} className="flex items-center justify-center bg-black/5 dark:bg-black/20">
+                  <Image
+                    src={img.originalUrl}
+                    alt={`${title} ${i + 1}`}
+                    width={800}
+                    height={800}
+                    className="w-full h-auto object-contain"
+                    unoptimized
+                  />
+                </div>
+              ))}
             </ImageCarousel>
           </div>
         ) : (

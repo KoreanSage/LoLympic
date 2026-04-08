@@ -666,9 +666,7 @@ function FeedCardInner({
               ) : images && images.length > 1 ? (
                 <ImageCarousel>
                   {images.map((img, i) => {
-                    const imgIsGif = img.mimeType === "image/gif";
                     const imgIsVideo = img.mimeType?.startsWith("video/");
-                    const imgSegments = segments.filter((s: any) => (s.imageIndex ?? 0) === i);
                     return (
                       <div key={i} className="w-full flex items-center justify-center bg-black/5 dark:bg-black/20">
                         {imgIsVideo ? (
@@ -681,17 +679,8 @@ function FeedCardInner({
                             playsInline
                             preload="metadata"
                           />
-                        ) : imgIsGif ? (
-                          <Image src={img.originalUrl} alt={title} width={img.width || 800} height={img.height || 800} className="w-full h-auto object-contain max-h-[700px]" sizes="(max-width: 768px) 100vw, 600px" unoptimized />
                         ) : (
-                          <MemeRenderer
-                            imageUrl={img.originalUrl}
-                            cleanImageUrl={img.cleanUrl || undefined}
-                            translatedImageUrl={undefined}
-                            segments={imgSegments}
-                            showTranslation={showTranslation}
-                            maxHeight={700}
-                          />
+                          <Image src={img.originalUrl} alt={title} width={img.width || 800} height={img.height || 800} className="w-full h-auto object-contain max-h-[700px]" sizes="(max-width: 768px) 100vw, 600px" unoptimized />
                         )}
                       </div>
                     );
