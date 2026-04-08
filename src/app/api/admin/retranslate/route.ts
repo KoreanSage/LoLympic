@@ -10,12 +10,11 @@ export const maxDuration = 60;
 /**
  * POST /api/admin/retranslate
  *
- * Phase 1: Deletes existing translations for specified languages.
- * Returns list of affected postIds so the client can trigger retranslation
- * via /api/translate (which handles full image + text translation).
+ * Phase 1: Deletes ALL existing translations for specified languages.
+ * Returns ALL published posts so the client can trigger full retranslation
+ * via /api/translate (handles image + text + culture notes).
  *
  * Body: { targetLanguages: ["hi", "ar"] }
- * Response: { postIds: [...], deletedPayloads, deletedNotes }
  */
 export async function POST(request: NextRequest) {
   try {
@@ -45,46 +44,15 @@ export async function POST(request: NextRequest) {
 
     const langCodes = targetLanguages as LanguageCode[];
 
-    // Find all affected postIds
-    const affectedPayloads = await prisma.translationPayload.findMany({
-      where: { targetLanguage: { in: langCodes } },
-      select: { postId: true },
-      distinct: ["postId"],
-    });
-    const affectedPostIds = affectedPayloads.map((p) => p.postId);
-
-    if (affectedPostIds.length === 0) {
-      return NextResponse.json({
-        success: true,
-        postIds: [],
-        deletedPayloads: 0,
-        deletedNotes: 0,
-      });
-    }
-
-    // Delete translations + culture notes in a transaction
+    // Delete ALL existing translations + culture notes for target languages
     const result = await prisma.$transaction(async (tx) => {
       const deletedNotes = await tx.cultureNote.deleteMany({
-        where: {
-          language: { in: langCodes },
-          postId: { in: affectedPostIds },
-        },
+        where: { language: { in: langCodes } },
       });
 
       const deletedPayloads = await tx.translationPayload.deleteMany({
         where: { targetLanguage: { in: langCodes } },
       });
-
-      // Recalculate translation counts
-      for (const postId of affectedPostIds) {
-        const remainingCount = await tx.translationPayload.count({
-          where: { postId, status: { in: ["COMPLETED", "APPROVED"] } },
-        });
-        await tx.post.update({
-          where: { id: postId },
-          data: { translationCount: remainingCount },
-        });
-      }
 
       return {
         deletedPayloads: deletedPayloads.count,
@@ -92,19 +60,35 @@ export async function POST(request: NextRequest) {
       };
     });
 
-    // Get posts with source language info for client-side retranslation
-    const posts = await prisma.post.findMany({
-      where: {
-        id: { in: affectedPostIds },
-        status: "PUBLISHED",
+    // Recalculate translation counts for ALL posts (batch update)
+    const postsWithCounts = await prisma.post.findMany({
+      where: { status: "PUBLISHED" },
+      select: {
+        id: true,
+        _count: {
+          select: {
+            translationPayloads: { where: { status: { in: ["COMPLETED", "APPROVED"] } } },
+          },
+        },
       },
+    });
+    for (const p of postsWithCounts) {
+      await prisma.post.update({
+        where: { id: p.id },
+        data: { translationCount: p._count.translationPayloads },
+      });
+    }
+
+    // Return ALL published posts for client-side retranslation
+    const allPosts = await prisma.post.findMany({
+      where: { status: "PUBLISHED" },
       select: { id: true, sourceLanguage: true },
       orderBy: { createdAt: "desc" },
     });
 
     return NextResponse.json({
       success: true,
-      posts: posts.map((p) => ({
+      posts: allPosts.map((p) => ({
         id: p.id,
         sourceLanguage: p.sourceLanguage || "ko",
       })),
