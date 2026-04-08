@@ -201,6 +201,7 @@ function buildSvgOverlay(
   segments: TextSegment[],
   imageWidth: number,
   imageHeight: number,
+  fontFace?: { familyName: string; base64: string; format: string },
 ): string {
   const elements: string[] = [];
 
@@ -273,7 +274,12 @@ function buildSvgOverlay(
     );
   }
 
+  const fontFaceBlock = fontFace
+    ? `<defs><style>@font-face { font-family: '${fontFace.familyName}'; src: url(data:font/${fontFace.format};base64,${fontFace.base64}) format('${fontFace.format}'); }</style></defs>`
+    : "";
+
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${imageWidth}" height="${imageHeight}" viewBox="0 0 ${imageWidth} ${imageHeight}">
+${fontFaceBlock}
 ${elements.join("\n")}
 </svg>`;
 }
@@ -286,6 +292,11 @@ function mapFontFamily(hint?: string): string {
   const h = hint.toLowerCase();
   if (h.includes("impact")) return "Impact, Arial Black, sans-serif";
   if (h.includes("gothic") || h.includes("맑은")) return "'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif";
+  // Keep specific Noto Sans variants intact (Arabic, KR, JP, SC, etc.)
+  if (h.includes("noto sans arabic")) return "'Noto Sans Arabic', sans-serif";
+  if (h.includes("noto sans kr")) return "'Noto Sans KR', sans-serif";
+  if (h.includes("noto sans jp")) return "'Noto Sans JP', sans-serif";
+  if (h.includes("noto sans sc")) return "'Noto Sans SC', sans-serif";
   if (h.includes("noto")) return "'Noto Sans', 'Noto Sans CJK', sans-serif";
   if (h.includes("serif")) return "Georgia, 'Times New Roman', serif";
   if (h.includes("mono")) return "'Courier New', monospace";
@@ -424,7 +435,10 @@ export async function composeTranslatedImage(
       }
     }
 
-    const svgOverlay = buildSvgOverlay(translatableSegments, width, height);
+    const svgFontFace = (specialFont && fontData)
+      ? { familyName: specialFont.replace(/\+/g, " "), base64: fontData.base64, format: fontData.format }
+      : undefined;
+    const svgOverlay = buildSvgOverlay(translatableSegments, width, height, svgFontFace);
 
     if (specialFont && fontData) {
       // Use resvg-js with font file for non-Latin scripts (Arabic, Hindi)
