@@ -586,23 +586,52 @@ export default function PostDetail({
       )}
 
       {/* Meme viewer — only for posts with images */}
-      {!isTextOnly && <div className="space-y-0 -mt-1">
-        {/* Image(s) with floating translation toggle */}
-        {/* Priority 0: Compare mode (side-by-side original + translated) */}
-        {showCompare && translatedImageUrl ? (
-          <div className={`overflow-hidden border border-border rounded-xl relative`}>
-            {/* Floating controls for compare mode */}
-            <div className="absolute top-2 ltr:right-2 rtl:left-2 z-10 flex items-center gap-2">
+      {!isTextOnly && <div className="space-y-2">
+        {/* Translation toggle bar (outside image) */}
+        {(segments.length > 0 || translatedImageUrl) && (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowTranslation(!showTranslation)}
+                className="flex items-center gap-1.5 min-h-[40px] px-4 py-2 rounded-full bg-background-elevated border border-border text-foreground-muted text-xs font-medium hover:bg-background-surface transition-all"
+              >
+                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+                </svg>
+                {showTranslation ? t("feed.original") : t("feed.translated")}
+              </button>
+              {showTranslation && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-green-500/15 text-green-400">
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                  {t("feed.translated")}
+                </span>
+              )}
+            </div>
+            {translatedImageUrl && !showCompare && (
+              <button
+                onClick={() => setShowCompare(true)}
+                className="flex items-center gap-1.5 min-h-[40px] px-4 py-2 rounded-full bg-background-elevated border border-border text-foreground-muted text-xs font-medium hover:bg-background-surface transition-all"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7" />
+                </svg>
+                Compare
+              </button>
+            )}
+            {showCompare && (
               <button
                 onClick={() => setShowCompare(false)}
-                className="flex items-center gap-1.5 min-h-[44px] px-4 py-2.5 rounded-full bg-black/60 backdrop-blur-sm text-white text-xs font-medium hover:bg-black/75 transition-all shadow-lg whitespace-nowrap"
+                className="flex items-center gap-1.5 min-h-[40px] px-4 py-2 rounded-full bg-background-elevated border border-border text-foreground-muted text-xs font-medium hover:bg-background-surface transition-all"
               >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
                 Close
               </button>
-            </div>
+            )}
+          </div>
+        )}
+
+        {/* Compare mode */}
+        {showCompare && translatedImageUrl ? (
+          <div className={`overflow-hidden border border-border rounded-xl`}>
             <div className="grid grid-cols-2 gap-0.5 bg-border">
               <div className="bg-black/5 flex items-center justify-center">
                 <Image src={imageUrl} alt="Original" width={800} height={800} className="w-full h-full object-contain" unoptimized />
@@ -612,33 +641,34 @@ export default function PostDetail({
               </div>
             </div>
           </div>
+        ) : images && images.length > 1 ? (
+          /* Multi-image carousel (BEFORE single image check) */
+          <div className={`overflow-hidden border border-border rounded-xl`}>
+            <ImageCarousel>
+              {images.map((img, i) => {
+                const imgIsGif = img.mimeType === "image/gif";
+                const imgSegments = segments.filter((s: any) => (s.imageIndex ?? 0) === i);
+                return (
+                  <div key={i} className="flex items-center justify-center bg-black/5 dark:bg-black/20">
+                    {imgIsGif ? (
+                      <Image src={img.originalUrl} alt={title} width={800} height={800} className="w-full h-auto object-contain" unoptimized />
+                    ) : (
+                      <MemeRenderer
+                        imageUrl={img.originalUrl}
+                        cleanImageUrl={img.cleanUrl || undefined}
+                        translatedImageUrl={i === 0 ? translatedImageUrl : undefined}
+                        segments={imgSegments}
+                        showTranslation={showTranslation}
+                      />
+                    )}
+                  </div>
+                );
+              })}
+            </ImageCarousel>
+          </div>
         ) : (
-          <div className={`overflow-hidden border border-border flex items-center justify-center bg-black/5 rounded-xl relative`}>
-            {/* Floating translation toggle + compare button */}
-            {(segments.length > 0 || translatedImageUrl) && (
-              <div className="absolute top-2 ltr:right-2 rtl:left-2 z-10 flex items-center gap-2">
-                <button
-                  onClick={() => setShowTranslation(!showTranslation)}
-                  className="flex items-center gap-1.5 min-h-[44px] px-4 py-2.5 rounded-full bg-black/60 backdrop-blur-sm text-white text-xs font-medium hover:bg-black/75 transition-all shadow-lg whitespace-nowrap"
-                >
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
-                  </svg>
-                  {showTranslation ? t("feed.original") : t("feed.translated")}
-                </button>
-                {translatedImageUrl && (
-                  <button
-                    onClick={() => setShowCompare(true)}
-                    className="flex items-center gap-1.5 min-h-[44px] px-4 py-2.5 rounded-full bg-black/60 backdrop-blur-sm text-white text-xs font-medium hover:bg-black/75 transition-all shadow-lg whitespace-nowrap"
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7" />
-                    </svg>
-                  </button>
-                )}
-              </div>
-            )}
-            {/* Image content */}
+          <div className={`overflow-hidden border border-border flex items-center justify-center bg-black/5 rounded-xl`}>
+            {/* Single image content */}
             {showTranslation && translatedImageUrl ? (
               <Image src={translatedImageUrl} alt={title} width={800} height={800} className="w-full h-full object-contain" unoptimized />
             ) : isTypeB && segments.length > 0 ? (
@@ -651,28 +681,6 @@ export default function PostDetail({
               ) : (
                 <Image src={imageUrl} alt={title} width={800} height={800} className="w-full h-full object-contain" unoptimized />
               )
-            ) : images && images.length > 1 ? (
-              <ImageCarousel>
-                {images.map((img, i) => {
-                  const imgIsGif = img.mimeType === "image/gif";
-                  const imgSegments = segments.filter((s: any) => (s.imageIndex ?? 0) === i);
-                  return (
-                    <div key={i} className="flex items-center justify-center bg-black/5 dark:bg-black/20">
-                      {imgIsGif ? (
-                        <Image src={img.originalUrl} alt={title} width={800} height={800} className="w-full h-auto object-contain" unoptimized />
-                      ) : (
-                        <MemeRenderer
-                          imageUrl={img.originalUrl}
-                          cleanImageUrl={img.cleanUrl || undefined}
-                          translatedImageUrl={i === 0 ? translatedImageUrl : undefined}
-                          segments={imgSegments}
-                          showTranslation={showTranslation}
-                        />
-                      )}
-                    </div>
-                  );
-                })}
-              </ImageCarousel>
             ) : isGif ? (
               <Image src={imageUrl} alt={title} width={800} height={800} className="w-full h-full object-contain" unoptimized />
             ) : (
