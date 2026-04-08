@@ -1081,10 +1081,99 @@ export async function POST(request: NextRequest) {
     let englishBody: string | null = null;
     const isEnglishInternalOnly = needsEnglishFirst && !targetLanguages.includes("en");
 
+    // =========================================================================
+    // PHASE 1: English image analysis (1 Gemini Flash call with image)
+    // Extracts: bounding boxes, sourceText, styling, memeType, cultureNote
+    // =========================================================================
+    type EnglishAnalysisSegment = TranslationSegmentResponse & { imageIndex: number };
+    let englishAnalysis: {
+      segments: EnglishAnalysisSegment[];
+      memeType: string | null;
+      confidence: number | null;
+      cultureNote: CultureNoteResponse | null;
+    } | null = null;
+
+    // Check Redis cache for English analysis
+    const cachedEnAnalysis = await getCachedTranslation(postId, "en");
+    if (cachedEnAnalysis && cachedEnAnalysis.segments && cachedEnAnalysis.segments.length > 0) {
+      console.debug(`[Cache] Using cached English analysis for ${postId}`);
+      englishAnalysis = {
+        segments: cachedEnAnalysis.segments.map(s => ({ ...s, imageIndex: (s as any).imageIndex ?? 0 })),
+        memeType: cachedEnAnalysis.memeType ?? null,
+        confidence: cachedEnAnalysis.confidence ?? null,
+        cultureNote: cachedEnAnalysis.cultureNote || null,
+      };
+    } else {
+      // Run English image analysis (1 Gemini Flash call per image)
+      const enSystemPrompt = buildTranslationSystemPrompt(sourceLanguage, "en");
+      const enModel = getGenAI().getGenerativeModel({
+        model: "gemini-2.5-flash",
+        systemInstruction: enSystemPrompt,
+        generationConfig: {
+          responseMimeType: "application/json",
+          temperature: 0.7,
+          maxOutputTokens: 8192,
+        },
+      });
+
+      const enSegments: EnglishAnalysisSegment[] = [];
+      let enParsed: AITranslationResult | null = null;
+      const enCultureNotes: CultureNoteResponse[] = [];
+
+      const validImages = imageDataList
+        .map((imgData, idx) => ({ imgData, idx }))
+        .filter(({ imgData }) => !!imgData.base64);
+
+      for (const { imgData, idx } of validImages) {
+        for (let attempt = 0; attempt < 2; attempt++) {
+          try {
+            if (attempt > 0) await new Promise((r) => setTimeout(r, 1500));
+            const result = await enModel.generateContent([
+              `Translate this meme from ${sourceLanguage} to en. Analyze the image and detect all EXISTING text regions. If the image has NO text at all, return empty segments array. NEVER invent or add text that is not in the image. Respond ONLY with valid JSON, no markdown fences.${imageDataList.length > 1 ? ` This is image ${idx + 1} of ${imageDataList.length} in a multi-image post.` : ""}`,
+              { inlineData: { data: imgData.base64, mimeType: imgData.mimeType } },
+            ]);
+            if (idx === 0) checkContentSafety(postId, result.response).catch(() => {});
+            const text = result.response.text();
+            if (!text) continue;
+            const parsed = JSON.parse(stripMarkdownFences(text)) as AITranslationResult;
+            if (!Array.isArray(parsed.segments)) continue;
+            if (!enParsed) enParsed = parsed;
+            for (const seg of parsed.segments) enSegments.push({ ...seg, imageIndex: idx });
+            if (parsed.cultureNote) enCultureNotes.push(parsed.cultureNote);
+            break; // success
+          } catch (err) {
+            console.warn(`English analysis attempt ${attempt + 1} failed for image ${idx}:`, err instanceof Error ? err.message : String(err));
+          }
+        }
+      }
+
+      if (enParsed) {
+        englishAnalysis = {
+          segments: enSegments,
+          memeType: enParsed.memeType ?? null,
+          confidence: enParsed.confidence ?? null,
+          cultureNote: enCultureNotes[0] || null,
+        };
+        // Cache English analysis
+        setCachedTranslation(postId, "en", {
+          memeType: enParsed.memeType ?? "A",
+          segments: enSegments.map(s => ({ ...s })),
+          cultureNote: enCultureNotes[0] || { summary: "", explanation: "" },
+          confidence: enParsed.confidence,
+        }).catch(err => console.warn("[Cache] Failed to cache English analysis:", err));
+
+        englishSegmentsForPivot = enSegments.map(s => ({ sourceText: s.sourceText, translatedText: s.translatedText }));
+      }
+    }
+
+    // =========================================================================
+    // PHASE 2: Translate each target language using cached coordinates
+    // Uses flash-lite for segment text re-translation (no image needed)
+    // =========================================================================
     for (const targetLang of orderedTargetLanguages) {
       if (targetLang === sourceLanguage) continue;
 
-      // --- DB check: skip if a COMPLETED translation already exists for this language ---
+      // --- DB check: skip if a COMPLETED translation already exists ---
       const existingPayload = await prisma.translationPayload.findFirst({
         where: {
           postId,
@@ -1095,7 +1184,7 @@ export async function POST(request: NextRequest) {
         select: { id: true, version: true, translatedTitle: true },
       });
       if (existingPayload) {
-        console.debug(`[DB] Translation already exists for ${postId}:${targetLang} (v${existingPayload.version}), skipping Gemini call`);
+        console.debug(`[DB] Translation already exists for ${postId}:${targetLang} (v${existingPayload.version}), skipping`);
         results[targetLang] = {
           payloadId: existingPayload.id,
           version: existingPayload.version,
@@ -1105,153 +1194,119 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      const systemPrompt = buildTranslationSystemPrompt(sourceLanguage, targetLang);
-
       try {
-        // Check Redis cache before running Gemini analysis
-        const cachedResult = await getCachedTranslation(postId, targetLang);
-
-        const model = getGenAI().getGenerativeModel({
-          model: "gemini-2.5-flash",
-          systemInstruction: systemPrompt,
-          generationConfig: {
-            responseMimeType: "application/json",
-            temperature: 0.7,
-            maxOutputTokens: 8192,
-          },
-        });
-
-        // Translate ALL images IN PARALLEL and collect segments with imageIndex
+        // Build segments for this language by re-translating English sourceText
         const allSegments: Array<TranslationSegmentResponse & { imageIndex: number }> = [];
         let firstParsed: AITranslationResult | null = null;
         const allCultureNotes: CultureNoteResponse[] = [];
 
-        // If we have a cached result, use it instead of calling Gemini
-        if (cachedResult && cachedResult.segments && cachedResult.segments.length > 0) {
-          console.debug(`[Cache] Using cached translation for ${postId}:${targetLang}`);
-          firstParsed = cachedResult;
-          for (const seg of cachedResult.segments) {
-            allSegments.push({ ...seg, imageIndex: (seg as any).imageIndex ?? 0 });
-          }
-          if (cachedResult.cultureNote) {
-            allCultureNotes.push(cachedResult.cultureNote);
+        if (targetLang === "en" && englishAnalysis) {
+          // English: use analysis directly (already translated)
+          firstParsed = {
+            memeType: englishAnalysis.memeType || "A",
+            segments: englishAnalysis.segments,
+            cultureNote: englishAnalysis.cultureNote || { summary: "", explanation: "" },
+            confidence: englishAnalysis.confidence ?? 0.9,
+          };
+          allSegments.push(...englishAnalysis.segments);
+          if (englishAnalysis.cultureNote) allCultureNotes.push(englishAnalysis.cultureNote);
+        } else if (englishAnalysis && englishAnalysis.segments.length > 0) {
+          // Non-English: re-translate segment texts using flash-lite (cheap, no image)
+          const targetLangInstruction = LANGUAGE_INSTRUCTIONS[targetLang] || `Target language: ${targetLang}`;
+          const segmentTexts = englishAnalysis.segments.map(s => s.translatedText); // English text
+
+          // Check Redis cache for this language
+          const cachedResult = await getCachedTranslation(postId, targetLang);
+          if (cachedResult && cachedResult.segments && cachedResult.segments.length > 0) {
+            console.debug(`[Cache] Using cached translation for ${postId}:${targetLang}`);
+            firstParsed = cachedResult;
+            for (const seg of cachedResult.segments) {
+              allSegments.push({ ...seg, imageIndex: (seg as any).imageIndex ?? 0 });
+            }
+            if (cachedResult.cultureNote) allCultureNotes.push(cachedResult.cultureNote);
+          } else {
+            // Translate all segment texts in one flash-lite call
+            const liteModel = getGenAI().getGenerativeModel({
+              model: "gemini-2.5-flash-lite",
+              generationConfig: {
+                responseMimeType: "application/json",
+                temperature: 0.5,
+                maxOutputTokens: 4096,
+              },
+            });
+
+            const pivotRef = englishSegmentsForPivot.length > 0
+              ? `\nOriginal source texts: ${englishAnalysis.segments.map(s => `"${s.sourceText}"`).join(", ")}`
+              : "";
+
+            const segTranslateResult = await liteModel.generateContent(
+              `You are translating meme text for mimzy, a global meme platform.
+${targetLangInstruction}
+
+Translate each of the following English meme texts to ${targetLang}. Keep the humor, tone, and cultural adaptation.
+${pivotRef}
+
+English texts to translate:
+${segmentTexts.map((t, i) => `${i + 1}. "${t}"`).join("\n")}
+
+Also write a SHORT culture note about this meme in ${targetLang}.
+
+Return JSON only (no markdown fences):
+{
+  "translations": ["translated text 1", "translated text 2", ...],
+  "cultureNote": { "summary": "...", "explanation": "..." }
+}`
+            );
+
+            const segText = segTranslateResult.response.text();
+            if (segText) {
+              const segParsed = JSON.parse(stripMarkdownFences(segText)) as {
+                translations: string[];
+                cultureNote?: CultureNoteResponse;
+              };
+
+              if (Array.isArray(segParsed.translations)) {
+                // Map translated texts back onto English analysis segments (preserving coordinates)
+                for (let i = 0; i < englishAnalysis.segments.length; i++) {
+                  const enSeg = englishAnalysis.segments[i];
+                  allSegments.push({
+                    sourceText: enSeg.sourceText,
+                    translatedText: segParsed.translations[i] || enSeg.translatedText,
+                    semanticRole: enSeg.semanticRole,
+                    box: enSeg.box,
+                    style: enSeg.style,
+                    imageIndex: enSeg.imageIndex,
+                  });
+                }
+                firstParsed = {
+                  memeType: englishAnalysis.memeType || "A",
+                  segments: allSegments,
+                  cultureNote: segParsed.cultureNote || { summary: "", explanation: "" },
+                  confidence: englishAnalysis.confidence ?? 0.85,
+                };
+                if (segParsed.cultureNote) allCultureNotes.push(segParsed.cultureNote);
+
+                // Cache result
+                setCachedTranslation(postId, targetLang, {
+                  memeType: firstParsed.memeType,
+                  segments: allSegments.map(s => ({ ...s })),
+                  cultureNote: segParsed.cultureNote || { summary: "", explanation: "" },
+                  confidence: firstParsed.confidence,
+                }).catch(err => console.warn("[Cache] Failed to cache:", err));
+              }
+            }
           }
         } else {
-        // --- Begin Gemini translation (no cache hit) ---
-
-        // Helper: translate a single image with retry (max 2 attempts)
-        const translateSingleImage = async (
-          imgIdx: number,
-          imgData: { base64: string; mimeType: string },
-        ): Promise<{ parsed: AITranslationResult | null; imgIdx: number }> => {
-          for (let attempt = 0; attempt < 2; attempt++) {
-            try {
-              if (attempt > 0) {
-                await new Promise((r) => setTimeout(r, 1500));
-              }
-              // Build pivot reference if this is a distant language pair
-              const pivotRef = needsPivot(sourceLanguage, targetLang) && englishSegmentsForPivot.length > 0
-                ? "\n\n" + buildEnglishReferenceForImage(englishSegmentsForPivot)
-                : "";
-              const result = await model.generateContent([
-                `Translate this meme from ${sourceLanguage} to ${targetLang}. Analyze the image and detect all EXISTING text regions. If the image has NO text at all, return empty segments array. NEVER invent or add text that is not in the image. Respond ONLY with valid JSON, no markdown fences.${imageDataList.length > 1 ? ` This is image ${imgIdx + 1} of ${imageDataList.length} in a multi-image post.` : ""}${pivotRef}`,
-                {
-                  inlineData: {
-                    data: imgData.base64,
-                    mimeType: imgData.mimeType,
-                  },
-                },
-              ]);
-
-              // Fire-and-forget content safety check on first image
-              if (imgIdx === 0) {
-                checkContentSafety(postId, result.response).catch(() => {});
-              }
-
-              const text = result.response.text();
-              if (!text) continue;
-
-              const cleaned = stripMarkdownFences(text);
-              const parsed = JSON.parse(cleaned) as AITranslationResult;
-              if (!Array.isArray(parsed.segments)) continue;
-              // Empty segments is valid (image has no text) — don't retry
-
-              return { parsed, imgIdx };
-            } catch (err) {
-              console.warn(`Translate attempt ${attempt + 1} failed for ${targetLang} image ${imgIdx}:`, err instanceof Error ? err.message : String(err));
-            }
-          }
-          return { parsed: null, imgIdx };
-        };
-
-        // Launch image translations with controlled concurrency (max 3 at a time)
-        const validImages = imageDataList
-          .map((imgData, idx) => ({ imgData, idx }))
-          .filter(({ imgData }) => !!imgData.base64);
-
-        const imageResults: Array<{ parsed: AITranslationResult | null; imgIdx: number }> = [];
-        const IMG_CONCURRENCY = 3;
-        for (let i = 0; i < validImages.length; i += IMG_CONCURRENCY) {
-          const batch = validImages.slice(i, i + IMG_CONCURRENCY);
-          const batchResults = await Promise.all(
-            batch.map(({ imgData, idx }) => translateSingleImage(idx, imgData))
-          );
-          imageResults.push(...batchResults);
-          // Small delay between batches to avoid rate limiting
-          if (i + IMG_CONCURRENCY < validImages.length) {
-            await new Promise((r) => setTimeout(r, 500));
-          }
-        }
-
-        // Collect results (maintaining order)
-        for (const { parsed, imgIdx } of imageResults.sort((a, b) => a.imgIdx - b.imgIdx)) {
-          if (parsed) {
-            if (!firstParsed) firstParsed = parsed;
-            for (const seg of parsed.segments) {
-              allSegments.push({ ...seg, imageIndex: imgIdx });
-            }
-            if (parsed.cultureNote) {
-              allCultureNotes.push(parsed.cultureNote);
-            }
-          } else {
-            console.warn(`Translation failed for ${targetLang} image ${imgIdx}`);
-          }
+          // No English analysis available (image had no text) — create empty payload
+          firstParsed = { memeType: "A", segments: [], cultureNote: { summary: "", explanation: "" }, confidence: 0.9 };
         }
 
         if (!firstParsed) {
-          console.error(`All translation attempts failed for ${targetLang}`);
-          results[targetLang] = { error: `Translation failed for all images` };
-          continue;
-        }
-        // Empty segments is valid — image may have no text to translate
-
-        // Cache the successful Gemini result for future use
-        if (!cachedResult) {
-          setCachedTranslation(postId, targetLang, {
-            memeType: firstParsed.memeType,
-            segments: allSegments.map(s => ({
-              sourceText: s.sourceText,
-              translatedText: s.translatedText,
-              semanticRole: s.semanticRole,
-              box: s.box,
-              style: s.style,
-              imageIndex: s.imageIndex,
-            })),
-            cultureNote: allCultureNotes.length > 0 ? allCultureNotes[0] : { summary: "", explanation: "" },
-            confidence: firstParsed.confidence,
-          }).catch(err => console.warn("[Cache] Failed to cache translation:", err));
-        }
-
-        } // --- End Gemini else block ---
-
-        if (!firstParsed) {
-          // Already handled inside the else block with `continue`, but guard for cache path too
-          console.error(`No parsed result available for ${targetLang}`);
           results[targetLang] = { error: `Translation failed for ${targetLang}` };
           continue;
         }
 
-        // Track segments (with position info) for translated image generation later
+        // Track segments for image generation
         allSegmentsByLang[targetLang] = allSegments.map((s) => ({
           sourceText: s.sourceText,
           translatedText: s.translatedText,
@@ -1270,20 +1325,11 @@ export async function POST(request: NextRequest) {
           isUppercase: undefined,
         }));
 
-        // Cache English segments for pivot translation of distant languages
-        if (targetLang === "en") {
-          englishSegmentsForPivot = allSegments.map(s => ({
-            sourceText: s.sourceText,
-            translatedText: s.translatedText,
-          }));
-        }
-
-        // Translate title & body text (in parallel) — uses lighter model for cost savings
+        // Translate title & body (flash-lite)
         const targetName = LANGUAGE_INSTRUCTIONS[targetLang]?.split(":")[0] || targetLang;
         let translatedTitle: string | null = null;
         let translatedBody: string | null = null;
 
-        // Check if title/body were already translated (e.g., by /api/translate/text)
         const existingTextTranslation = await prisma.translationPayload.findFirst({
           where: {
             postId,
@@ -1296,16 +1342,15 @@ export async function POST(request: NextRequest) {
         });
         if (existingTextTranslation?.translatedTitle) {
           translatedTitle = existingTextTranslation.translatedTitle;
-          translatedBody = existingTextTranslation.translatedBody || translatedBody;
+          translatedBody = existingTextTranslation.translatedBody || null;
         } else {
           const textTranslations = await Promise.allSettled([
-            // Title translation (gemini-2.5-flash-lite — cheaper, sufficient quality for text)
             (post.title && sourceLanguage !== targetLang) ? (async () => {
               const m = getGenAI().getGenerativeModel({
                 model: "gemini-2.5-flash-lite",
                 generationConfig: { temperature: 0.3, maxOutputTokens: 512 },
               });
-              const pivotHint = needsPivot(sourceLanguage, targetLang) && englishTitle
+              const pivotHint = englishTitle
                 ? `\n\nEnglish reference (for accuracy): "${englishTitle}"`
                 : "";
               const r = await m.generateContent(
@@ -1313,13 +1358,12 @@ export async function POST(request: NextRequest) {
               );
               return r.response.text().trim();
             })() : Promise.resolve(null),
-            // Body translation (gemini-2.5-flash-lite — cheaper, sufficient quality for text)
             (post.body && sourceLanguage !== targetLang) ? (async () => {
               const m = getGenAI().getGenerativeModel({
                 model: "gemini-2.5-flash-lite",
                 generationConfig: { temperature: 0.3, maxOutputTokens: 1024 },
               });
-              const pivotHint = needsPivot(sourceLanguage, targetLang) && englishBody
+              const pivotHint = englishBody
                 ? `\n\nEnglish reference (for accuracy): "${englishBody}"`
                 : "";
               const r = await m.generateContent(
@@ -1332,13 +1376,13 @@ export async function POST(request: NextRequest) {
           translatedBody = textTranslations[1].status === "fulfilled" ? textTranslations[1].value : null;
         }
 
-        // Cache English title/body for pivot translation of distant languages
+        // Cache English title/body
         if (targetLang === "en") {
           englishTitle = translatedTitle;
           englishBody = translatedBody;
         }
 
-        // If English was internal-only (not requested by user), skip DB storage
+        // If English was internal-only, skip DB storage
         if (targetLang === "en" && isEnglishInternalOnly) {
           console.debug(`[Pivot] English translation completed (internal-only, not saving to DB)`);
           continue;
