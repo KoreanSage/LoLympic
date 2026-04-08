@@ -141,9 +141,9 @@ function FeedCardInner({
   const isGif = mimeType === "image/gif";
   const isVideo = !!mimeType?.startsWith("video/");
   const isMultiImage = images && images.length > 1;
-  // For multi-image posts, don't use translatedImageUrl (it contains all segments merged onto one image)
   const effectiveTranslatedImageUrl = isMultiImage ? undefined : translatedImageUrl;
-  const hasImageTranslation = !isGif && !isVideo && (hasOverlaySegments || !!effectiveTranslatedImageUrl);
+  const hasMultiImageTranslation = isMultiImage && translatedImageUrls && translatedImageUrls.some(u => !!u);
+  const hasImageTranslation = !isGif && !isVideo && (hasOverlaySegments || !!effectiveTranslatedImageUrl || hasMultiImageTranslation);
   const hasTranslation = hasImageTranslation || !!translatedTitle || !!translatedBody;
   const isTextOnly = !imageUrl && (!images || images.length === 0);
   const isCommunity = category === "community";
@@ -628,7 +628,7 @@ function FeedCardInner({
       )}
 
       {/* Translation toggle (outside image) */}
-      {!isCommunity && !isTextOnly && (segments.length > 0 || effectiveTranslatedImageUrl) && (
+      {!isCommunity && !isTextOnly && (segments.length > 0 || effectiveTranslatedImageUrl || hasMultiImageTranslation) && (
         <div className="flex items-center gap-2 px-4 pb-1">
           <button
             onClick={() => setShowTranslation(!showTranslation)}
