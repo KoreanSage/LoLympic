@@ -145,7 +145,7 @@ function wrapText(
 const _fontCache = new Map<string, { base64: string; format: string }>();
 const FONT_CACHE_MAX = 20;
 
-async function fetchFontAsBase64(fontFamily: string, text: string, weight: number = 700): Promise<{ base64: string; format: string } | null> {
+async function fetchFontAsBase64(fontFamily: string, _text?: string, weight: number = 700): Promise<{ base64: string; format: string } | null> {
   const cacheKey = `${fontFamily}:${weight}`;
   const cached = _fontCache.get(cacheKey);
   if (cached) return cached;
