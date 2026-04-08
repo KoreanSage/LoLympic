@@ -92,7 +92,7 @@ export default function LanguageSelectModal({ onSelect }: LanguageSelectModalPro
                   : LANGUAGES.find((l) => l.code === selected)?.code === "es"
                     ? "Empezar"
                     : LANGUAGES.find((l) => l.code === selected)?.code === "hi"
-                      ? "शुरू करें"
+                      ? "Shuru karo"
                       : LANGUAGES.find((l) => l.code === selected)?.code === "ar"
                         ? "ابدأ"
                         : "Get Started"

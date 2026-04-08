@@ -16,7 +16,8 @@ function detectLanguageFromText(text: string): string | null {
   if (/[\u3131-\uD79D]/.test(text)) return "ko";
   if (/[\u3040-\u309F\u30A0-\u30FF]/.test(text)) return "ja";
   if (/[\u4E00-\u9FFF]/.test(text)) return "zh";
-  if (/[\u0900-\u097F]/.test(text)) return "hi";
+  // Hinglish uses Roman script — detect via Latin chars, not Devanagari
+  // if (/[\u0900-\u097F]/.test(text)) return "hi";
   if (/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]/.test(text)) return "ar";
   if (/[a-zA-Z]/.test(text)) return "en";
   return null;
@@ -30,7 +31,7 @@ function isRTL(text: string): boolean {
 // Web-safe font names that are actually available via Google Fonts CSS import
 const WEB_SAFE_FONTS = new Set([
   "Noto Sans KR", "Noto Sans JP", "Noto Sans SC",
-  "Noto Sans Devanagari", "Noto Sans Arabic",
+  "Noto Sans Arabic",
   "Impact", "Inter", "JetBrains Mono",
 ]);
 
