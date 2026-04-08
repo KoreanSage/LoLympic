@@ -591,11 +591,11 @@ export default function PostDetail({
       {!isTextOnly && <div className="space-y-2">
         {/* Translation toggle bar (outside image) */}
         {(segments.length > 0 || translatedImageUrl) && (
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setShowTranslation(!showTranslation)}
-                className="flex items-center gap-1.5 min-h-[40px] px-4 py-2 rounded-full bg-background-elevated border border-border text-foreground-muted text-xs font-medium hover:bg-background-surface transition-all"
+                className="flex items-center gap-1.5 min-h-[40px] px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-full bg-background-elevated border border-border text-foreground-muted text-xs font-medium hover:bg-background-surface transition-all whitespace-nowrap"
               >
                 <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
@@ -603,7 +603,7 @@ export default function PostDetail({
                 {showTranslation ? t("feed.original") : t("feed.translated")}
               </button>
               {showTranslation && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-green-500/15 text-green-400">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-green-500/15 text-green-400 whitespace-nowrap">
                   <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
                   {t("feed.translated")}
                 </span>
@@ -612,18 +612,18 @@ export default function PostDetail({
             {translatedImageUrl && !showCompare && (
               <button
                 onClick={() => setShowCompare(true)}
-                className="flex items-center gap-1.5 min-h-[40px] px-4 py-2 rounded-full bg-background-elevated border border-border text-foreground-muted text-xs font-medium hover:bg-background-surface transition-all"
+                className="flex items-center gap-1.5 min-h-[40px] px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-full bg-background-elevated border border-border text-foreground-muted text-xs font-medium hover:bg-background-surface transition-all whitespace-nowrap"
               >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7" />
                 </svg>
-                Compare
+                <span className="hidden sm:inline">Compare</span>
               </button>
             )}
             {showCompare && (
               <button
                 onClick={() => setShowCompare(false)}
-                className="flex items-center gap-1.5 min-h-[40px] px-4 py-2 rounded-full bg-background-elevated border border-border text-foreground-muted text-xs font-medium hover:bg-background-surface transition-all"
+                className="flex items-center gap-1.5 min-h-[40px] px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-full bg-background-elevated border border-border text-foreground-muted text-xs font-medium hover:bg-background-surface transition-all whitespace-nowrap"
               >
                 Close
               </button>
