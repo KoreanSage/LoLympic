@@ -263,7 +263,7 @@ export const LANGUAGE_CONFIG_MAP: Record<LanguageCode, LanguageConfig> = {
   },
   [LanguageCode.hi]: {
     code: LanguageCode.hi,
-    nameEn: "Hindi",
+    nameEn: "Hinglish",
     nameNative: "Hinglish",
     fontHint: "Noto Sans",
     direction: "ltr",
