@@ -567,10 +567,10 @@ export default function PostDetail({
         {showCompare && translatedImageUrl ? (
           <div className={`overflow-hidden border border-border rounded-xl relative`}>
             {/* Floating controls for compare mode */}
-            <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
+            <div className="absolute top-2 ltr:right-2 rtl:left-2 z-10 flex items-center gap-2">
               <button
                 onClick={() => setShowCompare(false)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm text-white text-xs font-medium hover:bg-black/75 transition-all shadow-lg"
+                className="flex items-center gap-1.5 min-h-[44px] px-4 py-2.5 rounded-full bg-black/60 backdrop-blur-sm text-white text-xs font-medium hover:bg-black/75 transition-all shadow-lg whitespace-nowrap"
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -591,10 +591,10 @@ export default function PostDetail({
           <div className={`overflow-hidden border border-border flex items-center justify-center bg-black/5 rounded-xl relative`}>
             {/* Floating translation toggle + compare button */}
             {(segments.length > 0 || translatedImageUrl) && (
-              <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
+              <div className="absolute top-2 ltr:right-2 rtl:left-2 z-10 flex items-center gap-2">
                 <button
                   onClick={() => setShowTranslation(!showTranslation)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm text-white text-xs font-medium hover:bg-black/75 transition-all shadow-lg"
+                  className="flex items-center gap-1.5 min-h-[44px] px-4 py-2.5 rounded-full bg-black/60 backdrop-blur-sm text-white text-xs font-medium hover:bg-black/75 transition-all shadow-lg whitespace-nowrap"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
@@ -604,7 +604,7 @@ export default function PostDetail({
                 {translatedImageUrl && (
                   <button
                     onClick={() => setShowCompare(true)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm text-white text-xs font-medium hover:bg-black/75 transition-all shadow-lg"
+                    className="flex items-center gap-1.5 min-h-[44px] px-4 py-2.5 rounded-full bg-black/60 backdrop-blur-sm text-white text-xs font-medium hover:bg-black/75 transition-all shadow-lg whitespace-nowrap"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7" />

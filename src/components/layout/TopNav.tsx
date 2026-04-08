@@ -134,7 +134,7 @@ export default function TopNav() {
     { code: "ja", flag: "\uD83C\uDDEF\uD83C\uDDF5", name: "\u65E5\u672C\u8A9E" },
     { code: "zh", flag: "\uD83C\uDDE8\uD83C\uDDF3", name: "\u4E2D\u6587" },
     { code: "es", flag: "\uD83C\uDDEA\uD83C\uDDF8", name: "Espa\u00F1ol" },
-    { code: "hi", flag: "\uD83C\uDDEE\uD83C\uDDF3", name: "\u0939\u093F\u0928\u094D\u0926\u0940" },
+    { code: "hi", flag: "\uD83C\uDDEE\uD83C\uDDF3", name: "Hinglish" },
     { code: "ar", flag: "\uD83C\uDDF8\uD83C\uDDE6", name: "\u0627\u0644\u0639\u0631\u0628\u064A\u0629" },
   ];
   const [showLangDropdown, setShowLangDropdown] = useState(false);
