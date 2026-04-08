@@ -15,7 +15,8 @@
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "promo": "node scripts/promo.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1020.0",
