@@ -640,7 +640,7 @@ async function generateTranslatedImageForPayload(
   targetLanguage: string
 ): Promise<void> {
   try {
-    // 1. Find the image for this post (need dimensions + clean URL + original URL)
+    // 1. Find the image for this post (need dimensions + clean URL)
     const postImage = await prisma.postImage.findFirst({
       where: { postId },
       orderBy: { orderIndex: "asc" },
@@ -652,68 +652,44 @@ async function generateTranslatedImageForPayload(
       return;
     }
 
+    // Wait for clean image generation to complete (it runs in parallel)
+    let cleanUrl = postImage.cleanUrl;
+    if (!cleanUrl) {
+      // Wait up to 30s for clean image to be generated
+      for (let retry = 0; retry < 6; retry++) {
+        await new Promise((r) => setTimeout(r, 5000));
+        const refreshed = await prisma.postImage.findFirst({
+          where: { postId },
+          orderBy: { orderIndex: "asc" },
+          select: { cleanUrl: true },
+        });
+        if (refreshed?.cleanUrl) {
+          cleanUrl = refreshed.cleanUrl;
+          break;
+        }
+      }
+    }
+
+    // 2. Use LaMa clean image (text removed) as background
+    const satoriCleanUrl = cleanUrl;
+    if (!satoriCleanUrl) {
+      console.warn(`[Satori] No clean image for post ${postId}, skipping translated image generation`);
+      return;
+    }
+
     const appUrl = process.env.NEXT_PUBLIC_APP_URL
       || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
       || (process.env.NEXTAUTH_URL)
       || "http://localhost:3000";
 
-    // ---------------------------------------------------------------------------
-    // Smart rendering: detect if text is in a separate area (caption bar) vs
-    // overlaid on the image. If separate, use original image + opaque rect fill
-    // instead of LaMa inpainting (prevents image distortion).
-    // ---------------------------------------------------------------------------
-    const visibleSegs = segments.filter(
-      (s) => s.semanticRole !== "WATERMARK" && s.translatedText?.trim()
-    );
-
-    const isTextInSeparateArea = visibleSegs.length > 0 && visibleSegs.every((seg) => {
-      const yCenter = seg.boxY + seg.boxHeight / 2;
-      // Text is in top 30% or bottom 30% — likely a caption bar
-      return yCenter <= 0.30 || yCenter >= 0.70;
-    });
-
-    // Resolve which base image to use
-    let baseImageUrl: string;
-    let useOriginalAsBase = false;
-
-    if (isTextInSeparateArea && postImage.originalUrl) {
-      // Text in separate area → use ORIGINAL image (no LaMa distortion)
-      baseImageUrl = postImage.originalUrl.startsWith("http")
-        ? postImage.originalUrl
-        : `${appUrl}${postImage.originalUrl}`;
-      useOriginalAsBase = true;
-      console.debug(`[Smart] Text in separate area for ${postId}:${targetLanguage}, using original image`);
-    } else {
-      // Text overlaps image → need LaMa clean image
-      let cleanUrl = postImage.cleanUrl;
-      if (!cleanUrl) {
-        // Wait up to 30s for clean image to be generated
-        for (let retry = 0; retry < 6; retry++) {
-          await new Promise((r) => setTimeout(r, 5000));
-          const refreshed = await prisma.postImage.findFirst({
-            where: { postId },
-            orderBy: { orderIndex: "asc" },
-            select: { cleanUrl: true },
-          });
-          if (refreshed?.cleanUrl) {
-            cleanUrl = refreshed.cleanUrl;
-            break;
-          }
-        }
-      }
-      if (!cleanUrl) {
-        console.warn(`[Satori] No clean image for post ${postId}, skipping translated image generation`);
-        return;
-      }
-      baseImageUrl = cleanUrl.startsWith("http")
-        ? cleanUrl
-        : `${appUrl}${cleanUrl}`;
-    }
+    const resolvedCleanUrl = satoriCleanUrl.startsWith("http")
+      ? satoriCleanUrl
+      : `${appUrl}${satoriCleanUrl}`;
 
     // 3. Get image dimensions via Sharp
-    const baseRes = await fetch(baseImageUrl);
-    if (!baseRes.ok) throw new Error(`Failed to fetch base image: ${baseRes.status}`);
-    const cleanBuffer = Buffer.from(await baseRes.arrayBuffer());
+    const cleanRes = await fetch(resolvedCleanUrl);
+    if (!cleanRes.ok) throw new Error(`Failed to fetch clean image: ${cleanRes.status}`);
+    const cleanBuffer = Buffer.from(await cleanRes.arrayBuffer());
     const metadata = await sharp(cleanBuffer).metadata();
     const imgWidth = metadata.width || 800;
     const imgHeight = metadata.height || 800;
@@ -839,34 +815,20 @@ async function generateTranslatedImageForPayload(
                 "-1px 0 0 #000, 1px 0 0 #000, 0 -1px 0 #000, 0 1px 0 #000"
               : "-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff";
 
-            // Background color logic:
-            // - When using original image (separate text area): ALWAYS use opaque bg to cover original text
-            // - When using clean image: skip gray backgrounds that degrade quality
-            let bgColor: string;
-            if (useOriginalAsBase) {
-              // Must cover original text — use provided bg color or smart defaults
-              const rawBg = (seg.backgroundColor || "").toLowerCase();
-              if (rawBg && rawBg !== "transparent") {
-                bgColor = rawBg;
-              } else {
-                // Default: dark text area gets black bg, light area gets white bg
-                const isTopArea = (seg.boxY + seg.boxHeight / 2) < 0.5;
-                bgColor = textColor.toLowerCase().includes("fff") || isLight ? "#000000" : "#FFFFFF";
+            // Background color: skip gray/semi-transparent backgrounds that degrade quality
+            // Only keep truly intentional backgrounds (solid white/black for screenshot memes)
+            const rawBg = (seg.backgroundColor || "transparent").toLowerCase();
+            // Detect gray-ish backgrounds: hex colors with R,G,B all between 100-220, or named grays
+            const isGrayish = (() => {
+              if (/^(gray|grey|silver)/i.test(rawBg)) return true;
+              const hexMatch = rawBg.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+              if (hexMatch) {
+                const [r, g, b] = [parseInt(hexMatch[1], 16), parseInt(hexMatch[2], 16), parseInt(hexMatch[3], 16)];
+                return r >= 100 && r <= 220 && g >= 100 && g <= 220 && b >= 100 && b <= 220;
               }
-            } else {
-              // Clean image path — skip gray backgrounds
-              const rawBg = (seg.backgroundColor || "transparent").toLowerCase();
-              const isGrayish = (() => {
-                if (/^(gray|grey|silver)/i.test(rawBg)) return true;
-                const hexMatch = rawBg.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
-                if (hexMatch) {
-                  const [r, g, b] = [parseInt(hexMatch[1], 16), parseInt(hexMatch[2], 16), parseInt(hexMatch[3], 16)];
-                  return r >= 100 && r <= 220 && g >= 100 && g <= 220 && b >= 100 && b <= 220;
-                }
-                return false;
-              })();
-              bgColor = (rawBg === "transparent" || isGrayish) ? "transparent" : rawBg;
-            }
+              return false;
+            })();
+            const bgColor = (rawBg === "transparent" || isGrayish) ? "transparent" : rawBg;
 
             return {
               type: "div",
