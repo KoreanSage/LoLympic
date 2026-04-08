@@ -61,6 +61,7 @@ interface FeedCardProps {
   imageUrl: string;
   cleanImageUrl?: string;
   translatedImageUrl?: string;
+  translatedImageUrls?: string[];
   mimeType?: string;
   segments: TranslationSegmentData[];
   memeType?: string;
@@ -107,6 +108,7 @@ function FeedCardInner({
   imageUrl,
   cleanImageUrl,
   translatedImageUrl,
+  translatedImageUrls,
   mimeType,
   segments,
   memeType,
@@ -667,6 +669,7 @@ function FeedCardInner({
                 <ImageCarousel>
                   {images.map((img, i) => {
                     const imgIsVideo = img.mimeType?.startsWith("video/");
+                    const translatedUrl = showTranslation && translatedImageUrls?.[i];
                     return (
                       <div key={i} className="w-full flex items-center justify-center bg-black/5 dark:bg-black/20">
                         {imgIsVideo ? (
@@ -680,7 +683,7 @@ function FeedCardInner({
                             preload="metadata"
                           />
                         ) : (
-                          <Image src={img.originalUrl} alt={title} width={img.width || 800} height={img.height || 800} className="w-full h-auto object-contain max-h-[700px]" sizes="(max-width: 768px) 100vw, 600px" unoptimized />
+                          <Image src={translatedUrl || img.originalUrl} alt={title} width={img.width || 800} height={img.height || 800} className="w-full h-auto object-contain max-h-[700px]" sizes="(max-width: 768px) 100vw, 600px" unoptimized />
                         )}
                       </div>
                     );

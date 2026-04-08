@@ -57,6 +57,7 @@ interface FeedPost {
   imageUrl: string;
   cleanImageUrl?: string;
   translatedImageUrl?: string;
+  translatedImageUrls?: string[];
   mimeType?: string;
   segments: TranslationSegmentData[];
   reactionCount: number;
@@ -141,6 +142,7 @@ function mapApiPost(post: any): FeedPost {
     imageUrl: image?.originalUrl || "",
     cleanImageUrl: image?.cleanUrl || undefined,
     translatedImageUrl: payload?.translatedImageUrl?.startsWith("http") ? payload.translatedImageUrl : undefined,
+    translatedImageUrls: Array.isArray(payload?.translatedImageUrls) ? payload.translatedImageUrls as string[] : undefined,
     mimeType: image?.mimeType || undefined,
     segments,
     reactionCount: post.reactionCount ?? post._count?.reactions ?? 0,
