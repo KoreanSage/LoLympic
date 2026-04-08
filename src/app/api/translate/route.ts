@@ -707,7 +707,7 @@ async function generateTranslatedImageForPayload(
     if (targetLanguage === "ar") {
       const { composeTranslatedImage } = await import("@/lib/image-composer");
       const composerSegments = segments
-        .filter(s => s.semanticRole !== "WATERMARK" && s.translatedText?.trim())
+        .filter(s => s.semanticRole !== "WATERMARK" && s.translatedText?.trim() && (!isMultiImage || (s.imageIndex ?? 0) === 0))
         .map(s => ({
           translatedText: s.translatedText,
           boxX: s.boxX,
@@ -736,8 +736,9 @@ async function generateTranslatedImageForPayload(
     }
 
     // 4b. Inline Satori rendering (for all other languages)
+    // For multi-image posts, only render segments belonging to the FIRST image (index 0)
     const visibleSegments = segments.filter(
-      (s) => s.semanticRole !== "WATERMARK" && s.translatedText?.trim()
+      (s) => s.semanticRole !== "WATERMARK" && s.translatedText?.trim() && (!isMultiImage || (s.imageIndex ?? 0) === 0)
     );
 
     if (visibleSegments.length === 0) return;
