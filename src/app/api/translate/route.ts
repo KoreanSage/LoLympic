@@ -1510,15 +1510,19 @@ Return JSON only (no markdown fences):
     // Wait for clean images (started earlier, runs in parallel with translations)
     await cleanImagePromise;
 
-    // Generate translated images for successfully translated languages (fire-and-forget)
-    // Uses allSegmentsByLang which contains coordinates from English analysis
+    // Generate translated images for successfully translated languages (awaited)
+    // Must be awaited — Vercel kills background tasks after response is sent
+    const composePromises: Promise<void>[] = [];
     for (const tl of Object.keys(allSegmentsByLang)) {
       const lr = results[tl];
       if (lr?.payloadId && allSegmentsByLang[tl]?.length) {
-        generateTranslatedImageForPayload(lr.payloadId, postId, allSegmentsByLang[tl], tl)
-          .catch((e) => console.error(`Compose failed for ${tl}:`, e));
+        composePromises.push(
+          generateTranslatedImageForPayload(lr.payloadId, postId, allSegmentsByLang[tl], tl)
+            .catch((e) => console.error(`Compose failed for ${tl}:`, e))
+        );
       }
     }
+    await Promise.all(composePromises);
 
     // Update ranking score after translations complete
     updateRankingScore(postId).catch((e) => { console.error("Failed to update ranking score:", e); });
