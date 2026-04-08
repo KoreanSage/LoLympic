@@ -461,7 +461,7 @@ async function generateCleanImagesForPost(
               const cleanRaw = Buffer.from(await cleanRes.arrayBuffer());
               // Compress to WebP for ~97% storage savings
               const sharp = (await import("sharp")).default;
-              const cleanBuffer = await sharp(cleanRaw).webp({ quality: 85 }).toBuffer();
+              const cleanBuffer = await sharp(cleanRaw).webp({ quality: 70 }).toBuffer();
               // Verify the WebP is valid
               const meta = await sharp(cleanBuffer).metadata();
               if (!meta.width || !meta.height) throw new Error("WebP validation failed");
@@ -549,7 +549,7 @@ For each text area, seamlessly fill with the background that would naturally be 
         const cleanImageRaw = Buffer.from(part.inlineData.data, "base64");
         // Compress to WebP for storage savings
         const sharp = (await import("sharp")).default;
-        const cleanImageBuffer = await sharp(cleanImageRaw).webp({ quality: 85 }).toBuffer();
+        const cleanImageBuffer = await sharp(cleanImageRaw).webp({ quality: 70 }).toBuffer();
         const meta = await sharp(cleanImageBuffer).metadata();
         if (!meta.width || !meta.height) throw new Error("WebP validation failed");
         return await saveGeneratedImage(cleanImageBuffer, "clean", ".webp");
@@ -719,7 +719,7 @@ async function generateTranslatedImageForPayload(
 
       const composedRaw = await composeTranslatedImage(Buffer.from(cleanBuffer), composerSegments, { watermark: false });
       const sharpMod = (await import("sharp")).default;
-      const composedBuffer = await sharpMod(composedRaw).webp({ quality: 85 }).toBuffer();
+      const composedBuffer = await sharpMod(composedRaw).webp({ quality: 70 }).toBuffer();
       const url = await saveGeneratedImage(composedBuffer, `translated_sharp_${targetLanguage}`, ".webp");
       await prisma.translationPayload.update({ where: { id: payloadId }, data: { translatedImageUrl: url } });
       console.debug(`[Sharp] Arabic translated image saved for payload ${payloadId}: ${url}`);
@@ -884,7 +884,7 @@ async function generateTranslatedImageForPayload(
 
     // 5. Compress to WebP + save to storage
     const sharpMod = (await import("sharp")).default;
-    const composedBuffer = await sharpMod(composedRaw).webp({ quality: 85 }).toBuffer();
+    const composedBuffer = await sharpMod(composedRaw).webp({ quality: 70 }).toBuffer();
     const composedMeta = await sharpMod(composedBuffer).metadata();
     if (!composedMeta.width || !composedMeta.height) throw new Error("Translated WebP validation failed");
     const url = await saveGeneratedImage(composedBuffer, `translated_satori_${targetLanguage}`, ".webp");
@@ -1466,18 +1466,10 @@ export async function POST(request: NextRequest) {
     // Wait for clean images (started earlier, runs in parallel with translations)
     await cleanImagePromise;
 
-    // Generate translated images for each language (parallel, awaited)
-    const composePromises: Promise<void>[] = [];
-    for (const tl of orderedTargetLanguages) {
-      const lr = results[tl];
-      if (lr?.payloadId && allSegmentsByLang[tl]?.length) {
-        composePromises.push(
-          generateTranslatedImageForPayload(lr.payloadId, postId, allSegmentsByLang[tl], tl)
-            .catch((e) => console.error(`Compose failed for ${tl}:`, e))
-        );
-      }
-    }
-    await Promise.all(composePromises);
+    // Translated image generation is deferred to on-demand rendering.
+    // When a user views a post in a specific language, PostPageClient
+    // detects missing translatedImageUrl and triggers /api/translate/generate-image.
+    // This saves storage costs by only generating images users actually view.
 
     // Update ranking score after translations complete
     updateRankingScore(postId).catch((e) => { console.error("Failed to update ranking score:", e); });
