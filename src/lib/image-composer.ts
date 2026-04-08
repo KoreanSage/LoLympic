@@ -309,7 +309,6 @@ function mapFontFamily(hint?: string): string {
 // ---------------------------------------------------------------------------
 
 import * as path from "path";
-import * as fs from "fs";
 
 const WATERMARK_HEIGHT_RATIO = 0.05; // 5% of image height for the bar
 const WATERMARK_MIN_HEIGHT = 28;

@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
       };
     });
 
-    // Recalculate translation counts for ALL posts (batch update)
+    // Recalculate translation counts in batches of 50
     const postsWithCounts = await prisma.post.findMany({
       where: { status: "PUBLISHED" },
       select: {
@@ -72,11 +72,17 @@ export async function POST(request: NextRequest) {
         },
       },
     });
-    for (const p of postsWithCounts) {
-      await prisma.post.update({
-        where: { id: p.id },
-        data: { translationCount: p._count.translationPayloads },
-      });
+    const BATCH = 50;
+    for (let i = 0; i < postsWithCounts.length; i += BATCH) {
+      const chunk = postsWithCounts.slice(i, i + BATCH);
+      await Promise.all(
+        chunk.map((p) =>
+          prisma.post.update({
+            where: { id: p.id },
+            data: { translationCount: p._count.translationPayloads },
+          })
+        )
+      );
     }
 
     // Return ALL published posts for client-side retranslation
