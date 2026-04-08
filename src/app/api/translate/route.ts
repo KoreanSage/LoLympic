@@ -1510,10 +1510,15 @@ Return JSON only (no markdown fences):
     // Wait for clean images (started earlier, runs in parallel with translations)
     await cleanImagePromise;
 
-    // Translated image generation is deferred to on-demand rendering.
-    // When a user views a post in a specific language, PostPageClient
-    // detects missing translatedImageUrl and triggers /api/translate/generate-image.
-    // This saves storage costs by only generating images users actually view.
+    // Generate translated images for successfully translated languages (fire-and-forget)
+    // Uses allSegmentsByLang which contains coordinates from English analysis
+    for (const tl of Object.keys(allSegmentsByLang)) {
+      const lr = results[tl];
+      if (lr?.payloadId && allSegmentsByLang[tl]?.length) {
+        generateTranslatedImageForPayload(lr.payloadId, postId, allSegmentsByLang[tl], tl)
+          .catch((e) => console.error(`Compose failed for ${tl}:`, e));
+      }
+    }
 
     // Update ranking score after translations complete
     updateRankingScore(postId).catch((e) => { console.error("Failed to update ranking score:", e); });
