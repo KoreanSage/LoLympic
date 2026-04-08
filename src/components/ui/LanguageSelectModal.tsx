@@ -9,7 +9,7 @@ const LANGUAGES: { code: Locale; flag: string; name: string; nativeName: string 
   { code: "ja", flag: "🇯🇵", name: "Japanese", nativeName: "日本語" },
   { code: "zh", flag: "🇨🇳", name: "Chinese", nativeName: "中文" },
   { code: "es", flag: "🇪🇸", name: "Spanish", nativeName: "Español" },
-  { code: "hi", flag: "🇮🇳", name: "Hindi", nativeName: "हिन्दी" },
+  { code: "hi", flag: "🇮🇳", name: "Hinglish", nativeName: "Hinglish" },
   { code: "ar", flag: "🇸🇦", name: "Arabic", nativeName: "العربية" },
 ];
 

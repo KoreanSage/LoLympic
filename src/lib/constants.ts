@@ -77,7 +77,7 @@ export const LANGUAGE_FONT_MAP: Record<LanguageCode, string> = {
   [LanguageCode.zh]: "Noto Sans SC",
   [LanguageCode.en]: "Impact",
   [LanguageCode.es]: "Arial",
-  [LanguageCode.hi]: "Noto Sans Devanagari",
+  [LanguageCode.hi]: "Noto Sans", // Hinglish uses Roman/Latin script
   [LanguageCode.ar]: "Noto Sans Arabic",
 };
 
