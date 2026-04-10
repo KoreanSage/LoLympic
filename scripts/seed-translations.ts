@@ -76,7 +76,7 @@ const CONCURRENCY = concIdx !== -1 ? parseInt(args[concIdx + 1], 10) : 2;
 
 // ── Language instructions ──
 const LANGUAGE_INSTRUCTIONS: Record<string, string> = {
-  ko: "Korean (한국어): Use short, punchy expressions. Meme culture in Korea favors 급식체 (school cafeteria slang), 신조어, and rhythmic wordplay. Keep sentences compact. Prefer colloquial register over formal.",
+  ko: "Korean (한국어): CRITICAL — Preserve the ORIGINAL MEANING accurately first. Do NOT replace with unrelated Korean idioms or food expressions. Translate naturally using everyday Korean. Keep sentences compact.",
   ja: "Japanese (日本語): Subtle and restrained humor. Use appropriate levels of politeness for comedic effect. Japanese memes often rely on understatement, ツッコミ/ボケ dynamics, and visual puns.",
   zh: "Chinese (中文): Compact and efficient. Chinese internet humor uses 网络用语, four-character idioms twisted for comedy, and phonetic puns. Keep character count low.",
   en: "English: Sarcastic and exaggerated. English memes lean into irony, self-deprecation, and absurdist escalation. Use internet-native phrasing.",

@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 # Language-specific translation instructions (mirrors Next.js codebase)
 # ---------------------------------------------------------------------------
 LANGUAGE_INSTRUCTIONS: dict[str, str] = {
-    "ko": "Korean (한국어): Use short, punchy expressions. Favor 급식체, 신조어, rhythmic wordplay. Keep compact. Prefer colloquial register.",
+    "ko": "Korean (한국어): Preserve original meaning first. Do NOT replace with unrelated idioms. Natural everyday Korean. Keep compact.",
     "ja": "Japanese (日本語): Subtle humor. Appropriate politeness for comedy. ツッコミ/ボケ dynamics. Preserve double-meaning wordplay.",
     "zh": "Chinese (中文): Compact, efficient. 网络用语, twisted four-character idioms, phonetic puns. Maximize impact per character.",
     "en": "English: Sarcastic, exaggerated. Irony, self-deprecation, absurdist escalation. Internet-native phrasing (all caps, deliberate misspellings).",
