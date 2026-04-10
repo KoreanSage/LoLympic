@@ -1353,7 +1353,7 @@ export async function POST(request: NextRequest) {
               model: "gemini-2.5-flash-lite",
               generationConfig: {
                 responseMimeType: "application/json",
-                temperature: 0.5,
+                temperature: 0.3,
                 maxOutputTokens: 4096,
               },
             });
@@ -1362,17 +1362,20 @@ export async function POST(request: NextRequest) {
               ? `\nOriginal source texts: ${englishAnalysis.segments.map(s => `"${s.sourceText}"`).join(", ")}`
               : "";
 
+            // Use full language name (e.g., "Korean (한국어)") for clearer model instruction
+            const targetLangName = targetLangInstruction.split(":")[0] || targetLang;
+
             const segTranslateResult = await liteModel.generateContent(
               `You are translating meme text for mimzy, a global meme platform.
 ${targetLangInstruction}
 
-Translate each of the following English meme texts to ${targetLang}. Keep the humor, tone, and cultural adaptation.
+Translate each of the following English meme texts to ${targetLangName}. Keep the humor, tone, and cultural adaptation. Match the original meme energy — short, punchy, native-feeling.
 ${pivotRef}
 
 English texts to translate:
 ${segmentTexts.map((t, i) => `${i + 1}. "${t}"`).join("\n")}
 
-Also write a SHORT culture note about this meme in ${targetLang}.
+Also write a SHORT culture note about this meme in ${targetLangName}.
 
 Return JSON only (no markdown fences):
 {
