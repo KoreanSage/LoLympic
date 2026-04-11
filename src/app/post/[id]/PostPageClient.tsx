@@ -67,7 +67,7 @@ export default function PostPageClient() {
       })
       .catch((e) => { console.error("Failed to fetch user language preference:", e); })
       .finally(() => setLangReady(true));
-  }, [session?.user]);
+  }, [session?.user?.preferredLanguage]);
 
   useEffect(() => {
     if (!id || !langReady) return;

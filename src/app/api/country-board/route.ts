@@ -5,7 +5,8 @@ import prisma from "@/lib/prisma";
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const countryId = searchParams.get("countryId");
-  const page = parseInt(searchParams.get("page") || "1");
+  const parsedPage = parseInt(searchParams.get("page") || "1", 10);
+  const page = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
   const limit = 20;
 
   if (!countryId) return NextResponse.json({ error: "Missing countryId" }, { status: 400 });

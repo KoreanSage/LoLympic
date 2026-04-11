@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { useTranslation } from "@/i18n";
+import { useTranslation, type TranslationKeys } from "@/i18n";
 import ChampionshipTimeline from "@/components/championship/ChampionshipTimeline";
 import CandidateCard from "@/components/championship/CandidateCard";
 import ChampionshipBattleGrid from "@/components/championship/ChampionshipBattleGrid";
@@ -89,16 +89,18 @@ interface CountryLeaderboardEntry {
   totalScore?: number;
 }
 
-function SeasonExplainer({ t }: { t: (key: any, params?: any) => string }) {
+type TFunction = (key: TranslationKeys, params?: Record<string, string | number>) => string;
+
+function SeasonExplainer({ t }: { t: TFunction }) {
   const [open, setOpen] = useState(false);
 
-  const steps = useMemo(() => [
+  const steps = useMemo(() => ([
     { icon: "1", titleKey: "championship.howItWorksStep1Title", descKey: "championship.howItWorksStep1Desc" },
     { icon: "2", titleKey: "championship.howItWorksStep2Title", descKey: "championship.howItWorksStep2Desc" },
     { icon: "3", titleKey: "championship.howItWorksStep3Title", descKey: "championship.howItWorksStep3Desc" },
     { icon: "4", titleKey: "championship.howItWorksStep4Title", descKey: "championship.howItWorksStep4Desc" },
     { icon: "5", titleKey: "championship.howItWorksStep5Title", descKey: "championship.howItWorksStep5Desc" },
-  ], []);
+  ] as const satisfies ReadonlyArray<{ icon: string; titleKey: TranslationKeys; descKey: TranslationKeys }>), []);
 
   return (
     <div className="bg-background-surface border border-border rounded-xl mb-6 overflow-hidden">

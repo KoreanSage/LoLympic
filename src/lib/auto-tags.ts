@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, type Part } from "@google/generative-ai";
 import prisma from "@/lib/prisma";
 
 let genAI: GoogleGenerativeAI | null = null;
@@ -25,7 +25,7 @@ interface AutoTagInput {
 export async function generateAutoTags({ postId, title, body, imageUrl }: AutoTagInput): Promise<string[]> {
   const ai = getGenAI();
 
-  const parts: any[] = [];
+  const parts: Part[] = [];
 
   // System prompt
   parts.push({
@@ -50,7 +50,7 @@ Example output: ["funny","relatable","work","monday mood"]`,
   // Try to include image for better analysis
   if (imageUrl) {
     try {
-      const imgRes = await fetch(imageUrl, { signal: AbortSignal.timeout(5000) });
+      const imgRes = await fetch(imageUrl, { signal: AbortSignal.timeout(10000) });
       if (imgRes.ok) {
         // Skip images larger than 5MB to avoid excessive memory usage
         const contentLength = parseInt(imgRes.headers.get("content-length") || "0", 10);

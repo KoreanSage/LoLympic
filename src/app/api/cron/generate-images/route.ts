@@ -4,17 +4,22 @@ import sharp from "sharp";
 import satori from "satori";
 import { Resvg } from "@resvg/resvg-js";
 import crypto from "crypto";
+import { uploadBufferToR2 } from "@/lib/storage";
 
 export const maxDuration = 60;
 
-const USE_BLOB = !!process.env.BLOB_READ_WRITE_TOKEN;
-
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 function isAuthorized(request: NextRequest): boolean {
-  const auth = request.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret) return false;
-  return auth === `Bearer ${cronSecret}`;
+  const authHeader = request.headers.get("authorization") ?? "";
+  const expected = `Bearer ${cronSecret}`;
+  if (authHeader.length !== expected.length) return false;
+  try {
+    return crypto.timingSafeEqual(Buffer.from(authHeader), Buffer.from(expected));
+  } catch {
+    return false;
+  }
 }
 
 // ─── Font ─────────────────────────────────────────────────────────────────────
@@ -34,11 +39,10 @@ async function fetchFont(_family: string, _text: string): Promise<ArrayBuffer> {
 // ─── Save image ───────────────────────────────────────────────────────────────
 async function saveImage(buffer: Buffer, prefix: string): Promise<string> {
   const filename = `${prefix}_${crypto.randomUUID()}.png`;
-  if (USE_BLOB) {
-    const { put } = await import("@vercel/blob");
-    const blob = await put(`uploads/${filename}`, buffer, { access: "public", contentType: "image/png" });
-    return blob.url;
-  }
+  // R2 is the sole production storage backend.
+  const r2Url = await uploadBufferToR2(buffer, `uploads/${filename}`, "image/png");
+  if (r2Url) return r2Url;
+  // Dev fallback: served by src/app/api/uploads/[filename]/route.ts from disk.
   return `/api/uploads/${filename}`;
 }
 
@@ -210,7 +214,21 @@ export async function GET(request: NextRequest) {
       if (!imageUrl) { results.push({ id: p.id, ok: false, error: "no image" }); continue; }
 
       try {
-        const url = await composeImage(p.id, imageUrl, p.segments as any, p.targetLanguage);
+        // Filter out segments with null coordinates (can't render those).
+        const usableSegments = p.segments
+          .filter((s) => s.boxX !== null && s.boxY !== null && s.boxWidth !== null && s.boxHeight !== null)
+          .map((s) => ({
+            translatedText: s.translatedText,
+            boxX: s.boxX!,
+            boxY: s.boxY!,
+            boxWidth: s.boxWidth!,
+            boxHeight: s.boxHeight!,
+            fontWeight: s.fontWeight ?? undefined,
+            color: s.color ?? undefined,
+            textAlign: s.textAlign,
+            semanticRole: s.semanticRole,
+          }));
+        const url = await composeImage(p.id, imageUrl, usableSegments, p.targetLanguage);
         if (!url) {
           // Mark as skipped (too large, no visible segments, etc.)
           await prisma.translationPayload.update({
@@ -219,13 +237,14 @@ export async function GET(request: NextRequest) {
           }).catch(() => {});
         }
         results.push({ id: p.id, ok: !!url, url: url || undefined });
-      } catch (e: any) {
+      } catch (e) {
+        console.error(`[generate-images] compose failed for ${p.id}:`, e);
         // Mark as skipped so we don't retry forever
         await prisma.translationPayload.update({
           where: { id: p.id },
           data: { translatedImageUrl: "SKIPPED" },
         }).catch(() => {});
-        results.push({ id: p.id, ok: false, error: e.message?.slice(0, 100) });
+        results.push({ id: p.id, ok: false, error: "compose_failed" });
       }
     }
 
@@ -234,8 +253,8 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json({ processed: results.length, results, remaining });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Generate images error:", error);
-    return NextResponse.json({ error: error.message?.slice(0, 200) }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

@@ -240,6 +240,10 @@ export default function MemeRenderer({
     const dpr = window.devicePixelRatio || 1;
     const { w: displayW, h: displayH } = displaySize;
 
+    // displayW/H is already constrained to fit within parent width AND the
+    // maxHeight prop (see useEffects above + ResizeObserver). Set the canvas
+    // bitmap to dpr-scaled pixels and the CSS size to CSS pixels so the
+    // browser shows a crisp, properly-sized canvas with no overflow.
     canvas.width = displayW * dpr;
     canvas.height = displayH * dpr;
     canvas.style.width = `${displayW}px`;
@@ -536,20 +540,31 @@ export default function MemeRenderer({
     }
   }, [render, showTranslation, segments, usePreRendered]);
 
-  // Re-render on resize
+  // Re-render on resize. CRITICAL: must honour `maxHeight` here too — the
+  // initial useEffect above applied it correctly, but this observer would
+  // immediately overwrite displaySize with natural-aspect dimensions, so the
+  // canvas ended up at full-height pixels and got clipped by the parent's
+  // overflow-hidden + max-h-[70vh] container.
   useEffect(() => {
     if (!containerRef.current || width) return;
     const observer = new ResizeObserver(() => {
       if (!image) return;
       const containerW = containerRef.current?.clientWidth || 0;
-      if (containerW > 0 && containerW !== displaySize.w) {
-        const aspect = image.naturalWidth / image.naturalHeight;
-        setDisplaySize({ w: containerW, h: containerW / aspect });
+      if (containerW <= 0) return;
+      const aspect = image.naturalWidth / image.naturalHeight;
+      let nextW = containerW;
+      let nextH = containerW / aspect;
+      if (maxHeight && nextH > maxHeight) {
+        nextH = maxHeight;
+        nextW = nextH * aspect;
+      }
+      if (Math.round(nextW) !== Math.round(displaySize.w) || Math.round(nextH) !== Math.round(displaySize.h)) {
+        setDisplaySize({ w: nextW, h: nextH });
       }
     });
     observer.observe(containerRef.current);
     return () => observer.disconnect();
-  }, [image, width, displaySize.w]);
+  }, [image, width, maxHeight, displaySize.w, displaySize.h]);
 
   // Canvas rendering failed — show original image with overlay notice
   if (canvasRenderError && !usePreRendered) {
@@ -571,23 +586,27 @@ export default function MemeRenderer({
   }
 
   return (
-    <div ref={containerRef} className="relative w-full">
+    <div
+      ref={containerRef}
+      className="relative w-full flex items-center justify-center"
+    >
       {/* Pre-rendered translated image — clean swap, no canvas needed */}
       {usePreRendered && (
         <img
           src={translatedImageUrl}
           alt="Translated meme"
-          className="w-full rounded-lg"
-          style={{ maxWidth: "100%" }}
+          className="rounded-lg w-auto max-w-full h-auto max-h-[70vh] object-contain"
           onError={() => setTranslatedImageError(true)}
         />
       )}
-      {/* Canvas fallback — used for original image or when no pre-rendered image */}
+      {/* Canvas fallback — used for original image or when no pre-rendered
+          image. Inline width/height are set by render() after displaySize is
+          computed with the maxHeight constraint applied, so the canvas fits
+          within the parent's max-h-[70vh] box without clipping. */}
       <canvas
         ref={canvasRef}
-        className="w-full rounded-lg"
+        className="rounded-lg max-w-full"
         style={{
-          maxWidth: "100%",
           display: !usePreRendered && displaySize.w > 0 ? "block" : "none",
         }}
       />

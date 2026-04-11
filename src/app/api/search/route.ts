@@ -4,6 +4,11 @@ import { LanguageCode, Prisma } from "@prisma/client";
 import { getSessionUser } from "@/lib/auth";
 import { getBlockedUserIds } from "@/lib/block";
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
+import { VALID_LANGUAGES } from "@/lib/constants";
+
+/** Minimum characters required for a search query — avoids full-table scans on
+ * single-character terms which are effectively a DoS vector. */
+const MIN_SEARCH_LENGTH = 2;
 
 // ---------------------------------------------------------------------------
 // GET /api/search?q=keyword&type=posts|users|all&limit=20
@@ -28,9 +33,8 @@ export async function GET(request: NextRequest) {
     const timeRange = searchParams.get("timeRange") || "all";
     const sort = searchParams.get("sort") || "relevance";
     const country = searchParams.get("country");
-    const VALID_LANGS = ["ko", "en", "ja", "zh", "es", "hi", "ar"];
     let language = searchParams.get("language");
-    if (language && !VALID_LANGS.includes(language)) language = null;
+    if (language && !(VALID_LANGUAGES as readonly string[]).includes(language)) language = null;
 
     // Block filtering
     let blockedIds: string[] = [];
@@ -82,9 +86,9 @@ export async function GET(request: NextRequest) {
         break;
     }
 
-    if (!query || query.length < 1) {
+    if (!query || query.length < MIN_SEARCH_LENGTH) {
       return NextResponse.json(
-        { error: "Search query (q) is required" },
+        { error: `Search query must be at least ${MIN_SEARCH_LENGTH} characters` },
         { status: 400 }
       );
     }

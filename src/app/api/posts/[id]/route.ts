@@ -4,6 +4,7 @@ import { getSessionUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { LanguageCode } from "@prisma/client";
 import { backfillSinglePostTitle } from "@/lib/translate-backfill";
+import { VALID_LANGUAGES } from "@/lib/constants";
 
 const updatePostSchema = z.object({
   title: z.string().max(200, "Title must be under 200 characters").optional(),
@@ -24,9 +25,9 @@ export async function GET(
 ) {
   try {
     const { id } = await context.params;
-    const VALID_LANGS = ["ko", "en", "ja", "zh", "es", "hi", "ar"];
     const rawLang = request.nextUrl.searchParams.get("lang");
-    const lang = rawLang && VALID_LANGS.includes(rawLang) ? rawLang : null;
+    const lang =
+      rawLang && (VALID_LANGUAGES as readonly string[]).includes(rawLang) ? rawLang : null;
 
     const post = await prisma.post.findUnique({
       where: { id },
@@ -115,7 +116,7 @@ export async function GET(
         },
         orderBy: { version: "desc" },
       });
-      Object.assign(post, { cultureNotes: fallbackNotes });
+      post.cultureNotes = fallbackNotes;
     }
 
     // Get reaction counts by type

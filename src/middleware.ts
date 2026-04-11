@@ -28,6 +28,14 @@ export async function middleware(request: NextRequest) {
   const ADMIN_PATHS = ["/admin", "/api/admin"];
   const isAdminPath = ADMIN_PATHS.some((p) => pathname.startsWith(p));
   if (isAdminPath && token?.role !== "ADMIN" && token?.role !== "SUPER_ADMIN") {
+    // For API routes, return proper HTTP semantics: 401 if unauthenticated,
+    // 403 if authenticated but lacking role. HTML routes still redirect home.
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json(
+        { error: token ? "Forbidden" : "Unauthorized" },
+        { status: token ? 403 : 401 }
+      );
+    }
     return NextResponse.redirect(new URL("/", request.url));
   }
 

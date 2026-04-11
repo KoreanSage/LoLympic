@@ -16,9 +16,10 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get("type") || "country";
     const seasonId = searchParams.get("seasonId");
     const lang = searchParams.get("lang") || null; // target language for translated titles
+    const parsedLimit = parseInt(searchParams.get("limit") || "20", 10);
     const limit = Math.min(
-      100,
-      Math.max(1, parseInt(searchParams.get("limit") || "20", 10))
+      50,
+      Math.max(1, Number.isFinite(parsedLimit) ? parsedLimit : 20)
     );
 
     // If no seasonId, find current active season
@@ -80,8 +81,11 @@ export async function GET(request: NextRequest) {
     // MVP (weekly + monthly)
     if (type === "mvp") {
       const now = new Date();
+      // Week starts Monday (ISO-style): reduces confusion and matches common UX.
       const weekStart = new Date(now);
-      weekStart.setDate(now.getDate() - now.getDay());
+      const dow = weekStart.getDay(); // 0 = Sunday
+      const offset = (dow + 6) % 7; // days since Monday
+      weekStart.setDate(now.getDate() - offset);
       weekStart.setHours(0, 0, 0, 0);
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
@@ -98,14 +102,22 @@ export async function GET(request: NextRequest) {
         }),
       ]);
 
-      const getTopAuthor = async (reactions: Array<{ postId: string; _count: { id: number } }>) => {
-        if (reactions.length === 0) return null;
-        const postIds = reactions.map((r) => r.postId);
-        const posts = await prisma.post.findMany({
-          where: { id: { in: postIds }, status: "PUBLISHED", visibility: "PUBLIC" },
-          select: { id: true, authorId: true },
-        });
-        const postAuthorMap = new Map(posts.map((p) => [p.id, p.authorId]));
+      // Resolve ALL unique postIds in a single query to avoid duplicate N lookups.
+      const allPostIds = Array.from(
+        new Set([
+          ...weeklyReactions.map((r) => r.postId),
+          ...monthlyReactions.map((r) => r.postId),
+        ])
+      );
+      const allPosts = allPostIds.length
+        ? await prisma.post.findMany({
+            where: { id: { in: allPostIds }, status: "PUBLISHED", visibility: "PUBLIC" },
+            select: { id: true, authorId: true },
+          })
+        : [];
+      const postAuthorMap = new Map(allPosts.map((p) => [p.id, p.authorId]));
+
+      const aggregate = (reactions: Array<{ postId: string; _count: { id: number } }>) => {
         const authorScores = new Map<string, number>();
         for (const r of reactions) {
           const authorId = postAuthorMap.get(r.postId);
@@ -113,22 +125,45 @@ export async function GET(request: NextRequest) {
           authorScores.set(authorId, (authorScores.get(authorId) || 0) + r._count.id);
         }
         if (authorScores.size === 0) return null;
-        const topAuthorId = Array.from(authorScores.entries()).sort((a, b) => b[1] - a[1])[0];
-        const user = await prisma.user.findUnique({
-          where: { id: topAuthorId[0] },
-          select: { username: true, displayName: true, avatarUrl: true, country: { select: { flagEmoji: true } } },
-        });
-        if (!user) return null;
-        return { username: user.username, displayName: user.displayName, avatarUrl: user.avatarUrl, countryFlag: user.country?.flagEmoji, reactionCount: topAuthorId[1] };
-      }
+        return Array.from(authorScores.entries()).sort((a, b) => b[1] - a[1])[0];
+      };
 
-      const [weeklyMvp, monthlyMvp] = await Promise.all([
-        getTopAuthor(weeklyReactions),
-        getTopAuthor(monthlyReactions),
-      ]);
+      const weeklyTop = aggregate(weeklyReactions);
+      const monthlyTop = aggregate(monthlyReactions);
+
+      // Batch-fetch both top authors in a single query.
+      const authorIds = Array.from(
+        new Set([weeklyTop?.[0], monthlyTop?.[0]].filter((x): x is string => !!x))
+      );
+      const users = authorIds.length
+        ? await prisma.user.findMany({
+            where: { id: { in: authorIds } },
+            select: {
+              id: true,
+              username: true,
+              displayName: true,
+              avatarUrl: true,
+              country: { select: { flagEmoji: true } },
+            },
+          })
+        : [];
+      const userMap = new Map(users.map((u) => [u.id, u]));
+
+      const buildMvp = (top: [string, number] | null) => {
+        if (!top) return null;
+        const user = userMap.get(top[0]);
+        if (!user) return null;
+        return {
+          username: user.username,
+          displayName: user.displayName,
+          avatarUrl: user.avatarUrl,
+          countryFlag: user.country?.flagEmoji,
+          reactionCount: top[1],
+        };
+      };
 
       return NextResponse.json(
-        { weeklyMvp, monthlyMvp },
+        { weeklyMvp: buildMvp(weeklyTop), monthlyMvp: buildMvp(monthlyTop) },
         { headers: LEADERBOARD_CACHE_HEADERS }
       );
     }
@@ -137,7 +172,9 @@ export async function GET(request: NextRequest) {
     if (type === "country-matchup") {
       const now = new Date();
       const weekStart = new Date(now);
-      weekStart.setDate(now.getDate() - now.getDay());
+      const dow = weekStart.getDay();
+      const offset = (dow + 6) % 7; // days since Monday
+      weekStart.setDate(now.getDate() - offset);
       weekStart.setHours(0, 0, 0, 0);
 
       const weeklyReactions = await prisma.postReaction.groupBy({

@@ -59,28 +59,36 @@ export async function GET() {
       };
     });
 
-    // Get unread counts per conversation in a single query
+    // Get unread counts per conversation in a SINGLE groupBy query (no N+1).
+    // We intentionally over-select with the earliest lastReadAt, then filter
+    // per-conversation in JS. This avoids N queries for N conversations.
     const conversationIds = conversations.map((c) => c.id);
     const lastReadMap = new Map(
       participations.map((p) => [p.conversation.id, p.lastReadAt])
     );
 
-    // Batch unread counts using lastReadAt comparison
-    const unreadPromises = conversationIds.map(async (convId) => {
-      const lastRead = lastReadMap.get(convId);
-      const count = await prisma.directMessage.count({
+    const unreadMap = new Map<string, number>();
+    if (conversationIds.length > 0) {
+      // Find earliest lastRead across all conversations, then pull the minimal
+      // candidate set of messages and tally per-conversation in memory.
+      const earliestLastRead = participations.reduce<Date | null>((min, p) => {
+        return !min || p.lastReadAt < min ? p.lastReadAt : min;
+      }, null);
+      const candidates = await prisma.directMessage.findMany({
         where: {
-          conversationId: convId,
+          conversationId: { in: conversationIds },
           senderId: { not: user.id },
-          ...(lastRead ? { createdAt: { gt: lastRead } } : {}),
+          ...(earliestLastRead ? { createdAt: { gt: earliestLastRead } } : {}),
         },
+        select: { conversationId: true, createdAt: true },
       });
-      return { convId, count };
-    });
-    const unreadResults = await Promise.all(unreadPromises);
-    const unreadMap = new Map(
-      unreadResults.map((r) => [r.convId, r.count])
-    );
+      for (const m of candidates) {
+        const lastRead = lastReadMap.get(m.conversationId);
+        if (!lastRead || m.createdAt > lastRead) {
+          unreadMap.set(m.conversationId, (unreadMap.get(m.conversationId) ?? 0) + 1);
+        }
+      }
+    }
 
     const conversationsWithUnread = conversations.map((conv) => ({
       ...conv,

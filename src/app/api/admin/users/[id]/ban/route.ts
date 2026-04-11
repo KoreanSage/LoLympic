@@ -3,9 +3,14 @@ import { z } from "zod";
 import { getSessionUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
+// Cap at ~27 years to keep the resulting timestamp inside the 32-bit day-count
+// range and safely within JavaScript's Date limits. Permanent bans should
+// simply omit durationDays (null = forever).
+const MAX_BAN_DAYS = 10_000;
+
 const banSchema = z.object({
   reason: z.string().max(500).optional(),
-  durationDays: z.number().int().positive().optional(),
+  durationDays: z.number().int().positive().max(MAX_BAN_DAYS).optional(),
 });
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -14,10 +19,10 @@ type RouteContext = { params: Promise<{ id: string }> };
 export async function POST(request: NextRequest, { params }: RouteContext) {
   try {
     const currentUser = await getSessionUser();
-    if (
-      !currentUser ||
-      (currentUser.role !== "ADMIN" && currentUser.role !== "SUPER_ADMIN")
-    ) {
+    if (!currentUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if (currentUser.role !== "ADMIN" && currentUser.role !== "SUPER_ADMIN") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -82,10 +87,10 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
 export async function DELETE(_request: NextRequest, { params }: RouteContext) {
   try {
     const currentUser = await getSessionUser();
-    if (
-      !currentUser ||
-      (currentUser.role !== "ADMIN" && currentUser.role !== "SUPER_ADMIN")
-    ) {
+    if (!currentUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if (currentUser.role !== "ADMIN" && currentUser.role !== "SUPER_ADMIN") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
