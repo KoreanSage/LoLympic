@@ -3,6 +3,7 @@ import { getSessionUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import sharp from "sharp";
 import crypto from "crypto";
+import { uploadBufferToR2 } from "@/lib/storage";
 
 export const maxDuration = 60;
 
@@ -67,45 +68,13 @@ export async function POST(
     const imgWidth = metadata.width || 800;
     const imgHeight = metadata.height || 800;
 
-    // Storage setup
-    const USE_R2 = !!(
-      process.env.R2_ACCESS_KEY_ID &&
-      process.env.R2_SECRET_ACCESS_KEY &&
-      process.env.R2_ENDPOINT &&
-      process.env.R2_BUCKET_NAME
-    );
-    const USE_BLOB = !USE_R2 && !!process.env.BLOB_READ_WRITE_TOKEN;
-
+    // Storage setup — R2 is the sole production backend.
     const saveImage = async (buffer: Buffer, prefix: string): Promise<string> => {
       const filename = `${prefix}_${crypto.randomUUID()}.webp`;
-      if (USE_R2) {
-        const { S3Client } = await import("@aws-sdk/client-s3");
-        const { PutObjectCommand } = await import("@aws-sdk/client-s3");
-        const s3 = new S3Client({
-          region: "auto",
-          endpoint: process.env.R2_ENDPOINT!,
-          credentials: {
-            accessKeyId: process.env.R2_ACCESS_KEY_ID!,
-            secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
-          },
-        });
-        await s3.send(new PutObjectCommand({
-          Bucket: process.env.R2_BUCKET_NAME!,
-          Key: `uploads/${filename}`,
-          Body: buffer,
-          ContentType: "image/webp",
-        }));
-        return `${process.env.R2_PUBLIC_URL || `https://pub-${process.env.R2_BUCKET_NAME}.r2.dev`}/uploads/${filename}`;
-      } else if (USE_BLOB) {
-        const { put } = await import("@vercel/blob");
-        const blob = await put(`uploads/${filename}`, buffer, {
-          access: "public",
-          contentType: "image/webp",
-        });
-        return blob.url;
-      }
-      throw new Error("No storage configured");
-    }
+      const url = await uploadBufferToR2(buffer, `uploads/${filename}`, "image/webp");
+      if (!url) throw new Error("R2 not configured");
+      return url;
+    };
 
     // Re-render each language using ORIGINAL image + opaque rects
     let rendered = 0;
