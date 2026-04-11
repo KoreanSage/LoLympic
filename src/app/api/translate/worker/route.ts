@@ -15,6 +15,7 @@ import prisma from "@/lib/prisma";
 import { LanguageCode } from "@prisma/client";
 import { verifyQstashSignature, type TranslationJobPayload } from "@/lib/qstash";
 import { updateRankingScore } from "@/lib/ranking";
+import { translateTitleOrDescription } from "@/lib/title-translation";
 import {
   getGenAI,
   LANGUAGE_INSTRUCTIONS,
@@ -354,36 +355,29 @@ Return JSON only (no markdown fences):
       }
     }
 
-    // 6. Translate title/body (flash-lite, cheap)
+    // 6. Translate title/body via the shared helper (which handles echo
+    //    detection + retry for cases where Gemini returns the source text).
+    //    LANGUAGE_INSTRUCTIONS is no longer needed here — the helper has its
+    //    own language metadata and stricter retry prompts.
     let translatedTitle: string | null = null;
     let translatedBody: string | null = null;
     if (targetLanguage !== sourceLanguage) {
-      const targetName =
-        LANGUAGE_INSTRUCTIONS[targetLanguage]?.split(":")[0] || targetLanguage;
       const [titleResult, bodyResult] = await Promise.allSettled([
         post.title
-          ? (async () => {
-              const m = getGenAI().getGenerativeModel({
-                model: "gemini-2.5-flash-lite",
-                generationConfig: { temperature: 0.3, maxOutputTokens: 512 },
-              });
-              const r = await m.generateContent(
-                `Translate the following meme title to ${targetName}. Output ONLY the translated text, nothing else. Keep the humor and tone.\n\n${post.title}`
-              );
-              return r.response.text().trim();
-            })()
+          ? translateTitleOrDescription({
+              sourceText: post.title,
+              sourceLanguage,
+              targetLanguage,
+              kind: "title",
+            })
           : Promise.resolve(null),
         post.body
-          ? (async () => {
-              const m = getGenAI().getGenerativeModel({
-                model: "gemini-2.5-flash-lite",
-                generationConfig: { temperature: 0.3, maxOutputTokens: 1024 },
-              });
-              const r = await m.generateContent(
-                `Translate the following meme description to ${targetName}. Output ONLY the translated text, nothing else. Keep the humor and tone.\n\n${post.body}`
-              );
-              return r.response.text().trim();
-            })()
+          ? translateTitleOrDescription({
+              sourceText: post.body,
+              sourceLanguage,
+              targetLanguage,
+              kind: "description",
+            })
           : Promise.resolve(null),
       ]);
       translatedTitle = titleResult.status === "fulfilled" ? titleResult.value : null;

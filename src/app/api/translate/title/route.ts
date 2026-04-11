@@ -2,25 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 import prisma from "@/lib/prisma";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { translateTitleOrDescription } from "@/lib/title-translation";
 
 const VALID_LANGUAGES = ["ko", "en", "ja", "zh", "es", "hi", "ar"];
-
-const LANGUAGE_NAMES: Record<string, string> = {
-  ko: "Korean (한국어)",
-  en: "English",
-  ja: "Japanese (日本語)",
-  zh: "Chinese (中文)",
-  es: "Spanish (Español)",
-  hi: "Hinglish (Roman script — NO Devanagari)",
-  ar: "Arabic (العربية)",
-};
-
-let genAI: GoogleGenerativeAI | null = null;
-function getGenAI() {
-  if (!genAI) genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-  return genAI;
-}
 
 // ---------------------------------------------------------------------------
 // POST /api/translate/title — Translate a post title (and optionally body)
@@ -46,7 +30,21 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { title, body: postBody, targetLanguage, payloadId } = body;
+    const {
+      title,
+      body: postBody,
+      targetLanguage,
+      payloadId,
+      sourceLanguage,
+      force,
+    }: {
+      title?: string;
+      body?: string;
+      targetLanguage?: string;
+      payloadId?: string;
+      sourceLanguage?: string;
+      force?: boolean;
+    } = body;
 
     if (!title || !targetLanguage || !payloadId) {
       return NextResponse.json(
@@ -66,65 +64,83 @@ export async function POST(request: NextRequest) {
     // Verify the payload exists
     const payload = await prisma.translationPayload.findUnique({
       where: { id: payloadId },
-      select: { id: true, translatedTitle: true, translatedBody: true },
+      select: {
+        id: true,
+        translatedTitle: true,
+        translatedBody: true,
+        sourceLanguage: true,
+        targetLanguage: true,
+      },
     });
 
     if (!payload) {
       return NextResponse.json({ error: "Payload not found" }, { status: 404 });
     }
 
-    // If already translated (race condition guard), return existing
-    if (payload.translatedTitle) {
+    // If already translated AND not forcing re-translation, short-circuit.
+    // `force: true` is used by admin re-translation flows to overwrite a
+    // broken translatedTitle (e.g. when Gemini echoed the source language).
+    if (payload.translatedTitle && !force) {
       return NextResponse.json({
         translatedTitle: payload.translatedTitle,
         translatedBody: payload.translatedBody,
       });
     }
 
-    const targetName = LANGUAGE_NAMES[targetLanguage] || targetLanguage;
-    const model = getGenAI().getGenerativeModel({
-      model: "gemini-2.5-flash-lite",
-      generationConfig: { temperature: 0.3, maxOutputTokens: 512 },
-    });
+    // `force: true` is admin-only — unprivileged users can't overwrite
+    // someone else's existing translatedTitle.
+    if (force && user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {
+      return NextResponse.json(
+        { error: "Forbidden: force re-translation requires admin role" },
+        { status: 403 }
+      );
+    }
 
-    // Translate title
-    const titleResult = await model.generateContent(
-      `Translate the following meme title to ${targetName}. Output ONLY the translated text, nothing else. Keep the humor and tone.\n\n${title}`
-    );
-    const translatedTitle = titleResult.response.text()?.trim();
+    const resolvedSourceLang = sourceLanguage || payload.sourceLanguage || "ko";
+
+    // Translate title with echo detection + retry (see src/lib/title-translation.ts)
+    const translatedTitle = await translateTitleOrDescription({
+      sourceText: title,
+      sourceLanguage: resolvedSourceLang,
+      targetLanguage,
+      kind: "title",
+    });
 
     if (!translatedTitle) {
       return NextResponse.json(
-        { error: "Translation returned empty result" },
+        { error: "Translation returned empty or invalid result" },
         { status: 502 }
       );
     }
 
-    // Translate body if provided and not already translated
+    // Translate body if provided and not already translated (or forced)
     let translatedBody: string | undefined;
-    if (postBody && !payload.translatedBody) {
-      try {
-        const bodyResult = await model.generateContent(
-          `Translate the following meme description to ${targetName}. Output ONLY the translated text, nothing else. Keep the humor and tone.\n\n${postBody}`
-        );
-        translatedBody = bodyResult.response.text()?.trim() || undefined;
-      } catch {
-        // Body translation is optional, don't fail the whole request
-      }
+    if (postBody && (!payload.translatedBody || force)) {
+      const body = await translateTitleOrDescription({
+        sourceText: postBody,
+        sourceLanguage: resolvedSourceLang,
+        targetLanguage,
+        kind: "description",
+      });
+      translatedBody = body ?? undefined;
     }
 
-    // Save to DB (re-check to avoid race condition overwrite)
-    const freshPayload = await prisma.translationPayload.findUnique({
-      where: { id: payloadId },
-      select: { translatedTitle: true, translatedBody: true },
-    });
-
-    if (freshPayload?.translatedTitle) {
-      // Another request already filled it — return that instead
-      return NextResponse.json({
-        translatedTitle: freshPayload.translatedTitle,
-        translatedBody: freshPayload.translatedBody,
+    // Save to DB (re-check to avoid race condition overwrite).
+    // The race guard is SKIPPED when force=true — that path deliberately
+    // wants to overwrite whatever's already there.
+    if (!force) {
+      const freshPayload = await prisma.translationPayload.findUnique({
+        where: { id: payloadId },
+        select: { translatedTitle: true, translatedBody: true },
       });
+
+      if (freshPayload?.translatedTitle) {
+        // Another request already filled it — return that instead
+        return NextResponse.json({
+          translatedTitle: freshPayload.translatedTitle,
+          translatedBody: freshPayload.translatedBody,
+        });
+      }
     }
 
     await prisma.translationPayload.update({
