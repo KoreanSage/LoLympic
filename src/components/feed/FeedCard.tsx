@@ -77,6 +77,7 @@ interface FeedCardProps {
   images?: FeedImage[];
   onDelete?: (id: string) => void;
   isBookmarked?: boolean;
+  postStatus?: string;
 }
 
 // Bookmark helpers
@@ -124,6 +125,7 @@ function FeedCardInner({
   images,
   onDelete,
   isBookmarked: isBookmarkedProp,
+  postStatus,
 }: FeedCardProps) {
   const { toast } = useToast();
   const router = useRouter();
@@ -337,6 +339,12 @@ function FeedCardInner({
               <Badge variant="gold" size="sm">
                 {seasonBadge}
               </Badge>
+            )}
+            {postStatus === "PROCESSING" && (
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-yellow-400/15 text-yellow-300 text-[10px] font-medium">
+                <span className="inline-block w-1 h-1 rounded-full bg-yellow-400 animate-pulse" />
+                번역 중
+              </span>
             )}
           </div>
           <div className="flex items-center gap-1.5 text-xs text-foreground-subtle">

@@ -69,6 +69,7 @@ interface FeedPost {
   tags?: string[];
   topComments?: TopComment[];
   images?: FeedImage[];
+  postStatus?: string;
 }
 
 interface FeedListProps {
@@ -149,6 +150,7 @@ function mapApiPost(post: any): FeedPost {
     commentCount: post.commentCount ?? post._count?.comments ?? 0,
     shareCount: post.shareCount ?? 0,
     viewCount: post.viewCount ?? 0,
+    postStatus: post.status || undefined,
     createdAt: String(post.createdAt || ""),
     tags: post.tags || [],
     images: (post.images || []).map((img: any) => ({

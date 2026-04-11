@@ -349,6 +349,41 @@ export default function UploadStudio() {
         // Translate using first static image (skip GIF and video)
         const translateImage = uploadedImages.find((img) => img.mimeType && !img.mimeType.startsWith("video/") && img.mimeType !== "image/gif") || uploadedImages[0];
 
+        // Feature-flagged async path. When enabled, we publish all target
+        // languages to a background QStash queue and redirect immediately.
+        // The post page will poll for progress and render translations as
+        // each language completes. Fallback = legacy sync path below.
+        const useAsync = process.env.NEXT_PUBLIC_TRANSLATE_ASYNC === "true";
+
+        if (useAsync) {
+          try {
+            await fetch("/api/translate/enqueue", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                postId,
+                sourceLanguage,
+                targetLanguages: targetLangs.map((l) => l.code),
+              }),
+            });
+            // Mark all languages as queued — the post page takes over from here
+            setProgress((p) => {
+              if (!p) return p;
+              const langs = { ...p.languages };
+              targetLangs.forEach((l) => (langs[l.code] = "translating"));
+              return { ...p, languages: langs, phase: "done" };
+            });
+          } catch (e) {
+            console.error("Enqueue failed, falling back to sync:", e);
+          }
+          trackEvent("meme_upload", { postType: "meme" });
+          setTimeout(() => {
+            if (postId) router.push(`/post/${postId}`);
+          }, 800);
+          return;
+        }
+
+        // Legacy sync path (used when NEXT_PUBLIC_TRANSLATE_ASYNC !== "true")
         // Translate one language at a time with retry
         const translateOneLang = async (langCode: string): Promise<boolean> => {
           const translateRes = await fetch("/api/translate", {

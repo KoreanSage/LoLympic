@@ -5,7 +5,19 @@ import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import MainLayout from "@/components/layout/MainLayout";
 import PostDetail from "@/components/post/PostDetail";
+import { TranslationProgress, type TranslationPayloadStatus } from "@/components/post/TranslationProgress";
 import { useTranslation } from "@/i18n";
+
+interface TranslationStatusResponse {
+  postStatus: string;
+  payloads: TranslationPayloadStatus[];
+  summary: {
+    total: number;
+    completed: number;
+    failed: number;
+    inProgress: number;
+  };
+}
 
 export default function PostPageClient() {
   const params = useParams();
@@ -17,6 +29,8 @@ export default function PostPageClient() {
   const [loading, setLoading] = useState(true);
   const [clientTranslatedTitle, setClientTranslatedTitle] = useState<string | null>(null);
   const [clientTranslatedBody, setClientTranslatedBody] = useState<string | null>(null);
+  const [translationStatus, setTranslationStatus] = useState<TranslationStatusResponse | null>(null);
+  const [pollTimedOut, setPollTimedOut] = useState(false);
   const titleBackfillAttempted = useRef(false);
   const cleanImageAttempted = useRef(false);
   const translationRetryAttempted = useRef(false);
@@ -185,6 +199,9 @@ export default function PostPageClient() {
     if (post.translationPayloads?.length > 0) return;
     // Same language — no translation needed
     if (post.sourceLanguage === preferredLang) return;
+    // Skip if the post is currently being processed by the async worker —
+    // polling effect below handles it.
+    if (post.status === "PROCESSING") return;
 
     translationRetryAttempted.current = true;
     fetch("/api/translate", {
@@ -208,6 +225,82 @@ export default function PostPageClient() {
       })
       .catch((e) => { console.warn("Auto-retry translation failed:", e); });
   }, [post, session?.user, preferredLang, id]);
+
+  // Poll translation status while async jobs are in flight.
+  // Starts when the post is PROCESSING or has any PROCESSING payload;
+  // stops when everything is settled or after 5 minutes.
+  useEffect(() => {
+    if (!post) return;
+    const hasInFlight =
+      post.status === "PROCESSING" ||
+      (post.translationPayloads ?? []).some((p: any) => p.status === "PROCESSING");
+    if (!hasInFlight) return;
+
+    let cancelled = false;
+    let ticks = 0;
+    const MAX_TICKS = 120; // 2.5s × 120 = 5 minutes
+
+    const poll = async () => {
+      if (cancelled) return;
+      ticks++;
+      if (ticks > MAX_TICKS) {
+        setPollTimedOut(true);
+        return;
+      }
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+        return; // skip this tick, come back next interval
+      }
+      try {
+        const r = await fetch(`/api/posts/${id}/translation-status`);
+        if (!r.ok) return;
+        const data = (await r.json()) as TranslationStatusResponse;
+        if (cancelled) return;
+        setTranslationStatus(data);
+
+        if (data.summary.total > 0 && data.summary.inProgress === 0) {
+          // All jobs settled — refetch full post to pick up new translations
+          const fresh = await fetch(`/api/posts/${id}?lang=${preferredLang}`).then((r) =>
+            r.ok ? r.json() : null
+          );
+          if (!cancelled && fresh) setPost(fresh);
+          // Clear interval
+          if (intervalId !== null) clearInterval(intervalId);
+        }
+      } catch {
+        // swallow transient errors
+      }
+    };
+
+    // Initial fetch
+    poll();
+    const intervalId: number = window.setInterval(poll, 2500);
+
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
+  }, [post?.id, post?.status, id, preferredLang]);
+
+  // Retry handler: re-enqueue failed languages via /api/translate/enqueue
+  const handleRetryFailed = async (failedLangs: string[]) => {
+    if (!post || failedLangs.length === 0) return;
+    try {
+      await fetch("/api/translate/enqueue", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          postId: post.id,
+          sourceLanguage: post.sourceLanguage || "ko",
+          targetLanguages: failedLangs,
+        }),
+      });
+      setPollTimedOut(false);
+      // Reset translation status so the polling effect picks up the new PROCESSING rows
+      setPost({ ...post, status: "PROCESSING" });
+    } catch (e) {
+      console.error("Retry failed:", e);
+    }
+  };
 
   if (loading) {
     return (
@@ -322,8 +415,23 @@ export default function PostPageClient() {
       status: n.status,
     }));
 
+  const showProgress =
+    translationStatus &&
+    translationStatus.summary.total > 0 &&
+    (translationStatus.summary.inProgress > 0 || translationStatus.summary.failed > 0 || pollTimedOut);
+
   return (
     <MainLayout showSidebar={false}>
+      {showProgress && translationStatus && (
+        <div className="max-w-2xl mx-auto px-4 pt-4">
+          <TranslationProgress
+            summary={translationStatus.summary}
+            payloads={translationStatus.payloads}
+            timedOut={pollTimedOut}
+            onRetry={handleRetryFailed}
+          />
+        </div>
+      )}
       <PostDetail
         id={post.id}
         title={translatedTitle || post.title}
