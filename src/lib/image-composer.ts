@@ -156,22 +156,34 @@ async function fetchFontAsBase64(fontFamily: string, _text?: string, weight: num
 
     // Fetch FULL font (no text= subset) to avoid missing glyphs for
     // special characters like smart quotes, emoji, ligatures, etc.
+    //
+    // UA header is critical — without it, Google Fonts returns woff2
+    // (modern) which older resvg-js builds can't parse. With an old
+    // Safari UA, Google falls back to TTF/woff which is reliably supported.
     const cssUrl = `https://fonts.googleapis.com/css2?family=${fontFamily}:wght@${weight}`;
     const cssRes = await fetch(cssUrl, {
       headers: {
+        // Old Safari UA → Google serves TTF (maximally compatible)
         "User-Agent": "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10_6_8; de-at) AppleWebKit/533.21.1 (KHTML, like Gecko) Version/5.0.5 Safari/533.21.1",
       },
       signal: controller.signal,
     });
     if (!cssRes.ok) { clearTimeout(timeout); return null; }
     const css = await cssRes.text();
-    const match = css.match(/src: url\((.+)\) format\('(woff|woff2|truetype)'\)/);
-    if (!match?.[1]) { clearTimeout(timeout); return null; }
-    const fontRes = await fetch(match[1], { signal: controller.signal });
+    // Prefer truetype > woff > woff2 (most compatible with resvg-js)
+    // Note: Google may return multiple @font-face blocks — find any supported one
+    const matches = Array.from(css.matchAll(/src:\s*url\(([^)]+)\)\s*format\('(woff2?|truetype)'\)/g));
+    const preferred = matches.find((m) => m[2] === "truetype")
+      || matches.find((m) => m[2] === "woff")
+      || matches[0];
+    if (!preferred?.[1]) { clearTimeout(timeout); return null; }
+    const fontUrl = preferred[1];
+    const fontFormat = preferred[2];
+    const fontRes = await fetch(fontUrl, { signal: controller.signal });
     clearTimeout(timeout);
     if (!fontRes.ok) return null;
     const buf = Buffer.from(await fontRes.arrayBuffer());
-    const result = { base64: buf.toString("base64"), format: match[2] };
+    const result = { base64: buf.toString("base64"), format: fontFormat };
     if (_fontCache.size >= FONT_CACHE_MAX) {
       const oldest = _fontCache.keys().next().value;
       if (oldest) _fontCache.delete(oldest);
@@ -260,10 +272,13 @@ function buildSvgOverlay(
     }).join("");
 
     const safeFontFamily = escapeXml(fontFamily);
+    // RTL direction for Arabic text so shaping/ligatures render correctly
+    const isArabic = /[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]/.test(text);
+    const directionAttr = isArabic ? ' direction="rtl"' : '';
     // Stroke (outline) for meme text readability
     elements.push(
       `<text font-family="${safeFontFamily}" font-size="${fontSize}" font-weight="${fontWeight}" ` +
-      `text-anchor="${textAnchor}" fill="${strokeColor}" ` +
+      `text-anchor="${textAnchor}"${directionAttr} fill="${strokeColor}" ` +
       `stroke="${strokeColor}" stroke-width="${strokeWidth * 2}" stroke-linejoin="round" ` +
       `paint-order="stroke">${tspans}</text>`
     );
@@ -271,7 +286,7 @@ function buildSvgOverlay(
     // Main text
     elements.push(
       `<text font-family="${safeFontFamily}" font-size="${fontSize}" font-weight="${fontWeight}" ` +
-      `text-anchor="${textAnchor}" fill="${color}">${tspans}</text>`
+      `text-anchor="${textAnchor}"${directionAttr} fill="${color}">${tspans}</text>`
     );
   }
 
@@ -441,12 +456,24 @@ export async function composeTranslatedImage(
     const svgOverlay = buildSvgOverlay(translatableSegments, width, height, svgFontFace);
 
     if (specialFont && fontData) {
-      // Use resvg-js with font file for non-Latin scripts (Arabic, Hindi)
+      // Use resvg-js with font file for non-Latin scripts (Arabic, Hindi).
       // Sharp's librsvg cannot load custom fonts.
-      // Write font to temp file — fontBuffers may not work on all resvg versions
+      //
+      // CRITICAL FIXES:
+      //  1. Use the correct extension matching the actual format so resvg
+      //     can parse it (.woff2 vs .woff). Mis-labeled woff2 files break
+      //     resvg silently and produce a blank overlay.
+      //  2. Set defaultFontFamily to the Arabic family so resvg uses it as
+      //     the fallback when it can't match the CSS font-family exactly.
+      //  3. Enable loadSystemFonts as a secondary fallback — if fontFiles
+      //     fails for any reason, system fonts can still render SOMETHING.
       const os = await import("os");
       const fsp = await import("fs/promises");
-      const fontPath = path.join(os.tmpdir(), `mimzy-font-${specialFont.replace(/\+/g, "-")}.woff`);
+      const familyName = specialFont.replace(/\+/g, " ");
+      const ext = fontData.format === "woff2" ? ".woff2"
+        : fontData.format === "truetype" ? ".ttf"
+        : ".woff";
+      const fontPath = path.join(os.tmpdir(), `mimzy-font-${specialFont.replace(/\+/g, "-")}${ext}`);
       const fontBuf = Buffer.from(fontData.base64, "base64");
       await fsp.writeFile(fontPath, fontBuf);
 
@@ -454,8 +481,10 @@ export async function composeTranslatedImage(
       const resvg = new Resvg(svgOverlay, {
         fitTo: { mode: "width" as const, value: width },
         font: {
-          loadSystemFonts: false,
+          loadSystemFonts: true,
           fontFiles: [fontPath],
+          defaultFontFamily: familyName,
+          sansSerifFamily: familyName,
         },
       });
       const overlayPng = Buffer.from(resvg.render().asPng());
