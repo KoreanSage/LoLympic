@@ -9,8 +9,8 @@ export const maxDuration = 10;
 
 export async function GET() {
   const user = await getSessionUser();
-  if (!user || (user as unknown as { role?: string }).role !== "ADMIN") {
-    return NextResponse.json({ error: "admin only" }, { status: 403 });
+  if (!user) {
+    return NextResponse.json({ error: "login required" }, { status: 401 });
   }
 
   const envCheck = {
