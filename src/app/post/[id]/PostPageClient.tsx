@@ -230,19 +230,23 @@ export default function PostPageClient() {
   // Starts when the post is PROCESSING or has any PROCESSING payload;
   // stops when everything is settled or after 5 minutes.
   useEffect(() => {
-    if (!post) return;
+    console.log("[polling effect] fired", { postId: post?.id, postStatus: post?.status });
+    if (!post) { console.log("[polling effect] no post, skip"); return; }
     const hasInFlight =
       post.status === "PROCESSING" ||
       (post.translationPayloads ?? []).some((p: any) => p.status === "PROCESSING");
+    console.log("[polling effect] hasInFlight =", hasInFlight);
     if (!hasInFlight) return;
 
     let cancelled = false;
     let ticks = 0;
     const MAX_TICKS = 120; // 2.5s × 120 = 5 minutes
+    let intervalHandle: number | null = null;
 
     const poll = async () => {
       if (cancelled) return;
       ticks++;
+      console.log("[polling effect] poll tick", ticks);
       if (ticks > MAX_TICKS) {
         setPollTimedOut(true);
         return;
@@ -252,9 +256,11 @@ export default function PostPageClient() {
       }
       try {
         const r = await fetch(`/api/posts/${id}/translation-status`);
+        console.log("[polling effect] fetch status", r.status);
         if (!r.ok) return;
         const data = (await r.json()) as TranslationStatusResponse;
         if (cancelled) return;
+        console.log("[polling effect] data", data.summary);
         setTranslationStatus(data);
 
         if (data.summary.total > 0 && data.summary.inProgress === 0) {
@@ -263,21 +269,20 @@ export default function PostPageClient() {
             r.ok ? r.json() : null
           );
           if (!cancelled && fresh) setPost(fresh);
-          // Clear interval
-          if (intervalId !== null) clearInterval(intervalId);
+          if (intervalHandle !== null) clearInterval(intervalHandle);
         }
-      } catch {
-        // swallow transient errors
+      } catch (e) {
+        console.error("[polling effect] fetch error", e);
       }
     };
 
     // Initial fetch
     poll();
-    const intervalId: number = window.setInterval(poll, 2500);
+    intervalHandle = window.setInterval(poll, 2500);
 
     return () => {
       cancelled = true;
-      clearInterval(intervalId);
+      if (intervalHandle !== null) clearInterval(intervalHandle);
     };
   }, [post?.id, post?.status, id, preferredLang]);
 
