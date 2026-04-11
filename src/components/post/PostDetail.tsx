@@ -158,6 +158,17 @@ export default function PostDetail({
   const [showTranslation, setShowTranslation] = useState(hasTranslation);
   const [activeTab, setActiveTab] = useState("comments");
   const [showCompare, setShowCompare] = useState(false);
+
+  // Dynamic max image height — keep the image within 70% of the viewport
+  // so the user can still see tags, reactions and comments without scrolling
+  // as much. Starts at 600 for SSR hydration, updates on mount.
+  const [viewportMaxImageHeight, setViewportMaxImageHeight] = useState(600);
+  useEffect(() => {
+    const compute = () => setViewportMaxImageHeight(Math.round(window.innerHeight * 0.7));
+    compute();
+    window.addEventListener("resize", compute);
+    return () => window.removeEventListener("resize", compute);
+  }, []);
   const [saved, setSaved] = useState(false);
   const [voteScore, setVoteScore] = useState(0);
   const [userVote, setUserVote] = useState(0);
@@ -635,28 +646,30 @@ export default function PostDetail({
         {showCompare && translatedImageUrl ? (
           <div className={`overflow-hidden border border-border rounded-xl`}>
             <div className="grid grid-cols-2 gap-0.5 bg-border">
-              <div className="bg-black/5 flex items-center justify-center">
-                <Image src={imageUrl} alt="Original" width={800} height={800} className="w-full h-full object-contain" unoptimized />
+              <div className="bg-black/5 flex items-center justify-center max-h-[70vh]">
+                <Image src={imageUrl} alt="Original" width={800} height={800} className="w-full h-auto max-h-[70vh] object-contain" unoptimized />
               </div>
-              <div className="bg-black/5 flex items-center justify-center">
-                <Image src={translatedImageUrl} alt="Translated" width={800} height={800} className="w-full h-full object-contain" unoptimized />
+              <div className="bg-black/5 flex items-center justify-center max-h-[70vh]">
+                <Image src={translatedImageUrl} alt="Translated" width={800} height={800} className="w-full h-auto max-h-[70vh] object-contain" unoptimized />
               </div>
             </div>
           </div>
         ) : images && images.length > 1 ? (
-          /* Multi-image carousel with per-image translation support */
+          /* Multi-image carousel with per-image translation support.
+             max-h-[70vh] keeps tall multi-panel memes within the viewport
+             so the user can still see reactions/comments below. */
           <div className={`overflow-hidden border border-border rounded-xl`}>
             <ImageCarousel>
               {images.map((img, i) => {
                 const translatedUrl = showTranslation && translatedImageUrls?.[i];
                 return (
-                  <div key={i} className="flex items-center justify-center bg-black/5 dark:bg-black/20">
+                  <div key={i} className="flex items-center justify-center bg-black/5 dark:bg-black/20 max-h-[70vh]">
                     <Image
                       src={translatedUrl || img.originalUrl}
                       alt={`${title} ${i + 1}`}
                       width={800}
                       height={800}
-                      className="w-full h-auto object-contain"
+                      className="w-auto max-w-full h-auto max-h-[70vh] object-contain"
                       unoptimized
                     />
                   </div>
@@ -665,10 +678,10 @@ export default function PostDetail({
             </ImageCarousel>
           </div>
         ) : (
-          <div className={`overflow-hidden border border-border flex items-center justify-center bg-black/5 rounded-xl`}>
-            {/* Single image content */}
+          <div className={`overflow-hidden border border-border flex items-center justify-center bg-black/5 rounded-xl max-h-[70vh]`}>
+            {/* Single image content — constrained to 70vh for comfortable scroll */}
             {showTranslation && translatedImageUrl ? (
-              <Image src={translatedImageUrl} alt={title} width={800} height={800} className="w-full h-full object-contain" unoptimized />
+              <Image src={translatedImageUrl} alt={title} width={800} height={800} className="w-auto max-w-full h-auto max-h-[70vh] object-contain" unoptimized />
             ) : isTypeB && segments.length > 0 ? (
               showTranslation ? (
                 <ScreenshotRenderer
@@ -677,10 +690,10 @@ export default function PostDetail({
                   originalImageUrl={imageUrl}
                 />
               ) : (
-                <Image src={imageUrl} alt={title} width={800} height={800} className="w-full h-full object-contain" unoptimized />
+                <Image src={imageUrl} alt={title} width={800} height={800} className="w-auto max-w-full h-auto max-h-[70vh] object-contain" unoptimized />
               )
             ) : isGif ? (
-              <Image src={imageUrl} alt={title} width={800} height={800} className="w-full h-full object-contain" unoptimized />
+              <Image src={imageUrl} alt={title} width={800} height={800} className="w-auto max-w-full h-auto max-h-[70vh] object-contain" unoptimized />
             ) : (
               <MemeRenderer
                 imageUrl={imageUrl}
@@ -688,6 +701,7 @@ export default function PostDetail({
                 translatedImageUrl={translatedImageUrl}
                 segments={segments}
                 showTranslation={showTranslation}
+                maxHeight={viewportMaxImageHeight}
               />
             )}
           </div>
