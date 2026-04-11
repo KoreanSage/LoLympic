@@ -241,7 +241,7 @@ export async function POST(request: NextRequest) {
         // Echo / wrong-script detection on the JSON output. If Gemini
         // returned the source text back (e.g. ja-echo bug), fall back to
         // the dedicated helper which has its own retry + stricter prompt.
-        if (!isValidTranslation(parsed.title, post.title!, targetLang)) {
+        if (!isValidTranslation(parsed.title, post.title!, targetLang, sourceLanguage)) {
           console.warn(
             `[translate/text] JSON title invalid for ${targetLang}, falling back to helper. got="${parsed.title}" source="${post.title}"`
           );
@@ -257,7 +257,7 @@ export async function POST(request: NextRequest) {
         if (
           parsed.body &&
           post.body &&
-          !isValidTranslation(parsed.body, post.body, targetLang)
+          !isValidTranslation(parsed.body, post.body, targetLang, sourceLanguage)
         ) {
           console.warn(
             `[translate/text] JSON body invalid for ${targetLang}, falling back to helper.`
