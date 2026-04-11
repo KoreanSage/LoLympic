@@ -169,6 +169,52 @@ function wrapText(
 const _fontCache = new Map<string, { base64: string; format: string }>();
 const FONT_CACHE_MAX = 20;
 
+/** Promise cache for on-disk font writes — prevents parallel races.
+ *  Key: specialFont string (e.g. "Noto+Sans+Arabic")
+ *  Value: Promise<string> resolving to the temp file path.
+ *  All parallel callers with the same key await the same write. */
+const _fontFileWritePromises = new Map<string, Promise<string>>();
+
+async function getOrWriteFontFile(
+  specialFont: string,
+  fontData: { base64: string; format: string },
+): Promise<string> {
+  const existing = _fontFileWritePromises.get(specialFont);
+  if (existing) return existing;
+
+  const promise = (async () => {
+    const os = await import("os");
+    const fsp = await import("fs/promises");
+    const ext = fontData.format === "woff2" ? ".woff2"
+      : fontData.format === "truetype" ? ".ttf"
+      : ".woff";
+    const fontPath = path.join(
+      os.tmpdir(),
+      `mimzy-font-${specialFont.replace(/\+/g, "-")}${ext}`,
+    );
+    const buf = Buffer.from(fontData.base64, "base64");
+    // Write atomically-ish: write to .tmp sibling then rename so concurrent
+    // readers never see a half-written file even if the cache is bypassed.
+    const tmpPath = `${fontPath}.${process.pid}.${Date.now()}.tmp`;
+    await fsp.writeFile(tmpPath, buf);
+    try {
+      await fsp.rename(tmpPath, fontPath);
+    } catch {
+      // rename can fail if target exists and fs is strict — fall back to copy
+      await fsp.copyFile(tmpPath, fontPath).catch(() => {});
+      await fsp.unlink(tmpPath).catch(() => {});
+    }
+    return fontPath;
+  })();
+
+  _fontFileWritePromises.set(specialFont, promise);
+  // If the write rejects, drop the cached promise so next call retries
+  promise.catch(() => {
+    _fontFileWritePromises.delete(specialFont);
+  });
+  return promise;
+}
+
 async function fetchFontAsBase64(fontFamily: string, _text?: string, weight: number = 700): Promise<{ base64: string; format: string } | null> {
   const cacheKey = `${fontFamily}:${weight}`;
   const cached = _fontCache.get(cacheKey);
@@ -480,26 +526,18 @@ export async function composeTranslatedImage(
     const svgOverlay = buildSvgOverlay(translatableSegments, width, height, svgFontFace);
 
     if (specialFont && fontData) {
-      // Use resvg-js with font file for non-Latin scripts (Arabic, Hindi).
-      // Sharp's librsvg cannot load custom fonts.
+      // Use resvg-js with a font file for non-Latin scripts (Arabic, Hindi).
+      // Sharp's librsvg cannot load custom fonts, so we have to write the
+      // woff/ttf to disk and point resvg at it via fontFiles.
       //
-      // CRITICAL FIXES:
-      //  1. Use the correct extension matching the actual format so resvg
-      //     can parse it (.woff2 vs .woff). Mis-labeled woff2 files break
-      //     resvg silently and produce a blank overlay.
-      //  2. Set defaultFontFamily to the Arabic family so resvg uses it as
-      //     the fallback when it can't match the CSS font-family exactly.
-      //  3. Enable loadSystemFonts as a secondary fallback — if fontFiles
-      //     fails for any reason, system fonts can still render SOMETHING.
-      const os = await import("os");
-      const fsp = await import("fs/promises");
+      // CRITICAL: when this function runs in parallel (e.g. 8 images of an
+      // Arabic multi-image post), every call was writing to the SAME temp
+      // path → race condition → some calls read a half-written file → resvg
+      // silently fails → blank overlay. Fix: write once to a DETERMINISTIC
+      // path guarded by an in-process promise cache, so all parallel calls
+      // share the same pre-written file.
       const familyName = specialFont.replace(/\+/g, " ");
-      const ext = fontData.format === "woff2" ? ".woff2"
-        : fontData.format === "truetype" ? ".ttf"
-        : ".woff";
-      const fontPath = path.join(os.tmpdir(), `mimzy-font-${specialFont.replace(/\+/g, "-")}${ext}`);
-      const fontBuf = Buffer.from(fontData.base64, "base64");
-      await fsp.writeFile(fontPath, fontBuf);
+      const fontPath = await getOrWriteFontFile(specialFont, fontData);
 
       const { Resvg } = await import("@resvg/resvg-js");
       const resvg = new Resvg(svgOverlay, {
