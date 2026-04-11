@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
     }
 
     const queued: Array<{ targetLanguage: string; payloadId: string; messageId: string | null }> = [];
-    const skipped: Array<{ targetLanguage: string; reason: string }> = [];
+    const skipped: Array<{ targetLanguage: string; reason: string; error?: string }> = [];
     const inFlight: Array<{ targetLanguage: string; payloadId: string }> = [];
 
     for (const targetLang of targetLanguages) {
@@ -139,12 +139,13 @@ export async function POST(request: NextRequest) {
           messageId,
         });
       } catch (pubErr) {
-        console.error(`[Enqueue] QStash publish failed for ${targetLang}:`, pubErr);
+        const errMsg = pubErr instanceof Error ? pubErr.message : String(pubErr);
+        console.error(`[Enqueue] QStash publish failed for ${targetLang}:`, errMsg, pubErr);
         // Mark payload as REJECTED so it doesn't block future enqueues
         await prisma.translationPayload
           .update({ where: { id: newPayload.id }, data: { status: "REJECTED" } })
           .catch(() => {});
-        skipped.push({ targetLanguage: targetLang, reason: "QStash publish failed" });
+        skipped.push({ targetLanguage: targetLang, reason: "QStash publish failed", error: errMsg });
       }
     }
 
