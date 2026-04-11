@@ -1,24 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
+import { getR2Client, isR2Configured, uploadBufferToR2 } from "@/lib/storage";
+import { MAX_IMAGE_SIZE, SUPPORTED_IMAGE_TYPES } from "@/lib/constants";
 import crypto from "crypto";
-
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 // Set R2 bucket CORS once per cold start so images load via canvas (crossOrigin = "anonymous")
 let r2CorsConfigured = false;
 async function ensureR2Cors() {
   if (r2CorsConfigured) return;
   try {
-    const { S3Client, PutBucketCorsCommand } = await import("@aws-sdk/client-s3");
-    const s3 = new S3Client({
-      region: "auto",
-      endpoint: process.env.R2_ENDPOINT!,
-      credentials: {
-        accessKeyId: process.env.R2_ACCESS_KEY_ID!,
-        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
-      },
-    });
+    const s3 = await getR2Client();
+    if (!s3) {
+      r2CorsConfigured = true;
+      return;
+    }
+    const { PutBucketCorsCommand } = await import("@aws-sdk/client-s3");
     await s3.send(new PutBucketCorsCommand({
       Bucket: process.env.R2_BUCKET_NAME!,
       CORSConfiguration: {
@@ -37,21 +34,8 @@ async function ensureR2Cors() {
     r2CorsConfigured = true; // Don't retry on every upload
   }
 }
-const ALLOWED_MIME_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/gif",
-];
 
-// Storage backend detection
-const USE_R2 = !!(
-  process.env.R2_ACCESS_KEY_ID &&
-  process.env.R2_SECRET_ACCESS_KEY &&
-  process.env.R2_ENDPOINT &&
-  process.env.R2_BUCKET_NAME
-);
-const USE_BLOB = !USE_R2 && !!process.env.BLOB_READ_WRITE_TOKEN;
+const USE_R2 = isR2Configured();
 
 export async function POST(request: NextRequest) {
   try {
@@ -76,18 +60,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+    if (!(SUPPORTED_IMAGE_TYPES as readonly string[]).includes(file.type)) {
       return NextResponse.json(
         {
-          error: `Invalid file type: ${file.type}. Allowed: ${ALLOWED_MIME_TYPES.join(", ")}`,
+          error: `Invalid file type: ${file.type}. Allowed: ${SUPPORTED_IMAGE_TYPES.join(", ")}`,
         },
         { status: 400 }
       );
     }
 
-    if (file.size > MAX_FILE_SIZE) {
+    if (file.size > MAX_IMAGE_SIZE) {
       return NextResponse.json(
-        { error: `File too large. Maximum size is ${MAX_FILE_SIZE / 1024 / 1024}MB.` },
+        { error: `File too large. Maximum size is ${MAX_IMAGE_SIZE / 1024 / 1024}MB.` },
         { status: 400 }
       );
     }
@@ -146,47 +130,14 @@ export async function POST(request: NextRequest) {
     if (USE_R2) {
       // Ensure CORS is configured on the bucket (idempotent, runs once per cold start)
       await ensureR2Cors();
-
-      // Production: Upload to Cloudflare R2
-      const { S3Client, PutObjectCommand } = await import("@aws-sdk/client-s3");
-
-      const s3 = new S3Client({
-        region: "auto",
-        endpoint: process.env.R2_ENDPOINT!,
-        credentials: {
-          accessKeyId: process.env.R2_ACCESS_KEY_ID!,
-          secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
-        },
-      });
-
-      await s3.send(
-        new PutObjectCommand({
-          Bucket: process.env.R2_BUCKET_NAME!,
-          Key: filename,
-          Body: buffer,
-          ContentType: optimizedMime,
-          CacheControl: "public, max-age=31536000, immutable",
-        })
-      );
-
-      const publicUrl = process.env.R2_PUBLIC_URL?.replace(/\/$/, "");
-      if (!publicUrl) {
-        console.error("R2_PUBLIC_URL is not configured");
+      const uploaded = await uploadBufferToR2(buffer, filename, optimizedMime);
+      if (!uploaded) {
         return NextResponse.json(
-          { error: "Storage misconfiguration: R2_PUBLIC_URL is not set" },
+          { error: "Storage misconfiguration" },
           { status: 500 }
         );
       }
-      url = `${publicUrl}/${filename}`;
-    } else if (USE_BLOB) {
-      // Fallback: Upload to Vercel Blob
-      const { put } = await import("@vercel/blob");
-      const blob = await put(filename, buffer, {
-        access: "public",
-        contentType: optimizedMime,
-        cacheControlMaxAge: 31536000,
-      });
-      url = blob.url;
+      url = uploaded;
     } else {
       // Development: Save to local filesystem
       const path = await import("path");

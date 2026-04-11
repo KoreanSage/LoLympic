@@ -624,7 +624,7 @@ export default function PostDetail({
             <Image src={imageUrl} alt={title} width={800} height={800} className="w-full h-full object-contain" unoptimized />
           </div>
         ) : (
-          <div className={`overflow-hidden border border-border flex items-center justify-center ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-xl border-t-0" : "rounded-xl"}`}>
+          <div className={`overflow-hidden border border-border flex items-center justify-center bg-black/5 ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-xl border-t-0" : "rounded-xl"}`}>
             <MemeRenderer
               imageUrl={imageUrl}
               cleanImageUrl={cleanImageUrl}

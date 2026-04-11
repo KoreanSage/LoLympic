@@ -9,7 +9,10 @@ import { UserRole } from "@prisma/client";
 export async function GET() {
   try {
     const user = await getSessionUser();
-    if (!user || (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN")) {
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -45,10 +48,10 @@ export async function GET() {
 export async function PATCH(request: NextRequest) {
   try {
     const currentUser = await getSessionUser();
-    if (
-      !currentUser ||
-      (currentUser.role !== "ADMIN" && currentUser.role !== "SUPER_ADMIN")
-    ) {
+    if (!currentUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if (currentUser.role !== "ADMIN" && currentUser.role !== "SUPER_ADMIN") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

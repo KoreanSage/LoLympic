@@ -15,9 +15,11 @@ import { updateRankingScore } from "@/lib/ranking";
 import { runLamaInpainting } from "@/lib/replicate";
 import { generateInpaintingMask } from "@/lib/mask-generator";
 import sharp from "sharp";
+import { isR2Configured, uploadBufferToR2 } from "@/lib/storage";
+import { VALID_LANGUAGES } from "@/lib/constants";
 // satori and Resvg are imported dynamically where used to reduce cold-start
 
-const TRANSLATE_LANGUAGES = ["ko", "en", "ja", "zh", "es", "hi", "ar"] as const;
+const TRANSLATE_LANGUAGES = VALID_LANGUAGES;
 
 const translateSchema = z.object({
   postId: z.string().min(1, "postId is required"),
@@ -38,30 +40,7 @@ const translateSchema = z.object({
 // Vercel Hobby: max 60s, Pro: up to 300s
 export const maxDuration = 60;
 
-const USE_R2 = !!(
-  process.env.R2_ACCESS_KEY_ID &&
-  process.env.R2_SECRET_ACCESS_KEY &&
-  process.env.R2_ENDPOINT &&
-  process.env.R2_BUCKET_NAME
-);
-const USE_BLOB = !USE_R2 && !!process.env.BLOB_READ_WRITE_TOKEN;
-
-// Cached S3 client for R2 storage
-let _s3Client: any = null;
-async function getS3Client() {
-  if (!_s3Client) {
-    const { S3Client } = await import("@aws-sdk/client-s3");
-    _s3Client = new S3Client({
-      region: "auto",
-      endpoint: process.env.R2_ENDPOINT!,
-      credentials: {
-        accessKeyId: process.env.R2_ACCESS_KEY_ID!,
-        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
-      },
-    });
-  }
-  return _s3Client;
-}
+const USE_R2 = isR2Configured();
 
 let genAI: GoogleGenerativeAI | null = null;
 function getGenAI() {
@@ -258,7 +237,7 @@ function extractMimeType(filePathOrUrl: string): string {
   return map[ext] || "image/jpeg";
 }
 
-// Helper: Save generated image (R2 > Blob > local)
+// Helper: Save generated image (R2 primary, local disk dev fallback)
 async function saveGeneratedImage(
   buffer: Buffer,
   prefix: string,
@@ -269,31 +248,16 @@ async function saveGeneratedImage(
   const contentType = mimeMap[ext] || "image/jpeg";
 
   if (USE_R2) {
-    const { PutObjectCommand } = await import("@aws-sdk/client-s3");
-    const s3 = await getS3Client();
-    await s3.send(new PutObjectCommand({
-      Bucket: process.env.R2_BUCKET_NAME!,
-      Key: filename,
-      Body: buffer,
-      ContentType: contentType,
-    }));
-    const publicUrl = process.env.R2_PUBLIC_URL?.replace(/\/$/, "");
-    return `${publicUrl}/${filename}`;
-  } else if (USE_BLOB) {
-    const { put } = await import("@vercel/blob");
-    const blob = await put(filename, buffer, {
-      access: "public",
-      contentType,
-    });
-    return blob.url;
-  } else {
-    const path = await import("path");
-    const fs = await import("fs/promises");
-    const uploadDir = process.env.UPLOAD_DIR || "./uploads";
-    const filePath = path.join(path.resolve(uploadDir), filename);
-    await fs.writeFile(filePath, buffer);
-    return `/api/uploads/${filename}`;
+    const url = await uploadBufferToR2(buffer, filename, contentType);
+    if (!url) throw new Error("R2 upload failed");
+    return url;
   }
+  const path = await import("path");
+  const fs = await import("fs/promises");
+  const uploadDir = process.env.UPLOAD_DIR || "./uploads";
+  const filePath = path.join(path.resolve(uploadDir), filename);
+  await fs.writeFile(filePath, buffer);
+  return `/api/uploads/${filename}`;
 }
 
 // Helper: Read image as base64 (from URL or local file)

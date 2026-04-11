@@ -1,7 +1,20 @@
 import prisma from "@/lib/prisma";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { VALID_LANGUAGES } from "@/lib/constants";
 
-const VALID_LANGUAGES = ["ko", "en", "ja", "zh", "es", "hi", "ar"];
+interface BackfillPayload {
+  id: string;
+  segments?: unknown[] | null;
+  translatedTitle?: string | null;
+  translatedBody?: string | null;
+}
+
+interface BackfillPost {
+  title?: string | null;
+  body?: string | null;
+  sourceLanguage?: string | null;
+  translationPayloads?: BackfillPayload[] | null;
+}
 
 const LANGUAGE_NAMES: Record<string, string> = {
   ko: "Korean (한국어)",
@@ -19,15 +32,19 @@ function getGenAI() {
   return genAI;
 }
 
+function isValidLang(lang: string): boolean {
+  return (VALID_LANGUAGES as readonly string[]).includes(lang);
+}
+
 /**
  * Fire-and-forget: for posts that have translation payloads with segments
  * but missing translatedTitle, translate the title and backfill.
  */
 export async function backfillMissingTitleTranslations(
-  posts: any[],
+  posts: BackfillPost[],
   targetLang: string
 ) {
-  if (!VALID_LANGUAGES.includes(targetLang)) return;
+  if (!isValidLang(targetLang)) return;
 
   const toBackfill: Array<{ payloadId: string; title: string; sourceLanguage: string }> = [];
 
@@ -36,7 +53,7 @@ export async function backfillMissingTitleTranslations(
     if (!payloads || payloads.length === 0) continue;
     const payload = payloads[0];
     // Has segments (was translated) but no translatedTitle
-    if (payload.segments?.length > 0 && !payload.translatedTitle && post.title) {
+    if ((payload.segments?.length ?? 0) > 0 && !payload.translatedTitle && post.title) {
       toBackfill.push({
         payloadId: payload.id,
         title: post.title,
@@ -89,10 +106,10 @@ export async function backfillMissingTitleTranslations(
  * Returns { translatedTitle, translatedBody } if backfilled, or null.
  */
 export async function backfillSinglePostTitle(
-  post: any,
+  post: BackfillPost,
   targetLang: string
 ): Promise<{ translatedTitle: string; translatedBody?: string } | null> {
-  if (!VALID_LANGUAGES.includes(targetLang)) return null;
+  if (!isValidLang(targetLang)) return null;
 
   const payloads = post.translationPayloads;
   if (!payloads || payloads.length === 0) return null;

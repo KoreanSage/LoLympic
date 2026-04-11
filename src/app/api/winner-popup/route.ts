@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { LanguageCode } from "@prisma/client";
+import { VALID_LANGUAGES } from "@/lib/constants";
+
+function toLanguageCode(lang: string): LanguageCode | null {
+  return (VALID_LANGUAGES as readonly string[]).includes(lang)
+    ? (lang as LanguageCode)
+    : null;
+}
 
 /**
  * GET /api/winner-popup?lang=es
@@ -11,7 +19,8 @@ import prisma from "@/lib/prisma";
  * The client uses localStorage to track which announcements the user has dismissed.
  */
 export async function GET(req: NextRequest) {
-  const lang = req.nextUrl.searchParams.get("lang") || "";
+  const rawLang = req.nextUrl.searchParams.get("lang") || "";
+  const lang = toLanguageCode(rawLang); // null if missing / invalid
   try {
     const now = new Date();
 
@@ -56,7 +65,7 @@ export async function GET(req: NextRequest) {
         const tp = await prisma.translationPayload.findFirst({
           where: {
             postId: completedSeason.championPostId,
-            targetLanguage: lang as any,
+            targetLanguage: lang,
             status: { in: ["COMPLETED", "APPROVED"] },
           },
           orderBy: { createdAt: "desc" },
@@ -159,7 +168,7 @@ export async function GET(req: NextRequest) {
         const tp = await prisma.translationPayload.findFirst({
           where: {
             postId: recentMonthlyWinner.post.id,
-            targetLanguage: lang as any,
+            targetLanguage: lang,
             status: { in: ["COMPLETED", "APPROVED"] },
           },
           orderBy: { createdAt: "desc" },

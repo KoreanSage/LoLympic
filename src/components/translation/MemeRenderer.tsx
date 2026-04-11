@@ -239,10 +239,13 @@ export default function MemeRenderer({
     const dpr = window.devicePixelRatio || 1;
     const { w: displayW, h: displayH } = displaySize;
 
+    // Set the internal bitmap resolution; CSS sizing is handled via classes
+    // (max-w-full / max-h-[80vh] / object-contain) so the canvas scales like
+    // an <img> and matches the translated Image path visually.
     canvas.width = displayW * dpr;
     canvas.height = displayH * dpr;
-    canvas.style.width = `${displayW}px`;
-    canvas.style.height = `${displayH}px`;
+    canvas.style.width = "";
+    canvas.style.height = "";
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
@@ -570,23 +573,27 @@ export default function MemeRenderer({
   }
 
   return (
-    <div ref={containerRef} className="relative w-full">
+    <div
+      ref={containerRef}
+      className="relative w-full flex items-center justify-center"
+    >
       {/* Pre-rendered translated image — clean swap, no canvas needed */}
       {usePreRendered && (
         <img
           src={translatedImageUrl}
           alt="Translated meme"
-          className="w-full rounded-lg"
-          style={{ maxWidth: "100%" }}
+          className="rounded-lg max-w-full max-h-[80vh] w-auto h-auto object-contain"
           onError={() => setTranslatedImageError(true)}
         />
       )}
-      {/* Canvas fallback — used for original image or when no pre-rendered image */}
+      {/* Canvas fallback — used for original image or when no pre-rendered image.
+          max-w-full + max-h-[80vh] + w-auto/h-auto + object-contain lets the
+          canvas behave like an <img>: scaled to fit while preserving aspect
+          ratio, so portrait images letterbox instead of overflowing. */}
       <canvas
         ref={canvasRef}
-        className="w-full rounded-lg"
+        className="rounded-lg max-w-full max-h-[80vh] w-auto h-auto object-contain"
         style={{
-          maxWidth: "100%",
           display: !usePreRendered && displaySize.w > 0 ? "block" : "none",
         }}
       />

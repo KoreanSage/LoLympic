@@ -63,15 +63,20 @@ export const authOptions: NextAuthOptions = {
         });
 
         if (!existingUser) {
-          // Auto-create user from Google profile
+          // Auto-create user from Google profile.
+          // Generate a unique username in O(1) by appending random hex once the
+          // plain base is taken, rather than incrementing until a free slot is
+          // found (which was effectively unbounded).
           const baseUsername = email
             .split("@")[0]
-            .replace(/[^a-zA-Z0-9_]/g, "_");
+            .replace(/[^a-zA-Z0-9_]/g, "_")
+            .slice(0, 20);
           let username = baseUsername;
-          let counter = 1;
-          while (await prisma.user.findUnique({ where: { username } })) {
-            username = `${baseUsername}_${counter}`;
-            counter++;
+          const taken = await prisma.user.findUnique({ where: { username } });
+          if (taken) {
+            // 6 hex chars ≈ 16M possibilities — collision vanishingly rare.
+            const suffix = Math.random().toString(16).slice(2, 8);
+            username = `${baseUsername}_${suffix}`;
           }
 
           const newUser = await prisma.user.create({
