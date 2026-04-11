@@ -1,6 +1,6 @@
 import prisma from "@/lib/prisma";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { VALID_LANGUAGES } from "@/lib/constants";
+import { translateTitleOrDescription } from "@/lib/title-translation";
 
 interface BackfillPayload {
   id: string;
@@ -16,22 +16,6 @@ interface BackfillPost {
   translationPayloads?: BackfillPayload[] | null;
 }
 
-const LANGUAGE_NAMES: Record<string, string> = {
-  ko: "Korean (한국어)",
-  en: "English",
-  ja: "Japanese (日本語)",
-  zh: "Chinese (中文)",
-  es: "Spanish (Español)",
-  hi: "Hinglish (Roman script — NO Devanagari)",
-  ar: "Arabic (العربية)",
-};
-
-let genAI: GoogleGenerativeAI | null = null;
-function getGenAI() {
-  if (!genAI) genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-  return genAI;
-}
-
 function isValidLang(lang: string): boolean {
   return (VALID_LANGUAGES as readonly string[]).includes(lang);
 }
@@ -39,6 +23,11 @@ function isValidLang(lang: string): boolean {
 /**
  * Fire-and-forget: for posts that have translation payloads with segments
  * but missing translatedTitle, translate the title and backfill.
+ *
+ * All Gemini calls go through `translateTitleOrDescription` which does
+ * echo-detection and script validation — if Gemini returns the source text
+ * back (the ja-echo bug), we retry with a stricter prompt and fall back to
+ * leaving the field NULL rather than persisting a bad translation.
  */
 export async function backfillMissingTitleTranslations(
   posts: BackfillPost[],
@@ -64,13 +53,7 @@ export async function backfillMissingTitleTranslations(
 
   if (toBackfill.length === 0) return;
 
-  const targetName = LANGUAGE_NAMES[targetLang] || targetLang;
-  const model = getGenAI().getGenerativeModel({
-    model: "gemini-2.5-flash-lite",
-    generationConfig: { temperature: 0.3, maxOutputTokens: 512 },
-  });
-
-  // Process up to 5 at a time to avoid overloading
+  // Process up to 5 at a time to avoid overloading Gemini
   for (const item of toBackfill.slice(0, 5)) {
     try {
       if (item.sourceLanguage === targetLang) continue;
@@ -85,10 +68,13 @@ export async function backfillMissingTitleTranslations(
         continue;
       }
 
-      const result = await model.generateContent(
-        `Translate the following meme title to ${targetName}. Output ONLY the translated text, nothing else. Keep the humor and tone.\n\n${item.title}`
-      );
-      const translatedTitle = result.response.text().trim();
+      const translatedTitle = await translateTitleOrDescription({
+        sourceText: item.title,
+        sourceLanguage: item.sourceLanguage,
+        targetLanguage: targetLang,
+        kind: "title",
+      });
+
       if (translatedTitle) {
         await prisma.translationPayload.update({
           where: { id: item.payloadId },
@@ -125,38 +111,39 @@ export async function backfillSinglePostTitle(
     });
     if (freshPayload?.translatedTitle) return { translatedTitle: freshPayload.translatedTitle };
 
-    const targetName = LANGUAGE_NAMES[targetLang] || targetLang;
-    const model = getGenAI().getGenerativeModel({
-      model: "gemini-2.5-flash-lite",
-      generationConfig: { temperature: 0.3, maxOutputTokens: 512 },
+    const sourceLang = post.sourceLanguage || "ko";
+    const translatedTitle = await translateTitleOrDescription({
+      sourceText: post.title,
+      sourceLanguage: sourceLang,
+      targetLanguage: targetLang,
+      kind: "title",
+    });
+    if (!translatedTitle) return null;
+
+    await prisma.translationPayload.update({
+      where: { id: payload.id },
+      data: { translatedTitle },
     });
 
-    const result = await model.generateContent(
-      `Translate the following meme title to ${targetName}. Output ONLY the translated text, nothing else. Keep the humor and tone.\n\n${post.title}`
-    );
-    const translatedTitle = result.response.text().trim();
+    // Also update body if missing
     let translatedBody: string | undefined;
-
-    if (translatedTitle) {
-      await prisma.translationPayload.update({
-        where: { id: payload.id },
-        data: { translatedTitle },
+    if (!payload.translatedBody && post.body) {
+      const body = await translateTitleOrDescription({
+        sourceText: post.body,
+        sourceLanguage: sourceLang,
+        targetLanguage: targetLang,
+        kind: "description",
       });
-      // Also update body if missing
-      if (!payload.translatedBody && post.body) {
-        const bodyResult = await model.generateContent(
-          `Translate the following meme description to ${targetName}. Output ONLY the translated text, nothing else. Keep the humor and tone.\n\n${post.body}`
-        );
-        translatedBody = bodyResult.response.text().trim();
-        if (translatedBody) {
-          await prisma.translationPayload.update({
-            where: { id: payload.id },
-            data: { translatedBody },
-          });
-        }
+      if (body) {
+        translatedBody = body;
+        await prisma.translationPayload.update({
+          where: { id: payload.id },
+          data: { translatedBody },
+        });
       }
-      return { translatedTitle, translatedBody };
     }
+
+    return { translatedTitle, translatedBody };
   } catch (e) {
     console.warn("Backfill single post title failed:", e);
   }

@@ -5,6 +5,10 @@ import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { LanguageCode } from "@prisma/client";
 import { updateRankingScore } from "@/lib/ranking";
+import {
+  isValidTranslation,
+  translateTitleOrDescription,
+} from "@/lib/title-translation";
 
 export const maxDuration = 60;
 
@@ -233,6 +237,40 @@ export async function POST(request: NextRequest) {
         const responseText = result.response.text();
         const cleaned = stripMarkdownFences(responseText);
         const parsed: { title: string; body: string | null } = JSON.parse(cleaned);
+
+        // Echo / wrong-script detection on the JSON output. If Gemini
+        // returned the source text back (e.g. ja-echo bug), fall back to
+        // the dedicated helper which has its own retry + stricter prompt.
+        if (!isValidTranslation(parsed.title, post.title!, targetLang)) {
+          console.warn(
+            `[translate/text] JSON title invalid for ${targetLang}, falling back to helper. got="${parsed.title}" source="${post.title}"`
+          );
+          const fixedTitle = await translateTitleOrDescription({
+            sourceText: post.title!,
+            sourceLanguage,
+            targetLanguage: targetLang,
+            kind: "title",
+            englishReference: pivotEnTitle,
+          });
+          if (fixedTitle) parsed.title = fixedTitle;
+        }
+        if (
+          parsed.body &&
+          post.body &&
+          !isValidTranslation(parsed.body, post.body, targetLang)
+        ) {
+          console.warn(
+            `[translate/text] JSON body invalid for ${targetLang}, falling back to helper.`
+          );
+          const fixedBody = await translateTitleOrDescription({
+            sourceText: post.body,
+            sourceLanguage,
+            targetLanguage: targetLang,
+            kind: "description",
+            englishReference: pivotEnBody,
+          });
+          if (fixedBody) parsed.body = fixedBody;
+        }
 
         // Store TranslationPayload in DB with versioning
         const payload = await prisma.$transaction(async (tx) => {

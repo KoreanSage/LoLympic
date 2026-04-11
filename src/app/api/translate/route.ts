@@ -17,6 +17,7 @@ import { generateInpaintingMask } from "@/lib/mask-generator";
 import sharp from "sharp";
 import { isR2Configured, uploadBufferToR2 } from "@/lib/storage";
 import { VALID_LANGUAGES } from "@/lib/constants";
+import { translateTitleOrDescription } from "@/lib/title-translation";
 // satori and Resvg are imported dynamically where used to reduce cold-start
 
 const TRANSLATE_LANGUAGES = VALID_LANGUAGES;
@@ -1538,8 +1539,7 @@ Return JSON only (no markdown fences):
           imageIndex: s.imageIndex,
         }));
 
-        // Translate title & body (flash-lite)
-        const targetName = LANGUAGE_INSTRUCTIONS[targetLang]?.split(":")[0] || targetLang;
+        // Translate title & body via the shared helper (echo detection + retry)
         let translatedTitle: string | null = null;
         let translatedBody: string | null = null;
 
@@ -1557,34 +1557,27 @@ Return JSON only (no markdown fences):
           translatedTitle = existingTextTranslation.translatedTitle;
           translatedBody = existingTextTranslation.translatedBody || null;
         } else {
-          const textTranslations = await Promise.allSettled([
-            (post.title && sourceLanguage !== targetLang) ? (async () => {
-              const m = getGenAI().getGenerativeModel({
-                model: "gemini-2.5-flash-lite",
-                generationConfig: { temperature: 0.3, maxOutputTokens: 512 },
-              });
-              const pivotHint = englishTitle
-                ? `\n\nEnglish reference (for accuracy): "${englishTitle}"`
-                : "";
-              const r = await m.generateContent(
-                `Translate the following meme title to ${targetName}. Output ONLY the translated text, nothing else. Keep the humor and tone.\n\n${post.title}${pivotHint}`
-              );
-              return r.response.text().trim();
-            })() : Promise.resolve(null),
-            (post.body && sourceLanguage !== targetLang) ? (async () => {
-              const m = getGenAI().getGenerativeModel({
-                model: "gemini-2.5-flash-lite",
-                generationConfig: { temperature: 0.3, maxOutputTokens: 1024 },
-              });
-              const pivotHint = englishBody
-                ? `\n\nEnglish reference (for accuracy): "${englishBody}"`
-                : "";
-              const r = await m.generateContent(
-                `Translate the following meme description to ${targetName}. Output ONLY the translated text, nothing else. Keep the humor and tone.\n\n${post.body}${pivotHint}`
-              );
-              return r.response.text().trim();
-            })() : Promise.resolve(null),
-          ]);
+          const titlePromise: Promise<string | null> =
+            post.title && sourceLanguage !== targetLang
+              ? translateTitleOrDescription({
+                  sourceText: post.title,
+                  sourceLanguage,
+                  targetLanguage: targetLang,
+                  kind: "title",
+                  englishReference: englishTitle,
+                })
+              : Promise.resolve(null);
+          const bodyPromise: Promise<string | null> =
+            post.body && sourceLanguage !== targetLang
+              ? translateTitleOrDescription({
+                  sourceText: post.body,
+                  sourceLanguage,
+                  targetLanguage: targetLang,
+                  kind: "description",
+                  englishReference: englishBody,
+                })
+              : Promise.resolve(null);
+          const textTranslations = await Promise.allSettled([titlePromise, bodyPromise]);
           translatedTitle = textTranslations[0].status === "fulfilled" ? textTranslations[0].value : null;
           translatedBody = textTranslations[1].status === "fulfilled" ? textTranslations[1].value : null;
         }
