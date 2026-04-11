@@ -16,7 +16,8 @@ function detectLanguageFromText(text: string): string | null {
   if (/[\u3131-\uD79D]/.test(text)) return "ko";
   if (/[\u3040-\u309F\u30A0-\u30FF]/.test(text)) return "ja";
   if (/[\u4E00-\u9FFF]/.test(text)) return "zh";
-  if (/[\u0900-\u097F]/.test(text)) return "hi";
+  // Hinglish uses Roman script — detect via Latin chars, not Devanagari
+  // if (/[\u0900-\u097F]/.test(text)) return "hi";
   if (/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]/.test(text)) return "ar";
   if (/[a-zA-Z]/.test(text)) return "en";
   return null;
@@ -30,7 +31,7 @@ function isRTL(text: string): boolean {
 // Web-safe font names that are actually available via Google Fonts CSS import
 const WEB_SAFE_FONTS = new Set([
   "Noto Sans KR", "Noto Sans JP", "Noto Sans SC",
-  "Noto Sans Devanagari", "Noto Sans Arabic",
+  "Noto Sans Arabic",
   "Impact", "Inter", "JetBrains Mono",
 ]);
 
@@ -239,13 +240,14 @@ export default function MemeRenderer({
     const dpr = window.devicePixelRatio || 1;
     const { w: displayW, h: displayH } = displaySize;
 
-    // Set the internal bitmap resolution; CSS sizing is handled via classes
-    // (max-w-full / max-h-[80vh] / object-contain) so the canvas scales like
-    // an <img> and matches the translated Image path visually.
+    // displayW/H is already constrained to fit within parent width AND the
+    // maxHeight prop (see useEffects above + ResizeObserver). Set the canvas
+    // bitmap to dpr-scaled pixels and the CSS size to CSS pixels so the
+    // browser shows a crisp, properly-sized canvas with no overflow.
     canvas.width = displayW * dpr;
     canvas.height = displayH * dpr;
-    canvas.style.width = "";
-    canvas.style.height = "";
+    canvas.style.width = `${displayW}px`;
+    canvas.style.height = `${displayH}px`;
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
@@ -538,20 +540,31 @@ export default function MemeRenderer({
     }
   }, [render, showTranslation, segments, usePreRendered]);
 
-  // Re-render on resize
+  // Re-render on resize. CRITICAL: must honour `maxHeight` here too — the
+  // initial useEffect above applied it correctly, but this observer would
+  // immediately overwrite displaySize with natural-aspect dimensions, so the
+  // canvas ended up at full-height pixels and got clipped by the parent's
+  // overflow-hidden + max-h-[70vh] container.
   useEffect(() => {
     if (!containerRef.current || width) return;
     const observer = new ResizeObserver(() => {
       if (!image) return;
       const containerW = containerRef.current?.clientWidth || 0;
-      if (containerW > 0 && containerW !== displaySize.w) {
-        const aspect = image.naturalWidth / image.naturalHeight;
-        setDisplaySize({ w: containerW, h: containerW / aspect });
+      if (containerW <= 0) return;
+      const aspect = image.naturalWidth / image.naturalHeight;
+      let nextW = containerW;
+      let nextH = containerW / aspect;
+      if (maxHeight && nextH > maxHeight) {
+        nextH = maxHeight;
+        nextW = nextH * aspect;
+      }
+      if (Math.round(nextW) !== Math.round(displaySize.w) || Math.round(nextH) !== Math.round(displaySize.h)) {
+        setDisplaySize({ w: nextW, h: nextH });
       }
     });
     observer.observe(containerRef.current);
     return () => observer.disconnect();
-  }, [image, width, displaySize.w]);
+  }, [image, width, maxHeight, displaySize.w, displaySize.h]);
 
   // Canvas rendering failed — show original image with overlay notice
   if (canvasRenderError && !usePreRendered) {
@@ -582,17 +595,17 @@ export default function MemeRenderer({
         <img
           src={translatedImageUrl}
           alt="Translated meme"
-          className="rounded-lg max-w-full max-h-[80vh] w-auto h-auto object-contain"
+          className="rounded-lg w-auto max-w-full h-auto max-h-[70vh] object-contain"
           onError={() => setTranslatedImageError(true)}
         />
       )}
-      {/* Canvas fallback — used for original image or when no pre-rendered image.
-          max-w-full + max-h-[80vh] + w-auto/h-auto + object-contain lets the
-          canvas behave like an <img>: scaled to fit while preserving aspect
-          ratio, so portrait images letterbox instead of overflowing. */}
+      {/* Canvas fallback — used for original image or when no pre-rendered
+          image. Inline width/height are set by render() after displaySize is
+          computed with the maxHeight constraint applied, so the canvas fits
+          within the parent's max-h-[70vh] box without clipping. */}
       <canvas
         ref={canvasRef}
-        className="rounded-lg max-w-full max-h-[80vh] w-auto h-auto object-contain"
+        className="rounded-lg max-w-full"
         style={{
           display: !usePreRendered && displaySize.w > 0 ? "block" : "none",
         }}

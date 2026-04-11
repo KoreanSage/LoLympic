@@ -61,22 +61,28 @@ function getGenAI2() {
 }
 
 // ---------------------------------------------------------------------------
+// Exports for reuse by the async QStash worker. These are the same helpers
+// used by the sync POST handler below — do NOT duplicate them in the worker.
+// ---------------------------------------------------------------------------
+export { getGenAI, getGenAI2, saveGeneratedImage };
+
+// ---------------------------------------------------------------------------
 // Language-specific translation instructions
 // ---------------------------------------------------------------------------
-const LANGUAGE_INSTRUCTIONS: Record<string, string> = {
-  ko: "Korean (한국어): Use short, punchy expressions. Meme culture in Korea favors 급식체 (school cafeteria slang), 신조어, and rhythmic wordplay. Keep sentences compact. Prefer colloquial register over formal.",
+export const LANGUAGE_INSTRUCTIONS: Record<string, string> = {
+  ko: "Korean (한국어): CRITICAL — Preserve the ORIGINAL MEANING accurately first. Do NOT replace with unrelated Korean idioms or food expressions. Translate naturally using everyday Korean (반말 또는 자연스러운 구어체). Keep sentences compact. Korean slang (신조어) is OK only when it directly matches the original meaning — never substitute meaning with unrelated slang. Example: 'all bark no bite' = '말만 많고 행동은 없는' NOT '겉바속촉'.",
   ja: "Japanese (日本語): Subtle and restrained humor. Use appropriate levels of politeness for comedic effect. Japanese memes often rely on understatement, ツッコミ/ボケ dynamics, and visual puns. Preserve any double-meaning wordplay.",
   zh: "Chinese (中文): Compact and efficient. Chinese internet humor uses 网络用语, four-character idioms twisted for comedy, and phonetic puns. Keep character count low. Maximize impact per character.",
   en: "English: Sarcastic and exaggerated. English memes lean into irony, self-deprecation, and absurdist escalation. Use internet-native phrasing (all caps for emphasis, deliberate misspellings for tone). Match the energy.",
   es: "Spanish (Español): Expressive and colloquial. Spanish memes use regional slang, diminutives for comedic effect, and exaggerated emotion. Capture the warmth and dramatic flair. Consider Latin American vs. Iberian variations.",
-  hi: "Hindi (हिन्दी): Bollywood-influenced humor with dramatic flair. Hindi memes use Hinglish (Hindi-English mix), filmi dialogues, and cultural references. Use colloquial Delhi/Mumbai street Hindi for authenticity. Embrace the dramatic and emotional style.",
+  hi: "Hinglish (Roman script Hindi): CRITICAL — Write ALL Hindi text in Roman/Latin script (e.g. 'Bhai ye kya hai' NOT 'भाई ये क्या है'). NEVER use Devanagari script. Bollywood-influenced humor with dramatic flair. Use Hinglish (Hindi-English mix), filmi dialogues, and cultural references. Use colloquial Delhi/Mumbai street Hindi for authenticity. Embrace the dramatic and emotional style. Think Instagram/Twitter Indian meme culture — always Roman script.",
   ar: "Arabic (العربية): Rich and expressive. Arabic memes blend Modern Standard Arabic with dialect (Egyptian/Gulf). Use internet-native Arabic expressions, cultural references, and wordplay. Keep it casual and relatable. Use Egyptian dialect when unsure.",
 };
 
 // ---------------------------------------------------------------------------
 // System prompt for Gemini translation
 // ---------------------------------------------------------------------------
-function buildTranslationSystemPrompt(
+export function buildTranslationSystemPrompt(
   sourceLanguage: string,
   targetLanguage: string
 ): string {
@@ -168,7 +174,7 @@ Write cultureNote in the TARGET language (${targetLanguage}). Keep it SHORT.
 // ---------------------------------------------------------------------------
 // Types for the AI response
 // ---------------------------------------------------------------------------
-interface TranslationSegmentResponse {
+export interface TranslationSegmentResponse {
   sourceText: string;
   translatedText: string;
   semanticRole: string;
@@ -185,13 +191,13 @@ interface TranslationSegmentResponse {
   };
 }
 
-interface CultureNoteResponse {
+export interface CultureNoteResponse {
   summary: string;
   explanation: string;
   translationNote?: string;
 }
 
-interface AITranslationResult {
+export interface AITranslationResult {
   memeType?: string;
   segments: TranslationSegmentResponse[];
   cultureNote: CultureNoteResponse;
@@ -201,7 +207,7 @@ interface AITranslationResult {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-function toSemanticRole(
+export function toSemanticRole(
   role: string
 ): "HEADLINE" | "CAPTION" | "DIALOGUE" | "LABEL" | "WATERMARK" | "SUBTITLE" | "OVERLAY" | "OTHER" {
   const valid = [
@@ -214,7 +220,7 @@ function toSemanticRole(
     : "OTHER";
 }
 
-function toTextAlign(align?: string): "LEFT" | "CENTER" | "RIGHT" {
+export function toTextAlign(align?: string): "LEFT" | "CENTER" | "RIGHT" {
   if (!align) return "CENTER";
   const upper = align.toUpperCase();
   if (upper === "LEFT" || upper === "CENTER" || upper === "RIGHT") return upper;
@@ -261,7 +267,7 @@ async function saveGeneratedImage(
 }
 
 // Helper: Read image as base64 (from URL or local file)
-async function readImageAsBase64(imageUrl: string): Promise<{ base64: string; mimeType: string }> {
+export async function readImageAsBase64(imageUrl: string): Promise<{ base64: string; mimeType: string }> {
   // If it's a full URL (Blob or external), fetch it
   if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
     const res = await fetch(imageUrl);
@@ -296,14 +302,14 @@ async function readImageAsBase64(imageUrl: string): Promise<{ base64: string; mi
   };
 }
 
-function stripMarkdownFences(text: string): string {
+export function stripMarkdownFences(text: string): string {
   return text.replace(/^```(?:json)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
 }
 
 // ---------------------------------------------------------------------------
 // Content moderation: check Gemini safety ratings (fire-and-forget)
 // ---------------------------------------------------------------------------
-async function checkContentSafety(postId: string, response: any) {
+export async function checkContentSafety(postId: string, response: any) {
   try {
     const safetyRatings = response?.candidates?.[0]?.safetyRatings;
     if (!safetyRatings) return;
@@ -362,7 +368,7 @@ async function withRetry<T>(
 // Generate clean images for all post images
 // Uses LaMa inpainting (primary) with Gemini fallback
 // ---------------------------------------------------------------------------
-async function generateCleanImagesForPost(
+export async function generateCleanImagesForPost(
   postId: string,
   imageDataList: Array<{ base64: string; mimeType: string }>,
   imageUrls: string[]
@@ -374,6 +380,11 @@ async function generateCleanImagesForPost(
     select: { id: true, cleanUrl: true, orderIndex: true },
   });
 
+  // Process each image in PARALLEL (Promise.all). Each iteration is
+  // independent — it only touches its own postImage row — so parallelizing
+  // is safe and dramatically cuts wall time for 10-image posts.
+  // Quality-wise: identical API calls (LaMa → Gemini fallback), just concurrent.
+  const tasks: Array<Promise<void>> = [];
   for (let i = 0; i < postImages.length && i < imageDataList.length; i++) {
     const dbImage = postImages[i];
     const imgData = imageDataList[i];
@@ -382,80 +393,85 @@ async function generateCleanImagesForPost(
       continue; // Skip if already has clean image cached or no data
     }
 
-    try {
-      let cleanUrl: string | null = null;
-
-      // Primary: Try LaMa inpainting (mask-based, higher quality)
+    tasks.push((async () => {
       try {
-        const imageBuffer = Buffer.from(imgData.base64, "base64");
+        let cleanUrl: string | null = null;
 
-        // Get segments from DB to build the mask
-        // Get segments from ONE language only (avoid duplicates from multiple translations)
-        const onePayload = await prisma.translationPayload.findFirst({
-          where: { postId, status: { in: ["COMPLETED", "APPROVED"] } },
-          orderBy: { version: "desc" },
-          select: { id: true },
-        });
-        const segments = onePayload ? await prisma.translationSegment.findMany({
-          where: {
-            translationPayloadId: onePayload.id,
-            imageIndex: dbImage.orderIndex,
-          },
-          select: {
-            boxX: true,
-            boxY: true,
-            boxWidth: true,
-            boxHeight: true,
-            semanticRole: true,
-          },
-        }) : [];
+        // Primary: Try LaMa inpainting (mask-based, higher quality)
+        try {
+          const imageBuffer = Buffer.from(imgData.base64, "base64");
 
-        if (segments.length > 0) {
-          const metadata = await sharp(imageBuffer).metadata();
-          const imgWidth = metadata.width;
-          const imgHeight = metadata.height;
+          // Get segments from DB to build the mask
+          // Get segments from ONE language only (avoid duplicates from multiple translations)
+          const onePayload = await prisma.translationPayload.findFirst({
+            where: { postId, status: { in: ["COMPLETED", "APPROVED"] } },
+            orderBy: { version: "desc" },
+            select: { id: true },
+          });
+          const segments = onePayload ? await prisma.translationSegment.findMany({
+            where: {
+              translationPayloadId: onePayload.id,
+              imageIndex: dbImage.orderIndex,
+            },
+            select: {
+              boxX: true,
+              boxY: true,
+              boxWidth: true,
+              boxHeight: true,
+              semanticRole: true,
+            },
+          }) : [];
 
-          if (imgWidth && imgHeight) {
-            const maskBuffer = await generateInpaintingMask(segments, imgWidth, imgHeight);
-            const lamaOutputUrl = await runLamaInpainting(imageBuffer, maskBuffer, imgData.mimeType);
+          if (segments.length > 0) {
+            const metadata = await sharp(imageBuffer).metadata();
+            const imgWidth = metadata.width;
+            const imgHeight = metadata.height;
 
-            // Download the clean image from LaMa output URL
-            const cleanRes = await fetch(lamaOutputUrl);
-            if (cleanRes.ok) {
-              const cleanRaw = Buffer.from(await cleanRes.arrayBuffer());
-              // Compress to WebP for ~97% storage savings
-              const sharp = (await import("sharp")).default;
-              const cleanBuffer = await sharp(cleanRaw).webp({ quality: 85 }).toBuffer();
-              // Verify the WebP is valid
-              const meta = await sharp(cleanBuffer).metadata();
-              if (!meta.width || !meta.height) throw new Error("WebP validation failed");
-              cleanUrl = await saveGeneratedImage(cleanBuffer, "clean_lama", ".webp");
-              console.debug(`[LaMa] Clean image generated for postImage ${dbImage.id}`);
+            if (imgWidth && imgHeight) {
+              const maskBuffer = await generateInpaintingMask(segments, imgWidth, imgHeight);
+              const lamaOutputUrl = await runLamaInpainting(imageBuffer, maskBuffer, imgData.mimeType);
+
+              // Download the clean image from LaMa output URL
+              const cleanRes = await fetch(lamaOutputUrl);
+              if (cleanRes.ok) {
+                const cleanRaw = Buffer.from(await cleanRes.arrayBuffer());
+                // Compress to WebP for ~97% storage savings
+                const sharp = (await import("sharp")).default;
+                const cleanBuffer = await sharp(cleanRaw).webp({ quality: 70 }).toBuffer();
+                // Verify the WebP is valid
+                const meta = await sharp(cleanBuffer).metadata();
+                if (!meta.width || !meta.height) throw new Error("WebP validation failed");
+                cleanUrl = await saveGeneratedImage(cleanBuffer, "clean_lama", ".webp");
+                console.debug(`[LaMa] Clean image generated for postImage ${dbImage.id}`);
+              }
             }
           }
+        } catch (lamaErr) {
+          console.warn(`[LaMa] Failed for postImage ${dbImage.id}, falling back to Gemini:`, lamaErr);
         }
-      } catch (lamaErr) {
-        console.warn(`[LaMa] Failed for postImage ${dbImage.id}, falling back to Gemini:`, lamaErr);
-      }
 
-      // Fallback: Gemini inpainting
-      if (!cleanUrl) {
-        cleanUrl = await generateCleanImage(imgData.base64, imgData.mimeType);
+        // Fallback: Gemini inpainting
+        if (!cleanUrl) {
+          cleanUrl = await generateCleanImage(imgData.base64, imgData.mimeType);
+          if (cleanUrl) {
+            console.debug(`[Gemini fallback] Clean image generated for postImage ${dbImage.id}`);
+          }
+        }
+
         if (cleanUrl) {
-          console.debug(`[Gemini fallback] Clean image generated for postImage ${dbImage.id}`);
+          await prisma.postImage.update({
+            where: { id: dbImage.id },
+            data: { cleanUrl },
+          });
         }
+      } catch (err) {
+        console.error(`Clean image generation failed for postImage ${dbImage.id}:`, err);
       }
-
-      if (cleanUrl) {
-        await prisma.postImage.update({
-          where: { id: dbImage.id },
-          data: { cleanUrl },
-        });
-      }
-    } catch (err) {
-      console.error(`Clean image generation failed for postImage ${dbImage.id}:`, err);
-    }
+    })());
   }
+
+  // Wait for all images to finish (errors are swallowed per-image above)
+  await Promise.all(tasks);
 }
 
 // ---------------------------------------------------------------------------
@@ -513,7 +529,7 @@ For each text area, seamlessly fill with the background that would naturally be 
         const cleanImageRaw = Buffer.from(part.inlineData.data, "base64");
         // Compress to WebP for storage savings
         const sharp = (await import("sharp")).default;
-        const cleanImageBuffer = await sharp(cleanImageRaw).webp({ quality: 85 }).toBuffer();
+        const cleanImageBuffer = await sharp(cleanImageRaw).webp({ quality: 70 }).toBuffer();
         const meta = await sharp(cleanImageBuffer).metadata();
         if (!meta.width || !meta.height) throw new Error("WebP validation failed");
         return await saveGeneratedImage(cleanImageBuffer, "clean", ".webp");
@@ -560,13 +576,13 @@ async function fetchGoogleFont(fontFamily: string, text: string, weight: number 
 // ---------------------------------------------------------------------------
 // Map language code to Noto Sans font family for Google Fonts
 // ---------------------------------------------------------------------------
-function getFontFamilyForLang(lang: string): string {
+export function getFontFamilyForLang(lang: string): string {
   switch (lang) {
     case "ko": return "Noto+Sans+KR";
     case "ja": return "Noto+Sans+JP";
     case "zh": return "Noto+Sans+SC";
     case "ar": return "Noto+Sans+Arabic";
-    case "hi": return "Noto+Sans+Devanagari";
+    case "hi": return "Noto+Sans"; // Hinglish uses Roman/Latin script
     default: return "Noto+Sans";
   }
 }
@@ -580,7 +596,7 @@ function getFontFamilyForLang(lang: string): string {
 // Strategy: Get the clean image (text removed) → POST to /api/translate/compose-image
 // Fallback: Gemini image editing if compose fails
 // ---------------------------------------------------------------------------
-async function generateTranslatedImageForPayload(
+export async function generateTranslatedImageForPayload(
   payloadId: string,
   postId: string,
   segments: Array<{
@@ -600,16 +616,25 @@ async function generateTranslatedImageForPayload(
     strokeWidth?: number;
     isUppercase?: boolean;
     backgroundColor?: string;
+    imageIndex?: number;
   }>,
   targetLanguage: string
 ): Promise<void> {
   try {
-    // 1. Find the image for this post (need dimensions + clean URL)
-    const postImage = await prisma.postImage.findFirst({
+    // 1. Find ALL images for this post (multi-image support)
+    const postImages = await prisma.postImage.findMany({
       where: { postId },
       orderBy: { orderIndex: "asc" },
-      select: { cleanUrl: true, originalUrl: true, mimeType: true },
+      select: { cleanUrl: true, originalUrl: true, mimeType: true, orderIndex: true },
     });
+
+    if (postImages.length === 0) {
+      console.warn(`No images found for post ${postId}, skipping translated image`);
+      return;
+    }
+
+    const postImage = postImages[0];
+    const isMultiImage = postImages.length > 1;
 
     if (!postImage) {
       console.warn(`No image found for post ${postId}, skipping translated image`);
@@ -661,38 +686,87 @@ async function generateTranslatedImageForPayload(
     // 4a. For Arabic: use Sharp-based image-composer (Satori can't handle Arabic ligatures)
     if (targetLanguage === "ar") {
       const { composeTranslatedImage } = await import("@/lib/image-composer");
-      const composerSegments = segments
-        .filter(s => s.semanticRole !== "WATERMARK" && s.translatedText?.trim())
-        .map(s => ({
-          translatedText: s.translatedText,
-          boxX: s.boxX,
-          boxY: s.boxY,
-          boxWidth: s.boxWidth,
-          boxHeight: s.boxHeight,
-          fontFamily: s.fontFamily,
-          fontWeight: s.fontWeight,
-          fontSizePixels: s.fontSizePixels,
-          color: s.color,
-          textAlign: s.textAlign,
-          strokeColor: s.strokeColor,
-          strokeWidth: s.strokeWidth,
-          isUppercase: s.isUppercase,
-          semanticRole: s.semanticRole,
-        }));
-      if (composerSegments.length === 0) return;
-
-      const composedRaw = await composeTranslatedImage(Buffer.from(cleanBuffer), composerSegments, { watermark: false });
       const sharpMod = (await import("sharp")).default;
-      const composedBuffer = await sharpMod(composedRaw).webp({ quality: 85 }).toBuffer();
-      const url = await saveGeneratedImage(composedBuffer, `translated_sharp_${targetLanguage}`, ".webp");
-      await prisma.translationPayload.update({ where: { id: payloadId }, data: { translatedImageUrl: url } });
-      console.debug(`[Sharp] Arabic translated image saved for payload ${payloadId}: ${url}`);
+
+      // Helper: render ONE image by index, return saved URL (or "")
+      const renderArabicImage = async (imgIdx: number, baseBuffer: Buffer): Promise<string> => {
+        try {
+          const imgSegs = segments.filter(
+            (s) => (s.imageIndex ?? 0) === imgIdx && s.semanticRole !== "WATERMARK" && s.translatedText?.trim()
+          );
+          if (imgSegs.length === 0) return "";
+
+          const composerSegments = imgSegs.map((s) => ({
+            translatedText: s.translatedText,
+            boxX: s.boxX,
+            boxY: s.boxY,
+            boxWidth: s.boxWidth,
+            boxHeight: s.boxHeight,
+            fontFamily: s.fontFamily,
+            fontWeight: s.fontWeight,
+            fontSizePixels: s.fontSizePixels,
+            color: s.color,
+            textAlign: s.textAlign,
+            strokeColor: s.strokeColor,
+            strokeWidth: s.strokeWidth,
+            isUppercase: s.isUppercase,
+            semanticRole: s.semanticRole,
+          }));
+
+          const composedRaw = await composeTranslatedImage(baseBuffer, composerSegments, { watermark: false });
+          const composedBuffer = await sharpMod(composedRaw).webp({ quality: 70 }).toBuffer();
+          const url = await saveGeneratedImage(
+            composedBuffer,
+            `translated_sharp_${targetLanguage}_img${imgIdx}`,
+            ".webp"
+          );
+          console.debug(`[Sharp/ar] Image ${imgIdx} translated for payload ${payloadId}: ${url}`);
+          return url;
+        } catch (err) {
+          console.error(`[Sharp/ar] Image ${imgIdx} failed:`, err);
+          return "";
+        }
+      };
+
+      // Render first image (we already have its cleanBuffer)
+      const firstUrl = await renderArabicImage(0, Buffer.from(cleanBuffer));
+
+      const updateData: Record<string, unknown> = {};
+      if (firstUrl) updateData.translatedImageUrl = firstUrl;
+
+      // Render remaining images in parallel for multi-image posts
+      if (isMultiImage) {
+        const remainingIndices = Array.from({ length: postImages.length - 1 }, (_, i) => i + 1);
+        const remainingResults = await Promise.all(
+          remainingIndices.map(async (imgIdx) => {
+            try {
+              const img = postImages[imgIdx];
+              const imgBaseUrl = img.cleanUrl || img.originalUrl;
+              if (!imgBaseUrl) return "";
+              const resolvedImgUrl = imgBaseUrl.startsWith("http") ? imgBaseUrl : `${appUrl}${imgBaseUrl}`;
+              const imgRes = await fetch(resolvedImgUrl);
+              if (!imgRes.ok) return "";
+              const imgBuffer = Buffer.from(await imgRes.arrayBuffer());
+              return await renderArabicImage(imgIdx, imgBuffer);
+            } catch (err) {
+              console.error(`[Sharp/ar] Fetch failed for image ${imgIdx}:`, err);
+              return "";
+            }
+          })
+        );
+        updateData.translatedImageUrls = [firstUrl, ...remainingResults];
+      }
+
+      if (Object.keys(updateData).length > 0) {
+        await prisma.translationPayload.update({ where: { id: payloadId }, data: updateData });
+      }
       return;
     }
 
     // 4b. Inline Satori rendering (for all other languages)
+    // For multi-image posts, only render segments belonging to the FIRST image (index 0)
     const visibleSegments = segments.filter(
-      (s) => s.semanticRole !== "WATERMARK" && s.translatedText?.trim()
+      (s) => s.semanticRole !== "WATERMARK" && s.translatedText?.trim() && (!isMultiImage || (s.imageIndex ?? 0) === 0)
     );
 
     if (visibleSegments.length === 0) return;
@@ -848,21 +922,137 @@ async function generateTranslatedImageForPayload(
 
     // 5. Compress to WebP + save to storage
     const sharpMod = (await import("sharp")).default;
-    const composedBuffer = await sharpMod(composedRaw).webp({ quality: 85 }).toBuffer();
+    const composedBuffer = await sharpMod(composedRaw).webp({ quality: 70 }).toBuffer();
     const composedMeta = await sharpMod(composedBuffer).metadata();
     if (!composedMeta.width || !composedMeta.height) throw new Error("Translated WebP validation failed");
     const url = await saveGeneratedImage(composedBuffer, `translated_satori_${targetLanguage}`, ".webp");
 
-    // 6. Update DB
+    // 6. Update DB — first image URL
+    const updateData: Record<string, any> = { translatedImageUrl: url };
+
+    // 7. Multi-image: render remaining images in PARALLEL and store as translatedImageUrls
+    if (isMultiImage) {
+      // Render each image concurrently. Each iteration only produces its own
+      // URL — no shared state — so parallelizing is safe. Same Satori/Sharp
+      // calls as the sequential version, just concurrent for N× speedup.
+      const renderImage = async (imgIdx: number): Promise<string> => {
+        try {
+          const img = postImages[imgIdx];
+          const imgSegs = segments.filter(s => (s.imageIndex ?? 0) === imgIdx);
+          if (imgSegs.length === 0 || !imgSegs.some(s => s.semanticRole !== "WATERMARK" && s.translatedText?.trim())) {
+            return "";
+          }
+
+          const imgBaseUrl = img.cleanUrl || img.originalUrl;
+          if (!imgBaseUrl) return "";
+
+          const resolvedImgUrl = imgBaseUrl.startsWith("http") ? imgBaseUrl : `${appUrl}${imgBaseUrl}`;
+          const imgRes = await fetch(resolvedImgUrl);
+          if (!imgRes.ok) return "";
+          const imgBuffer = Buffer.from(await imgRes.arrayBuffer());
+          const imgMeta = await sharp(imgBuffer).metadata();
+          const imgW = imgMeta.width || 800;
+          const imgH = imgMeta.height || 800;
+
+          const visSegs = imgSegs.filter(s => s.semanticRole !== "WATERMARK" && s.translatedText?.trim());
+          const imgFullText = visSegs.map(s => s.translatedText).join("");
+          const imgFontFamily = getFontFamilyForLang(targetLanguage);
+          const imgFontBuffer = await fetchGoogleFont(imgFontFamily, imgFullText);
+
+          const imgMaxCoord = Math.max(...visSegs.map(s => Math.max(s.boxX + s.boxWidth, s.boxY + s.boxHeight)));
+          const imgNorm = imgMaxCoord > 1.5 ? (imgMaxCoord > 100 ? 1000 : imgMaxCoord) : 1;
+          const imgSafeW = Math.min(imgW, 2048);
+          const imgSafeH = Math.min(imgH, 2048);
+
+          const imgSatoriBuf = imgMeta.format === "webp"
+            ? Buffer.from(await sharp(imgBuffer).png().toBuffer())
+            : imgBuffer;
+          const imgBase64 = imgSatoriBuf.toString("base64");
+          const imgMime = imgMeta.format === "jpeg" ? "image/jpeg" : "image/png";
+          const imgDataUri = `data:${imgMime};base64,${imgBase64}`;
+
+          const imgElement = {
+            type: "div",
+            props: {
+              style: { display: "flex", width: "100%", height: "100%", position: "relative" as const },
+              children: [
+                { type: "img", props: { src: imgDataUri, style: { position: "absolute" as const, top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover" as const } } },
+                ...visSegs.map((seg) => {
+                  const x = seg.boxX / imgNorm;
+                  const y = seg.boxY / imgNorm;
+                  const w = seg.boxWidth / imgNorm;
+                  const h = seg.boxHeight / imgNorm;
+                  const boxHPx = h * imgSafeH;
+                  const boxWPx = w * imgSafeW;
+                  const baseSize = boxHPx * 0.7;
+                  const cpl = Math.max(1, Math.floor(boxWPx / (baseSize * 0.55)));
+                  const lines = Math.ceil((seg.translatedText?.length || 1) / cpl);
+                  const fontSize = seg.fontSizePixels && seg.fontSizePixels > 8
+                    ? Math.max(12, Math.min(seg.fontSizePixels * 1.1, boxHPx * 0.85))
+                    : lines > 1 ? Math.max(12, boxHPx / (lines * 1.3)) : Math.max(12, Math.min(baseSize, 72));
+                  const textColor = seg.color || "#FFFFFF";
+                  const isLight = textColor.toLowerCase().includes("fff") || textColor === "white";
+                  const stroke = isLight
+                    ? "-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, -1px 0 0 #000, 1px 0 0 #000, 0 -1px 0 #000, 0 1px 0 #000"
+                    : "-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff";
+                  const rawBg = (seg.backgroundColor || "transparent").toLowerCase();
+                  const isGrayish = /^(gray|grey|silver)/i.test(rawBg) || (() => {
+                    const m = rawBg.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+                    return m ? [parseInt(m[1],16), parseInt(m[2],16), parseInt(m[3],16)].every(v => v >= 100 && v <= 220) : false;
+                  })();
+                  const bgColor = (rawBg === "transparent" || isGrayish) ? "transparent" : rawBg;
+                  return {
+                    type: "div",
+                    props: {
+                      style: {
+                        position: "absolute" as const, left: `${x*100}%`, top: `${y*100}%`, width: `${w*100}%`, height: `${h*100}%`,
+                        display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center" as const,
+                        fontFamily: "Noto Sans", fontSize: `${fontSize}px`, fontWeight: 900, color: textColor,
+                        backgroundColor: bgColor, textShadow: stroke, lineHeight: 1.2,
+                        padding: bgColor !== "transparent" ? "2px 6px" : "0",
+                        wordBreak: "keep-all" as const, overflowWrap: "break-word" as const,
+                      },
+                      children: seg.translatedText,
+                    },
+                  };
+                }),
+              ],
+            },
+          };
+
+          const { default: satoriLib } = await import("satori");
+          const imgSvg = await satoriLib(imgElement as any, {
+            width: imgSafeW, height: imgSafeH,
+            fonts: [{ name: "Noto Sans", data: Buffer.from(imgFontBuffer), style: "normal" as const, weight: 900 }],
+          });
+          const { Resvg: ResvgLib } = await import("@resvg/resvg-js");
+          const imgResvg = new ResvgLib(imgSvg, { fitTo: { mode: "width" as const, value: imgSafeW } });
+          const imgPng = Buffer.from(imgResvg.render().asPng());
+          const imgSharp = (await import("sharp")).default;
+          const imgWebp = await imgSharp(imgPng).webp({ quality: 70 }).toBuffer();
+          const imgUrl = await saveGeneratedImage(imgWebp, `translated_satori_${targetLanguage}_img${imgIdx}`, ".webp");
+          console.debug(`[Multi] Image ${imgIdx} translated for ${payloadId}: ${imgUrl}`);
+          return imgUrl;
+        } catch (imgErr) {
+          console.error(`[Multi] Image ${imgIdx} failed:`, imgErr);
+          return "";
+        }
+      };
+
+      const remainingIndices = Array.from({ length: postImages.length - 1 }, (_, i) => i + 1);
+      const rendered = await Promise.all(remainingIndices.map(renderImage));
+      const imageUrls: string[] = [url, ...rendered];
+
+      updateData.translatedImageUrls = imageUrls;
+    }
+
     await prisma.translationPayload.update({
       where: { id: payloadId },
-      data: { translatedImageUrl: url },
+      data: updateData,
     });
-    console.debug(`Translated image (Satori) saved for payload ${payloadId}: ${url}`);
+    console.debug(`Translated image(s) saved for payload ${payloadId}`);
   } catch (err) {
     console.error(`[Satori] Compose failed for payload ${payloadId}:`, err);
-    // No fallback — Satori + LaMa is the only pipeline.
-    // Frontend will use MemeRenderer canvas as client-side fallback.
   }
 }
 
@@ -872,7 +1062,7 @@ async function generateTranslatedImageForPayload(
 // ---------------------------------------------------------------------------
 const TRANSLATION_CACHE_TTL = 604800; // 7 days in seconds
 
-async function getCachedTranslation(
+export async function getCachedTranslation(
   postId: string,
   targetLang: string
 ): Promise<AITranslationResult | null> {
@@ -898,7 +1088,7 @@ async function getCachedTranslation(
   }
 }
 
-async function setCachedTranslation(
+export async function setCachedTranslation(
   postId: string,
   targetLang: string,
   result: AITranslationResult
@@ -1045,10 +1235,111 @@ export async function POST(request: NextRequest) {
     let englishBody: string | null = null;
     const isEnglishInternalOnly = needsEnglishFirst && !targetLanguages.includes("en");
 
+    // =========================================================================
+    // PHASE 1: English image analysis (1 Gemini Flash call with image)
+    // Extracts: bounding boxes, sourceText, styling, memeType, cultureNote
+    // =========================================================================
+    type EnglishAnalysisSegment = TranslationSegmentResponse & { imageIndex: number };
+    let englishAnalysis: {
+      segments: EnglishAnalysisSegment[];
+      memeType: string | null;
+      confidence: number | null;
+      cultureNote: CultureNoteResponse | null;
+    } | null = null;
+
+    // Check Redis cache for English analysis
+    const cachedEnAnalysis = await getCachedTranslation(postId, "en");
+    if (cachedEnAnalysis && cachedEnAnalysis.segments && cachedEnAnalysis.segments.length > 0) {
+      console.debug(`[Cache] Using cached English analysis for ${postId}`);
+      englishAnalysis = {
+        segments: cachedEnAnalysis.segments.map(s => ({ ...s, imageIndex: (s as any).imageIndex ?? 0 })),
+        memeType: cachedEnAnalysis.memeType ?? null,
+        confidence: cachedEnAnalysis.confidence ?? null,
+        cultureNote: cachedEnAnalysis.cultureNote || null,
+      };
+    } else {
+      // Run English image analysis (1 Gemini Flash call per image)
+      const enSystemPrompt = buildTranslationSystemPrompt(sourceLanguage, "en");
+      const enModel = getGenAI().getGenerativeModel({
+        model: "gemini-2.5-flash",
+        systemInstruction: enSystemPrompt,
+        generationConfig: {
+          responseMimeType: "application/json",
+          temperature: 0.7,
+          maxOutputTokens: 8192,
+        },
+      });
+
+      const enSegments: EnglishAnalysisSegment[] = [];
+      let enParsed: AITranslationResult | null = null;
+      const enCultureNotes: CultureNoteResponse[] = [];
+
+      const validImages = imageDataList
+        .map((imgData, idx) => ({ imgData, idx }))
+        .filter(({ imgData }) => !!imgData.base64);
+
+      // Run Gemini Flash analysis for all images in PARALLEL.
+      // Same API calls as before (with the same 2-attempt retry each),
+      // just dispatched concurrently. Quality-identical, wall-time ~N× faster
+      // for N-image posts.
+      const analysisResults = await Promise.all(
+        validImages.map(async ({ imgData, idx }) => {
+          for (let attempt = 0; attempt < 2; attempt++) {
+            try {
+              if (attempt > 0) await new Promise((r) => setTimeout(r, 1500));
+              const result = await enModel.generateContent([
+                `Translate this meme from ${sourceLanguage} to en. Analyze the image and detect all EXISTING text regions. If the image has NO text at all, return empty segments array. NEVER invent or add text that is not in the image. Respond ONLY with valid JSON, no markdown fences.${imageDataList.length > 1 ? ` This is image ${idx + 1} of ${imageDataList.length} in a multi-image post.` : ""}`,
+                { inlineData: { data: imgData.base64, mimeType: imgData.mimeType } },
+              ]);
+              if (idx === 0) checkContentSafety(postId, result.response).catch(() => {});
+              const text = result.response.text();
+              if (!text) continue;
+              const parsed = JSON.parse(stripMarkdownFences(text)) as AITranslationResult;
+              if (!Array.isArray(parsed.segments)) continue;
+              return { idx, parsed };
+            } catch (err) {
+              console.warn(`English analysis attempt ${attempt + 1} failed for image ${idx}:`, err instanceof Error ? err.message : String(err));
+            }
+          }
+          return null;
+        })
+      );
+
+      // Merge in original image order (idx) to keep segment ordering stable
+      for (const r of analysisResults) {
+        if (!r) continue;
+        if (!enParsed) enParsed = r.parsed;
+        for (const seg of r.parsed.segments) enSegments.push({ ...seg, imageIndex: r.idx });
+        if (r.parsed.cultureNote) enCultureNotes.push(r.parsed.cultureNote);
+      }
+
+      if (enParsed) {
+        englishAnalysis = {
+          segments: enSegments,
+          memeType: enParsed.memeType ?? null,
+          confidence: enParsed.confidence ?? null,
+          cultureNote: enCultureNotes[0] || null,
+        };
+        // Cache English analysis
+        setCachedTranslation(postId, "en", {
+          memeType: enParsed.memeType ?? "A",
+          segments: enSegments.map(s => ({ ...s })),
+          cultureNote: enCultureNotes[0] || { summary: "", explanation: "" },
+          confidence: enParsed.confidence,
+        }).catch(err => console.warn("[Cache] Failed to cache English analysis:", err));
+
+        englishSegmentsForPivot = enSegments.map(s => ({ sourceText: s.sourceText, translatedText: s.translatedText }));
+      }
+    }
+
+    // =========================================================================
+    // PHASE 2: Translate each target language using cached coordinates
+    // Uses flash-lite for segment text re-translation (no image needed)
+    // =========================================================================
     for (const targetLang of orderedTargetLanguages) {
       if (targetLang === sourceLanguage) continue;
 
-      // --- DB check: skip if a COMPLETED translation already exists for this language ---
+      // --- DB check: skip if a COMPLETED translation already exists ---
       const existingPayload = await prisma.translationPayload.findFirst({
         where: {
           postId,
@@ -1059,7 +1350,7 @@ export async function POST(request: NextRequest) {
         select: { id: true, version: true, translatedTitle: true },
       });
       if (existingPayload) {
-        console.debug(`[DB] Translation already exists for ${postId}:${targetLang} (v${existingPayload.version}), skipping Gemini call`);
+        console.debug(`[DB] Translation already exists for ${postId}:${targetLang} (v${existingPayload.version}), skipping`);
         results[targetLang] = {
           payloadId: existingPayload.id,
           version: existingPayload.version,
@@ -1069,153 +1360,165 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      const systemPrompt = buildTranslationSystemPrompt(sourceLanguage, targetLang);
-
       try {
-        // Check Redis cache before running Gemini analysis
-        const cachedResult = await getCachedTranslation(postId, targetLang);
-
-        const model = getGenAI().getGenerativeModel({
-          model: "gemini-2.5-flash",
-          systemInstruction: systemPrompt,
-          generationConfig: {
-            responseMimeType: "application/json",
-            temperature: 0.7,
-            maxOutputTokens: 8192,
-          },
-        });
-
-        // Translate ALL images IN PARALLEL and collect segments with imageIndex
+        // Build segments for this language by re-translating English sourceText
         const allSegments: Array<TranslationSegmentResponse & { imageIndex: number }> = [];
         let firstParsed: AITranslationResult | null = null;
         const allCultureNotes: CultureNoteResponse[] = [];
 
-        // If we have a cached result, use it instead of calling Gemini
-        if (cachedResult && cachedResult.segments && cachedResult.segments.length > 0) {
-          console.debug(`[Cache] Using cached translation for ${postId}:${targetLang}`);
-          firstParsed = cachedResult;
-          for (const seg of cachedResult.segments) {
-            allSegments.push({ ...seg, imageIndex: (seg as any).imageIndex ?? 0 });
-          }
-          if (cachedResult.cultureNote) {
-            allCultureNotes.push(cachedResult.cultureNote);
+        if (targetLang === "en" && englishAnalysis) {
+          // English: use analysis directly (already translated)
+          firstParsed = {
+            memeType: englishAnalysis.memeType || "A",
+            segments: englishAnalysis.segments,
+            cultureNote: englishAnalysis.cultureNote || { summary: "", explanation: "" },
+            confidence: englishAnalysis.confidence ?? 0.9,
+          };
+          allSegments.push(...englishAnalysis.segments);
+          if (englishAnalysis.cultureNote) allCultureNotes.push(englishAnalysis.cultureNote);
+        } else if (englishAnalysis && englishAnalysis.segments.length > 0) {
+          // Non-English: re-translate segment texts using flash-lite (cheap, no image)
+          const targetLangInstruction = LANGUAGE_INSTRUCTIONS[targetLang] || `Target language: ${targetLang}`;
+          const segmentTexts = englishAnalysis.segments.map(s => s.translatedText); // English text
+
+          // Check Redis cache for this language
+          const cachedResult = await getCachedTranslation(postId, targetLang);
+          if (cachedResult && cachedResult.segments && cachedResult.segments.length > 0) {
+            console.debug(`[Cache] Using cached translation for ${postId}:${targetLang}`);
+            firstParsed = cachedResult;
+            for (const seg of cachedResult.segments) {
+              allSegments.push({ ...seg, imageIndex: (seg as any).imageIndex ?? 0 });
+            }
+            if (cachedResult.cultureNote) allCultureNotes.push(cachedResult.cultureNote);
+          } else {
+            // Translate all segment texts in one flash-lite call
+            const liteModel = getGenAI().getGenerativeModel({
+              model: "gemini-2.5-flash-lite",
+              generationConfig: {
+                responseMimeType: "application/json",
+                temperature: 0.3,
+                maxOutputTokens: 4096,
+              },
+            });
+
+            // Use full language name (e.g., "Japanese (日本語)") for clearer model instruction
+            const targetLangName = targetLangInstruction.split(":")[0] || targetLang;
+
+            // CRITICAL: do NOT include the original source text in the prompt —
+            // at low temperature flash-lite tends to paraphrase the source back
+            // instead of translating to the target (e.g. Japanese prompt →
+            // Korean output bug).
+            const buildPrompt = (extraGuard = "") => `You are a professional translator for mimzy, a global meme platform.
+
+${targetLangInstruction}
+
+TASK: Translate each English meme text below to ${targetLangName}.
+CRITICAL RULES:
+- Output MUST be in ${targetLangName} only. Do NOT output Korean, English, or any other language.
+- Keep the humor, tone, and cultural adaptation. Short, punchy, native-feeling.
+- Preserve the array order — one output per input.
+${extraGuard}
+
+English texts to translate:
+${segmentTexts.map((t, i) => `${i + 1}. "${t}"`).join("\n")}
+
+Also write a SHORT culture note about this meme in ${targetLangName}.
+
+Return JSON only (no markdown fences):
+{
+  "translations": ["translated text 1", "translated text 2", ...],
+  "cultureNote": { "summary": "...", "explanation": "..." }
+}`;
+
+            // Helper: detect if output came back in the wrong language
+            const looksWrongLanguage = (text: string): boolean => {
+              if (!text || !text.trim()) return false;
+              const hasHangul = /[\uAC00-\uD7AF]/.test(text);
+              const hasHiragana = /[\u3040-\u309F]/.test(text);
+              const hasKatakana = /[\u30A0-\u30FF]/.test(text);
+              const hasCJKExt = /[\u4E00-\u9FFF]/.test(text);
+              const hasArabic = /[\u0600-\u06FF]/.test(text);
+              if (targetLang !== "ko" && hasHangul) return true;
+              if (targetLang !== "ar" && hasArabic) return true;
+              if (targetLang === "ja" && !hasHiragana && !hasKatakana && !hasCJKExt && /[a-zA-Z]/.test(text) === false) return true;
+              return false;
+            };
+
+            let segParsed: { translations: string[]; cultureNote?: CultureNoteResponse } | null = null;
+            let attempt = 0;
+            const MAX_ATTEMPTS = 2;
+            while (attempt < MAX_ATTEMPTS && !segParsed) {
+              attempt++;
+              try {
+                const extraGuard = attempt > 1
+                  ? `- Previous attempt returned the WRONG language. You MUST output in ${targetLangName} this time.`
+                  : "";
+                const result = await liteModel.generateContent(buildPrompt(extraGuard));
+                const text = result.response.text();
+                if (!text) continue;
+                const parsed = JSON.parse(stripMarkdownFences(text)) as {
+                  translations: string[];
+                  cultureNote?: CultureNoteResponse;
+                };
+                if (!Array.isArray(parsed.translations)) continue;
+                const wrongLang = parsed.translations.some((t) => looksWrongLanguage(t));
+                if (wrongLang && attempt < MAX_ATTEMPTS) {
+                  console.warn(`[Phase 2] ${targetLang} wrong language, retrying`);
+                  continue;
+                }
+                segParsed = parsed;
+              } catch (err) {
+                console.warn(`[Phase 2] ${targetLang} attempt ${attempt} failed:`, err);
+              }
+            }
+
+            if (segParsed && Array.isArray(segParsed.translations)) {
+              {
+                // Map translated texts back onto English analysis segments (preserving coordinates)
+                for (let i = 0; i < englishAnalysis.segments.length; i++) {
+                  const enSeg = englishAnalysis.segments[i];
+                  const translation = segParsed.translations[i];
+                  const finalText = translation && !looksWrongLanguage(translation)
+                    ? translation
+                    : enSeg.translatedText;
+                  allSegments.push({
+                    sourceText: enSeg.sourceText,
+                    translatedText: finalText,
+                    semanticRole: enSeg.semanticRole,
+                    box: enSeg.box,
+                    style: enSeg.style,
+                    imageIndex: enSeg.imageIndex,
+                  });
+                }
+                firstParsed = {
+                  memeType: englishAnalysis.memeType || "A",
+                  segments: allSegments,
+                  cultureNote: segParsed.cultureNote || { summary: "", explanation: "" },
+                  confidence: englishAnalysis.confidence ?? 0.85,
+                };
+                if (segParsed.cultureNote) allCultureNotes.push(segParsed.cultureNote);
+
+                // Cache result
+                setCachedTranslation(postId, targetLang, {
+                  memeType: firstParsed.memeType,
+                  segments: allSegments.map(s => ({ ...s })),
+                  cultureNote: segParsed.cultureNote || { summary: "", explanation: "" },
+                  confidence: firstParsed.confidence,
+                }).catch(err => console.warn("[Cache] Failed to cache:", err));
+              }
+            }
           }
         } else {
-        // --- Begin Gemini translation (no cache hit) ---
-
-        // Helper: translate a single image with retry (max 2 attempts)
-        const translateSingleImage = async (
-          imgIdx: number,
-          imgData: { base64: string; mimeType: string },
-        ): Promise<{ parsed: AITranslationResult | null; imgIdx: number }> => {
-          for (let attempt = 0; attempt < 2; attempt++) {
-            try {
-              if (attempt > 0) {
-                await new Promise((r) => setTimeout(r, 1500));
-              }
-              // Build pivot reference if this is a distant language pair
-              const pivotRef = needsPivot(sourceLanguage, targetLang) && englishSegmentsForPivot.length > 0
-                ? "\n\n" + buildEnglishReferenceForImage(englishSegmentsForPivot)
-                : "";
-              const result = await model.generateContent([
-                `Translate this meme from ${sourceLanguage} to ${targetLang}. Analyze the image and detect all EXISTING text regions. If the image has NO text at all, return empty segments array. NEVER invent or add text that is not in the image. Respond ONLY with valid JSON, no markdown fences.${imageDataList.length > 1 ? ` This is image ${imgIdx + 1} of ${imageDataList.length} in a multi-image post.` : ""}${pivotRef}`,
-                {
-                  inlineData: {
-                    data: imgData.base64,
-                    mimeType: imgData.mimeType,
-                  },
-                },
-              ]);
-
-              // Fire-and-forget content safety check on first image
-              if (imgIdx === 0) {
-                checkContentSafety(postId, result.response).catch(() => {});
-              }
-
-              const text = result.response.text();
-              if (!text) continue;
-
-              const cleaned = stripMarkdownFences(text);
-              const parsed = JSON.parse(cleaned) as AITranslationResult;
-              if (!Array.isArray(parsed.segments)) continue;
-              // Empty segments is valid (image has no text) — don't retry
-
-              return { parsed, imgIdx };
-            } catch (err) {
-              console.warn(`Translate attempt ${attempt + 1} failed for ${targetLang} image ${imgIdx}:`, err instanceof Error ? err.message : String(err));
-            }
-          }
-          return { parsed: null, imgIdx };
-        };
-
-        // Launch image translations with controlled concurrency (max 3 at a time)
-        const validImages = imageDataList
-          .map((imgData, idx) => ({ imgData, idx }))
-          .filter(({ imgData }) => !!imgData.base64);
-
-        const imageResults: Array<{ parsed: AITranslationResult | null; imgIdx: number }> = [];
-        const IMG_CONCURRENCY = 3;
-        for (let i = 0; i < validImages.length; i += IMG_CONCURRENCY) {
-          const batch = validImages.slice(i, i + IMG_CONCURRENCY);
-          const batchResults = await Promise.all(
-            batch.map(({ imgData, idx }) => translateSingleImage(idx, imgData))
-          );
-          imageResults.push(...batchResults);
-          // Small delay between batches to avoid rate limiting
-          if (i + IMG_CONCURRENCY < validImages.length) {
-            await new Promise((r) => setTimeout(r, 500));
-          }
-        }
-
-        // Collect results (maintaining order)
-        for (const { parsed, imgIdx } of imageResults.sort((a, b) => a.imgIdx - b.imgIdx)) {
-          if (parsed) {
-            if (!firstParsed) firstParsed = parsed;
-            for (const seg of parsed.segments) {
-              allSegments.push({ ...seg, imageIndex: imgIdx });
-            }
-            if (parsed.cultureNote) {
-              allCultureNotes.push(parsed.cultureNote);
-            }
-          } else {
-            console.warn(`Translation failed for ${targetLang} image ${imgIdx}`);
-          }
+          // No English analysis available (image had no text) — create empty payload
+          firstParsed = { memeType: "A", segments: [], cultureNote: { summary: "", explanation: "" }, confidence: 0.9 };
         }
 
         if (!firstParsed) {
-          console.error(`All translation attempts failed for ${targetLang}`);
-          results[targetLang] = { error: `Translation failed for all images` };
-          continue;
-        }
-        // Empty segments is valid — image may have no text to translate
-
-        // Cache the successful Gemini result for future use
-        if (!cachedResult) {
-          setCachedTranslation(postId, targetLang, {
-            memeType: firstParsed.memeType,
-            segments: allSegments.map(s => ({
-              sourceText: s.sourceText,
-              translatedText: s.translatedText,
-              semanticRole: s.semanticRole,
-              box: s.box,
-              style: s.style,
-              imageIndex: s.imageIndex,
-            })),
-            cultureNote: allCultureNotes.length > 0 ? allCultureNotes[0] : { summary: "", explanation: "" },
-            confidence: firstParsed.confidence,
-          }).catch(err => console.warn("[Cache] Failed to cache translation:", err));
-        }
-
-        } // --- End Gemini else block ---
-
-        if (!firstParsed) {
-          // Already handled inside the else block with `continue`, but guard for cache path too
-          console.error(`No parsed result available for ${targetLang}`);
           results[targetLang] = { error: `Translation failed for ${targetLang}` };
           continue;
         }
 
-        // Track segments (with position info) for translated image generation later
+        // Track segments for image generation
         allSegmentsByLang[targetLang] = allSegments.map((s) => ({
           sourceText: s.sourceText,
           translatedText: s.translatedText,
@@ -1232,22 +1535,14 @@ export async function POST(request: NextRequest) {
           strokeColor: s.style.strokeColor,
           strokeWidth: s.style.strokeWidth,
           isUppercase: undefined,
+          imageIndex: s.imageIndex,
         }));
 
-        // Cache English segments for pivot translation of distant languages
-        if (targetLang === "en") {
-          englishSegmentsForPivot = allSegments.map(s => ({
-            sourceText: s.sourceText,
-            translatedText: s.translatedText,
-          }));
-        }
-
-        // Translate title & body text (in parallel) — uses lighter model for cost savings
+        // Translate title & body (flash-lite)
         const targetName = LANGUAGE_INSTRUCTIONS[targetLang]?.split(":")[0] || targetLang;
         let translatedTitle: string | null = null;
         let translatedBody: string | null = null;
 
-        // Check if title/body were already translated (e.g., by /api/translate/text)
         const existingTextTranslation = await prisma.translationPayload.findFirst({
           where: {
             postId,
@@ -1260,16 +1555,15 @@ export async function POST(request: NextRequest) {
         });
         if (existingTextTranslation?.translatedTitle) {
           translatedTitle = existingTextTranslation.translatedTitle;
-          translatedBody = existingTextTranslation.translatedBody || translatedBody;
+          translatedBody = existingTextTranslation.translatedBody || null;
         } else {
           const textTranslations = await Promise.allSettled([
-            // Title translation (gemini-2.5-flash-lite — cheaper, sufficient quality for text)
             (post.title && sourceLanguage !== targetLang) ? (async () => {
               const m = getGenAI().getGenerativeModel({
                 model: "gemini-2.5-flash-lite",
                 generationConfig: { temperature: 0.3, maxOutputTokens: 512 },
               });
-              const pivotHint = needsPivot(sourceLanguage, targetLang) && englishTitle
+              const pivotHint = englishTitle
                 ? `\n\nEnglish reference (for accuracy): "${englishTitle}"`
                 : "";
               const r = await m.generateContent(
@@ -1277,13 +1571,12 @@ export async function POST(request: NextRequest) {
               );
               return r.response.text().trim();
             })() : Promise.resolve(null),
-            // Body translation (gemini-2.5-flash-lite — cheaper, sufficient quality for text)
             (post.body && sourceLanguage !== targetLang) ? (async () => {
               const m = getGenAI().getGenerativeModel({
                 model: "gemini-2.5-flash-lite",
                 generationConfig: { temperature: 0.3, maxOutputTokens: 1024 },
               });
-              const pivotHint = needsPivot(sourceLanguage, targetLang) && englishBody
+              const pivotHint = englishBody
                 ? `\n\nEnglish reference (for accuracy): "${englishBody}"`
                 : "";
               const r = await m.generateContent(
@@ -1296,13 +1589,13 @@ export async function POST(request: NextRequest) {
           translatedBody = textTranslations[1].status === "fulfilled" ? textTranslations[1].value : null;
         }
 
-        // Cache English title/body for pivot translation of distant languages
+        // Cache English title/body
         if (targetLang === "en") {
           englishTitle = translatedTitle;
           englishBody = translatedBody;
         }
 
-        // If English was internal-only (not requested by user), skip DB storage
+        // If English was internal-only, skip DB storage
         if (targetLang === "en" && isEnglishInternalOnly) {
           console.debug(`[Pivot] English translation completed (internal-only, not saving to DB)`);
           continue;
@@ -1430,9 +1723,10 @@ export async function POST(request: NextRequest) {
     // Wait for clean images (started earlier, runs in parallel with translations)
     await cleanImagePromise;
 
-    // Generate translated images for each language (parallel, awaited)
+    // Generate translated images for successfully translated languages (awaited)
+    // Must be awaited — Vercel kills background tasks after response is sent
     const composePromises: Promise<void>[] = [];
-    for (const tl of orderedTargetLanguages) {
+    for (const tl of Object.keys(allSegmentsByLang)) {
       const lr = results[tl];
       if (lr?.payloadId && allSegmentsByLang[tl]?.length) {
         composePromises.push(

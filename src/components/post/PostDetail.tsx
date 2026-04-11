@@ -43,6 +43,7 @@ interface PostDetailProps {
   imageUrl: string;
   cleanImageUrl?: string;
   translatedImageUrl?: string;
+  translatedImageUrls?: string[];
   mimeType?: string;
   segments: TranslationSegmentData[];
   memeType?: string;
@@ -121,6 +122,7 @@ export default function PostDetail({
   imageUrl,
   cleanImageUrl,
   translatedImageUrl,
+  translatedImageUrls,
   mimeType,
   segments,
   memeType,
@@ -156,6 +158,17 @@ export default function PostDetail({
   const [showTranslation, setShowTranslation] = useState(hasTranslation);
   const [activeTab, setActiveTab] = useState("comments");
   const [showCompare, setShowCompare] = useState(false);
+
+  // Dynamic max image height — keep the image within 70% of the viewport
+  // so the user can still see tags, reactions and comments without scrolling
+  // as much. Starts at 600 for SSR hydration, updates on mount.
+  const [viewportMaxImageHeight, setViewportMaxImageHeight] = useState(600);
+  useEffect(() => {
+    const compute = () => setViewportMaxImageHeight(Math.round(window.innerHeight * 0.7));
+    compute();
+    window.addEventListener("resize", compute);
+    return () => window.removeEventListener("resize", compute);
+  }, []);
   const [saved, setSaved] = useState(false);
   const [voteScore, setVoteScore] = useState(0);
   const [userVote, setUserVote] = useState(0);
@@ -215,6 +228,7 @@ export default function PostDetail({
 
   const sessionUsername = session?.user?.username;
   const isOwnPost = sessionUsername === author.username;
+  const isAdmin = session?.user?.role === "ADMIN" || session?.user?.role === "SUPER_ADMIN";
 
   // Close more menu on outside click
   useEffect(() => {
@@ -387,6 +401,64 @@ export default function PostDetail({
                   {t("post.reportPost")}
                 </button>
               )}
+              {isAdmin && (
+                <>
+                <button
+                  onClick={async () => {
+                    setShowMoreMenu(false);
+                    try {
+                      toast("Deleting translations...", "info");
+                      const delRes = await fetch(`/api/posts/${id}/retranslate`, { method: "POST" });
+                      const delData = await delRes.json();
+                      if (!delRes.ok) { toast(`Error: ${delData.error}`, "error"); return; }
+                      toast(`Deleted ${delData.deletedPayloads} translations. Retranslating...`, "info");
+                      const allLangs = ["ko", "en", "ja", "zh", "es", "hi", "ar"].filter(l => l !== delData.sourceLanguage);
+                      const transRes = await fetch("/api/translate", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ postId: id, sourceLanguage: delData.sourceLanguage, targetLanguages: allLangs }),
+                      });
+                      if (transRes.ok) {
+                        toast("Retranslation complete! Refresh to see.", "success");
+                      } else {
+                        toast("Retranslation failed", "error");
+                      }
+                    } catch {
+                      toast("Retranslation failed", "error");
+                    }
+                  }}
+                  className="w-full px-4 py-2.5 text-left text-sm text-[#c9a84c] hover:bg-background-elevated transition-colors flex items-center gap-2 border-t border-border"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182" />
+                  </svg>
+                  Retranslate
+                </button>
+                <button
+                  onClick={async () => {
+                    setShowMoreMenu(false);
+                    try {
+                      toast("Smart rendering (no LaMa)...", "info");
+                      const res = await fetch(`/api/posts/${id}/smart-render`, { method: "POST" });
+                      const data = await res.json();
+                      if (res.ok) {
+                        toast(`Smart render done: ${data.rendered} images. Refresh to see.`, "success");
+                      } else {
+                        toast(`Error: ${data.error}`, "error");
+                      }
+                    } catch {
+                      toast("Smart render failed", "error");
+                    }
+                  }}
+                  className="w-full px-4 py-2.5 text-left text-sm text-blue-400 hover:bg-background-elevated transition-colors flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.53 16.122a3 3 0 0 0-5.78 1.128 2.25 2.25 0 0 1-2.4 2.245 4.5 4.5 0 0 0 8.4-2.245c0-.399-.078-.78-.22-1.128Zm0 0a15.998 15.998 0 0 0 3.388-1.62m-5.043-.025a15.994 15.994 0 0 1 1.622-3.395m3.42 3.42a15.995 15.995 0 0 0 4.764-4.648l3.876-5.814a1.151 1.151 0 0 0-1.597-1.597L14.146 6.32a15.996 15.996 0 0 0-4.649 4.763m3.42 3.42a6.776 6.776 0 0 0-3.42-3.42" />
+                  </svg>
+                  Smart Render
+                </button>
+                </>
+              )}
             </div>
           )}
         </div>
@@ -527,111 +599,111 @@ export default function PostDetail({
       )}
 
       {/* Meme viewer — only for posts with images */}
-      {!isTextOnly && <div className="space-y-0 -mt-1">
-        {/* Translation bar above image */}
+      {!isTextOnly && <div className="space-y-2">
+        {/* Translation toggle bar (outside image) */}
         {(segments.length > 0 || translatedImageUrl) && (
-          <div className="flex items-center justify-between px-4 py-2.5 bg-background-surface border border-border rounded-t-xl">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2">
-              <TranslationToggle
-                showTranslation={showTranslation}
-                onChange={setShowTranslation}
-              />
-              <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${
-                showTranslation
-                  ? "bg-green-500/15 text-green-400"
-                  : "bg-background-elevated text-foreground-subtle"
-              }`}>
-                {showTranslation ? (
-                  <>
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    {t("feed.translated")}
-                  </>
-                ) : (
-                  t("feed.original")
-                )}
-              </span>
+              <button
+                onClick={() => setShowTranslation(!showTranslation)}
+                className="flex items-center gap-1.5 min-h-[40px] px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-full bg-background-elevated border border-border text-foreground-muted text-xs font-medium hover:bg-background-surface transition-all whitespace-nowrap"
+              >
+                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+                </svg>
+                {showTranslation ? t("feed.original") : t("feed.translated")}
+              </button>
+              {showTranslation && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-green-500/15 text-green-400 whitespace-nowrap">
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                  {t("feed.translated")}
+                </span>
+              )}
             </div>
-            <button
-              onClick={() => setShowCompare(!showCompare)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-foreground-subtle hover:text-foreground-muted hover:bg-background-elevated border border-border transition-colors"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7" />
-              </svg>
-              {showCompare ? t("post.original") : t("post.translated")}
-            </button>
+            {translatedImageUrl && !showCompare && (
+              <button
+                onClick={() => setShowCompare(true)}
+                className="flex items-center gap-1.5 min-h-[40px] px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-full bg-background-elevated border border-border text-foreground-muted text-xs font-medium hover:bg-background-surface transition-all whitespace-nowrap"
+              >
+                <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7" />
+                </svg>
+                <span className="hidden sm:inline">Compare</span>
+              </button>
+            )}
+            {showCompare && (
+              <button
+                onClick={() => setShowCompare(false)}
+                className="flex items-center gap-1.5 min-h-[40px] px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-full bg-background-elevated border border-border text-foreground-muted text-xs font-medium hover:bg-background-surface transition-all whitespace-nowrap"
+              >
+                Close
+              </button>
+            )}
           </div>
         )}
 
-        {/* Image(s) */}
-        {/* Priority 0: Compare mode (side-by-side original + translated) */}
+        {/* Compare mode */}
         {showCompare && translatedImageUrl ? (
-          <div className={`overflow-hidden border border-border rounded-b-xl border-t-0`}>
+          <div className={`overflow-hidden border border-border rounded-xl`}>
             <div className="grid grid-cols-2 gap-0.5 bg-border">
-              <div className="bg-black/5 flex items-center justify-center">
-                <Image src={imageUrl} alt="Original" width={800} height={800} className="w-full h-full object-contain" unoptimized />
+              <div className="bg-black/5 flex items-center justify-center max-h-[70vh]">
+                <Image src={imageUrl} alt="Original" width={800} height={800} className="w-full h-auto max-h-[70vh] object-contain" unoptimized />
               </div>
-              <div className="bg-black/5 flex items-center justify-center">
-                <Image src={translatedImageUrl} alt="Translated" width={800} height={800} className="w-full h-full object-contain" unoptimized />
+              <div className="bg-black/5 flex items-center justify-center max-h-[70vh]">
+                <Image src={translatedImageUrl} alt="Translated" width={800} height={800} className="w-full h-auto max-h-[70vh] object-contain" unoptimized />
               </div>
             </div>
           </div>
-        ) : showTranslation && translatedImageUrl ? (
-          <div className={`overflow-hidden border border-border flex items-center justify-center bg-black/5 ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-xl border-t-0" : "rounded-xl"}`}>
-            <Image src={translatedImageUrl} alt={title} width={800} height={800} className="w-full h-full object-contain" unoptimized />
-          </div>
-        ) : isTypeB && segments.length > 0 ? (
-          /* Type B without translatedImageUrl: ScreenshotRenderer > original */
-          <div className={`overflow-hidden border border-border flex items-center justify-center bg-black/5 ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-xl border-t-0" : "rounded-xl"}`}>
-            {showTranslation ? (
-              <ScreenshotRenderer
-                segments={segments}
-                showTranslation={showTranslation}
-                originalImageUrl={imageUrl}
-              />
-            ) : (
-              <Image src={imageUrl} alt={title} width={800} height={800} className="w-full h-full object-contain" unoptimized />
-            )}
-          </div>
         ) : images && images.length > 1 ? (
-          <div className={`overflow-hidden border border-border ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-xl border-t-0" : "rounded-xl"}`}>
+          /* Multi-image carousel with per-image translation support.
+             max-h-[70vh] keeps tall multi-panel memes within the viewport
+             so the user can still see reactions/comments below. */
+          <div className={`overflow-hidden border border-border rounded-xl`}>
             <ImageCarousel>
               {images.map((img, i) => {
-                const imgIsGif = img.mimeType === "image/gif";
-                const imgSegments = segments.filter((s: any) => (s.imageIndex ?? 0) === i);
+                const translatedUrl = showTranslation && translatedImageUrls?.[i];
                 return (
-                  <div key={i} className="flex items-center justify-center bg-black/5 dark:bg-black/20">
-                    {imgIsGif ? (
-                      <Image src={img.originalUrl} alt={title} width={800} height={800} className="w-full h-auto object-contain" unoptimized />
-                    ) : (
-                      <MemeRenderer
-                        imageUrl={img.originalUrl}
-                        cleanImageUrl={img.cleanUrl || undefined}
-                        translatedImageUrl={i === 0 ? translatedImageUrl : undefined}
-                        segments={imgSegments}
-                        showTranslation={showTranslation}
-                      />
-                    )}
+                  <div key={i} className="flex items-center justify-center bg-black/5 dark:bg-black/20 max-h-[70vh]">
+                    <Image
+                      src={translatedUrl || img.originalUrl}
+                      alt={`${title} ${i + 1}`}
+                      width={800}
+                      height={800}
+                      className="w-auto max-w-full h-auto max-h-[70vh] object-contain"
+                      unoptimized
+                    />
                   </div>
                 );
               })}
             </ImageCarousel>
           </div>
-        ) : isGif ? (
-          <div className={`overflow-hidden border border-border flex items-center justify-center bg-black/5 ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-xl border-t-0" : "rounded-xl"}`}>
-            <Image src={imageUrl} alt={title} width={800} height={800} className="w-full h-full object-contain" unoptimized />
-          </div>
         ) : (
-          <div className={`overflow-hidden border border-border flex items-center justify-center bg-black/5 ${(segments.length > 0 || translatedImageUrl) ? "rounded-b-xl border-t-0" : "rounded-xl"}`}>
-            <MemeRenderer
-              imageUrl={imageUrl}
-              cleanImageUrl={cleanImageUrl}
-              translatedImageUrl={translatedImageUrl}
-              segments={segments}
-              showTranslation={showTranslation}
-            />
+          <div className={`overflow-hidden border border-border flex items-center justify-center bg-black/5 rounded-xl max-h-[70vh]`}>
+            {/* Single image content — constrained to 70vh for comfortable scroll */}
+            {showTranslation && translatedImageUrl ? (
+              <Image src={translatedImageUrl} alt={title} width={800} height={800} className="w-auto max-w-full h-auto max-h-[70vh] object-contain" unoptimized />
+            ) : isTypeB && segments.length > 0 ? (
+              showTranslation ? (
+                <ScreenshotRenderer
+                  segments={segments}
+                  showTranslation={showTranslation}
+                  originalImageUrl={imageUrl}
+                />
+              ) : (
+                <Image src={imageUrl} alt={title} width={800} height={800} className="w-auto max-w-full h-auto max-h-[70vh] object-contain" unoptimized />
+              )
+            ) : isGif ? (
+              <Image src={imageUrl} alt={title} width={800} height={800} className="w-auto max-w-full h-auto max-h-[70vh] object-contain" unoptimized />
+            ) : (
+              <MemeRenderer
+                imageUrl={imageUrl}
+                cleanImageUrl={cleanImageUrl}
+                translatedImageUrl={translatedImageUrl}
+                segments={segments}
+                showTranslation={showTranslation}
+                maxHeight={viewportMaxImageHeight}
+              />
+            )}
           </div>
         )}
       </div>}

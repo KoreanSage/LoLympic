@@ -57,6 +57,7 @@ interface FeedPost {
   imageUrl: string;
   cleanImageUrl?: string;
   translatedImageUrl?: string;
+  translatedImageUrls?: string[];
   mimeType?: string;
   segments: TranslationSegmentData[];
   reactionCount: number;
@@ -68,6 +69,7 @@ interface FeedPost {
   tags?: string[];
   topComments?: TopComment[];
   images?: FeedImage[];
+  postStatus?: string;
 }
 
 interface FeedListProps {
@@ -141,12 +143,14 @@ function mapApiPost(post: any): FeedPost {
     imageUrl: image?.originalUrl || "",
     cleanImageUrl: image?.cleanUrl || undefined,
     translatedImageUrl: payload?.translatedImageUrl?.startsWith("http") ? payload.translatedImageUrl : undefined,
+    translatedImageUrls: Array.isArray(payload?.translatedImageUrls) ? payload.translatedImageUrls as string[] : undefined,
     mimeType: image?.mimeType || undefined,
     segments,
     reactionCount: post.reactionCount ?? post._count?.reactions ?? 0,
     commentCount: post.commentCount ?? post._count?.comments ?? 0,
     shareCount: post.shareCount ?? 0,
     viewCount: post.viewCount ?? 0,
+    postStatus: post.status || undefined,
     createdAt: String(post.createdAt || ""),
     tags: post.tags || [],
     images: (post.images || []).map((img: any) => ({

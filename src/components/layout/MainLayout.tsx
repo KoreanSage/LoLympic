@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import TopNav from "./TopNav";
 import Sidebar from "./Sidebar";
 import Footer from "./Footer";
+import { GlobalTranslationIndicator } from "./GlobalTranslationIndicator";
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -43,6 +44,9 @@ export default function MainLayout({
       </div>
 
       <Footer />
+
+      {/* Global floating translation progress — follows user across pages */}
+      <GlobalTranslationIndicator />
 
       {/* Scroll to top button */}
       {showScrollTop && (

@@ -254,6 +254,11 @@ export async function PATCH(
       }
     }
 
+    // Detect text changes that require retranslation
+    const titleChanged = title !== undefined && title !== existing.title;
+    const bodyChanged = postBody !== undefined && postBody !== existing.body;
+    const textChanged = titleChanged || bodyChanged;
+
     // Wrap in transaction
     const post = await prisma.$transaction(async (tx) => {
       const updated = await tx.post.update({
@@ -276,8 +281,60 @@ export async function PATCH(
         await tx.postEditHistory.createMany({ data: editHistoryRecords });
       }
 
+      // If title/body changed, clear existing text translations so they get re-generated
+      // (keeps image segments intact since the image didn't change)
+      if (textChanged) {
+        await tx.translationPayload.updateMany({
+          where: { postId: id },
+          data: {
+            translatedTitle: null,
+            translatedBody: null,
+          },
+        });
+      }
+
       return updated;
     });
+
+    // Trigger retranslation of title/body text (fire-and-forget)
+    // Fetches payloads with segments, then backfills via Gemini flash-lite
+    if (textChanged) {
+      (async () => {
+        try {
+          const postWithPayloads = await prisma.post.findUnique({
+            where: { id },
+            include: {
+              translationPayloads: {
+                where: { status: { in: ["COMPLETED", "APPROVED"] } },
+                include: { segments: { take: 1 } },
+              },
+            },
+          });
+          if (!postWithPayloads) return;
+
+          const { backfillMissingTitleTranslations } = await import("@/lib/translate-backfill");
+          const allLangs = ["ko", "en", "ja", "zh", "es", "hi", "ar"];
+          const sourceLang = postWithPayloads.sourceLanguage || "ko";
+
+          // Group payloads by language and call backfill for each
+          for (const lang of allLangs) {
+            if (lang === sourceLang) continue;
+            const payload = postWithPayloads.translationPayloads.find(
+              (p) => p.targetLanguage === lang
+            );
+            if (!payload) continue;
+            // Wrap as fake post object for backfill helper
+            const fakePost = {
+              ...postWithPayloads,
+              translationPayloads: [payload],
+            };
+            await backfillMissingTitleTranslations([fakePost], lang);
+          }
+        } catch (e) {
+          console.error("[Edit] Retranslate failed:", e);
+        }
+      })();
+    }
 
     return NextResponse.json({ post });
   } catch (error) {

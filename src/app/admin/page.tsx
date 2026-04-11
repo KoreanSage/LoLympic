@@ -57,6 +57,15 @@ export default function AdminDashboard() {
   const [banReason, setBanReason] = useState("");
   const [banDuration, setBanDuration] = useState("7");
   const [banPending, setBanPending] = useState(false);
+  const [retranslateLangs, setRetranslateLangs] = useState<Record<string, boolean>>({ hi: true, ar: true });
+  const [retranslateRunning, setRetranslateRunning] = useState(false);
+  const [retranslateProgress, setRetranslateProgress] = useState<{
+    phase: "deleting" | "translating" | "done";
+    total: number;
+    current: number;
+    failed: number;
+    deletedPayloads: number;
+  } | null>(null);
 
   const isAdmin =
     session?.user?.role === "ADMIN" ||
@@ -220,6 +229,98 @@ export default function AdminDashboard() {
     } catch {
       setActionMsg("Failed to unban user");
     }
+  };
+
+  const handleRetranslate = async () => {
+    const selected = Object.entries(retranslateLangs)
+      .filter(([, v]) => v)
+      .map(([k]) => k);
+    if (selected.length === 0) {
+      setActionMsg("Select at least one language");
+      return;
+    }
+    setRetranslateRunning(true);
+    setRetranslateProgress({ phase: "deleting", total: 0, current: 0, failed: 0, deletedPayloads: 0 });
+    setActionMsg("");
+
+    try {
+      // Phase 1: Delete existing translations
+      const deleteRes = await fetch("/api/admin/retranslate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetLanguages: selected }),
+      });
+      const deleteData = await deleteRes.json();
+      if (!deleteRes.ok) {
+        setActionMsg(`Delete failed: ${deleteData.error}`);
+        setRetranslateRunning(false);
+        setRetranslateProgress(null);
+        return;
+      }
+
+      const posts: { id: string; sourceLanguage: string }[] = deleteData.posts || [];
+      if (posts.length === 0) {
+        setActionMsg("No posts to retranslate");
+        setRetranslateRunning(false);
+        setRetranslateProgress(null);
+        return;
+      }
+
+      // Phase 2: Retranslate each post from browser (has auth cookies)
+      setRetranslateProgress({
+        phase: "translating",
+        total: posts.length,
+        current: 0,
+        failed: 0,
+        deletedPayloads: deleteData.deletedPayloads,
+      });
+
+      let done = 0;
+      let failCount = 0;
+      const BATCH = 3; // concurrent requests
+
+      for (let i = 0; i < posts.length; i += BATCH) {
+        const batch = posts.slice(i, i + BATCH);
+        const results = await Promise.allSettled(
+          batch.map((post) => {
+            const targets = selected.filter((l) => l !== post.sourceLanguage);
+            if (targets.length === 0) return Promise.resolve();
+            return fetch("/api/translate", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                postId: post.id,
+                sourceLanguage: post.sourceLanguage,
+                targetLanguages: targets,
+              }),
+            }).then((r) => {
+              if (!r.ok) throw new Error(`${r.status}`);
+            });
+          })
+        );
+        for (const r of results) {
+          done++;
+          if (r.status === "rejected") failCount++;
+        }
+        setRetranslateProgress((prev) =>
+          prev ? { ...prev, current: done, failed: failCount } : null
+        );
+        // Small delay between batches
+        if (i + BATCH < posts.length) {
+          await new Promise((r) => setTimeout(r, 1500));
+        }
+      }
+
+      setRetranslateProgress((prev) =>
+        prev ? { ...prev, phase: "done" } : null
+      );
+      setActionMsg(
+        `Retranslation complete: ${done - failCount}/${posts.length} posts translated${failCount > 0 ? `, ${failCount} failed` : ""}`
+      );
+    } catch {
+      setActionMsg("Retranslation request failed");
+    }
+    setRetranslateRunning(false);
   };
 
   if (status === "loading" || loading) {
@@ -507,6 +608,79 @@ export default function AdminDashboard() {
               {t("admin.selectMonthlyWinner")}
             </button>
           </div>
+        </div>
+
+        {/* Retranslate Section */}
+        <div className="bg-background-surface border border-border rounded-xl p-6 mb-8">
+          <h2 className="text-lg font-semibold mb-1">Retranslate</h2>
+          <p className="text-xs text-foreground-subtle mb-4">
+            Delete existing translations for selected languages and retranslate all posts with updated prompts.
+          </p>
+          <div className="flex items-center gap-4 flex-wrap mb-4">
+            {[
+              { code: "hi", label: "Hinglish" },
+              { code: "ar", label: "Arabic" },
+              { code: "ko", label: "Korean" },
+              { code: "en", label: "English" },
+              { code: "ja", label: "Japanese" },
+              { code: "zh", label: "Chinese" },
+              { code: "es", label: "Spanish" },
+            ].map(({ code, label }) => (
+              <label key={code} className="flex items-center gap-1.5 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={retranslateLangs[code] || false}
+                  onChange={(e) =>
+                    setRetranslateLangs((prev) => ({ ...prev, [code]: e.target.checked }))
+                  }
+                  className="accent-[#c9a84c] w-3.5 h-3.5"
+                />
+                <span className="text-foreground-muted">{label}</span>
+              </label>
+            ))}
+          </div>
+          <div className="flex items-center gap-3 flex-wrap">
+            <button
+              onClick={handleRetranslate}
+              disabled={retranslateRunning}
+              className="px-4 py-2 rounded-lg bg-[#c9a84c] text-black text-sm font-medium hover:bg-[#d4b85e] transition-colors disabled:opacity-50"
+            >
+              {retranslateRunning ? (
+                <span className="flex items-center gap-2">
+                  <span className="w-3.5 h-3.5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                  {retranslateProgress?.phase === "deleting"
+                    ? "Deleting old translations..."
+                    : retranslateProgress?.phase === "translating"
+                    ? `Translating ${retranslateProgress.current}/${retranslateProgress.total}...`
+                    : "Retranslating..."}
+                </span>
+              ) : (
+                "Retranslate Selected"
+              )}
+            </button>
+            {retranslateProgress && retranslateProgress.phase !== "deleting" && (
+              <div className="text-xs text-foreground-muted">
+                {retranslateProgress.deletedPayloads} deleted
+                {retranslateProgress.phase === "done" && (
+                  <>
+                    {" / "}
+                    {retranslateProgress.current - retranslateProgress.failed} retranslated
+                    {retranslateProgress.failed > 0 && (
+                      <span className="text-red-400"> / {retranslateProgress.failed} failed</span>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+          {retranslateProgress?.phase === "translating" && (
+            <div className="mt-3 w-full bg-background-elevated rounded-full h-1.5 overflow-hidden">
+              <div
+                className="h-full bg-[#c9a84c] transition-all duration-300"
+                style={{ width: `${Math.round((retranslateProgress.current / retranslateProgress.total) * 100)}%` }}
+              />
+            </div>
+          )}
         </div>
 
         {/* Users Table */}

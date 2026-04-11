@@ -1,0 +1,308 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getSessionUser } from "@/lib/auth";
+import prisma from "@/lib/prisma";
+import sharp from "sharp";
+import crypto from "crypto";
+
+export const maxDuration = 60;
+
+/**
+ * POST /api/posts/:id/smart-render
+ *
+ * Admin-only: Re-renders translated images for a post using the ORIGINAL image
+ * (no LaMa inpainting) with opaque background rects over text areas.
+ *
+ * Use when LaMa distorts the photo (e.g., caption bar memes where text
+ * is in a separate area from the image content).
+ */
+export async function POST(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const user = await getSessionUser();
+    if (!user || (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN")) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const { id: postId } = await params;
+
+    // Get post image
+    const postImage = await prisma.postImage.findFirst({
+      where: { postId },
+      orderBy: { orderIndex: "asc" },
+      select: { originalUrl: true },
+    });
+
+    if (!postImage?.originalUrl) {
+      return NextResponse.json({ error: "No image found" }, { status: 404 });
+    }
+
+    // Get all translation payloads with segments
+    const payloads = await prisma.translationPayload.findMany({
+      where: { postId, status: { in: ["COMPLETED", "APPROVED"] } },
+      include: { segments: true },
+    });
+
+    if (payloads.length === 0) {
+      return NextResponse.json({ error: "No translations found" }, { status: 404 });
+    }
+
+    // Fetch original image
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL
+      || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
+      || (process.env.NEXTAUTH_URL)
+      || "http://localhost:3000";
+
+    const originalUrl = postImage.originalUrl.startsWith("http")
+      ? postImage.originalUrl
+      : `${appUrl}${postImage.originalUrl}`;
+
+    const imgRes = await fetch(originalUrl);
+    if (!imgRes.ok) {
+      return NextResponse.json({ error: "Failed to fetch original image" }, { status: 500 });
+    }
+    const originalBuffer = Buffer.from(await imgRes.arrayBuffer());
+    const metadata = await sharp(originalBuffer).metadata();
+    const imgWidth = metadata.width || 800;
+    const imgHeight = metadata.height || 800;
+
+    // Storage setup
+    const USE_R2 = !!(
+      process.env.R2_ACCESS_KEY_ID &&
+      process.env.R2_SECRET_ACCESS_KEY &&
+      process.env.R2_ENDPOINT &&
+      process.env.R2_BUCKET_NAME
+    );
+    const USE_BLOB = !USE_R2 && !!process.env.BLOB_READ_WRITE_TOKEN;
+
+    const saveImage = async (buffer: Buffer, prefix: string): Promise<string> => {
+      const filename = `${prefix}_${crypto.randomUUID()}.webp`;
+      if (USE_R2) {
+        const { S3Client } = await import("@aws-sdk/client-s3");
+        const { PutObjectCommand } = await import("@aws-sdk/client-s3");
+        const s3 = new S3Client({
+          region: "auto",
+          endpoint: process.env.R2_ENDPOINT!,
+          credentials: {
+            accessKeyId: process.env.R2_ACCESS_KEY_ID!,
+            secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
+          },
+        });
+        await s3.send(new PutObjectCommand({
+          Bucket: process.env.R2_BUCKET_NAME!,
+          Key: `uploads/${filename}`,
+          Body: buffer,
+          ContentType: "image/webp",
+        }));
+        return `${process.env.R2_PUBLIC_URL || `https://pub-${process.env.R2_BUCKET_NAME}.r2.dev`}/uploads/${filename}`;
+      } else if (USE_BLOB) {
+        const { put } = await import("@vercel/blob");
+        const blob = await put(`uploads/${filename}`, buffer, {
+          access: "public",
+          contentType: "image/webp",
+        });
+        return blob.url;
+      }
+      throw new Error("No storage configured");
+    }
+
+    // Re-render each language using ORIGINAL image + opaque rects
+    let rendered = 0;
+    let failed = 0;
+
+    for (const payload of payloads) {
+      if (!payload.segments || payload.segments.length === 0) continue;
+
+      try {
+        const visibleSegments = payload.segments.filter(
+          (s) => s.semanticRole !== "WATERMARK" && s.translatedText?.trim()
+        );
+        if (visibleSegments.length === 0) continue;
+
+        // For Arabic: use Sharp-based image-composer
+        if (payload.targetLanguage === "ar") {
+          const { composeTranslatedImage } = await import("@/lib/image-composer");
+          const composerSegments = visibleSegments.map(s => ({
+            translatedText: s.translatedText || "",
+            boxX: s.boxX ?? 0,
+            boxY: s.boxY ?? 0,
+            boxWidth: s.boxWidth ?? 0,
+            boxHeight: s.boxHeight ?? 0,
+            fontFamily: s.fontFamily || undefined,
+            fontWeight: s.fontWeight || undefined,
+            fontSizePixels: s.fontSizePixels || undefined,
+            color: s.color || undefined,
+            textAlign: s.textAlign || undefined,
+            strokeColor: s.strokeColor || undefined,
+            strokeWidth: s.strokeWidth || undefined,
+            semanticRole: s.semanticRole || undefined,
+          }));
+          const composedRaw = await composeTranslatedImage(originalBuffer, composerSegments, { watermark: false });
+          const sharpMod = (await import("sharp")).default;
+          const composedBuffer = await sharpMod(composedRaw).webp({ quality: 70 }).toBuffer();
+          const url = await saveImage(composedBuffer, `smart_ar`);
+          await prisma.translationPayload.update({ where: { id: payload.id }, data: { translatedImageUrl: url } });
+          rendered++;
+          continue;
+        }
+
+        // For other languages: Satori rendering with ORIGINAL image + opaque rects
+        const { GoogleGenerativeAI } = await import("@google/generative-ai");
+        const fullText = visibleSegments.map(s => s.translatedText).join("");
+
+        // Fetch font
+        const getFontFamily = (lang: string) => {
+          switch (lang) {
+            case "ko": return "Noto+Sans+KR";
+            case "ja": return "Noto+Sans+JP";
+            case "zh": return "Noto+Sans+SC";
+            default: return "Noto+Sans";
+          }
+        };
+        const fontFamily = getFontFamily(payload.targetLanguage);
+        const weights = [900, 700, 400];
+        let fontBuffer: ArrayBuffer | null = null;
+        for (const w of weights) {
+          try {
+            const cssUrl = `https://fonts.googleapis.com/css2?family=${fontFamily}:wght@${w}`;
+            const cssRes = await fetch(cssUrl, {
+              headers: { "User-Agent": "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10_6_8; de-at) AppleWebKit/533.21.1 (KHTML, like Gecko) Version/5.0.5 Safari/533.21.1" },
+            });
+            if (!cssRes.ok) continue;
+            const css = await cssRes.text();
+            const match = css.match(/src: url\((.+)\) format\('(woff|woff2|truetype)'\)/);
+            if (!match?.[1]) continue;
+            const fontRes = await fetch(match[1]);
+            if (!fontRes.ok) continue;
+            fontBuffer = await fontRes.arrayBuffer();
+            break;
+          } catch { continue; }
+        }
+        if (!fontBuffer) { failed++; continue; }
+
+        // Coordinate normalization
+        const maxCoord = Math.max(
+          ...visibleSegments.map(s =>
+            Math.max((s.boxX ?? 0) + (s.boxWidth ?? 0), (s.boxY ?? 0) + (s.boxHeight ?? 0))
+          )
+        );
+        const norm = maxCoord > 1.5 ? (maxCoord > 100 ? 1000 : maxCoord) : 1;
+        const safeW = Math.min(imgWidth, 2048);
+        const safeH = Math.min(imgHeight, 2048);
+
+        // Convert original to PNG for Satori
+        const satoriBuffer = metadata.format === "webp"
+          ? Buffer.from(await sharp(originalBuffer).png().toBuffer())
+          : originalBuffer;
+        const base64 = satoriBuffer.toString("base64");
+        const mime = metadata.format === "jpeg" ? "image/jpeg" : "image/png";
+        const dataUri = `data:${mime};base64,${base64}`;
+
+        // Build Satori element tree with OPAQUE background rects
+        const element = {
+          type: "div",
+          props: {
+            style: { display: "flex", width: "100%", height: "100%", position: "relative" as const },
+            children: [
+              {
+                type: "img",
+                props: {
+                  src: dataUri,
+                  style: { position: "absolute" as const, top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover" as const },
+                },
+              },
+              ...visibleSegments.map((seg) => {
+                const x = (seg.boxX ?? 0) / norm;
+                const y = (seg.boxY ?? 0) / norm;
+                const w = (seg.boxWidth ?? 0) / norm;
+                const h = (seg.boxHeight ?? 0) / norm;
+
+                const boxHeightPx = h * safeH;
+                const boxWidthPx = w * safeW;
+                const baseSize = boxHeightPx * 0.7;
+                const charsPerLine = Math.max(1, Math.floor(boxWidthPx / (baseSize * 0.55)));
+                const textLen = seg.translatedText?.length || 1;
+                const lines = Math.ceil(textLen / charsPerLine);
+                const fontSize = seg.fontSizePixels && seg.fontSizePixels > 8
+                  ? Math.max(12, Math.min(seg.fontSizePixels * 1.1, boxHeightPx * 0.85))
+                  : lines > 1
+                    ? Math.max(12, boxHeightPx / (lines * 1.3))
+                    : Math.max(12, Math.min(baseSize, 72));
+
+                const textColor = seg.color || "#FFFFFF";
+                const isLight = textColor.toLowerCase().includes("fff") || textColor === "white";
+                const strokeShadow = isLight
+                  ? "-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, -1px 0 0 #000, 1px 0 0 #000, 0 -1px 0 #000, 0 1px 0 #000"
+                  : "-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff";
+
+                // OPAQUE background to cover original text
+                const rawBg = (seg.backgroundColor || "").toLowerCase();
+                const bgColor = rawBg && rawBg !== "transparent"
+                  ? rawBg
+                  : isLight ? "#000000" : "#FFFFFF";
+
+                return {
+                  type: "div",
+                  props: {
+                    style: {
+                      position: "absolute" as const,
+                      left: `${x * 100}%`,
+                      top: `${y * 100}%`,
+                      width: `${w * 100}%`,
+                      height: `${h * 100}%`,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      textAlign: "center" as const,
+                      fontFamily: "Noto Sans",
+                      fontSize: `${fontSize}px`,
+                      fontWeight: 900,
+                      color: textColor,
+                      backgroundColor: bgColor,
+                      textShadow: strokeShadow,
+                      lineHeight: 1.2,
+                      padding: "2px 6px",
+                      wordBreak: "keep-all" as const,
+                      overflowWrap: "break-word" as const,
+                    },
+                    children: seg.translatedText,
+                  },
+                };
+              }),
+            ],
+          },
+        };
+
+        const { default: satori } = await import("satori");
+        const svg = await satori(element as any, {
+          width: safeW,
+          height: safeH,
+          fonts: [{ name: "Noto Sans", data: Buffer.from(fontBuffer), style: "normal" as const, weight: 900 }],
+        });
+
+        const { Resvg } = await import("@resvg/resvg-js");
+        const resvg = new Resvg(svg, { fitTo: { mode: "width" as const, value: safeW } });
+        const pngBuffer = Buffer.from(resvg.render().asPng());
+        const sharpMod = (await import("sharp")).default;
+        const webpBuffer = await sharpMod(pngBuffer).webp({ quality: 70 }).toBuffer();
+        const url = await saveImage(webpBuffer, `smart_${payload.targetLanguage}`);
+        await prisma.translationPayload.update({ where: { id: payload.id }, data: { translatedImageUrl: url } });
+        rendered++;
+      } catch (err) {
+        console.error(`Smart render failed for ${payload.targetLanguage}:`, err);
+        failed++;
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      rendered,
+      failed,
+      total: payloads.length,
+    });
+  } catch (err) {
+    console.error("Smart render error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}

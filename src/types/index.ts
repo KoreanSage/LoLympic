@@ -263,9 +263,9 @@ export const LANGUAGE_CONFIG_MAP: Record<LanguageCode, LanguageConfig> = {
   },
   [LanguageCode.hi]: {
     code: LanguageCode.hi,
-    nameEn: "Hindi",
-    nameNative: "\u0939\u093f\u0928\u094d\u0926\u0940",
-    fontHint: "Noto Sans Devanagari",
+    nameEn: "Hinglish",
+    nameNative: "Hinglish",
+    fontHint: "Noto Sans",
     direction: "ltr",
   },
   [LanguageCode.ar]: {

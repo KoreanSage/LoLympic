@@ -61,6 +61,7 @@ interface FeedCardProps {
   imageUrl: string;
   cleanImageUrl?: string;
   translatedImageUrl?: string;
+  translatedImageUrls?: string[];
   mimeType?: string;
   segments: TranslationSegmentData[];
   memeType?: string;
@@ -76,6 +77,7 @@ interface FeedCardProps {
   images?: FeedImage[];
   onDelete?: (id: string) => void;
   isBookmarked?: boolean;
+  postStatus?: string;
 }
 
 // Bookmark helpers
@@ -107,6 +109,7 @@ function FeedCardInner({
   imageUrl,
   cleanImageUrl,
   translatedImageUrl,
+  translatedImageUrls,
   mimeType,
   segments,
   memeType,
@@ -122,6 +125,7 @@ function FeedCardInner({
   images,
   onDelete,
   isBookmarked: isBookmarkedProp,
+  postStatus,
 }: FeedCardProps) {
   const { toast } = useToast();
   const router = useRouter();
@@ -139,9 +143,9 @@ function FeedCardInner({
   const isGif = mimeType === "image/gif";
   const isVideo = !!mimeType?.startsWith("video/");
   const isMultiImage = images && images.length > 1;
-  // For multi-image posts, don't use translatedImageUrl (it contains all segments merged onto one image)
   const effectiveTranslatedImageUrl = isMultiImage ? undefined : translatedImageUrl;
-  const hasImageTranslation = !isGif && !isVideo && (hasOverlaySegments || !!effectiveTranslatedImageUrl);
+  const hasMultiImageTranslation = isMultiImage && translatedImageUrls && translatedImageUrls.some(u => !!u);
+  const hasImageTranslation = !isGif && !isVideo && (hasOverlaySegments || !!effectiveTranslatedImageUrl || hasMultiImageTranslation);
   const hasTranslation = hasImageTranslation || !!translatedTitle || !!translatedBody;
   const isTextOnly = !imageUrl && (!images || images.length === 0);
   const isCommunity = category === "community";
@@ -169,6 +173,7 @@ function FeedCardInner({
   const menuRef = useRef<HTMLDivElement>(null);
 
   const isOwnPost = session?.user?.username === author.username;
+  const isAdmin = session?.user?.role === "ADMIN" || session?.user?.role === "SUPER_ADMIN";
 
   // Load vote state (only for authenticated users)
   useEffect(() => {
@@ -335,6 +340,12 @@ function FeedCardInner({
                 {seasonBadge}
               </Badge>
             )}
+            {postStatus === "PROCESSING" && (
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-yellow-400/15 text-yellow-300 text-[10px] font-medium">
+                <span className="inline-block w-1 h-1 rounded-full bg-yellow-400 animate-pulse" />
+                번역 중
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-1.5 text-xs text-foreground-subtle">
             <span>{timeAgo}</span>
@@ -407,6 +418,66 @@ function FeedCardInner({
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3 3v1.5M3 21v-6m0 0 2.77-.693a9 9 0 0 1 6.208.682l.108.054a9 9 0 0 0 6.086.71l3.114-.732a48.524 48.524 0 0 1-.005-10.499l-3.11.732a9 9 0 0 1-6.085-.711l-.108-.054a9 9 0 0 0-6.208-.682L3 4.5M3 15V4.5" /></svg>
                       {t("feed.report")}
                     </button>
+                  </>
+                )}
+                {isAdmin && (
+                  <>
+                  <button
+                    onClick={async () => {
+                      setMenuOpen(false);
+                      try {
+                        toast("Deleting translations...", "info");
+                        const delRes = await fetch(`/api/posts/${id}/retranslate`, { method: "POST" });
+                        const delData = await delRes.json();
+                        if (!delRes.ok) { toast(`Error: ${delData.error}`, "error"); return; }
+                        toast(`Deleted ${delData.deletedPayloads} translations. Retranslating...`, "info");
+                        const allLangs = ["ko", "en", "ja", "zh", "es", "hi", "ar"].filter(l => l !== (sourceLanguage || delData.sourceLanguage));
+                        const transRes = await fetch("/api/translate", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ postId: id, sourceLanguage: sourceLanguage || delData.sourceLanguage, targetLanguages: allLangs }),
+                        });
+                        if (transRes.ok) {
+                          toast("Retranslation complete! Refresh to see.", "success");
+                        } else {
+                          toast("Retranslation failed", "error");
+                        }
+                      } catch {
+                        toast("Retranslation failed", "error");
+                      }
+                    }}
+                    aria-label="Retranslate post"
+                    className="w-full text-left px-3 py-2 text-sm text-[#c9a84c] hover:bg-background-elevated transition-colors flex items-center gap-2 border-t border-border"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182" />
+                    </svg>
+                    Retranslate
+                  </button>
+                  <button
+                    onClick={async () => {
+                      setMenuOpen(false);
+                      try {
+                        toast("Smart rendering (no LaMa)...", "info");
+                        const res = await fetch(`/api/posts/${id}/smart-render`, { method: "POST" });
+                        const data = await res.json();
+                        if (res.ok) {
+                          toast(`Smart render done: ${data.rendered} images. Refresh to see.`, "success");
+                        } else {
+                          toast(`Error: ${data.error}`, "error");
+                        }
+                      } catch {
+                        toast("Smart render failed", "error");
+                      }
+                    }}
+                    aria-label="Smart render post"
+                    className="w-full text-left px-3 py-2 text-sm text-blue-400 hover:bg-background-elevated transition-colors flex items-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9.53 16.122a3 3 0 0 0-5.78 1.128 2.25 2.25 0 0 1-2.4 2.245 4.5 4.5 0 0 0 8.4-2.245c0-.399-.078-.78-.22-1.128Zm0 0a15.998 15.998 0 0 0 3.388-1.62m-5.043-.025a15.994 15.994 0 0 1 1.622-3.395m3.42 3.42a15.995 15.995 0 0 0 4.764-4.648l3.876-5.814a1.151 1.151 0 0 0-1.597-1.597L14.146 6.32a15.996 15.996 0 0 0-4.649 4.763m3.42 3.42a6.776 6.776 0 0 0-3.42-3.42" />
+                    </svg>
+                    Smart Render
+                  </button>
                   </>
                 )}
               </div>
@@ -564,32 +635,24 @@ function FeedCardInner({
         </div>
       )}
 
-      {/* Translation bar above image (meme posts only) */}
-      {!isCommunity && !isTextOnly && (segments.length > 0 || effectiveTranslatedImageUrl) && (
-        <div className="flex items-center justify-between mx-4 px-3 py-2 bg-background-surface border border-border rounded-t-lg">
-          <div className="flex items-center gap-2">
-            <TranslationToggle
-              showTranslation={showTranslation}
-              onChange={setShowTranslation}
-            />
-            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium ${
-              showTranslation
-                ? "bg-green-500/15 text-green-400"
-                : "bg-background-elevated text-foreground-subtle"
-            }`}>
-              {showTranslation ? (
-                <>
-                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  {t("feed.translated")}
-                </>
-              ) : (
-                t("feed.original")
-              )}
+      {/* Translation toggle (outside image) */}
+      {!isCommunity && !isTextOnly && (segments.length > 0 || effectiveTranslatedImageUrl || hasMultiImageTranslation) && (
+        <div className="flex items-center gap-2 px-4 pb-1">
+          <button
+            onClick={() => setShowTranslation(!showTranslation)}
+            className="flex items-center gap-1.5 px-2 py-1.5 sm:px-3 rounded-full bg-background-elevated border border-border text-foreground-muted text-[11px] font-medium hover:bg-background-surface transition-all whitespace-nowrap"
+          >
+            <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+            </svg>
+            {showTranslation ? t("feed.original") : t("feed.translated")}
+          </button>
+          {showTranslation && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-green-500/15 text-green-400 whitespace-nowrap">
+              <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+              {t("feed.translated")}
             </span>
-          </div>
-          {/* Flag indicators removed */}
+          )}
         </div>
       )}
 
@@ -597,7 +660,7 @@ function FeedCardInner({
       {!isCommunity && !isTextOnly && (
         <Link href={`/post/${id}`} className="block" onClick={isVideo ? (e: any) => e.preventDefault() : undefined}>
           <div className="px-4 pb-2">
-            <div className={`overflow-hidden border border-border flex items-center justify-center bg-black/20 relative ${(segments.length > 0 || effectiveTranslatedImageUrl) ? "rounded-b-lg border-t-0" : "rounded-lg"}`}>
+            <div className={`overflow-hidden border border-border flex items-center justify-center bg-black/20 relative rounded-lg`}>
               {/* Video playback */}
               {isVideo ? (
                 <video
@@ -613,9 +676,8 @@ function FeedCardInner({
               ) : images && images.length > 1 ? (
                 <ImageCarousel>
                   {images.map((img, i) => {
-                    const imgIsGif = img.mimeType === "image/gif";
                     const imgIsVideo = img.mimeType?.startsWith("video/");
-                    const imgSegments = segments.filter((s: any) => (s.imageIndex ?? 0) === i);
+                    const translatedUrl = showTranslation && translatedImageUrls?.[i];
                     return (
                       <div key={i} className="w-full flex items-center justify-center bg-black/5 dark:bg-black/20">
                         {imgIsVideo ? (
@@ -628,24 +690,15 @@ function FeedCardInner({
                             playsInline
                             preload="metadata"
                           />
-                        ) : imgIsGif ? (
-                          <Image src={img.originalUrl} alt={title} width={img.width || 800} height={img.height || 800} className="w-full h-auto object-contain max-h-[700px]" sizes="(max-width: 768px) 100vw, 600px" unoptimized />
                         ) : (
-                          <MemeRenderer
-                            imageUrl={img.originalUrl}
-                            cleanImageUrl={img.cleanUrl || undefined}
-                            translatedImageUrl={undefined}
-                            segments={imgSegments}
-                            showTranslation={showTranslation}
-                            maxHeight={700}
-                          />
+                          <Image src={translatedUrl || img.originalUrl} alt={title} width={img.width || 800} height={img.height || 800} className="w-full h-auto object-contain max-h-[700px]" sizes="(max-width: 768px) 100vw, 600px" unoptimized />
                         )}
                       </div>
                     );
                   })}
                 </ImageCarousel>
               ) : showTranslation && effectiveTranslatedImageUrl ? (
-                <Image src={effectiveTranslatedImageUrl} alt={title} width={800} height={800} className="w-full h-auto object-contain" sizes="(max-width: 768px) 100vw, 600px" unoptimized />
+                <Image src={effectiveTranslatedImageUrl} alt={title} width={800} height={800} className="w-full h-auto object-contain max-h-[600px]" sizes="(max-width: 768px) 100vw, 600px" unoptimized />
               ) : isTypeB && segments.length > 0 ? (
                 showTranslation ? (
                   <ScreenshotRenderer
@@ -654,10 +707,10 @@ function FeedCardInner({
                     originalImageUrl={imageUrl}
                   />
                 ) : (
-                  <Image src={imageUrl} alt={title} width={800} height={800} className="w-full h-auto object-contain" sizes="(max-width: 768px) 100vw, 600px" unoptimized />
+                  <Image src={imageUrl} alt={title} width={800} height={800} className="w-full h-auto object-contain max-h-[600px]" sizes="(max-width: 768px) 100vw, 600px" unoptimized />
                 )
               ) : isGif ? (
-                <Image src={imageUrl} alt={title} width={800} height={800} className="w-full h-auto object-contain" sizes="(max-width: 768px) 100vw, 600px" unoptimized />
+                <Image src={imageUrl} alt={title} width={800} height={800} className="w-full h-auto object-contain max-h-[600px]" sizes="(max-width: 768px) 100vw, 600px" unoptimized />
               ) : (
                 <MemeRenderer
                   imageUrl={imageUrl}
@@ -665,7 +718,7 @@ function FeedCardInner({
                   translatedImageUrl={effectiveTranslatedImageUrl}
                   segments={segments.filter((s: any) => (s.imageIndex ?? 0) === 0)}
                   showTranslation={showTranslation}
-                  maxHeight={undefined}
+                  maxHeight={600}
                 />
               )}
               {/* Bottom gradient for readability */}

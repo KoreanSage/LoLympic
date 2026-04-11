@@ -65,9 +65,13 @@ function estimateFontSize(
 ): number {
   if (!text) return 14;
 
-  // Check if CJK
+  // Character width ratio by script:
+  //   CJK (Chinese, Japanese, Korean): ~1.0 (square glyphs)
+  //   Arabic: ~0.55 (connected ligatures, avg narrower than Latin caps but with marks)
+  //   Latin: ~0.58
   const hasCJK = /[\u4e00-\u9fff\uac00-\ud7af\u3040-\u30ff]/.test(text);
-  const charWidthRatio = hasCJK ? 1.0 : 0.58;
+  const hasArabic = /[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]/.test(text);
+  const charWidthRatio = hasCJK ? 1.0 : (hasArabic ? 0.55 : 0.58);
 
   // Ignore originalSize if it's too small relative to the box —
   // Gemini often returns tiny font sizes based on source image
@@ -90,8 +94,15 @@ function estimateFontSize(
     size = Math.floor(size * scale);
   }
 
-  // Clamp — minimum 16px for readability
-  return Math.max(16, Math.min(size, 120));
+  // Extra safety margin for Arabic — shaping can make text slightly wider
+  // than pure char-count estimation, so downscale by 8% to avoid right-side
+  // truncation.
+  if (hasArabic) {
+    size = Math.floor(size * 0.92);
+  }
+
+  // Clamp — minimum 14px for readability
+  return Math.max(14, Math.min(size, 120));
 }
 
 /**
@@ -104,8 +115,12 @@ function wrapText(
   fontSize: number,
 ): string[] {
   const hasCJK = /[\u4e00-\u9fff\uac00-\ud7af\u3040-\u30ff]/.test(text);
-  const charWidth = fontSize * (hasCJK ? 1.0 : 0.58);
-  const maxChars = Math.max(1, Math.floor(maxWidthPx / charWidth));
+  const hasArabic = /[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]/.test(text);
+  const charWidth = fontSize * (hasCJK ? 1.0 : (hasArabic ? 0.55 : 0.58));
+  // Safety margin: reserve ~10% of box width so words don't touch the edges
+  // This is critical for Arabic where shaping can make text slightly wider.
+  const effectiveWidth = maxWidthPx * 0.92;
+  const maxChars = Math.max(1, Math.floor(effectiveWidth / charWidth));
 
   if (text.length <= maxChars) return [text];
 
@@ -117,7 +132,7 @@ function wrapText(
       lines.push(text.slice(i, i + maxChars));
     }
   } else {
-    // Word-based wrapping for Latin
+    // Word-based wrapping for Latin and Arabic (both use space-separated words)
     const words = text.split(/\s+/);
     let currentLine = "";
 
@@ -127,7 +142,16 @@ function wrapText(
         currentLine = test;
       } else {
         if (currentLine) lines.push(currentLine);
-        currentLine = word;
+        // If a single word is longer than maxChars, break it to avoid
+        // horizontal overflow (rare for Arabic but defensive).
+        if (word.length > maxChars) {
+          for (let i = 0; i < word.length; i += maxChars) {
+            lines.push(word.slice(i, i + maxChars));
+          }
+          currentLine = "";
+        } else {
+          currentLine = word;
+        }
       }
     }
     if (currentLine) lines.push(currentLine);
@@ -145,7 +169,53 @@ function wrapText(
 const _fontCache = new Map<string, { base64: string; format: string }>();
 const FONT_CACHE_MAX = 20;
 
-async function fetchFontAsBase64(fontFamily: string, text: string, weight: number = 700): Promise<{ base64: string; format: string } | null> {
+/** Promise cache for on-disk font writes — prevents parallel races.
+ *  Key: specialFont string (e.g. "Noto+Sans+Arabic")
+ *  Value: Promise<string> resolving to the temp file path.
+ *  All parallel callers with the same key await the same write. */
+const _fontFileWritePromises = new Map<string, Promise<string>>();
+
+async function getOrWriteFontFile(
+  specialFont: string,
+  fontData: { base64: string; format: string },
+): Promise<string> {
+  const existing = _fontFileWritePromises.get(specialFont);
+  if (existing) return existing;
+
+  const promise = (async () => {
+    const os = await import("os");
+    const fsp = await import("fs/promises");
+    const ext = fontData.format === "woff2" ? ".woff2"
+      : fontData.format === "truetype" ? ".ttf"
+      : ".woff";
+    const fontPath = path.join(
+      os.tmpdir(),
+      `mimzy-font-${specialFont.replace(/\+/g, "-")}${ext}`,
+    );
+    const buf = Buffer.from(fontData.base64, "base64");
+    // Write atomically-ish: write to .tmp sibling then rename so concurrent
+    // readers never see a half-written file even if the cache is bypassed.
+    const tmpPath = `${fontPath}.${process.pid}.${Date.now()}.tmp`;
+    await fsp.writeFile(tmpPath, buf);
+    try {
+      await fsp.rename(tmpPath, fontPath);
+    } catch {
+      // rename can fail if target exists and fs is strict — fall back to copy
+      await fsp.copyFile(tmpPath, fontPath).catch(() => {});
+      await fsp.unlink(tmpPath).catch(() => {});
+    }
+    return fontPath;
+  })();
+
+  _fontFileWritePromises.set(specialFont, promise);
+  // If the write rejects, drop the cached promise so next call retries
+  promise.catch(() => {
+    _fontFileWritePromises.delete(specialFont);
+  });
+  return promise;
+}
+
+async function fetchFontAsBase64(fontFamily: string, _text?: string, weight: number = 700): Promise<{ base64: string; format: string } | null> {
   const cacheKey = `${fontFamily}:${weight}`;
   const cached = _fontCache.get(cacheKey);
   if (cached) return cached;
@@ -154,23 +224,36 @@ async function fetchFontAsBase64(fontFamily: string, text: string, weight: numbe
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 8000); // 8s timeout
 
-    const encoded = encodeURIComponent(text);
-    const cssUrl = `https://fonts.googleapis.com/css2?family=${fontFamily}:wght@${weight}&text=${encoded}`;
+    // Fetch FULL font (no text= subset) to avoid missing glyphs for
+    // special characters like smart quotes, emoji, ligatures, etc.
+    //
+    // UA header is critical — without it, Google Fonts returns woff2
+    // (modern) which older resvg-js builds can't parse. With an old
+    // Safari UA, Google falls back to TTF/woff which is reliably supported.
+    const cssUrl = `https://fonts.googleapis.com/css2?family=${fontFamily}:wght@${weight}`;
     const cssRes = await fetch(cssUrl, {
       headers: {
+        // Old Safari UA → Google serves TTF (maximally compatible)
         "User-Agent": "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10_6_8; de-at) AppleWebKit/533.21.1 (KHTML, like Gecko) Version/5.0.5 Safari/533.21.1",
       },
       signal: controller.signal,
     });
     if (!cssRes.ok) { clearTimeout(timeout); return null; }
     const css = await cssRes.text();
-    const match = css.match(/src: url\((.+)\) format\('(woff|woff2|truetype)'\)/);
-    if (!match?.[1]) { clearTimeout(timeout); return null; }
-    const fontRes = await fetch(match[1], { signal: controller.signal });
+    // Prefer truetype > woff > woff2 (most compatible with resvg-js)
+    // Note: Google may return multiple @font-face blocks — find any supported one
+    const matches = Array.from(css.matchAll(/src:\s*url\(([^)]+)\)\s*format\('(woff2?|truetype)'\)/g));
+    const preferred = matches.find((m) => m[2] === "truetype")
+      || matches.find((m) => m[2] === "woff")
+      || matches[0];
+    if (!preferred?.[1]) { clearTimeout(timeout); return null; }
+    const fontUrl = preferred[1];
+    const fontFormat = preferred[2];
+    const fontRes = await fetch(fontUrl, { signal: controller.signal });
     clearTimeout(timeout);
     if (!fontRes.ok) return null;
     const buf = Buffer.from(await fontRes.arrayBuffer());
-    const result = { base64: buf.toString("base64"), format: match[2] };
+    const result = { base64: buf.toString("base64"), format: fontFormat };
     if (_fontCache.size >= FONT_CACHE_MAX) {
       const oldest = _fontCache.keys().next().value;
       if (oldest) _fontCache.delete(oldest);
@@ -188,7 +271,8 @@ async function fetchFontAsBase64(fontFamily: string, text: string, weight: numbe
  */
 function detectFontForText(text: string): string | null {
   if (/[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]/.test(text)) return "Noto+Sans+Arabic";
-  if (/[\u0900-\u097F]/.test(text)) return "Noto+Sans+Devanagari";
+  // Hinglish uses Roman script, so Devanagari detection is no longer needed for Hindi translations
+  // if (/[\u0900-\u097F]/.test(text)) return "Noto+Sans+Devanagari";
   return null;
 }
 
@@ -200,6 +284,7 @@ function buildSvgOverlay(
   segments: TextSegment[],
   imageWidth: number,
   imageHeight: number,
+  fontFace?: { familyName: string; base64: string; format: string },
 ): string {
   const elements: string[] = [];
 
@@ -257,10 +342,13 @@ function buildSvgOverlay(
     }).join("");
 
     const safeFontFamily = escapeXml(fontFamily);
+    // RTL direction for Arabic text so shaping/ligatures render correctly
+    const isArabic = /[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]/.test(text);
+    const directionAttr = isArabic ? ' direction="rtl"' : '';
     // Stroke (outline) for meme text readability
     elements.push(
       `<text font-family="${safeFontFamily}" font-size="${fontSize}" font-weight="${fontWeight}" ` +
-      `text-anchor="${textAnchor}" fill="${strokeColor}" ` +
+      `text-anchor="${textAnchor}"${directionAttr} fill="${strokeColor}" ` +
       `stroke="${strokeColor}" stroke-width="${strokeWidth * 2}" stroke-linejoin="round" ` +
       `paint-order="stroke">${tspans}</text>`
     );
@@ -268,11 +356,16 @@ function buildSvgOverlay(
     // Main text
     elements.push(
       `<text font-family="${safeFontFamily}" font-size="${fontSize}" font-weight="${fontWeight}" ` +
-      `text-anchor="${textAnchor}" fill="${color}">${tspans}</text>`
+      `text-anchor="${textAnchor}"${directionAttr} fill="${color}">${tspans}</text>`
     );
   }
 
+  const fontFaceBlock = fontFace
+    ? `<defs><style>@font-face { font-family: '${fontFace.familyName}'; src: url(data:font/${fontFace.format};base64,${fontFace.base64}) format('${fontFace.format}'); }</style></defs>`
+    : "";
+
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${imageWidth}" height="${imageHeight}" viewBox="0 0 ${imageWidth} ${imageHeight}">
+${fontFaceBlock}
 ${elements.join("\n")}
 </svg>`;
 }
@@ -285,6 +378,11 @@ function mapFontFamily(hint?: string): string {
   const h = hint.toLowerCase();
   if (h.includes("impact")) return "Impact, Arial Black, sans-serif";
   if (h.includes("gothic") || h.includes("맑은")) return "'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif";
+  // Keep specific Noto Sans variants intact (Arabic, KR, JP, SC, etc.)
+  if (h.includes("noto sans arabic")) return "'Noto Sans Arabic', sans-serif";
+  if (h.includes("noto sans kr")) return "'Noto Sans KR', sans-serif";
+  if (h.includes("noto sans jp")) return "'Noto Sans JP', sans-serif";
+  if (h.includes("noto sans sc")) return "'Noto Sans SC', sans-serif";
   if (h.includes("noto")) return "'Noto Sans', 'Noto Sans CJK', sans-serif";
   if (h.includes("serif")) return "Georgia, 'Times New Roman', serif";
   if (h.includes("mono")) return "'Courier New', monospace";
@@ -296,7 +394,6 @@ function mapFontFamily(hint?: string): string {
 // ---------------------------------------------------------------------------
 
 import * as path from "path";
-import * as fs from "fs";
 
 const WATERMARK_HEIGHT_RATIO = 0.05; // 5% of image height for the bar
 const WATERMARK_MIN_HEIGHT = 28;
@@ -423,24 +520,33 @@ export async function composeTranslatedImage(
       }
     }
 
-    const svgOverlay = buildSvgOverlay(translatableSegments, width, height);
+    const svgFontFace = (specialFont && fontData)
+      ? { familyName: specialFont.replace(/\+/g, " "), base64: fontData.base64, format: fontData.format }
+      : undefined;
+    const svgOverlay = buildSvgOverlay(translatableSegments, width, height, svgFontFace);
 
     if (specialFont && fontData) {
-      // Use resvg-js with font file for non-Latin scripts (Arabic, Hindi)
-      // Sharp's librsvg cannot load custom fonts.
-      // Write font to temp file — fontBuffers may not work on all resvg versions
-      const os = await import("os");
-      const fsp = await import("fs/promises");
-      const fontPath = path.join(os.tmpdir(), `mimzy-font-${specialFont.replace(/\+/g, "-")}.woff`);
-      const fontBuf = Buffer.from(fontData.base64, "base64");
-      await fsp.writeFile(fontPath, fontBuf);
+      // Use resvg-js with a font file for non-Latin scripts (Arabic, Hindi).
+      // Sharp's librsvg cannot load custom fonts, so we have to write the
+      // woff/ttf to disk and point resvg at it via fontFiles.
+      //
+      // CRITICAL: when this function runs in parallel (e.g. 8 images of an
+      // Arabic multi-image post), every call was writing to the SAME temp
+      // path → race condition → some calls read a half-written file → resvg
+      // silently fails → blank overlay. Fix: write once to a DETERMINISTIC
+      // path guarded by an in-process promise cache, so all parallel calls
+      // share the same pre-written file.
+      const familyName = specialFont.replace(/\+/g, " ");
+      const fontPath = await getOrWriteFontFile(specialFont, fontData);
 
       const { Resvg } = await import("@resvg/resvg-js");
       const resvg = new Resvg(svgOverlay, {
         fitTo: { mode: "width" as const, value: width },
         font: {
-          loadSystemFonts: false,
+          loadSystemFonts: true,
           fontFiles: [fontPath],
+          defaultFontFamily: familyName,
+          sansSerifFamily: familyName,
         },
       });
       const overlayPng = Buffer.from(resvg.render().asPng());

@@ -22,7 +22,7 @@ const LANGUAGE_NAMES: Record<string, string> = {
   ja: "Japanese (日本語)",
   zh: "Chinese (中文)",
   es: "Spanish (Español)",
-  hi: "Hindi (हिन्दी)",
+  hi: "Hinglish (Roman script — NO Devanagari)",
   ar: "Arabic (العربية)",
 };
 

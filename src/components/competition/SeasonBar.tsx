@@ -156,7 +156,7 @@ export default function SeasonBar({ className = "" }: { className?: string }) {
               // Active season
               <>
                 <Link href="/championship" className="text-[#c9a84c] font-semibold hover:underline">
-                  🏆 {t("season.title")} {season.number}
+                  {t("season.title")} {season.number}
                 </Link>
                 <span className="text-foreground-subtle">&middot;</span>
                 {/* Countdown with days/hours format */}
