@@ -831,6 +831,14 @@ const ko: Record<TranslationKeys, string> = {
   "community.categoryPolitics": "정치",
   "community.selectCategory": "카테고리",
   "community.clearFilters": "필터 초기화",
+
+  // ── Global translation indicator ───────────────────────────────────────────
+  "translation.inProgress": "번역 중…",
+  "translation.starting": "번역 작업 준비 중…",
+  "translation.postsCountSingular": "개",
+  "translation.postsCountPlural": "개 게시물",
+  "translation.failedShort": "실패",
+  "translation.defaultTitle": "게시물",
 };
 
 export default ko;

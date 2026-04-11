@@ -817,6 +817,14 @@ const ja: Record<TranslationKeys, string> = {
   "community.categoryPolitics": "政治",
   "community.selectCategory": "カテゴリ",
   "community.clearFilters": "フィルター解除",
+
+  // ── Global translation indicator ───────────────────────────────────────────
+  "translation.inProgress": "翻訳中…",
+  "translation.starting": "翻訳を準備中…",
+  "translation.postsCountSingular": "件の投稿",
+  "translation.postsCountPlural": "件の投稿",
+  "translation.failedShort": "失敗",
+  "translation.defaultTitle": "投稿",
 };
 
 export default ja;

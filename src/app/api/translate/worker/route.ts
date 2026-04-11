@@ -534,7 +534,8 @@ export async function POST(request: NextRequest) {
     return new NextResponse("Missing required fields", { status: 400 });
   }
 
-  // 2. Idempotency — if payload already COMPLETED/APPROVED, ack immediately
+  // 2. Idempotency — if payload already COMPLETED/APPROVED, ack immediately.
+  //    We return 200 (not 409) so QStash marks the job done and doesn't retry.
   const current = await prisma.translationPayload.findUnique({
     where: { id: payloadId },
     select: { id: true, status: true, postId: true },
@@ -546,7 +547,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true, skipped: "already completed" });
   }
 
-  // 3. Run the translation pipeline
+  // 3. Run the translation pipeline. The pipeline itself mutates the payload
+  //    row (status → COMPLETED/REJECTED) — see runTranslationForLanguage.
   try {
     const result = await runTranslationForLanguage({
       postId,
@@ -555,16 +557,30 @@ export async function POST(request: NextRequest) {
       existingPayloadId: payloadId,
     });
 
-    // 4. Check if all payloads for this post have settled → flip post to PUBLISHED
-    const remaining = await prisma.translationPayload.count({
-      where: { postId, status: "PROCESSING" },
-    });
-    if (remaining === 0) {
-      await prisma.post
-        .update({ where: { id: postId }, data: { status: "PUBLISHED" } })
-        .catch(() => {});
-      updateRankingScore(postId).catch(() => {});
+    // 4. Settle the post atomically: recount remaining PROCESSING payloads and
+    //    flip the post to PUBLISHED in a single transaction so a concurrent
+    //    enqueue can't sneak a new PROCESSING row in between our count and
+    //    our update.
+    try {
+      await prisma.$transaction(async (tx) => {
+        const remaining = await tx.translationPayload.count({
+          where: { postId, status: "PROCESSING" },
+        });
+        if (remaining === 0) {
+          await tx.post.update({
+            where: { id: postId },
+            data: { status: "PUBLISHED" },
+          });
+        }
+      });
+    } catch (settleErr) {
+      console.warn("[Worker] Post settle transaction failed:", settleErr);
     }
+
+    // Ranking update is fire-and-forget but errors are logged (not silent).
+    updateRankingScore(postId).catch((e) =>
+      console.warn("[Worker] Ranking update failed:", e)
+    );
 
     return NextResponse.json(result);
   } catch (err) {

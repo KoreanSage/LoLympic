@@ -9,8 +9,17 @@
 // ---------------------------------------------------------------------------
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 
 export const maxDuration = 10;
+
+interface LatestPayloadRow {
+  id: string;
+  targetLanguage: string;
+  status: string;
+  version: number;
+  updatedAt: Date;
+}
 
 export async function GET(
   _request: NextRequest,
@@ -27,27 +36,18 @@ export async function GET(
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
 
-    // Get latest payload per (postId, targetLanguage)
-    const payloads = await prisma.translationPayload.findMany({
-      where: { postId: id },
-      orderBy: [{ targetLanguage: "asc" }, { version: "desc" }],
-      select: {
-        id: true,
-        targetLanguage: true,
-        status: true,
-        version: true,
-        updatedAt: true,
-      },
-    });
-
-    // Dedupe: keep only the highest version per language
-    const latestByLang = new Map<string, typeof payloads[number]>();
-    for (const p of payloads) {
-      if (!latestByLang.has(p.targetLanguage)) {
-        latestByLang.set(p.targetLanguage, p);
-      }
-    }
-    const latest = Array.from(latestByLang.values());
+    // DISTINCT ON (targetLanguage) — keep ONLY the highest-version payload
+    // per language. Avoids fetching every historical version just to dedupe
+    // client-side. We still cap at 7 rows (one per supported language) so
+    // a post with corrupted data can't blow up the response.
+    const latest = await prisma.$queryRaw<LatestPayloadRow[]>(Prisma.sql`
+      SELECT DISTINCT ON ("targetLanguage")
+        id, "targetLanguage", status::text AS status, version, "updatedAt"
+      FROM "TranslationPayload"
+      WHERE "postId" = ${id}
+      ORDER BY "targetLanguage" ASC, version DESC
+      LIMIT 7
+    `);
 
     let completed = 0;
     let failed = 0;

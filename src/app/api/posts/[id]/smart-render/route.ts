@@ -7,6 +7,19 @@ import { uploadBufferToR2 } from "@/lib/storage";
 
 export const maxDuration = 60;
 
+// Per-request font fetch timeout — Google Fonts CDN can hang otherwise.
+const FONT_FETCH_TIMEOUT_MS = 5000;
+
+async function fetchWithTimeout(url: string, init?: RequestInit, timeoutMs = FONT_FETCH_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /**
  * POST /api/posts/:id/smart-render
  *
@@ -76,12 +89,21 @@ export async function POST(
       return url;
     };
 
-    // Re-render each language using ORIGINAL image + opaque rects
+    // Re-render each language using ORIGINAL image + opaque rects.
+    // Large intermediate buffers (`composedBuffer`, `pngBuffer`, `webpBuffer`)
+    // are declared inside the loop and explicitly cleared at the end of each
+    // iteration so GC can reclaim memory between renders — important when a
+    // post has 7+ languages with multi-MB source images.
     let rendered = 0;
     let failed = 0;
 
     for (const payload of payloads) {
       if (!payload.segments || payload.segments.length === 0) continue;
+
+      let composedBuffer: Buffer | null = null;
+      let pngBuffer: Buffer | null = null;
+      let webpBuffer: Buffer | null = null;
+      let satoriPngBase64: string | null = null;
 
       try {
         const visibleSegments = payload.segments.filter(
@@ -109,7 +131,7 @@ export async function POST(
           }));
           const composedRaw = await composeTranslatedImage(originalBuffer, composerSegments, { watermark: false });
           const sharpMod = (await import("sharp")).default;
-          const composedBuffer = await sharpMod(composedRaw).webp({ quality: 70 }).toBuffer();
+          composedBuffer = await sharpMod(composedRaw).webp({ quality: 70 }).toBuffer();
           const url = await saveImage(composedBuffer, `smart_ar`);
           await prisma.translationPayload.update({ where: { id: payload.id }, data: { translatedImageUrl: url } });
           rendered++;
@@ -120,7 +142,7 @@ export async function POST(
         const { GoogleGenerativeAI } = await import("@google/generative-ai");
         const fullText = visibleSegments.map(s => s.translatedText).join("");
 
-        // Fetch font
+        // Fetch font (each network call bounded by FONT_FETCH_TIMEOUT_MS)
         const getFontFamily = (lang: string) => {
           switch (lang) {
             case "ko": return "Noto+Sans+KR";
@@ -135,28 +157,44 @@ export async function POST(
         for (const w of weights) {
           try {
             const cssUrl = `https://fonts.googleapis.com/css2?family=${fontFamily}:wght@${w}`;
-            const cssRes = await fetch(cssUrl, {
+            const cssRes = await fetchWithTimeout(cssUrl, {
               headers: { "User-Agent": "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10_6_8; de-at) AppleWebKit/533.21.1 (KHTML, like Gecko) Version/5.0.5 Safari/533.21.1" },
             });
             if (!cssRes.ok) continue;
             const css = await cssRes.text();
             const match = css.match(/src: url\((.+)\) format\('(woff|woff2|truetype)'\)/);
             if (!match?.[1]) continue;
-            const fontRes = await fetch(match[1]);
+            const fontRes = await fetchWithTimeout(match[1]);
             if (!fontRes.ok) continue;
             fontBuffer = await fontRes.arrayBuffer();
             break;
-          } catch { continue; }
+          } catch (fontErr) {
+            console.warn(`[smart-render] font weight ${w} failed:`, fontErr);
+            continue;
+          }
         }
         if (!fontBuffer) { failed++; continue; }
 
-        // Coordinate normalization
-        const maxCoord = Math.max(
-          ...visibleSegments.map(s =>
-            Math.max((s.boxX ?? 0) + (s.boxWidth ?? 0), (s.boxY ?? 0) + (s.boxHeight ?? 0))
-          )
-        );
-        const norm = maxCoord > 1.5 ? (maxCoord > 100 ? 1000 : maxCoord) : 1;
+        // Coordinate normalization — Gemini returns box coords in one of:
+        //   (a) fractional 0..1 (relative to image),
+        //   (b) the Gemini 1000-scale that exceeds the natural image dims,
+        //   (c) raw pixels within the natural image dims.
+        // Pick `norm` so `box / norm` lands in 0..1.
+        const maxCoord = visibleSegments.reduce((acc, s) => {
+          const x2 = (s.boxX ?? 0) + (s.boxWidth ?? 0);
+          const y2 = (s.boxY ?? 0) + (s.boxHeight ?? 0);
+          return Math.max(acc, x2, y2);
+        }, 0);
+        let norm: number;
+        if (maxCoord <= 1.05) {
+          norm = 1; // already fractional
+        } else if (maxCoord > imgWidth || maxCoord > imgHeight) {
+          // Exceeds natural dims → treat as 1000-scale (Gemini default)
+          norm = 1000;
+        } else {
+          // Within natural dims → raw pixels
+          norm = Math.max(imgWidth, imgHeight);
+        }
         const safeW = Math.min(imgWidth, 2048);
         const safeH = Math.min(imgHeight, 2048);
 
@@ -244,7 +282,10 @@ export async function POST(
         };
 
         const { default: satori } = await import("satori");
-        const svg = await satori(element as any, {
+        // `element` is a hand-built Satori node tree. Satori's public type
+        // (`ReactNode`) is stricter than what we build, so we cast through
+        // `unknown` to document that the tree is intentionally non-React.
+        const svg = await satori(element as unknown as Parameters<typeof satori>[0], {
           width: safeW,
           height: safeH,
           fonts: [{ name: "Noto Sans", data: Buffer.from(fontBuffer), style: "normal" as const, weight: 900 }],
@@ -252,15 +293,27 @@ export async function POST(
 
         const { Resvg } = await import("@resvg/resvg-js");
         const resvg = new Resvg(svg, { fitTo: { mode: "width" as const, value: safeW } });
-        const pngBuffer = Buffer.from(resvg.render().asPng());
+        pngBuffer = Buffer.from(resvg.render().asPng());
         const sharpMod = (await import("sharp")).default;
-        const webpBuffer = await sharpMod(pngBuffer).webp({ quality: 70 }).toBuffer();
+        webpBuffer = await sharpMod(pngBuffer).webp({ quality: 70 }).toBuffer();
+        // Release the intermediate PNG before we upload — it's typically
+        // 2-3x larger than the webp, and we don't need it anymore.
+        pngBuffer = null;
+        satoriPngBase64 = null;
         const url = await saveImage(webpBuffer, `smart_${payload.targetLanguage}`);
         await prisma.translationPayload.update({ where: { id: payload.id }, data: { translatedImageUrl: url } });
         rendered++;
       } catch (err) {
         console.error(`Smart render failed for ${payload.targetLanguage}:`, err);
         failed++;
+      } finally {
+        // Drop references so GC can reclaim large buffers before the next
+        // iteration allocates more. Node's V8 heap would otherwise grow
+        // linearly with payload count.
+        composedBuffer = null;
+        pngBuffer = null;
+        webpBuffer = null;
+        satoriPngBase64 = null;
       }
     }
 

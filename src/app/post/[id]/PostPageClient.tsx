@@ -233,7 +233,7 @@ export default function PostPageClient() {
     if (!post) return;
     const hasInFlight =
       post.status === "PROCESSING" ||
-      (post.translationPayloads ?? []).some((p: any) => p.status === "PROCESSING");
+      (post.translationPayloads ?? []).some((p: { status: string }) => p.status === "PROCESSING");
     if (!hasInFlight) return;
 
     let cancelled = false;
@@ -241,13 +241,22 @@ export default function PostPageClient() {
     const MAX_TICKS = 120; // 2.5s × 120 = 5 minutes
     let intervalHandle: number | null = null;
 
+    const stopPolling = () => {
+      if (intervalHandle !== null) {
+        clearInterval(intervalHandle);
+        intervalHandle = null;
+      }
+    };
+
     const poll = async () => {
       if (cancelled) return;
-      ticks++;
-      if (ticks > MAX_TICKS) {
+      // Hard stop on timeout — clear interval so no more ticks fire.
+      if (ticks >= MAX_TICKS) {
         setPollTimedOut(true);
+        stopPolling();
         return;
       }
+      ticks++;
       // Skip this tick if tab is in the background (saves server load).
       // The interval keeps firing, so polling resumes when the tab is visible again.
       if (typeof document !== "undefined" && document.visibilityState === "hidden") {
@@ -261,12 +270,13 @@ export default function PostPageClient() {
         setTranslationStatus(data);
 
         if (data.summary.total > 0 && data.summary.inProgress === 0) {
-          // All jobs settled — refetch full post to pick up new translations
+          // All jobs settled — stop polling FIRST so no more ticks race us,
+          // then refetch the full post to pick up new translations.
+          stopPolling();
           const fresh = await fetch(`/api/posts/${id}?lang=${preferredLang}`).then((r) =>
             r.ok ? r.json() : null
           );
           if (!cancelled && fresh) setPost(fresh);
-          if (intervalHandle !== null) clearInterval(intervalHandle);
         }
       } catch {
         // Swallow transient network errors — next tick will retry.
@@ -279,7 +289,7 @@ export default function PostPageClient() {
 
     return () => {
       cancelled = true;
-      if (intervalHandle !== null) clearInterval(intervalHandle);
+      stopPolling();
     };
   }, [post?.id, post?.status, id, preferredLang]);
 

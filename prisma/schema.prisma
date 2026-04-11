@@ -479,6 +479,11 @@ model TranslationPayload {
   @@unique([postId, targetLanguage, version])
   @@index([postId, targetLanguage])
   @@index([status])
+  // Hot path for the worker's "count remaining PROCESSING payloads for this
+  // post" query and for the enqueue route's latest-per-language lookup.
+  @@index([postId, status])
+  // Used by /api/admin/retranslate to bulk-delete by language.
+  @@index([targetLanguage, status])
 }
 
 model TranslationSegment {

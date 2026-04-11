@@ -817,6 +817,14 @@ const es: Record<TranslationKeys, string> = {
   "community.categoryPolitics": "Política",
   "community.selectCategory": "Categoría",
   "community.clearFilters": "Limpiar filtros",
+
+  // ── Global translation indicator ───────────────────────────────────────────
+  "translation.inProgress": "Traduciendo…",
+  "translation.starting": "Preparando traducción…",
+  "translation.postsCountSingular": "publicación",
+  "translation.postsCountPlural": "publicaciones",
+  "translation.failedShort": "fallido",
+  "translation.defaultTitle": "Publicación",
 };
 
 export default es;
