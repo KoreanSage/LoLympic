@@ -416,6 +416,11 @@ export async function generateCleanImagesForPost(
     select: { id: true, cleanUrl: true, orderIndex: true },
   });
 
+  // Process each image in PARALLEL (Promise.all). Each iteration is
+  // independent — it only touches its own postImage row — so parallelizing
+  // is safe and dramatically cuts wall time for 10-image posts.
+  // Quality-wise: identical API calls (LaMa → Gemini fallback), just concurrent.
+  const tasks: Array<Promise<void>> = [];
   for (let i = 0; i < postImages.length && i < imageDataList.length; i++) {
     const dbImage = postImages[i];
     const imgData = imageDataList[i];
@@ -424,80 +429,85 @@ export async function generateCleanImagesForPost(
       continue; // Skip if already has clean image cached or no data
     }
 
-    try {
-      let cleanUrl: string | null = null;
-
-      // Primary: Try LaMa inpainting (mask-based, higher quality)
+    tasks.push((async () => {
       try {
-        const imageBuffer = Buffer.from(imgData.base64, "base64");
+        let cleanUrl: string | null = null;
 
-        // Get segments from DB to build the mask
-        // Get segments from ONE language only (avoid duplicates from multiple translations)
-        const onePayload = await prisma.translationPayload.findFirst({
-          where: { postId, status: { in: ["COMPLETED", "APPROVED"] } },
-          orderBy: { version: "desc" },
-          select: { id: true },
-        });
-        const segments = onePayload ? await prisma.translationSegment.findMany({
-          where: {
-            translationPayloadId: onePayload.id,
-            imageIndex: dbImage.orderIndex,
-          },
-          select: {
-            boxX: true,
-            boxY: true,
-            boxWidth: true,
-            boxHeight: true,
-            semanticRole: true,
-          },
-        }) : [];
+        // Primary: Try LaMa inpainting (mask-based, higher quality)
+        try {
+          const imageBuffer = Buffer.from(imgData.base64, "base64");
 
-        if (segments.length > 0) {
-          const metadata = await sharp(imageBuffer).metadata();
-          const imgWidth = metadata.width;
-          const imgHeight = metadata.height;
+          // Get segments from DB to build the mask
+          // Get segments from ONE language only (avoid duplicates from multiple translations)
+          const onePayload = await prisma.translationPayload.findFirst({
+            where: { postId, status: { in: ["COMPLETED", "APPROVED"] } },
+            orderBy: { version: "desc" },
+            select: { id: true },
+          });
+          const segments = onePayload ? await prisma.translationSegment.findMany({
+            where: {
+              translationPayloadId: onePayload.id,
+              imageIndex: dbImage.orderIndex,
+            },
+            select: {
+              boxX: true,
+              boxY: true,
+              boxWidth: true,
+              boxHeight: true,
+              semanticRole: true,
+            },
+          }) : [];
 
-          if (imgWidth && imgHeight) {
-            const maskBuffer = await generateInpaintingMask(segments, imgWidth, imgHeight);
-            const lamaOutputUrl = await runLamaInpainting(imageBuffer, maskBuffer, imgData.mimeType);
+          if (segments.length > 0) {
+            const metadata = await sharp(imageBuffer).metadata();
+            const imgWidth = metadata.width;
+            const imgHeight = metadata.height;
 
-            // Download the clean image from LaMa output URL
-            const cleanRes = await fetch(lamaOutputUrl);
-            if (cleanRes.ok) {
-              const cleanRaw = Buffer.from(await cleanRes.arrayBuffer());
-              // Compress to WebP for ~97% storage savings
-              const sharp = (await import("sharp")).default;
-              const cleanBuffer = await sharp(cleanRaw).webp({ quality: 70 }).toBuffer();
-              // Verify the WebP is valid
-              const meta = await sharp(cleanBuffer).metadata();
-              if (!meta.width || !meta.height) throw new Error("WebP validation failed");
-              cleanUrl = await saveGeneratedImage(cleanBuffer, "clean_lama", ".webp");
-              console.debug(`[LaMa] Clean image generated for postImage ${dbImage.id}`);
+            if (imgWidth && imgHeight) {
+              const maskBuffer = await generateInpaintingMask(segments, imgWidth, imgHeight);
+              const lamaOutputUrl = await runLamaInpainting(imageBuffer, maskBuffer, imgData.mimeType);
+
+              // Download the clean image from LaMa output URL
+              const cleanRes = await fetch(lamaOutputUrl);
+              if (cleanRes.ok) {
+                const cleanRaw = Buffer.from(await cleanRes.arrayBuffer());
+                // Compress to WebP for ~97% storage savings
+                const sharp = (await import("sharp")).default;
+                const cleanBuffer = await sharp(cleanRaw).webp({ quality: 70 }).toBuffer();
+                // Verify the WebP is valid
+                const meta = await sharp(cleanBuffer).metadata();
+                if (!meta.width || !meta.height) throw new Error("WebP validation failed");
+                cleanUrl = await saveGeneratedImage(cleanBuffer, "clean_lama", ".webp");
+                console.debug(`[LaMa] Clean image generated for postImage ${dbImage.id}`);
+              }
             }
           }
+        } catch (lamaErr) {
+          console.warn(`[LaMa] Failed for postImage ${dbImage.id}, falling back to Gemini:`, lamaErr);
         }
-      } catch (lamaErr) {
-        console.warn(`[LaMa] Failed for postImage ${dbImage.id}, falling back to Gemini:`, lamaErr);
-      }
 
-      // Fallback: Gemini inpainting
-      if (!cleanUrl) {
-        cleanUrl = await generateCleanImage(imgData.base64, imgData.mimeType);
+        // Fallback: Gemini inpainting
+        if (!cleanUrl) {
+          cleanUrl = await generateCleanImage(imgData.base64, imgData.mimeType);
+          if (cleanUrl) {
+            console.debug(`[Gemini fallback] Clean image generated for postImage ${dbImage.id}`);
+          }
+        }
+
         if (cleanUrl) {
-          console.debug(`[Gemini fallback] Clean image generated for postImage ${dbImage.id}`);
+          await prisma.postImage.update({
+            where: { id: dbImage.id },
+            data: { cleanUrl },
+          });
         }
+      } catch (err) {
+        console.error(`Clean image generation failed for postImage ${dbImage.id}:`, err);
       }
-
-      if (cleanUrl) {
-        await prisma.postImage.update({
-          where: { id: dbImage.id },
-          data: { cleanUrl },
-        });
-      }
-    } catch (err) {
-      console.error(`Clean image generation failed for postImage ${dbImage.id}:`, err);
-    }
+    })());
   }
+
+  // Wait for all images to finish (errors are swallowed per-image above)
+  await Promise.all(tasks);
 }
 
 // ---------------------------------------------------------------------------
@@ -908,26 +918,25 @@ export async function generateTranslatedImageForPayload(
     // 6. Update DB — first image URL
     const updateData: Record<string, any> = { translatedImageUrl: url };
 
-    // 7. Multi-image: render remaining images and store as translatedImageUrls
+    // 7. Multi-image: render remaining images in PARALLEL and store as translatedImageUrls
     if (isMultiImage) {
-      const imageUrls: string[] = [url]; // index 0 already done
-
-      for (let imgIdx = 1; imgIdx < postImages.length; imgIdx++) {
+      // Render each image concurrently. Each iteration only produces its own
+      // URL — no shared state — so parallelizing is safe. Same Satori/Sharp
+      // calls as the sequential version, just concurrent for N× speedup.
+      const renderImage = async (imgIdx: number): Promise<string> => {
         try {
           const img = postImages[imgIdx];
           const imgSegs = segments.filter(s => (s.imageIndex ?? 0) === imgIdx);
           if (imgSegs.length === 0 || !imgSegs.some(s => s.semanticRole !== "WATERMARK" && s.translatedText?.trim())) {
-            imageUrls.push(""); // no translation needed for this image
-            continue;
+            return "";
           }
 
-          // Get base image (clean or original)
           const imgBaseUrl = img.cleanUrl || img.originalUrl;
-          if (!imgBaseUrl) { imageUrls.push(""); continue; }
+          if (!imgBaseUrl) return "";
 
           const resolvedImgUrl = imgBaseUrl.startsWith("http") ? imgBaseUrl : `${appUrl}${imgBaseUrl}`;
           const imgRes = await fetch(resolvedImgUrl);
-          if (!imgRes.ok) { imageUrls.push(""); continue; }
+          if (!imgRes.ok) return "";
           const imgBuffer = Buffer.from(await imgRes.arrayBuffer());
           const imgMeta = await sharp(imgBuffer).metadata();
           const imgW = imgMeta.width || 800;
@@ -1010,13 +1019,17 @@ export async function generateTranslatedImageForPayload(
           const imgSharp = (await import("sharp")).default;
           const imgWebp = await imgSharp(imgPng).webp({ quality: 70 }).toBuffer();
           const imgUrl = await saveGeneratedImage(imgWebp, `translated_satori_${targetLanguage}_img${imgIdx}`, ".webp");
-          imageUrls.push(imgUrl);
           console.debug(`[Multi] Image ${imgIdx} translated for ${payloadId}: ${imgUrl}`);
+          return imgUrl;
         } catch (imgErr) {
           console.error(`[Multi] Image ${imgIdx} failed:`, imgErr);
-          imageUrls.push("");
+          return "";
         }
-      }
+      };
+
+      const remainingIndices = Array.from({ length: postImages.length - 1 }, (_, i) => i + 1);
+      const rendered = await Promise.all(remainingIndices.map(renderImage));
+      const imageUrls: string[] = [url, ...rendered];
 
       updateData.translatedImageUrls = imageUrls;
     }
@@ -1253,27 +1266,39 @@ export async function POST(request: NextRequest) {
         .map((imgData, idx) => ({ imgData, idx }))
         .filter(({ imgData }) => !!imgData.base64);
 
-      for (const { imgData, idx } of validImages) {
-        for (let attempt = 0; attempt < 2; attempt++) {
-          try {
-            if (attempt > 0) await new Promise((r) => setTimeout(r, 1500));
-            const result = await enModel.generateContent([
-              `Translate this meme from ${sourceLanguage} to en. Analyze the image and detect all EXISTING text regions. If the image has NO text at all, return empty segments array. NEVER invent or add text that is not in the image. Respond ONLY with valid JSON, no markdown fences.${imageDataList.length > 1 ? ` This is image ${idx + 1} of ${imageDataList.length} in a multi-image post.` : ""}`,
-              { inlineData: { data: imgData.base64, mimeType: imgData.mimeType } },
-            ]);
-            if (idx === 0) checkContentSafety(postId, result.response).catch(() => {});
-            const text = result.response.text();
-            if (!text) continue;
-            const parsed = JSON.parse(stripMarkdownFences(text)) as AITranslationResult;
-            if (!Array.isArray(parsed.segments)) continue;
-            if (!enParsed) enParsed = parsed;
-            for (const seg of parsed.segments) enSegments.push({ ...seg, imageIndex: idx });
-            if (parsed.cultureNote) enCultureNotes.push(parsed.cultureNote);
-            break; // success
-          } catch (err) {
-            console.warn(`English analysis attempt ${attempt + 1} failed for image ${idx}:`, err instanceof Error ? err.message : String(err));
+      // Run Gemini Flash analysis for all images in PARALLEL.
+      // Same API calls as before (with the same 2-attempt retry each),
+      // just dispatched concurrently. Quality-identical, wall-time ~N× faster
+      // for N-image posts.
+      const analysisResults = await Promise.all(
+        validImages.map(async ({ imgData, idx }) => {
+          for (let attempt = 0; attempt < 2; attempt++) {
+            try {
+              if (attempt > 0) await new Promise((r) => setTimeout(r, 1500));
+              const result = await enModel.generateContent([
+                `Translate this meme from ${sourceLanguage} to en. Analyze the image and detect all EXISTING text regions. If the image has NO text at all, return empty segments array. NEVER invent or add text that is not in the image. Respond ONLY with valid JSON, no markdown fences.${imageDataList.length > 1 ? ` This is image ${idx + 1} of ${imageDataList.length} in a multi-image post.` : ""}`,
+                { inlineData: { data: imgData.base64, mimeType: imgData.mimeType } },
+              ]);
+              if (idx === 0) checkContentSafety(postId, result.response).catch(() => {});
+              const text = result.response.text();
+              if (!text) continue;
+              const parsed = JSON.parse(stripMarkdownFences(text)) as AITranslationResult;
+              if (!Array.isArray(parsed.segments)) continue;
+              return { idx, parsed };
+            } catch (err) {
+              console.warn(`English analysis attempt ${attempt + 1} failed for image ${idx}:`, err instanceof Error ? err.message : String(err));
+            }
           }
-        }
+          return null;
+        })
+      );
+
+      // Merge in original image order (idx) to keep segment ordering stable
+      for (const r of analysisResults) {
+        if (!r) continue;
+        if (!enParsed) enParsed = r.parsed;
+        for (const seg of r.parsed.segments) enSegments.push({ ...seg, imageIndex: r.idx });
+        if (r.parsed.cultureNote) enCultureNotes.push(r.parsed.cultureNote);
       }
 
       if (enParsed) {

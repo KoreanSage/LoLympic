@@ -90,27 +90,37 @@ async function runEnglishAnalysis(
     .map((imgData, idx) => ({ imgData, idx }))
     .filter(({ imgData }) => !!imgData.base64);
 
-  for (const { imgData, idx } of validImages) {
-    for (let attempt = 0; attempt < 2; attempt++) {
-      try {
-        if (attempt > 0) await new Promise((r) => setTimeout(r, 1500));
-        const result = await enModel.generateContent([
-          `Translate this meme from ${sourceLanguage} to en. Analyze the image and detect all EXISTING text regions. If the image has NO text at all, return empty segments array. NEVER invent or add text that is not in the image. Respond ONLY with valid JSON, no markdown fences.${imageDataList.length > 1 ? ` This is image ${idx + 1} of ${imageDataList.length} in a multi-image post.` : ""}`,
-          { inlineData: { data: imgData.base64, mimeType: imgData.mimeType } },
-        ]);
-        if (idx === 0) checkContentSafety(postId, result.response).catch(() => {});
-        const text = result.response.text();
-        if (!text) continue;
-        const parsed = JSON.parse(stripMarkdownFences(text)) as AITranslationResult;
-        if (!Array.isArray(parsed.segments)) continue;
-        if (!enParsed) enParsed = parsed;
-        for (const seg of parsed.segments) enSegments.push({ ...seg, imageIndex: idx });
-        if (parsed.cultureNote) enCultureNotes.push(parsed.cultureNote);
-        break;
-      } catch (err) {
-        console.warn(`[Worker] English analysis attempt ${attempt + 1} failed for image ${idx}:`, err instanceof Error ? err.message : String(err));
+  // Parallelize Gemini Flash analysis across images. Same API calls,
+  // same retry behavior, just concurrent. Quality-identical.
+  const analysisResults = await Promise.all(
+    validImages.map(async ({ imgData, idx }) => {
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          if (attempt > 0) await new Promise((r) => setTimeout(r, 1500));
+          const result = await enModel.generateContent([
+            `Translate this meme from ${sourceLanguage} to en. Analyze the image and detect all EXISTING text regions. If the image has NO text at all, return empty segments array. NEVER invent or add text that is not in the image. Respond ONLY with valid JSON, no markdown fences.${imageDataList.length > 1 ? ` This is image ${idx + 1} of ${imageDataList.length} in a multi-image post.` : ""}`,
+            { inlineData: { data: imgData.base64, mimeType: imgData.mimeType } },
+          ]);
+          if (idx === 0) checkContentSafety(postId, result.response).catch(() => {});
+          const text = result.response.text();
+          if (!text) continue;
+          const parsed = JSON.parse(stripMarkdownFences(text)) as AITranslationResult;
+          if (!Array.isArray(parsed.segments)) continue;
+          return { idx, parsed };
+        } catch (err) {
+          console.warn(`[Worker] English analysis attempt ${attempt + 1} failed for image ${idx}:`, err instanceof Error ? err.message : String(err));
+        }
       }
-    }
+      return null;
+    })
+  );
+
+  // Merge in original image order
+  for (const r of analysisResults) {
+    if (!r) continue;
+    if (!enParsed) enParsed = r.parsed;
+    for (const seg of r.parsed.segments) enSegments.push({ ...seg, imageIndex: r.idx });
+    if (r.parsed.cultureNote) enCultureNotes.push(r.parsed.cultureNote);
   }
 
   if (!enParsed) return null;
