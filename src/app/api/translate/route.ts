@@ -82,9 +82,15 @@ function getGenAI2() {
 }
 
 // ---------------------------------------------------------------------------
+// Exports for reuse by the async QStash worker. These are the same helpers
+// used by the sync POST handler below — do NOT duplicate them in the worker.
+// ---------------------------------------------------------------------------
+export { getGenAI, getGenAI2, saveGeneratedImage };
+
+// ---------------------------------------------------------------------------
 // Language-specific translation instructions
 // ---------------------------------------------------------------------------
-const LANGUAGE_INSTRUCTIONS: Record<string, string> = {
+export const LANGUAGE_INSTRUCTIONS: Record<string, string> = {
   ko: "Korean (한국어): CRITICAL — Preserve the ORIGINAL MEANING accurately first. Do NOT replace with unrelated Korean idioms or food expressions. Translate naturally using everyday Korean (반말 또는 자연스러운 구어체). Keep sentences compact. Korean slang (신조어) is OK only when it directly matches the original meaning — never substitute meaning with unrelated slang. Example: 'all bark no bite' = '말만 많고 행동은 없는' NOT '겉바속촉'.",
   ja: "Japanese (日本語): Subtle and restrained humor. Use appropriate levels of politeness for comedic effect. Japanese memes often rely on understatement, ツッコミ/ボケ dynamics, and visual puns. Preserve any double-meaning wordplay.",
   zh: "Chinese (中文): Compact and efficient. Chinese internet humor uses 网络用语, four-character idioms twisted for comedy, and phonetic puns. Keep character count low. Maximize impact per character.",
@@ -97,7 +103,7 @@ const LANGUAGE_INSTRUCTIONS: Record<string, string> = {
 // ---------------------------------------------------------------------------
 // System prompt for Gemini translation
 // ---------------------------------------------------------------------------
-function buildTranslationSystemPrompt(
+export function buildTranslationSystemPrompt(
   sourceLanguage: string,
   targetLanguage: string
 ): string {
@@ -189,7 +195,7 @@ Write cultureNote in the TARGET language (${targetLanguage}). Keep it SHORT.
 // ---------------------------------------------------------------------------
 // Types for the AI response
 // ---------------------------------------------------------------------------
-interface TranslationSegmentResponse {
+export interface TranslationSegmentResponse {
   sourceText: string;
   translatedText: string;
   semanticRole: string;
@@ -206,13 +212,13 @@ interface TranslationSegmentResponse {
   };
 }
 
-interface CultureNoteResponse {
+export interface CultureNoteResponse {
   summary: string;
   explanation: string;
   translationNote?: string;
 }
 
-interface AITranslationResult {
+export interface AITranslationResult {
   memeType?: string;
   segments: TranslationSegmentResponse[];
   cultureNote: CultureNoteResponse;
@@ -222,7 +228,7 @@ interface AITranslationResult {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-function toSemanticRole(
+export function toSemanticRole(
   role: string
 ): "HEADLINE" | "CAPTION" | "DIALOGUE" | "LABEL" | "WATERMARK" | "SUBTITLE" | "OVERLAY" | "OTHER" {
   const valid = [
@@ -235,7 +241,7 @@ function toSemanticRole(
     : "OTHER";
 }
 
-function toTextAlign(align?: string): "LEFT" | "CENTER" | "RIGHT" {
+export function toTextAlign(align?: string): "LEFT" | "CENTER" | "RIGHT" {
   if (!align) return "CENTER";
   const upper = align.toUpperCase();
   if (upper === "LEFT" || upper === "CENTER" || upper === "RIGHT") return upper;
@@ -297,7 +303,7 @@ async function saveGeneratedImage(
 }
 
 // Helper: Read image as base64 (from URL or local file)
-async function readImageAsBase64(imageUrl: string): Promise<{ base64: string; mimeType: string }> {
+export async function readImageAsBase64(imageUrl: string): Promise<{ base64: string; mimeType: string }> {
   // If it's a full URL (Blob or external), fetch it
   if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
     const res = await fetch(imageUrl);
@@ -332,14 +338,14 @@ async function readImageAsBase64(imageUrl: string): Promise<{ base64: string; mi
   };
 }
 
-function stripMarkdownFences(text: string): string {
+export function stripMarkdownFences(text: string): string {
   return text.replace(/^```(?:json)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
 }
 
 // ---------------------------------------------------------------------------
 // Content moderation: check Gemini safety ratings (fire-and-forget)
 // ---------------------------------------------------------------------------
-async function checkContentSafety(postId: string, response: any) {
+export async function checkContentSafety(postId: string, response: any) {
   try {
     const safetyRatings = response?.candidates?.[0]?.safetyRatings;
     if (!safetyRatings) return;
@@ -398,7 +404,7 @@ async function withRetry<T>(
 // Generate clean images for all post images
 // Uses LaMa inpainting (primary) with Gemini fallback
 // ---------------------------------------------------------------------------
-async function generateCleanImagesForPost(
+export async function generateCleanImagesForPost(
   postId: string,
   imageDataList: Array<{ base64: string; mimeType: string }>,
   imageUrls: string[]
@@ -596,7 +602,7 @@ async function fetchGoogleFont(fontFamily: string, text: string, weight: number 
 // ---------------------------------------------------------------------------
 // Map language code to Noto Sans font family for Google Fonts
 // ---------------------------------------------------------------------------
-function getFontFamilyForLang(lang: string): string {
+export function getFontFamilyForLang(lang: string): string {
   switch (lang) {
     case "ko": return "Noto+Sans+KR";
     case "ja": return "Noto+Sans+JP";
@@ -616,7 +622,7 @@ function getFontFamilyForLang(lang: string): string {
 // Strategy: Get the clean image (text removed) → POST to /api/translate/compose-image
 // Fallback: Gemini image editing if compose fails
 // ---------------------------------------------------------------------------
-async function generateTranslatedImageForPayload(
+export async function generateTranslatedImageForPayload(
   payloadId: string,
   postId: string,
   segments: Array<{
@@ -1031,7 +1037,7 @@ async function generateTranslatedImageForPayload(
 // ---------------------------------------------------------------------------
 const TRANSLATION_CACHE_TTL = 604800; // 7 days in seconds
 
-async function getCachedTranslation(
+export async function getCachedTranslation(
   postId: string,
   targetLang: string
 ): Promise<AITranslationResult | null> {
@@ -1057,7 +1063,7 @@ async function getCachedTranslation(
   }
 }
 
-async function setCachedTranslation(
+export async function setCachedTranslation(
   postId: string,
   targetLang: string,
   result: AITranslationResult
