@@ -130,34 +130,38 @@ function stripWrapping(s: string): string {
 
 export function isValidTranslation(
   translated: string,
-  source: string,
+  _source: string,
   targetLang: string,
-  sourceLang?: string
+  _sourceLang?: string
 ): boolean {
   const cleaned = stripWrapping(translated);
   if (!cleaned) return false;
 
-  // Echo detection — only applies when source and target are in DIFFERENT
-  // script families. Within the same family (en↔es, en↔hi, es↔hi) a legit
-  // translation can genuinely be identical (proper nouns, brand names,
-  // numbers, internet slang). Skipping the echo check there removes a whole
-  // class of false positives while still catching the cross-script bug
-  // (ko→ja returning hangul, en→ar returning latin, etc.).
-  if (!sourceLang || !sameScriptFamily(sourceLang, targetLang)) {
-    const sim = similarity(cleaned, source);
-    if (sim >= 0.9) return false;
-  }
-
-  // Must contain at least one character from the target script
-  const required = REQUIRED_SCRIPT[targetLang];
-  if (required && !required.test(cleaned)) return false;
-
-  // Must NOT contain any forbidden-script characters
+  // Forbidden-script check is the SOLE validation. It catches the real
+  // bug (ko→ja returning hangul, en→ko returning kana, etc.) while leaving
+  // legitimate short / brand-name / number translations alone.
+  //
+  // We previously tried:
+  //   - similarity-based echo detection → 60+ false positives on brand
+  //     names, proper nouns, numbers, internet slang ("Google", "LOL",
+  //     "64", "McDonald's", "친구" when a user mis-labelled source lang)
+  //   - required-script validation → rejected valid short Japanese
+  //     outputs like "Google" (JP uses Latin for brand names), and real
+  //     posts where the source text is already in the target script
+  // Both produced more false positives than the bug they were supposed
+  // to catch, so they're gone. If Gemini ever echoes in a way that slips
+  // past the forbidden-script check, we'll add a more targeted signal.
   const forbidden = FORBIDDEN_SCRIPTS[targetLang];
   if (forbidden && forbidden.some((re) => re.test(cleaned))) return false;
 
   return true;
 }
+
+// Helpers below are intentionally left around in case future defences need
+// them, but are currently unused.
+void similarity;
+void sameScriptFamily;
+void REQUIRED_SCRIPT;
 
 // ---------------------------------------------------------------------------
 // Prompts
