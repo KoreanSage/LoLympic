@@ -77,6 +77,26 @@ const FORBIDDEN_SCRIPTS: Record<string, RegExp[]> = {
 // eslint-disable-next-line no-useless-escape
 const PUNCT_AND_WS = /[\s!-/:-@\[-`{-~\u00A0-\u00BF\u2000-\u206F\u2E00-\u2E7F\u3000-\u303F\uFF00-\uFFEF]/g;
 
+// Languages that share a script family. Within a family, an "echo" (the
+// translated text being identical to the source) can be legitimate — proper
+// nouns, brand names, numbers, and short internet slang like "LOL" or
+// "Google" or "64" are often genuinely the same across en/es/hi. For these
+// pairs we skip the echo-similarity check and rely on script validation
+// alone. The ACTUAL bug we're fixing (ko→ja returning hangul) always
+// crosses a script boundary, so it's still caught.
+const SCRIPT_FAMILIES: Record<string, string> = {
+  en: "latin",
+  es: "latin",
+  hi: "latin", // Hinglish (Roman)
+  ko: "hangul",
+  ja: "japanese",
+  zh: "han",
+  ar: "arabic",
+};
+function sameScriptFamily(a: string, b: string): boolean {
+  return !!SCRIPT_FAMILIES[a] && SCRIPT_FAMILIES[a] === SCRIPT_FAMILIES[b];
+}
+
 /** Normalise a string for echo comparison: lowercase, strip whitespace and
  * punctuation so minor reformatting doesn't fool the echo check. */
 function normaliseForCompare(s: string): string {
@@ -111,14 +131,22 @@ function stripWrapping(s: string): string {
 export function isValidTranslation(
   translated: string,
   source: string,
-  targetLang: string
+  targetLang: string,
+  sourceLang?: string
 ): boolean {
   const cleaned = stripWrapping(translated);
   if (!cleaned) return false;
 
-  // Echo detection
-  const sim = similarity(cleaned, source);
-  if (sim >= 0.9) return false;
+  // Echo detection — only applies when source and target are in DIFFERENT
+  // script families. Within the same family (en↔es, en↔hi, es↔hi) a legit
+  // translation can genuinely be identical (proper nouns, brand names,
+  // numbers, internet slang). Skipping the echo check there removes a whole
+  // class of false positives while still catching the cross-script bug
+  // (ko→ja returning hangul, en→ar returning latin, etc.).
+  if (!sourceLang || !sameScriptFamily(sourceLang, targetLang)) {
+    const sim = similarity(cleaned, source);
+    if (sim >= 0.9) return false;
+  }
 
   // Must contain at least one character from the target script
   const required = REQUIRED_SCRIPT[targetLang];
@@ -249,7 +277,7 @@ export async function translateTitleOrDescription(
     );
   }
 
-  if (attempt1Raw && isValidTranslation(attempt1Raw, opts.sourceText, opts.targetLanguage)) {
+  if (attempt1Raw && isValidTranslation(attempt1Raw, opts.sourceText, opts.targetLanguage, opts.sourceLanguage)) {
     return stripWrapping(attempt1Raw);
   }
 
@@ -271,7 +299,7 @@ export async function translateTitleOrDescription(
     );
   }
 
-  if (attempt2Raw && isValidTranslation(attempt2Raw, opts.sourceText, opts.targetLanguage)) {
+  if (attempt2Raw && isValidTranslation(attempt2Raw, opts.sourceText, opts.targetLanguage, opts.sourceLanguage)) {
     return stripWrapping(attempt2Raw);
   }
 
