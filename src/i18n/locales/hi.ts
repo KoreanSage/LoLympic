@@ -821,6 +821,14 @@ const hi: Record<TranslationKeys, string> = {
   "community.categoryPolitics": "Politics",
   "community.selectCategory": "Category",
   "community.clearFilters": "Filters clear karo",
+
+  // ── Global translation indicator ───────────────────────────────────────────
+  "translation.inProgress": "Translate ho raha hai…",
+  "translation.starting": "Translation ready ho raha hai…",
+  "translation.postsCountSingular": "post",
+  "translation.postsCountPlural": "posts",
+  "translation.failedShort": "fail",
+  "translation.defaultTitle": "Post",
 } as const;
 
 export default hi;

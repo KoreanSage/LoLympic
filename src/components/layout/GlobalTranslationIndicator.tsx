@@ -7,8 +7,9 @@
 // /api/posts/[id]/translation-status for each, and auto-removes completed
 // posts. Disappears when nothing is in flight.
 // ---------------------------------------------------------------------------
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
+import { useTranslation } from "@/i18n";
 import {
   getTrackedPosts,
   removeTrackedPost,
@@ -26,11 +27,24 @@ interface PostStatus {
 }
 
 const POLL_INTERVAL_MS = 2500;
+const DONE_GRACE_MS = 2000;
 
 export function GlobalTranslationIndicator() {
+  const { t } = useTranslation();
   const [tracked, setTracked] = useState<TrackedPost[]>([]);
   const [statuses, setStatuses] = useState<Record<string, PostStatus>>({});
   const [collapsed, setCollapsed] = useState(false);
+
+  // Keep a ref to `tracked` so `pollOne` can read it without becoming a new
+  // function identity on every render. Without this, the effect below would
+  // tear down and recreate the setInterval on every render, leaking timers.
+  const trackedRef = useRef<TrackedPost[]>(tracked);
+  useEffect(() => {
+    trackedRef.current = tracked;
+  }, [tracked]);
+
+  // Track pending "done" cleanup timers so we can clear them on unmount.
+  const cleanupTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   // Sync with the tracker store (same-tab + cross-tab via storage event)
   useEffect(() => {
@@ -39,7 +53,7 @@ export function GlobalTranslationIndicator() {
     return subscribeTracker(refresh);
   }, []);
 
-  // Poll each tracked post's status
+  // Poll each tracked post's status. Stable identity — reads from refs only.
   const pollOne = useCallback(async (postId: string) => {
     try {
       const r = await fetch(`/api/posts/${postId}/translation-status`);
@@ -52,7 +66,7 @@ export function GlobalTranslationIndicator() {
         ...prev,
         [postId]: {
           postId,
-          title: tracked.find((t) => t.postId === postId)?.title,
+          title: trackedRef.current.find((x) => x.postId === postId)?.title,
           total: summary.total,
           completed: summary.completed,
           failed: summary.failed,
@@ -60,34 +74,52 @@ export function GlobalTranslationIndicator() {
         },
       }));
 
-      // Remove from tracker once all jobs settle (and there was actually work)
+      // Remove from tracker once all jobs settle (and there was actually work).
+      // Keep the "done" state visible briefly, then remove. Timer is tracked
+      // so it can be cancelled on unmount or on repeated completion events.
       if (summary.total > 0 && summary.inProgress === 0) {
-        // Keep the "done" state visible briefly, then remove
-        setTimeout(() => {
-          removeTrackedPost(postId);
-          setStatuses((prev) => {
-            const next = { ...prev };
-            delete next[postId];
-            return next;
-          });
-        }, 2000);
+        const timers = cleanupTimersRef.current;
+        if (!timers.has(postId)) {
+          const handle = setTimeout(() => {
+            removeTrackedPost(postId);
+            setStatuses((prev) => {
+              const next = { ...prev };
+              delete next[postId];
+              return next;
+            });
+            timers.delete(postId);
+          }, DONE_GRACE_MS);
+          timers.set(postId, handle);
+        }
       }
     } catch {
       // swallow transient errors
     }
-  }, [tracked]);
+  }, []);
 
+  // Drive the polling loop. Only restarts when the set of tracked post IDs
+  // changes, not on every render of pollOne.
+  const trackedKey = tracked.map((t) => t.postId).sort().join(",");
   useEffect(() => {
     if (tracked.length === 0) return;
     // Immediate fetch
-    tracked.forEach((t) => pollOne(t.postId));
-    const id = window.setInterval(() => {
-      // Skip while tab is hidden to save server load
+    for (const t of tracked) pollOne(t.postId);
+    const handle = window.setInterval(() => {
       if (document.visibilityState === "hidden") return;
-      tracked.forEach((t) => pollOne(t.postId));
+      for (const t of trackedRef.current) pollOne(t.postId);
     }, POLL_INTERVAL_MS);
-    return () => clearInterval(id);
-  }, [tracked, pollOne]);
+    return () => clearInterval(handle);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trackedKey, pollOne]);
+
+  // Clear all pending cleanup timers on unmount to avoid leaks.
+  useEffect(() => {
+    const timers = cleanupTimersRef.current;
+    return () => {
+      timers.forEach((handle) => clearTimeout(handle));
+      timers.clear();
+    };
+  }, []);
 
   // Hide when nothing is tracked
   if (tracked.length === 0) return null;
@@ -98,6 +130,14 @@ export function GlobalTranslationIndicator() {
 
   // If we haven't received any status yet, show a simple "starting" state
   const showStarting = activeStatuses.length === 0;
+  const inProgressLabel = t("translation.inProgress");
+  const startingLabel = t("translation.starting");
+  const postsLabel =
+    tracked.length > 1
+      ? t("translation.postsCountPlural")
+      : t("translation.postsCountSingular");
+  const failedLabel = t("translation.failedShort");
+  const defaultPostTitle = t("translation.defaultTitle");
 
   return (
     <div
@@ -115,10 +155,10 @@ export function GlobalTranslationIndicator() {
           <div className="flex items-center gap-2 min-w-0">
             <span className="inline-block w-2 h-2 rounded-full bg-yellow-400 animate-pulse flex-shrink-0" />
             <span className="text-sm font-medium text-yellow-200 truncate">
-              번역 중…
+              {inProgressLabel}
             </span>
             <span className="text-xs text-yellow-300/70 flex-shrink-0">
-              {tracked.length}{tracked.length > 1 ? " 개 게시물" : " 개"}
+              {tracked.length} {postsLabel}
             </span>
           </div>
           <svg
@@ -135,14 +175,14 @@ export function GlobalTranslationIndicator() {
         {!collapsed && (
           <div className="border-t border-white/5 px-3 py-2.5 space-y-2">
             {showStarting && (
-              <p className="text-xs text-yellow-300/70">번역 작업 준비 중…</p>
+              <p className="text-xs text-yellow-300/70">{startingLabel}</p>
             )}
             {activeStatuses.map((s) => {
               const percent = s.total > 0
                 ? Math.round(((s.completed + s.failed) / s.total) * 100)
                 : 0;
-              const trackedInfo = tracked.find((t) => t.postId === s.postId);
-              const titleText = trackedInfo?.title || "게시물";
+              const trackedInfo = tracked.find((x) => x.postId === s.postId);
+              const titleText = trackedInfo?.title || defaultPostTitle;
               return (
                 <Link
                   key={s.postId}
@@ -156,7 +196,7 @@ export function GlobalTranslationIndicator() {
                     <span className="text-[10px] text-yellow-300/80 flex-shrink-0 tabular-nums">
                       {s.completed}/{s.total}
                       {s.failed > 0 && (
-                        <span className="text-red-400 ml-1">· {s.failed} 실패</span>
+                        <span className="text-red-400 ml-1">· {s.failed} {failedLabel}</span>
                       )}
                     </span>
                   </div>

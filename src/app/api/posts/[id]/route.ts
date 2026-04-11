@@ -296,10 +296,13 @@ export async function PATCH(
       return updated;
     });
 
-    // Trigger retranslation of title/body text (fire-and-forget)
-    // Fetches payloads with segments, then backfills via Gemini flash-lite
+    // Trigger retranslation of title/body text (fire-and-forget).
+    // Each target language runs INDEPENDENTLY via Promise.allSettled so a
+    // single Gemini failure for one language doesn't block the others.
+    // The outer IIFE catches any synchronous throw from the import itself
+    // so we never surface an unhandled promise rejection.
     if (textChanged) {
-      (async () => {
+      void (async () => {
         try {
           const postWithPayloads = await prisma.post.findUnique({
             where: { id },
@@ -313,25 +316,34 @@ export async function PATCH(
           if (!postWithPayloads) return;
 
           const { backfillMissingTitleTranslations } = await import("@/lib/translate-backfill");
-          const allLangs = ["ko", "en", "ja", "zh", "es", "hi", "ar"];
+          const { VALID_LANGUAGES } = await import("@/lib/constants");
           const sourceLang = postWithPayloads.sourceLanguage || "ko";
 
-          // Group payloads by language and call backfill for each
-          for (const lang of allLangs) {
-            if (lang === sourceLang) continue;
-            const payload = postWithPayloads.translationPayloads.find(
-              (p) => p.targetLanguage === lang
+          const jobs = VALID_LANGUAGES
+            .filter((lang) => lang !== sourceLang)
+            .map(async (lang) => {
+              const payload = postWithPayloads.translationPayloads.find(
+                (p) => p.targetLanguage === lang
+              );
+              if (!payload) return { lang, skipped: true };
+              const fakePost = {
+                ...postWithPayloads,
+                translationPayloads: [payload],
+              };
+              await backfillMissingTitleTranslations([fakePost], lang);
+              return { lang, skipped: false };
+            });
+
+          const results = await Promise.allSettled(jobs);
+          const failed = results.filter((r) => r.status === "rejected");
+          if (failed.length > 0) {
+            console.warn(
+              `[Edit] Backfill: ${failed.length}/${jobs.length} languages failed`,
+              failed
             );
-            if (!payload) continue;
-            // Wrap as fake post object for backfill helper
-            const fakePost = {
-              ...postWithPayloads,
-              translationPayloads: [payload],
-            };
-            await backfillMissingTitleTranslations([fakePost], lang);
           }
         } catch (e) {
-          console.error("[Edit] Retranslate failed:", e);
+          console.error("[Edit] Retranslate orchestration failed:", e);
         }
       })();
     }

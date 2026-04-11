@@ -817,6 +817,14 @@ const zh: Record<TranslationKeys, string> = {
   "community.categoryPolitics": "政治",
   "community.selectCategory": "分类",
   "community.clearFilters": "清除筛选",
+
+  // ── Global translation indicator ───────────────────────────────────────────
+  "translation.inProgress": "翻译中…",
+  "translation.starting": "正在准备翻译…",
+  "translation.postsCountSingular": "个帖子",
+  "translation.postsCountPlural": "个帖子",
+  "translation.failedShort": "失败",
+  "translation.defaultTitle": "帖子",
 };
 
 export default zh;

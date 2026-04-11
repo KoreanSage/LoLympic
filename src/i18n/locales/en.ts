@@ -850,6 +850,14 @@ const en = {
   "community.categoryPolitics": "Politics",
   "community.selectCategory": "Category",
   "community.clearFilters": "Clear all",
+
+  // ── Global translation indicator ───────────────────────────────────────────
+  "translation.inProgress": "Translating…",
+  "translation.starting": "Preparing translation…",
+  "translation.postsCountSingular": "post",
+  "translation.postsCountPlural": "posts",
+  "translation.failedShort": "failed",
+  "translation.defaultTitle": "Post",
 } as const;
 
 export type TranslationKeys = keyof typeof en;

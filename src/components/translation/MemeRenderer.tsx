@@ -541,14 +541,19 @@ export default function MemeRenderer({
   }, [render, showTranslation, segments, usePreRendered]);
 
   // Re-render on resize. CRITICAL: must honour `maxHeight` here too — the
-  // initial useEffect above applied it correctly, but this observer would
-  // immediately overwrite displaySize with natural-aspect dimensions, so the
-  // canvas ended up at full-height pixels and got clipped by the parent's
-  // overflow-hidden + max-h-[70vh] container.
+  // initial useEffect above applied it correctly, but without this the
+  // observer would immediately overwrite displaySize with natural-aspect
+  // dimensions, so the canvas ended up at full-height pixels and got
+  // clipped by the parent's overflow-hidden + max-h-[70vh] container.
+  //
+  // The functional `setDisplaySize` avoids re-reading `displaySize` from
+  // deps, which would otherwise tear down and recreate the observer on
+  // every state update.
   useEffect(() => {
     if (!containerRef.current || width) return;
+    let mounted = true;
     const observer = new ResizeObserver(() => {
-      if (!image) return;
+      if (!mounted || !image) return;
       const containerW = containerRef.current?.clientWidth || 0;
       if (containerW <= 0) return;
       const aspect = image.naturalWidth / image.naturalHeight;
@@ -558,13 +563,22 @@ export default function MemeRenderer({
         nextH = maxHeight;
         nextW = nextH * aspect;
       }
-      if (Math.round(nextW) !== Math.round(displaySize.w) || Math.round(nextH) !== Math.round(displaySize.h)) {
-        setDisplaySize({ w: nextW, h: nextH });
-      }
+      setDisplaySize((prev) => {
+        if (
+          Math.round(nextW) === Math.round(prev.w) &&
+          Math.round(nextH) === Math.round(prev.h)
+        ) {
+          return prev; // identity unchanged → React bails out, no re-render
+        }
+        return { w: nextW, h: nextH };
+      });
     });
     observer.observe(containerRef.current);
-    return () => observer.disconnect();
-  }, [image, width, maxHeight, displaySize.w, displaySize.h]);
+    return () => {
+      mounted = false;
+      observer.disconnect();
+    };
+  }, [image, width, maxHeight]);
 
   // Canvas rendering failed — show original image with overlay notice
   if (canvasRenderError && !usePreRendered) {
@@ -606,6 +620,12 @@ export default function MemeRenderer({
       <canvas
         ref={canvasRef}
         className="rounded-lg max-w-full"
+        role="img"
+        aria-label={
+          showTranslation && segments.length > 0
+            ? "Meme image with translated text overlay"
+            : "Meme image"
+        }
         style={{
           display: !usePreRendered && displaySize.w > 0 ? "block" : "none",
         }}

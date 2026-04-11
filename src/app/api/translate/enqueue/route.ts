@@ -26,8 +26,15 @@ const enqueueSchema = z.object({
   targetLanguages: z.array(z.enum(TRANSLATE_LANGUAGES)).min(1).max(7),
 });
 
-// Don't re-enqueue if a PROCESSING row is less than this old
-const IN_FLIGHT_WINDOW_MS = 5 * 60 * 1000;
+// Don't re-enqueue if a PROCESSING row is less than this old. Must be
+// STRICTLY smaller than the worker maxDuration (300s) so we never interrupt
+// a worker that's still actively running. 4 minutes leaves 1-minute buffer.
+const IN_FLIGHT_WINDOW_MS = 4 * 60 * 1000;
+
+// QStash enforces a 2 MB payload limit. Our body is tiny (4 short strings +
+// a UUID) so we're nowhere near the limit, but guard defensively so a future
+// field addition surfaces immediately instead of failing at publish time.
+const QSTASH_MAX_PAYLOAD_BYTES = 1.5 * 1024 * 1024;
 
 export async function POST(request: NextRequest) {
   try {
@@ -66,49 +73,58 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
 
-    const isAdmin = (user as unknown as { role?: string }).role === "ADMIN";
+    const isAdmin = user.role === "ADMIN" || user.role === "SUPER_ADMIN";
     if (post.authorId !== user.id && !isAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const queued: Array<{ targetLanguage: string; payloadId: string; messageId: string | null }> = [];
-    const skipped: Array<{ targetLanguage: string; reason: string; error?: string }> = [];
-    const inFlight: Array<{ targetLanguage: string; payloadId: string }> = [];
+    type QueuedEntry = { targetLanguage: string; payloadId: string; messageId: string | null };
+    type SkippedEntry = { targetLanguage: string; reason: string; error?: string };
+    type InFlightEntry = { targetLanguage: string; payloadId: string };
 
-    for (const targetLang of targetLanguages) {
-      if (targetLang === sourceLanguage) {
-        skipped.push({ targetLanguage: targetLang, reason: "same as source" });
-        continue;
-      }
+    // Phase 1: Create all payload rows + flip post status in a single
+    // transaction. If anything throws here, Prisma rolls back — we never
+    // leave orphan PROCESSING rows on the table.
+    type PlannedJob = {
+      targetLang: string;
+      payloadId: string;
+    };
 
-      // Find latest payload for this (postId, targetLang)
-      const latest = await prisma.translationPayload.findFirst({
-        where: { postId, targetLanguage: targetLang as LanguageCode },
-        orderBy: { version: "desc" },
-        select: { id: true, status: true, version: true, updatedAt: true },
-      });
+    const planResult = await prisma.$transaction(async (tx) => {
+      const planned: PlannedJob[] = [];
+      const skippedIn: SkippedEntry[] = [];
+      const inFlightIn: InFlightEntry[] = [];
 
-      // Already completed — skip
-      if (latest && (latest.status === "COMPLETED" || latest.status === "APPROVED")) {
-        skipped.push({ targetLanguage: targetLang, reason: "already completed" });
-        continue;
-      }
+      for (const targetLang of targetLanguages) {
+        if (targetLang === sourceLanguage) {
+          skippedIn.push({ targetLanguage: targetLang, reason: "same as source" });
+          continue;
+        }
 
-      // Currently in-flight — skip
-      if (
-        latest &&
-        latest.status === "PROCESSING" &&
-        Date.now() - latest.updatedAt.getTime() < IN_FLIGHT_WINDOW_MS
-      ) {
-        inFlight.push({ targetLanguage: targetLang, payloadId: latest.id });
-        continue;
-      }
+        const latest = await tx.translationPayload.findFirst({
+          where: { postId, targetLanguage: targetLang as LanguageCode },
+          orderBy: { version: "desc" },
+          select: { id: true, status: true, version: true, updatedAt: true },
+        });
 
-      // Create a new PROCESSING payload row
-      const nextVersion = (latest?.version ?? 0) + 1;
-      let newPayload;
-      try {
-        newPayload = await prisma.translationPayload.create({
+        // Already completed — skip
+        if (latest && (latest.status === "COMPLETED" || latest.status === "APPROVED")) {
+          skippedIn.push({ targetLanguage: targetLang, reason: "already completed" });
+          continue;
+        }
+
+        // Currently in-flight — skip
+        if (
+          latest &&
+          latest.status === "PROCESSING" &&
+          Date.now() - latest.updatedAt.getTime() < IN_FLIGHT_WINDOW_MS
+        ) {
+          inFlightIn.push({ targetLanguage: targetLang, payloadId: latest.id });
+          continue;
+        }
+
+        const nextVersion = (latest?.version ?? 0) + 1;
+        const newPayload = await tx.translationPayload.create({
           data: {
             postId,
             sourceLanguage: sourceLanguage as LanguageCode,
@@ -118,42 +134,75 @@ export async function POST(request: NextRequest) {
             creatorType: "AI",
             creatorId: null,
           },
+          select: { id: true },
         });
-      } catch (createErr) {
-        console.error(`[Enqueue] Failed to create payload for ${targetLang}:`, createErr);
-        skipped.push({ targetLanguage: targetLang, reason: "DB create failed" });
+
+        planned.push({ targetLang, payloadId: newPayload.id });
+      }
+
+      // Flip post status to PROCESSING inside the same transaction so any
+      // reader sees a consistent view.
+      if (planned.length > 0 && post.status !== "PROCESSING") {
+        await tx.post.update({
+          where: { id: postId },
+          data: { status: "PROCESSING" },
+        });
+      }
+
+      return { planned, skipped: skippedIn, inFlight: inFlightIn };
+    });
+
+    const queued: QueuedEntry[] = [];
+    const skipped: SkippedEntry[] = [...planResult.skipped];
+    const inFlight: InFlightEntry[] = [...planResult.inFlight];
+
+    // Phase 2: Publish the QStash jobs OUTSIDE the transaction. Network calls
+    // must never live inside Prisma transactions (would lock the row). On
+    // failure we surgically mark that single payload as REJECTED without
+    // touching the rest.
+    for (const job of planResult.planned) {
+      const jobBody = {
+        postId,
+        sourceLanguage,
+        targetLanguage: job.targetLang,
+        payloadId: job.payloadId,
+      };
+
+      // Safety guard against future payload bloat
+      const bodySize = Buffer.byteLength(JSON.stringify(jobBody), "utf8");
+      if (bodySize > QSTASH_MAX_PAYLOAD_BYTES) {
+        await prisma.translationPayload
+          .update({ where: { id: job.payloadId }, data: { status: "REJECTED" } })
+          .catch((e) => console.warn("[Enqueue] Mark REJECTED failed:", e));
+        skipped.push({
+          targetLanguage: job.targetLang,
+          reason: "payload too large for QStash",
+          error: `${bodySize} bytes`,
+        });
         continue;
       }
 
-      // Publish QStash job
       try {
-        const messageId = await publishTranslationJob({
-          postId,
-          sourceLanguage,
-          targetLanguage: targetLang,
-          payloadId: newPayload.id,
-        });
+        const messageId = await publishTranslationJob(jobBody);
         queued.push({
-          targetLanguage: targetLang,
-          payloadId: newPayload.id,
+          targetLanguage: job.targetLang,
+          payloadId: job.payloadId,
           messageId,
         });
       } catch (pubErr) {
         const errMsg = pubErr instanceof Error ? pubErr.message : String(pubErr);
-        console.error(`[Enqueue] QStash publish failed for ${targetLang}:`, errMsg, pubErr);
-        // Mark payload as REJECTED so it doesn't block future enqueues
+        console.error(`[Enqueue] QStash publish failed for ${job.targetLang}:`, errMsg);
+        // Mark payload as REJECTED so it doesn't block future enqueues.
+        // Errors here are logged, not swallowed.
         await prisma.translationPayload
-          .update({ where: { id: newPayload.id }, data: { status: "REJECTED" } })
-          .catch(() => {});
-        skipped.push({ targetLanguage: targetLang, reason: "QStash publish failed", error: errMsg });
+          .update({ where: { id: job.payloadId }, data: { status: "REJECTED" } })
+          .catch((e) => console.warn("[Enqueue] Mark REJECTED failed:", e));
+        skipped.push({
+          targetLanguage: job.targetLang,
+          reason: "QStash publish failed",
+          error: errMsg,
+        });
       }
-    }
-
-    // Flip post status to PROCESSING if any new jobs were queued
-    if (queued.length > 0 && post.status !== "PROCESSING") {
-      await prisma.post
-        .update({ where: { id: postId }, data: { status: "PROCESSING" } })
-        .catch(() => {});
     }
 
     return NextResponse.json({

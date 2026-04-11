@@ -821,6 +821,14 @@ const ar: Record<TranslationKeys, string> = {
   "community.categoryPolitics": "سياسة",
   "community.selectCategory": "الفئة",
   "community.clearFilters": "مسح الفلاتر",
+
+  // ── Global translation indicator ───────────────────────────────────────────
+  "translation.inProgress": "جاري الترجمة…",
+  "translation.starting": "جاري تحضير الترجمة…",
+  "translation.postsCountSingular": "منشور",
+  "translation.postsCountPlural": "منشورات",
+  "translation.failedShort": "فشل",
+  "translation.defaultTitle": "منشور",
 } as const;
 
 export default ar;
