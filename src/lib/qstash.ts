@@ -57,7 +57,8 @@ export async function publishTranslationJob(body: TranslationJobPayload): Promis
       retries: 2,
       // Native dedupe — if the same payloadId is published twice within
       // the QStash dedupe window, the second one is discarded.
-      deduplicationId: `translate:${body.payloadId}`,
+      // NOTE: QStash (US region) rejects ":" in deduplicationId, use "_" instead.
+      deduplicationId: `translate_${body.payloadId}`,
     });
     return (result as { messageId?: string })?.messageId || null;
   } catch (err) {
