@@ -52,10 +52,15 @@ export async function POST(
       return NextResponse.json({ error: "No image found" }, { status: 404 });
     }
 
-    // Get all translation payloads with segments
+    // Get all translation payloads with segments. Cap at 7 (one per
+    // supported target language) so a post with historical versions
+    // doesn't multiply memory usage — each payload holds a decoded image
+    // buffer during composition.
     const payloads = await prisma.translationPayload.findMany({
       where: { postId, status: { in: ["COMPLETED", "APPROVED"] } },
       include: { segments: true },
+      orderBy: { version: "desc" },
+      take: 7,
     });
 
     if (payloads.length === 0) {

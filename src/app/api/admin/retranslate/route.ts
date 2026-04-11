@@ -1,9 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { getSessionUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { LanguageCode } from "@prisma/client";
 
 const VALID_LANGUAGES: LanguageCode[] = ["ko", "en", "ja", "zh", "es", "hi", "ar"];
+
+const retranslateSchema = z.object({
+  targetLanguages: z
+    .array(z.enum(["ko", "en", "ja", "zh", "es", "hi", "ar"]))
+    .min(1)
+    .max(7),
+  postsPageLimit: z.number().int().min(1).max(500).optional(),
+});
 
 export const maxDuration = 60;
 
@@ -32,28 +41,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const body = await request.json();
-    const { targetLanguages }: { targetLanguages: string[] } = body;
-    const pageLimit = Math.min(
-      MAX_PAGE_LIMIT,
-      Math.max(1, Number(body?.postsPageLimit) || DEFAULT_PAGE_LIMIT)
-    );
-
-    if (!targetLanguages || !Array.isArray(targetLanguages) || targetLanguages.length === 0) {
+    const rawBody = await request.json();
+    const parsed = retranslateSchema.safeParse(rawBody);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "targetLanguages is required (array of language codes)" },
+        {
+          error: "Validation failed",
+          details: parsed.error.flatten().fieldErrors,
+        },
         { status: 400 }
       );
     }
 
-    for (const lang of targetLanguages) {
-      if (!VALID_LANGUAGES.includes(lang as LanguageCode)) {
-        return NextResponse.json(
-          { error: `Invalid language code: ${lang}` },
-          { status: 400 }
-        );
-      }
-    }
+    const { targetLanguages } = parsed.data;
+    const pageLimit = parsed.data.postsPageLimit ?? DEFAULT_PAGE_LIMIT;
+
+    // Zod already guarantees every code is in VALID_LANGUAGES, but we keep
+    // this constant around because the `langCodes as LanguageCode[]` assignment
+    // below is the narrowest typed view the Prisma query needs.
+    void VALID_LANGUAGES;
 
     const langCodes = targetLanguages as LanguageCode[];
 

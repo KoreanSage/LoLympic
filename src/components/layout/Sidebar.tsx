@@ -167,7 +167,13 @@ export default function Sidebar() {
   const [myCountryInTop5, setMyCountryInTop5] = useState(false);
   const [uploadStreak, setUploadStreak] = useState<number>(0);
   const [championshipPhase, setChampionshipPhase] = useState<string | null>(null);
-  const [championshipYear, setChampionshipYear] = useState<number>(new Date().getFullYear());
+  // Initialize to 0 for SSR-safe rendering; the real year is set in an
+  // effect below so the server and client render identical markup on first
+  // paint, avoiding React hydration warnings around year boundary edge cases.
+  const [championshipYear, setChampionshipYear] = useState<number>(0);
+  useEffect(() => {
+    setChampionshipYear(new Date().getFullYear());
+  }, []);
 
   // Initialize preferredLang from localStorage, then fall back to session
   useEffect(() => {

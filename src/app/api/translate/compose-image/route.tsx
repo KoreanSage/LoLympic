@@ -52,14 +52,59 @@ async function fetchGoogleFont(
 // ----------------------------------------------------------------------
 // POST /api/translate/compose-image
 // ----------------------------------------------------------------------
+// Max dimensions we'll accept. Satori allocates width×height×4 bytes for
+// the raster buffer, so a 10000×10000 request would try to allocate 400MB
+// and OOM the edge runtime. Cap at 4096² ≈ 64MB.
+const MAX_DIMENSION = 4096;
+// Max request body size accepted before we reject (defensive; the platform
+// caps it too but this gives a clean 413 instead of a platform error).
+const MAX_REQUEST_BODY_BYTES = 5 * 1024 * 1024; // 5 MB
+
 export async function POST(req: NextRequest) {
   try {
+    // Reject oversized request bodies before we pay the parse cost.
+    const contentLengthHeader = req.headers.get("content-length");
+    const contentLength = contentLengthHeader ? parseInt(contentLengthHeader, 10) : 0;
+    if (contentLength > MAX_REQUEST_BODY_BYTES) {
+      return new Response(
+        JSON.stringify({ error: "Request body too large" }),
+        { status: 413, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
     const { cleanUrl, segments, width, height, targetLanguage } =
       await req.json();
 
     if (!cleanUrl || !segments || !width || !height) {
       return new Response(
         JSON.stringify({ error: "Missing required fields" }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    if (
+      typeof width !== "number" || typeof height !== "number" ||
+      width <= 0 || height <= 0 ||
+      width > MAX_DIMENSION || height > MAX_DIMENSION
+    ) {
+      return new Response(
+        JSON.stringify({ error: `Invalid dimensions (must be 1..${MAX_DIMENSION})` }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!Array.isArray(segments) || segments.length > 100) {
+      return new Response(
+        JSON.stringify({ error: "segments must be an array with at most 100 items" }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    // Reject data: URLs that would let a client upload a base64 image
+    // directly inside the JSON body (sidesteps content-length guard above).
+    if (typeof cleanUrl !== "string" || cleanUrl.startsWith("data:")) {
+      return new Response(
+        JSON.stringify({ error: "cleanUrl must be an http(s) URL" }),
         { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }

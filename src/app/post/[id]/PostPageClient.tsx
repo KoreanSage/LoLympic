@@ -229,6 +229,13 @@ export default function PostPageClient() {
   // Poll translation status while async jobs are in flight.
   // Starts when the post is PROCESSING or has any PROCESSING payload;
   // stops when everything is settled or after 5 minutes.
+  //
+  // CORRECTNESS NOTES:
+  //  - An `inFlight` flag prevents overlapping requests if a single poll()
+  //    takes longer than the 2.5s interval (slow network, cold start).
+  //  - An AbortController cancels the in-flight fetch on unmount/deps
+  //    change so the stale response can't call setState on a dead effect.
+  //  - stopPolling() runs BEFORE the settle refetch so no tick races us.
   useEffect(() => {
     if (!post) return;
     const hasInFlight =
@@ -240,6 +247,8 @@ export default function PostPageClient() {
     let ticks = 0;
     const MAX_TICKS = 120; // 2.5s × 120 = 5 minutes
     let intervalHandle: number | null = null;
+    let pollInFlight = false;
+    const controller = new AbortController();
 
     const stopPolling = () => {
       if (intervalHandle !== null) {
@@ -250,6 +259,9 @@ export default function PostPageClient() {
 
     const poll = async () => {
       if (cancelled) return;
+      // Drop this tick if the previous poll is still in flight — prevents
+      // fan-out when /translation-status takes >2.5s on a cold function.
+      if (pollInFlight) return;
       // Hard stop on timeout — clear interval so no more ticks fire.
       if (ticks >= MAX_TICKS) {
         setPollTimedOut(true);
@@ -262,8 +274,11 @@ export default function PostPageClient() {
       if (typeof document !== "undefined" && document.visibilityState === "hidden") {
         return;
       }
+      pollInFlight = true;
       try {
-        const r = await fetch(`/api/posts/${id}/translation-status`);
+        const r = await fetch(`/api/posts/${id}/translation-status`, {
+          signal: controller.signal,
+        });
         if (!r.ok) return;
         const data = (await r.json()) as TranslationStatusResponse;
         if (cancelled) return;
@@ -273,13 +288,16 @@ export default function PostPageClient() {
           // All jobs settled — stop polling FIRST so no more ticks race us,
           // then refetch the full post to pick up new translations.
           stopPolling();
-          const fresh = await fetch(`/api/posts/${id}?lang=${preferredLang}`).then((r) =>
-            r.ok ? r.json() : null
-          );
+          const fresh = await fetch(`/api/posts/${id}?lang=${preferredLang}`, {
+            signal: controller.signal,
+          }).then((r) => (r.ok ? r.json() : null));
           if (!cancelled && fresh) setPost(fresh);
         }
-      } catch {
-        // Swallow transient network errors — next tick will retry.
+      } catch (err) {
+        // AbortError on unmount is expected; other network errors retry.
+        if ((err as { name?: string })?.name === "AbortError") return;
+      } finally {
+        pollInFlight = false;
       }
     };
 
@@ -290,6 +308,7 @@ export default function PostPageClient() {
     return () => {
       cancelled = true;
       stopPolling();
+      controller.abort();
     };
   }, [post?.id, post?.status, id, preferredLang]);
 

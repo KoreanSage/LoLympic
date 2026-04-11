@@ -15,7 +15,11 @@ export async function GET(
     const { id: conversationId } = await params;
     const { searchParams } = new URL(request.url);
     const cursor = searchParams.get("cursor");
-    const limit = Math.min(parseInt(searchParams.get("limit") || "30"), 50);
+    const parsedLimit = parseInt(searchParams.get("limit") || "30", 10);
+    const limit = Math.min(
+      50,
+      Math.max(1, Number.isFinite(parsedLimit) ? parsedLimit : 30)
+    );
 
     // Verify user is a participant
     const participant = await prisma.conversationParticipant.findUnique({
