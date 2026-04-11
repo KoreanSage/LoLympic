@@ -526,15 +526,28 @@ export default function MemeRenderer({
         }
       });
 
-      Promise.all(loadPromises)
-        .then(() => document.fonts.ready)
-        .then(() => render())
-        .catch(() => render());
+      // Cancellation guard: rapid prop changes cause this effect to rerun;
+      // stale resolved promises must not call render() on the next generation.
+      let cancelled = false;
+      (async () => {
+        try {
+          await Promise.all(loadPromises);
+          await document.fonts.ready;
+        } catch {
+          // fall through — render best-effort with whatever loaded
+        }
+        if (!cancelled) render();
+      })();
 
       // Also re-render when any font finishes loading (catches late-arriving subsets)
-      const onFontLoad = () => render();
+      const onFontLoad = () => {
+        if (!cancelled) render();
+      };
       document.fonts.addEventListener("loadingdone", onFontLoad);
-      return () => document.fonts.removeEventListener("loadingdone", onFontLoad);
+      return () => {
+        cancelled = true;
+        document.fonts.removeEventListener("loadingdone", onFontLoad);
+      };
     } else {
       render();
     }

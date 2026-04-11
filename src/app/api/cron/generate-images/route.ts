@@ -188,7 +188,11 @@ export async function GET(request: NextRequest) {
   }
 
   const { searchParams } = new URL(request.url);
-  const limit = Math.min(parseInt(searchParams.get("limit") || "1"), 5);
+  const parsedLimit = parseInt(searchParams.get("limit") || "1", 10);
+  const limit = Math.min(
+    5,
+    Math.max(1, Number.isFinite(parsedLimit) ? parsedLimit : 1)
+  );
 
   try {
     const payloads = await prisma.translationPayload.findMany({
