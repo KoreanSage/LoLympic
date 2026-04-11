@@ -366,6 +366,12 @@ export default function UploadStudio() {
                 targetLanguages: targetLangs.map((l) => l.code),
               }),
             });
+            // Register post in the global translation tracker so the floating
+            // indicator shows progress across pages until all languages settle.
+            try {
+              const { addTrackedPost } = await import("@/lib/translation-tracker");
+              addTrackedPost(postId!, title.trim() || undefined);
+            } catch {}
             // Mark all languages as queued — the post page takes over from here
             setProgress((p) => {
               if (!p) return p;

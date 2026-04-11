@@ -722,32 +722,80 @@ export async function generateTranslatedImageForPayload(
     // 4a. For Arabic: use Sharp-based image-composer (Satori can't handle Arabic ligatures)
     if (targetLanguage === "ar") {
       const { composeTranslatedImage } = await import("@/lib/image-composer");
-      const composerSegments = segments
-        .filter(s => s.semanticRole !== "WATERMARK" && s.translatedText?.trim() && (!isMultiImage || (s.imageIndex ?? 0) === 0))
-        .map(s => ({
-          translatedText: s.translatedText,
-          boxX: s.boxX,
-          boxY: s.boxY,
-          boxWidth: s.boxWidth,
-          boxHeight: s.boxHeight,
-          fontFamily: s.fontFamily,
-          fontWeight: s.fontWeight,
-          fontSizePixels: s.fontSizePixels,
-          color: s.color,
-          textAlign: s.textAlign,
-          strokeColor: s.strokeColor,
-          strokeWidth: s.strokeWidth,
-          isUppercase: s.isUppercase,
-          semanticRole: s.semanticRole,
-        }));
-      if (composerSegments.length === 0) return;
-
-      const composedRaw = await composeTranslatedImage(Buffer.from(cleanBuffer), composerSegments, { watermark: false });
       const sharpMod = (await import("sharp")).default;
-      const composedBuffer = await sharpMod(composedRaw).webp({ quality: 70 }).toBuffer();
-      const url = await saveGeneratedImage(composedBuffer, `translated_sharp_${targetLanguage}`, ".webp");
-      await prisma.translationPayload.update({ where: { id: payloadId }, data: { translatedImageUrl: url } });
-      console.debug(`[Sharp] Arabic translated image saved for payload ${payloadId}: ${url}`);
+
+      // Helper: render ONE image by index, return saved URL (or "")
+      const renderArabicImage = async (imgIdx: number, baseBuffer: Buffer): Promise<string> => {
+        try {
+          const imgSegs = segments.filter(
+            (s) => (s.imageIndex ?? 0) === imgIdx && s.semanticRole !== "WATERMARK" && s.translatedText?.trim()
+          );
+          if (imgSegs.length === 0) return "";
+
+          const composerSegments = imgSegs.map((s) => ({
+            translatedText: s.translatedText,
+            boxX: s.boxX,
+            boxY: s.boxY,
+            boxWidth: s.boxWidth,
+            boxHeight: s.boxHeight,
+            fontFamily: s.fontFamily,
+            fontWeight: s.fontWeight,
+            fontSizePixels: s.fontSizePixels,
+            color: s.color,
+            textAlign: s.textAlign,
+            strokeColor: s.strokeColor,
+            strokeWidth: s.strokeWidth,
+            isUppercase: s.isUppercase,
+            semanticRole: s.semanticRole,
+          }));
+
+          const composedRaw = await composeTranslatedImage(baseBuffer, composerSegments, { watermark: false });
+          const composedBuffer = await sharpMod(composedRaw).webp({ quality: 70 }).toBuffer();
+          const url = await saveGeneratedImage(
+            composedBuffer,
+            `translated_sharp_${targetLanguage}_img${imgIdx}`,
+            ".webp"
+          );
+          console.debug(`[Sharp/ar] Image ${imgIdx} translated for payload ${payloadId}: ${url}`);
+          return url;
+        } catch (err) {
+          console.error(`[Sharp/ar] Image ${imgIdx} failed:`, err);
+          return "";
+        }
+      };
+
+      // Render first image (we already have its cleanBuffer)
+      const firstUrl = await renderArabicImage(0, Buffer.from(cleanBuffer));
+
+      const updateData: Record<string, unknown> = {};
+      if (firstUrl) updateData.translatedImageUrl = firstUrl;
+
+      // Render remaining images in parallel for multi-image posts
+      if (isMultiImage) {
+        const remainingIndices = Array.from({ length: postImages.length - 1 }, (_, i) => i + 1);
+        const remainingResults = await Promise.all(
+          remainingIndices.map(async (imgIdx) => {
+            try {
+              const img = postImages[imgIdx];
+              const imgBaseUrl = img.cleanUrl || img.originalUrl;
+              if (!imgBaseUrl) return "";
+              const resolvedImgUrl = imgBaseUrl.startsWith("http") ? imgBaseUrl : `${appUrl}${imgBaseUrl}`;
+              const imgRes = await fetch(resolvedImgUrl);
+              if (!imgRes.ok) return "";
+              const imgBuffer = Buffer.from(await imgRes.arrayBuffer());
+              return await renderArabicImage(imgIdx, imgBuffer);
+            } catch (err) {
+              console.error(`[Sharp/ar] Fetch failed for image ${imgIdx}:`, err);
+              return "";
+            }
+          })
+        );
+        updateData.translatedImageUrls = [firstUrl, ...remainingResults];
+      }
+
+      if (Object.keys(updateData).length > 0) {
+        await prisma.translationPayload.update({ where: { id: payloadId }, data: updateData });
+      }
       return;
     }
 
