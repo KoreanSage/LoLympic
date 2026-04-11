@@ -234,7 +234,10 @@ async function runTranslationForLanguage(opts: {
         memeType = cachedTarget.memeType ?? englishAnalysis.memeType;
         cultureNote = cachedTarget.cultureNote || null;
       } else {
-        // Run flash-lite segment re-translation
+        // Run flash-lite segment re-translation. CRITICAL: do NOT include the
+        // original source text in the prompt — at low temperature flash-lite
+        // tends to paraphrase the source back instead of translating to the
+        // target language (e.g. Japanese prompt → Korean output bug).
         const targetLangInstruction =
           LANGUAGE_INSTRUCTIONS[targetLanguage] || `Target language: ${targetLanguage}`;
         const targetLangName = targetLangInstruction.split(":")[0] || targetLanguage;
@@ -249,16 +252,17 @@ async function runTranslationForLanguage(opts: {
           },
         });
 
-        const pivotRef = `\nOriginal source texts: ${englishAnalysis.segments
-          .map((s) => `"${s.sourceText}"`)
-          .join(", ")}`;
+        // Build the prompt without any non-English text to avoid language drift
+        const buildPrompt = (extraGuard = "") => `You are a professional translator for mimzy, a global meme platform.
 
-        const segTranslateResult = await liteModel.generateContent(
-          `You are translating meme text for mimzy, a global meme platform.
 ${targetLangInstruction}
 
-Translate each of the following English meme texts to ${targetLangName}. Keep the humor, tone, and cultural adaptation. Match the original meme energy — short, punchy, native-feeling.
-${pivotRef}
+TASK: Translate each English meme text below to ${targetLangName}.
+CRITICAL RULES:
+- Output MUST be in ${targetLangName} only. Do NOT output Korean, English, or any other language.
+- Keep the humor, tone, and cultural adaptation. Short, punchy, native-feeling.
+- Preserve the array order — one output per input.
+${extraGuard}
 
 English texts to translate:
 ${segmentTexts.map((t, i) => `${i + 1}. "${t}"`).join("\n")}
@@ -269,39 +273,83 @@ Return JSON only (no markdown fences):
 {
   "translations": ["translated text 1", "translated text 2", ...],
   "cultureNote": { "summary": "...", "explanation": "..." }
-}`
-        );
+}`;
 
-        const segText = segTranslateResult.response.text();
-        if (segText) {
-          const segParsed = JSON.parse(stripMarkdownFences(segText)) as {
-            translations: string[];
-            cultureNote?: CultureNoteResponse;
-          };
+        // Helper: detect if output accidentally came back in the source language
+        // instead of the target (e.g. Korean output for a Japanese target).
+        const looksWrongLanguage = (text: string): boolean => {
+          if (!text || !text.trim()) return false;
+          const hasHangul = /[\uAC00-\uD7AF]/.test(text);
+          const hasHiragana = /[\u3040-\u309F]/.test(text);
+          const hasKatakana = /[\u30A0-\u30FF]/.test(text);
+          const hasCJKExt = /[\u4E00-\u9FFF]/.test(text);
+          const hasArabic = /[\u0600-\u06FF]/.test(text);
+          const hasCyrillic = /[\u0400-\u04FF]/.test(text);
+          // Korean script in a non-Korean target is the main bug
+          if (targetLanguage !== "ko" && hasHangul) return true;
+          // Arabic script in a non-Arabic target
+          if (targetLanguage !== "ar" && hasArabic) return true;
+          // Japanese target should have at least some kana OR CJK
+          if (targetLanguage === "ja" && !hasHiragana && !hasKatakana && !hasCJKExt && /[a-zA-Z]/.test(text) === false) return true;
+          return false;
+        };
 
-          if (Array.isArray(segParsed.translations)) {
-            for (let i = 0; i < englishAnalysis.segments.length; i++) {
-              const enSeg = englishAnalysis.segments[i];
-              allSegments.push({
-                sourceText: enSeg.sourceText,
-                translatedText: segParsed.translations[i] || enSeg.translatedText,
-                semanticRole: enSeg.semanticRole,
-                box: enSeg.box,
-                style: enSeg.style,
-                imageIndex: enSeg.imageIndex,
-              });
+        let segParsed: { translations: string[]; cultureNote?: CultureNoteResponse } | null = null;
+        let attempt = 0;
+        const MAX_ATTEMPTS = 2;
+        while (attempt < MAX_ATTEMPTS && !segParsed) {
+          attempt++;
+          try {
+            const extraGuard = attempt > 1
+              ? `- Previous attempt returned the WRONG language. You MUST output in ${targetLangName} this time.`
+              : "";
+            const result = await liteModel.generateContent(buildPrompt(extraGuard));
+            const text = result.response.text();
+            if (!text) continue;
+            const parsed = JSON.parse(stripMarkdownFences(text)) as {
+              translations: string[];
+              cultureNote?: CultureNoteResponse;
+            };
+            if (!Array.isArray(parsed.translations)) continue;
+            // Check if any translation came back in the wrong language
+            const wrongLang = parsed.translations.some((t) => looksWrongLanguage(t));
+            if (wrongLang && attempt < MAX_ATTEMPTS) {
+              console.warn(`[Worker] ${targetLanguage} output in wrong language, retrying (attempt ${attempt})`);
+              continue;
             }
-            confidence = englishAnalysis.confidence ?? 0.85;
-            memeType = englishAnalysis.memeType ?? "A";
-            cultureNote = segParsed.cultureNote || null;
-
-            setCachedTranslation(postId, targetLanguage, {
-              memeType: memeType || "A",
-              segments: allSegments.map((s) => ({ ...s })),
-              cultureNote: segParsed.cultureNote || { summary: "", explanation: "" },
-              confidence,
-            }).catch((err) => console.warn("[Worker] Failed to cache:", err));
+            segParsed = parsed;
+          } catch (err) {
+            console.warn(`[Worker] Phase 2 attempt ${attempt} failed:`, err);
           }
+        }
+
+        if (segParsed && Array.isArray(segParsed.translations)) {
+          for (let i = 0; i < englishAnalysis.segments.length; i++) {
+            const enSeg = englishAnalysis.segments[i];
+            const translation = segParsed.translations[i];
+            // If still wrong language after retries, fall back to English
+            const finalText = translation && !looksWrongLanguage(translation)
+              ? translation
+              : enSeg.translatedText;
+            allSegments.push({
+              sourceText: enSeg.sourceText,
+              translatedText: finalText,
+              semanticRole: enSeg.semanticRole,
+              box: enSeg.box,
+              style: enSeg.style,
+              imageIndex: enSeg.imageIndex,
+            });
+          }
+          confidence = englishAnalysis.confidence ?? 0.85;
+          memeType = englishAnalysis.memeType ?? "A";
+          cultureNote = segParsed.cultureNote || null;
+
+          setCachedTranslation(postId, targetLanguage, {
+            memeType: memeType || "A",
+            segments: allSegments.map((s) => ({ ...s })),
+            cultureNote: segParsed.cultureNote || { summary: "", explanation: "" },
+            confidence,
+          }).catch((err) => console.warn("[Worker] Failed to cache:", err));
         }
       }
     }

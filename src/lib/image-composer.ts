@@ -65,9 +65,13 @@ function estimateFontSize(
 ): number {
   if (!text) return 14;
 
-  // Check if CJK
+  // Character width ratio by script:
+  //   CJK (Chinese, Japanese, Korean): ~1.0 (square glyphs)
+  //   Arabic: ~0.55 (connected ligatures, avg narrower than Latin caps but with marks)
+  //   Latin: ~0.58
   const hasCJK = /[\u4e00-\u9fff\uac00-\ud7af\u3040-\u30ff]/.test(text);
-  const charWidthRatio = hasCJK ? 1.0 : 0.58;
+  const hasArabic = /[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]/.test(text);
+  const charWidthRatio = hasCJK ? 1.0 : (hasArabic ? 0.55 : 0.58);
 
   // Ignore originalSize if it's too small relative to the box —
   // Gemini often returns tiny font sizes based on source image
@@ -90,8 +94,15 @@ function estimateFontSize(
     size = Math.floor(size * scale);
   }
 
-  // Clamp — minimum 16px for readability
-  return Math.max(16, Math.min(size, 120));
+  // Extra safety margin for Arabic — shaping can make text slightly wider
+  // than pure char-count estimation, so downscale by 8% to avoid right-side
+  // truncation.
+  if (hasArabic) {
+    size = Math.floor(size * 0.92);
+  }
+
+  // Clamp — minimum 14px for readability
+  return Math.max(14, Math.min(size, 120));
 }
 
 /**
@@ -104,8 +115,12 @@ function wrapText(
   fontSize: number,
 ): string[] {
   const hasCJK = /[\u4e00-\u9fff\uac00-\ud7af\u3040-\u30ff]/.test(text);
-  const charWidth = fontSize * (hasCJK ? 1.0 : 0.58);
-  const maxChars = Math.max(1, Math.floor(maxWidthPx / charWidth));
+  const hasArabic = /[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]/.test(text);
+  const charWidth = fontSize * (hasCJK ? 1.0 : (hasArabic ? 0.55 : 0.58));
+  // Safety margin: reserve ~10% of box width so words don't touch the edges
+  // This is critical for Arabic where shaping can make text slightly wider.
+  const effectiveWidth = maxWidthPx * 0.92;
+  const maxChars = Math.max(1, Math.floor(effectiveWidth / charWidth));
 
   if (text.length <= maxChars) return [text];
 
@@ -117,7 +132,7 @@ function wrapText(
       lines.push(text.slice(i, i + maxChars));
     }
   } else {
-    // Word-based wrapping for Latin
+    // Word-based wrapping for Latin and Arabic (both use space-separated words)
     const words = text.split(/\s+/);
     let currentLine = "";
 
@@ -127,7 +142,16 @@ function wrapText(
         currentLine = test;
       } else {
         if (currentLine) lines.push(currentLine);
-        currentLine = word;
+        // If a single word is longer than maxChars, break it to avoid
+        // horizontal overflow (rare for Arabic but defensive).
+        if (word.length > maxChars) {
+          for (let i = 0; i < word.length; i += maxChars) {
+            lines.push(word.slice(i, i + maxChars));
+          }
+          currentLine = "";
+        } else {
+          currentLine = word;
+        }
       }
     }
     if (currentLine) lines.push(currentLine);
