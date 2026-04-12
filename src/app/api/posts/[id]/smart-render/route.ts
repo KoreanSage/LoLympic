@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import sharp from "sharp";
 import crypto from "crypto";
 import { uploadBufferToR2 } from "@/lib/storage";
+import { calculateFontSize } from "@/lib/font-size";
 
 export const maxDuration = 60;
 
@@ -230,17 +231,12 @@ export async function POST(
                 const w = (seg.boxWidth ?? 0) / norm;
                 const h = (seg.boxHeight ?? 0) / norm;
 
-                const boxHeightPx = h * safeH;
-                const boxWidthPx = w * safeW;
-                const baseSize = boxHeightPx * 0.7;
-                const charsPerLine = Math.max(1, Math.floor(boxWidthPx / (baseSize * 0.55)));
-                const textLen = seg.translatedText?.length || 1;
-                const lines = Math.ceil(textLen / charsPerLine);
-                const fontSize = seg.fontSizePixels && seg.fontSizePixels > 8
-                  ? Math.max(12, Math.min(seg.fontSizePixels * 1.1, boxHeightPx * 0.85))
-                  : lines > 1
-                    ? Math.max(12, boxHeightPx / (lines * 1.3))
-                    : Math.max(12, Math.min(baseSize, 72));
+                const fontSize = calculateFontSize({
+                  text: seg.translatedText || "",
+                  boxWidthPx: w * safeW,
+                  boxHeightPx: h * safeH,
+                  originalSizePx: seg.fontSizePixels ?? undefined,
+                });
 
                 const textColor = seg.color || "#FFFFFF";
                 const isLight = textColor.toLowerCase().includes("fff") || textColor === "white";

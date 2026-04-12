@@ -14,6 +14,7 @@
  */
 
 import sharp from "sharp";
+import { calculateFontSize } from "@/lib/font-size";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -52,10 +53,9 @@ function escapeXml(text: string): string {
 }
 
 /**
- * Estimate optimal font size so text fits within the bounding box.
- *
- * Uses a simple heuristic: calculate based on box dimensions and text length.
- * For CJK text, characters are roughly square. For Latin, roughly 0.55x height.
+ * Estimate optimal font size for translated text in the bounding box.
+ * Delegates to the shared `calculateFontSize()` utility which uses a
+ * height-based approach instead of the old character-count scaling.
  */
 function estimateFontSize(
   text: string,
@@ -63,46 +63,12 @@ function estimateFontSize(
   boxHeightPx: number,
   originalSize?: number,
 ): number {
-  if (!text) return 14;
-
-  // Character width ratio by script:
-  //   CJK (Chinese, Japanese, Korean): ~1.0 (square glyphs)
-  //   Arabic: ~0.55 (connected ligatures, avg narrower than Latin caps but with marks)
-  //   Latin: ~0.58
-  const hasCJK = /[\u4e00-\u9fff\uac00-\ud7af\u3040-\u30ff]/.test(text);
-  const hasArabic = /[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]/.test(text);
-  const charWidthRatio = hasCJK ? 1.0 : (hasArabic ? 0.55 : 0.58);
-
-  // Ignore originalSize if it's too small relative to the box —
-  // Gemini often returns tiny font sizes based on source image
-  const minReasonableSize = Math.max(16, Math.floor(boxHeightPx * 0.35));
-  let size = (originalSize && originalSize >= minReasonableSize)
-    ? originalSize
-    : Math.floor(boxHeightPx * 0.65);
-
-  // Estimate how many chars fit per line at this size
-  const charsPerLine = Math.floor(boxWidthPx / (size * charWidthRatio));
-  if (charsPerLine <= 0) return Math.max(16, Math.floor(boxWidthPx * 0.8));
-
-  const lineCount = Math.ceil(text.length / Math.max(1, charsPerLine));
-  const lineHeight = 1.35;
-  const totalHeight = lineCount * size * lineHeight;
-
-  // Scale down if text overflows vertically
-  if (totalHeight > boxHeightPx && boxHeightPx > 0) {
-    const scale = boxHeightPx / totalHeight;
-    size = Math.floor(size * scale);
-  }
-
-  // Extra safety margin for Arabic — shaping can make text slightly wider
-  // than pure char-count estimation, so downscale by 8% to avoid right-side
-  // truncation.
-  if (hasArabic) {
-    size = Math.floor(size * 0.92);
-  }
-
-  // Clamp — minimum 14px for readability
-  return Math.max(14, Math.min(size, 120));
+  return calculateFontSize({
+    text,
+    boxWidthPx,
+    boxHeightPx,
+    originalSizePx: originalSize,
+  });
 }
 
 /**
@@ -117,9 +83,10 @@ function wrapText(
   const hasCJK = /[\u4e00-\u9fff\uac00-\ud7af\u3040-\u30ff]/.test(text);
   const hasArabic = /[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]/.test(text);
   const charWidth = fontSize * (hasCJK ? 1.0 : (hasArabic ? 0.55 : 0.58));
-  // Safety margin: reserve ~10% of box width so words don't touch the edges
-  // This is critical for Arabic where shaping can make text slightly wider.
-  const effectiveWidth = maxWidthPx * 0.92;
+  // Safety margin: reserve ~5% of box width so words don't touch the edges.
+  // Relaxed from 0.92 — the new height-based font sizing produces more
+  // appropriately sized text that doesn't need as much horizontal slack.
+  const effectiveWidth = maxWidthPx * 0.95;
   const maxChars = Math.max(1, Math.floor(effectiveWidth / charWidth));
 
   if (text.length <= maxChars) return [text];

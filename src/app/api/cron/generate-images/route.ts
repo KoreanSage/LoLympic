@@ -5,6 +5,7 @@ import satori from "satori";
 import { Resvg } from "@resvg/resvg-js";
 import crypto from "crypto";
 import { uploadBufferToR2 } from "@/lib/storage";
+import { calculateFontSize } from "@/lib/font-size";
 
 export const maxDuration = 60;
 
@@ -118,8 +119,11 @@ async function composeImage(
           const y = seg.boxY / norm;
           const w = seg.boxWidth / norm;
           const h = seg.boxHeight / norm;
-          const boxHPx = h * safeH;
-          const fontSize = Math.max(8, Math.min(boxHPx * 0.65, 60));
+          const fontSize = calculateFontSize({
+            text: seg.translatedText || "",
+            boxWidthPx: w * safeW,
+            boxHeightPx: h * safeH,
+          });
 
           return {
             type: "div" as const,

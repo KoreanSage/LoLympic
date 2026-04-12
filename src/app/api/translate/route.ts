@@ -18,6 +18,7 @@ import sharp from "sharp";
 import { isR2Configured, uploadBufferToR2 } from "@/lib/storage";
 import { VALID_LANGUAGES } from "@/lib/constants";
 import { translateTitleOrDescription } from "@/lib/title-translation";
+import { calculateFontSize } from "@/lib/font-size";
 // satori and Resvg are imported dynamically where used to reduce cold-start
 
 const TRANSLATE_LANGUAGES = VALID_LANGUAGES;
@@ -830,24 +831,15 @@ export async function generateTranslatedImageForPayload(
             const w = seg.boxWidth / norm;
             const h = seg.boxHeight / norm;
 
-            // Smart font size: use original fontSizePixels if available,
-            // otherwise calculate from box height
-            const boxHeightPx = h * safeH;
-            let fontSize: number;
-            if (seg.fontSizePixels && seg.fontSizePixels > 8) {
-              // Scale original font size proportionally
-              fontSize = Math.max(12, Math.min(seg.fontSizePixels * 1.1, boxHeightPx * 0.85));
-            } else {
-              // Auto-calculate: fill ~70% of box height, adjust for text length
-              const baseSize = boxHeightPx * 0.7;
-              const boxWidthPx = w * safeW;
-              const charsPerLine = Math.max(1, Math.floor(boxWidthPx / (baseSize * 0.55)));
-              const textLen = seg.translatedText?.length || 1;
-              const lines = Math.ceil(textLen / charsPerLine);
-              fontSize = lines > 1
-                ? Math.max(12, boxHeightPx / (lines * 1.3))
-                : Math.max(12, Math.min(baseSize, 72));
-            }
+            // Font size via shared height-based calculator (see src/lib/font-size.ts).
+            // Replaces the old char-count-based formula that aggressively shrank
+            // translations longer than the source English text.
+            const fontSize = calculateFontSize({
+              text: seg.translatedText || "",
+              boxWidthPx: w * safeW,
+              boxHeightPx: h * safeH,
+              originalSizePx: seg.fontSizePixels,
+            });
 
             // Use original text color if available, default to white with stroke
             const textColor = seg.color || "#FFFFFF";
@@ -986,14 +978,12 @@ export async function generateTranslatedImageForPayload(
                   const y = seg.boxY / imgNorm;
                   const w = seg.boxWidth / imgNorm;
                   const h = seg.boxHeight / imgNorm;
-                  const boxHPx = h * imgSafeH;
-                  const boxWPx = w * imgSafeW;
-                  const baseSize = boxHPx * 0.7;
-                  const cpl = Math.max(1, Math.floor(boxWPx / (baseSize * 0.55)));
-                  const lines = Math.ceil((seg.translatedText?.length || 1) / cpl);
-                  const fontSize = seg.fontSizePixels && seg.fontSizePixels > 8
-                    ? Math.max(12, Math.min(seg.fontSizePixels * 1.1, boxHPx * 0.85))
-                    : lines > 1 ? Math.max(12, boxHPx / (lines * 1.3)) : Math.max(12, Math.min(baseSize, 72));
+                  const fontSize = calculateFontSize({
+                    text: seg.translatedText || "",
+                    boxWidthPx: w * imgSafeW,
+                    boxHeightPx: h * imgSafeH,
+                    originalSizePx: seg.fontSizePixels,
+                  });
                   const textColor = seg.color || "#FFFFFF";
                   const isLight = textColor.toLowerCase().includes("fff") || textColor === "white";
                   const stroke = isLight
