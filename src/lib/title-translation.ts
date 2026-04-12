@@ -37,26 +37,22 @@ const LANGUAGE_NAMES: Record<string, string> = {
   ar: "Arabic (العربية)",
 };
 
-/** Unicode ranges that MUST appear at least once in a valid translation for
- * this target language. Languages that share the Latin alphabet (en/es/hi)
- * all require Latin letters.
- *
- * Japanese accepts BOTH kana and CJK ideographs because real Japanese titles
- * can be kanji-only (e.g. "友達", "試験", "家族"). We can't distinguish
- * kanji-only Japanese from Chinese by script alone — the FORBIDDEN_SCRIPTS
- * hangul check below is what actually catches the Korean-echo bug. */
-const REQUIRED_SCRIPT: Record<string, RegExp> = {
-  ko: /[\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F]/, // Hangul
-  ja: /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF\u3400-\u4DBF]/, // kana OR kanji
-  zh: /[\u4E00-\u9FFF\u3400-\u4DBF]/, // CJK unified ideographs
-  ar: /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]/,
-  hi: /[A-Za-z]/,
-  en: /[A-Za-z]/,
-  es: /[A-Za-z]/,
-};
-
 /** Scripts that are INVALID in the target language — if any of these appear,
- * the "translation" is almost certainly the source text bleeding through. */
+ * the "translation" is almost certainly the source text bleeding through.
+ *
+ * This is the SOLE validation strategy. We tried two other checks during
+ * the investigation in #112/#113/#114 — similarity-based echo detection
+ * and required-script validation — and both produced more false positives
+ * than the bug they caught:
+ *
+ *   - similarity detection → rejected legitimate brand names and proper
+ *     nouns ("Google", "LOL", "McDonald's", "64")
+ *   - required-script → rejected valid short Japanese outputs like "Google"
+ *     (JP uses Latin for brand names)
+ *
+ * The forbidden-script check alone catches the real ko→ja echo bug
+ * (hangul in a "Japanese" output) without triggering on legitimate same-
+ * script pairs. See src/lib/title-translation.ts docstring for context. */
 const FORBIDDEN_SCRIPTS: Record<string, RegExp[]> = {
   ja: [/[\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F]/], // no Hangul in Japanese
   ko: [/[\u3040-\u309F\u30A0-\u30FF]/],              // no kana in Korean
@@ -70,53 +66,6 @@ const FORBIDDEN_SCRIPTS: Record<string, RegExp[]> = {
 // ---------------------------------------------------------------------------
 // Validation
 // ---------------------------------------------------------------------------
-
-// Whitespace + common punctuation (ASCII + CJK + quotes). Used to strip
-// "noise" characters before comparing a translation to its source.
-// Avoids the `u`-flag Unicode property classes which require es2018+.
-// eslint-disable-next-line no-useless-escape
-const PUNCT_AND_WS = /[\s!-/:-@\[-`{-~\u00A0-\u00BF\u2000-\u206F\u2E00-\u2E7F\u3000-\u303F\uFF00-\uFFEF]/g;
-
-// Languages that share a script family. Within a family, an "echo" (the
-// translated text being identical to the source) can be legitimate — proper
-// nouns, brand names, numbers, and short internet slang like "LOL" or
-// "Google" or "64" are often genuinely the same across en/es/hi. For these
-// pairs we skip the echo-similarity check and rely on script validation
-// alone. The ACTUAL bug we're fixing (ko→ja returning hangul) always
-// crosses a script boundary, so it's still caught.
-const SCRIPT_FAMILIES: Record<string, string> = {
-  en: "latin",
-  es: "latin",
-  hi: "latin", // Hinglish (Roman)
-  ko: "hangul",
-  ja: "japanese",
-  zh: "han",
-  ar: "arabic",
-};
-function sameScriptFamily(a: string, b: string): boolean {
-  return !!SCRIPT_FAMILIES[a] && SCRIPT_FAMILIES[a] === SCRIPT_FAMILIES[b];
-}
-
-/** Normalise a string for echo comparison: lowercase, strip whitespace and
- * punctuation so minor reformatting doesn't fool the echo check. */
-function normaliseForCompare(s: string): string {
-  return s.toLowerCase().replace(PUNCT_AND_WS, "");
-}
-
-/** Returns a similarity ratio in [0, 1]. 1 = identical after normalisation. */
-function similarity(a: string, b: string): number {
-  const aN = normaliseForCompare(a);
-  const bN = normaliseForCompare(b);
-  if (!aN || !bN) return 0;
-  if (aN === bN) return 1;
-  // Cheap containment: if the shorter normalised form is a substring of the
-  // longer, we treat the ratio as len(short)/len(long). Catches "source with
-  // a prefix like 'Title:'" cases.
-  const shorter = aN.length < bN.length ? aN : bN;
-  const longer = aN.length < bN.length ? bN : aN;
-  if (longer.includes(shorter)) return shorter.length / longer.length;
-  return 0;
-}
 
 /** Strip common wrappings Gemini sometimes adds around its output:
  * surrounding quotes, "Title:" prefix, trailing newlines. */
@@ -137,31 +86,11 @@ export function isValidTranslation(
   const cleaned = stripWrapping(translated);
   if (!cleaned) return false;
 
-  // Forbidden-script check is the SOLE validation. It catches the real
-  // bug (ko→ja returning hangul, en→ko returning kana, etc.) while leaving
-  // legitimate short / brand-name / number translations alone.
-  //
-  // We previously tried:
-  //   - similarity-based echo detection → 60+ false positives on brand
-  //     names, proper nouns, numbers, internet slang ("Google", "LOL",
-  //     "64", "McDonald's", "친구" when a user mis-labelled source lang)
-  //   - required-script validation → rejected valid short Japanese
-  //     outputs like "Google" (JP uses Latin for brand names), and real
-  //     posts where the source text is already in the target script
-  // Both produced more false positives than the bug they were supposed
-  // to catch, so they're gone. If Gemini ever echoes in a way that slips
-  // past the forbidden-script check, we'll add a more targeted signal.
   const forbidden = FORBIDDEN_SCRIPTS[targetLang];
   if (forbidden && forbidden.some((re) => re.test(cleaned))) return false;
 
   return true;
 }
-
-// Helpers below are intentionally left around in case future defences need
-// them, but are currently unused.
-void similarity;
-void sameScriptFamily;
-void REQUIRED_SCRIPT;
 
 // ---------------------------------------------------------------------------
 // Prompts
@@ -186,17 +115,20 @@ function scriptHint(targetLang: string): string {
 
 function buildInitialPrompt(opts: {
   sourceText: string;
-  sourceLanguage: string;
+  sourceLanguage?: string;
   targetLanguage: string;
   kind: "title" | "description";
   englishReference?: string | null;
 }): string {
   const targetName = LANGUAGE_NAMES[opts.targetLanguage] || opts.targetLanguage;
-  const sourceName = LANGUAGE_NAMES[opts.sourceLanguage] || opts.sourceLanguage;
+  const sourceName = opts.sourceLanguage
+    ? LANGUAGE_NAMES[opts.sourceLanguage] || opts.sourceLanguage
+    : null;
+  const fromClause = sourceName ? ` from ${sourceName}` : "";
   const pivot = opts.englishReference
     ? `\n\nEnglish reference (for accuracy): "${opts.englishReference}"`
     : "";
-  return `Translate the following meme ${opts.kind} from ${sourceName} into ${targetName}. Output ONLY the translated text, nothing else. Keep the humor and tone.${scriptHint(opts.targetLanguage)}
+  return `Translate the following meme ${opts.kind}${fromClause} into ${targetName}. Output ONLY the translated text, nothing else. Keep the humor and tone.${scriptHint(opts.targetLanguage)}
 
 ${opts.sourceText}${pivot}`;
 }
@@ -204,14 +136,16 @@ ${opts.sourceText}${pivot}`;
 function buildRetryPrompt(
   opts: {
     sourceText: string;
-    sourceLanguage: string;
+    sourceLanguage?: string;
     targetLanguage: string;
     kind: "title" | "description";
   },
   previousAttempt: string
 ): string {
   const targetName = LANGUAGE_NAMES[opts.targetLanguage] || opts.targetLanguage;
-  const sourceName = LANGUAGE_NAMES[opts.sourceLanguage] || opts.sourceLanguage;
+  const sourceName = opts.sourceLanguage
+    ? LANGUAGE_NAMES[opts.sourceLanguage] || opts.sourceLanguage
+    : "the detected source language";
   return `Your previous response was "${previousAttempt}" — that is NOT a valid ${targetName} translation. It looks like the source text or contains the wrong script.
 
 Translate this ${sourceName} meme ${opts.kind} into ${targetName}.${scriptHint(opts.targetLanguage)} Output ONLY the translated ${opts.kind}, no quotes, no label, no explanation.
@@ -236,7 +170,10 @@ function getDefaultModel(maxOutputTokens: number): GenerativeModel {
 
 export interface TitleTranslationOptions {
   sourceText: string;
-  sourceLanguage: string;
+  /** Omit when the source language is unknown (e.g. comment translation) —
+   * the helper will emit a prompt without a "from X" clause and let Gemini
+   * auto-detect. */
+  sourceLanguage?: string;
   targetLanguage: string;
   /** "title" defaults to 512 tokens, "description" to 1024. */
   kind?: "title" | "description";

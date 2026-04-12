@@ -85,6 +85,7 @@ export async function GET(request: NextRequest) {
       data: { rankingScore: 0 },
     });
 
+    console.info(`[cron/recalculate-rankings] recalculated ${updated} posts from last 30 days`);
     return NextResponse.json({
       ok: true,
       recalculated: updated,
