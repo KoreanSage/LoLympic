@@ -18,9 +18,12 @@ export async function generateInpaintingMask(
   imgWidth: number,
   imgHeight: number
 ): Promise<Buffer> {
-  // Filter: exclude WATERMARK, require valid box coordinates
+  // Filter: exclude WATERMARK only, require valid box coordinates.
+  // LABEL segments contain real translatable meme text and MUST be masked
+  // for inpainting — otherwise LaMa doesn't remove the original text and
+  // the translated image retains the source-language labels (bug #116).
   const targetSegments = segments.filter(seg => {
-    if (seg.semanticRole === 'WATERMARK' || seg.semanticRole === 'LABEL') return false;
+    if (seg.semanticRole === 'WATERMARK') return false;
     if (seg.boxX == null || seg.boxY == null || seg.boxWidth == null || seg.boxHeight == null) return false;
     return true;
   });
