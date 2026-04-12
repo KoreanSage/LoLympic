@@ -288,21 +288,35 @@ function buildSvgOverlay(
 ): string {
   const elements: string[] = [];
 
-  for (const seg of segments) {
-    if (!seg.translatedText?.trim()) continue;
+  // Detect coordinate range once for all segments. Gemini returns coords in
+  // one of three formats depending on the model / prompt:
+  //   - fractional 0..1 (relative to image dimensions)
+  //   - 0..1000 scale (Gemini vision default in some modes)
+  //   - raw pixel coords (within natural image dimensions, rare)
+  // mask-generator.ts already had this heuristic; image-composer was missing
+  // it, so coords > 1 were multiplied by imageWidth directly → text rendered
+  // at positions thousands of pixels offscreen.
+  const renderable = segments.filter(
+    (s) => s.translatedText?.trim() && s.semanticRole !== "WATERMARK"
+  );
+  const maxCoord = renderable.reduce((acc, s) => {
+    return Math.max(acc, s.boxX + s.boxWidth, s.boxY + s.boxHeight);
+  }, 0);
+  let normFactor: number;
+  if (maxCoord <= 1.05) {
+    normFactor = 1; // already 0..1 fractional
+  } else if (maxCoord > 100) {
+    normFactor = 1000; // Gemini 1000-scale
+  } else {
+    normFactor = 100; // percentage 0..100
+  }
 
-    // Skip watermarks only — all other roles (LABEL, CAPTION, TITLE,
-    // DIALOGUE, MEME_TEXT, OTHER) are real translated text that must be
-    // rendered. LABEL is in fact the MOST common role for meme text
-    // segments; skipping it silently caused Arabic compositions to produce
-    // the original image unchanged (bug #116).
-    if (seg.semanticRole === "WATERMARK") continue;
-
-    // Convert fractional coords to pixels
-    const x = Math.round(seg.boxX * imageWidth);
-    const y = Math.round(seg.boxY * imageHeight);
-    const w = Math.round(seg.boxWidth * imageWidth);
-    const h = Math.round(seg.boxHeight * imageHeight);
+  for (const seg of renderable) {
+    // Normalise to 0..1 then convert to pixel coords
+    const x = Math.round((seg.boxX / normFactor) * imageWidth);
+    const y = Math.round((seg.boxY / normFactor) * imageHeight);
+    const w = Math.round((seg.boxWidth / normFactor) * imageWidth);
+    const h = Math.round((seg.boxHeight / normFactor) * imageHeight);
 
     if (w <= 0 || h <= 0) continue;
 
