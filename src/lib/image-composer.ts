@@ -291,8 +291,12 @@ function buildSvgOverlay(
   for (const seg of segments) {
     if (!seg.translatedText?.trim()) continue;
 
-    // Skip non-translatable metadata
-    if (seg.semanticRole === "LABEL" || seg.semanticRole === "WATERMARK") continue;
+    // Skip watermarks only — all other roles (LABEL, CAPTION, TITLE,
+    // DIALOGUE, MEME_TEXT, OTHER) are real translated text that must be
+    // rendered. LABEL is in fact the MOST common role for meme text
+    // segments; skipping it silently caused Arabic compositions to produce
+    // the original image unchanged (bug #116).
+    if (seg.semanticRole === "WATERMARK") continue;
 
     // Convert fractional coords to pixels
     const x = Math.round(seg.boxX * imageWidth);
@@ -489,9 +493,10 @@ export async function composeTranslatedImage(
   const width = metadata.width || 800;
   const height = metadata.height || 600;
 
-  // Filter to only translatable segments
+  // Filter to only translatable segments — skip WATERMARK only.
+  // LABEL is the most common role for meme text and MUST be rendered.
   const translatableSegments = segments.filter(
-    (s) => s.semanticRole !== "LABEL" && s.semanticRole !== "WATERMARK" && s.translatedText?.trim()
+    (s) => s.semanticRole !== "WATERMARK" && s.translatedText?.trim()
   );
 
   // Watermark bar dimensions
