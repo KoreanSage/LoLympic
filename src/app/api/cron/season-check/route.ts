@@ -162,6 +162,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    console.info(`[cron/season-check] ran at ${now.toISOString()} — ${actions.length} action(s): ${actions.join(" | ") || "(none)"}`);
     return NextResponse.json({ actions, timestamp: now.toISOString() });
   } catch (error) {
     console.error("Cron season-check error:", error);

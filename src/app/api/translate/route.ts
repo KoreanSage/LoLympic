@@ -190,6 +190,9 @@ export interface TranslationSegmentResponse {
     strokeWidth?: number;
     shadowColor?: string;
   };
+  /** Which image in a multi-image post this segment belongs to (0-indexed).
+   * Optional at the Gemini boundary — filled in by callers before persisting. */
+  imageIndex?: number;
 }
 
 export interface CultureNoteResponse {
@@ -1253,7 +1256,7 @@ export async function POST(request: NextRequest) {
     if (cachedEnAnalysis && cachedEnAnalysis.segments && cachedEnAnalysis.segments.length > 0) {
       console.debug(`[Cache] Using cached English analysis for ${postId}`);
       englishAnalysis = {
-        segments: cachedEnAnalysis.segments.map(s => ({ ...s, imageIndex: (s as any).imageIndex ?? 0 })),
+        segments: cachedEnAnalysis.segments.map((s) => ({ ...s, imageIndex: s.imageIndex ?? 0 })),
         memeType: cachedEnAnalysis.memeType ?? null,
         confidence: cachedEnAnalysis.confidence ?? null,
         cultureNote: cachedEnAnalysis.cultureNote || null,
@@ -1388,7 +1391,7 @@ export async function POST(request: NextRequest) {
             console.debug(`[Cache] Using cached translation for ${postId}:${targetLang}`);
             firstParsed = cachedResult;
             for (const seg of cachedResult.segments) {
-              allSegments.push({ ...seg, imageIndex: (seg as any).imageIndex ?? 0 });
+              allSegments.push({ ...seg, imageIndex: seg.imageIndex ?? 0 });
             }
             if (cachedResult.cultureNote) allCultureNotes.push(cachedResult.cultureNote);
           } else {

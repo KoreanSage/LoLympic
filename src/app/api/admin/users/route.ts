@@ -61,6 +61,9 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "Missing userId or role" }, { status: 400 });
     }
 
+    // SUPER_ADMIN is intentionally NOT in this list — it can only be
+    // granted via DB seed or the bootstrap endpoint, not through the admin
+    // UI. Don't add it here without also auditing every caller.
     const validRoles = ["USER", "MODERATOR", "ADMIN"];
     if (!validRoles.includes(role)) {
       return NextResponse.json({ error: "Invalid role" }, { status: 400 });

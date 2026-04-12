@@ -45,6 +45,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!season) {
+      console.info(`[cron/monthly-winner] skipped: no active season`);
       return NextResponse.json({ message: "No active season" });
     }
 
@@ -53,6 +54,7 @@ export async function GET(request: NextRequest) {
       where: { seasonId_month: { seasonId: season.id, month: targetMonth } },
     });
     if (existing) {
+      console.info(`[cron/monthly-winner] skipped: already selected for ${targetYear}-${targetMonth}`);
       return NextResponse.json({ message: "Already selected", existing });
     }
 
@@ -77,6 +79,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!topPost) {
+      console.info(`[cron/monthly-winner] skipped: no eligible posts for ${targetYear}-${targetMonth}`);
       return NextResponse.json({ message: "No eligible posts" });
     }
 
@@ -115,6 +118,7 @@ export async function GET(request: NextRequest) {
       // Non-fatal: bracket might not exist yet or slots might be full
     }
 
+    console.info(`[cron/monthly-winner] selected post ${topPost.id} for ${targetYear}-${targetMonth} (${topPost.reactionCount} reactions)`);
     return NextResponse.json({ message: "Winner selected", winner });
   } catch (error) {
     console.error("Cron monthly-winner error:", error);
