@@ -205,6 +205,15 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // If EVERY planned job failed to publish and nothing was queued, the
+    // post is stuck at PROCESSING with no worker coming to settle it.
+    // Roll the status back so the user can retry or the post stays visible.
+    if (queued.length === 0 && planResult.planned.length > 0) {
+      await prisma.post
+        .update({ where: { id: postId }, data: { status: "PUBLISHED" } })
+        .catch((e) => console.warn("[Enqueue] Failed to roll back post status:", e));
+    }
+
     return NextResponse.json({
       postId,
       queued,
