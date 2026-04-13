@@ -786,7 +786,7 @@ export async function generateTranslatedImageForPayload(
         Math.max(s.boxX + s.boxWidth, s.boxY + s.boxHeight)
       )
     );
-    const norm = maxCoord > 1.5 ? (maxCoord > 100 ? 1000 : maxCoord) : 1;
+    const norm = maxCoord > 100 ? 1000 : maxCoord > 1.5 ? 100 : 1;
 
     const safeW = Math.min(imgWidth, 2048);
     const safeH = Math.min(imgHeight, 2048);
