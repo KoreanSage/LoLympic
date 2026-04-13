@@ -65,51 +65,52 @@ export function calculateFontSize(opts: FontSizeOptions): number {
   const { text, boxWidthPx, boxHeightPx, originalSizePx } = opts;
 
   if (!text || boxHeightPx <= 0) return MIN_FONT_SIZE;
+  if (boxWidthPx <= 0) return MIN_FONT_SIZE;
 
   const script = detectScript(text);
+  const avgCharWidth = script === "cjk" ? 1.0 : 0.6;
 
-  // ── Step 1: Height-based default ──
-  // 65% of box height is the sweet spot (proven by cron path).
-  const baseSize = boxHeightPx * 0.65;
-
-  // ── Step 2: Consider original size if provided ──
-  // Trust Gemini's original size if it's reasonable (at least 30% of
-  // box height). Otherwise use our height-based default.
+  // ── Step 1: Start from original size if Gemini provided one ──
+  // Gemini's fontSizePixels reflects the source text's visual size in
+  // the original image — this is the best baseline when available.
   let size: number;
-  const minReasonable = boxHeightPx * 0.3;
-  if (originalSizePx && originalSizePx >= minReasonable) {
-    size = Math.max(originalSizePx, baseSize * 0.8);
+  if (originalSizePx && originalSizePx >= 10) {
+    size = originalSizePx;
   } else {
-    size = baseSize;
+    // No original size — start with height-based estimate, BUT cap it
+    // so large boxes (e.g. entire image height) don't produce giant text.
+    // Use the SMALLER of height-based and width-based estimates.
+    const heightBased = boxHeightPx * 0.65;
+    const widthBased = boxWidthPx / Math.max(1, text.length * avgCharWidth) * (text.length > 10 ? text.length * 0.3 : 1);
+    size = Math.min(heightBased, Math.max(widthBased, heightBased * 0.3));
+  }
+
+  // ── Step 2: Ensure text actually FITS in the box ──
+  // Estimate line wrapping and scale down if needed. This is the key
+  // balance — the old approach was too aggressive (shrunk to 1/4), but
+  // we can't ignore text length entirely (PR #118 lesson: that makes
+  // text too big when the box is large).
+  const charsPerLine = Math.max(1, Math.floor(boxWidthPx / (size * avgCharWidth)));
+  const estimatedLines = Math.ceil(text.length / charsPerLine);
+  const lineHeight = 1.35;
+  const totalTextHeight = estimatedLines * size * lineHeight;
+
+  if (totalTextHeight > boxHeightPx && boxHeightPx > 0) {
+    // Scale down to fit, but NEVER below 50% of the starting size.
+    // The old approach had no floor and would shrink to 12px.
+    const scale = boxHeightPx / totalTextHeight;
+    size = size * Math.max(scale, 0.5);
   }
 
   // ── Step 3: CJK boost ──
-  // CJK characters carry more meaning per glyph and are visually
-  // denser, so they read well at slightly larger sizes. Japanese,
-  // Chinese, and Korean all get a 10% boost.
+  // CJK characters carry more meaning per glyph — they read well at
+  // slightly larger sizes even when the char count is higher.
   if (script === "cjk") {
-    size *= 1.1;
+    size *= 1.08;
   }
 
-  // ── Step 4: Soft width guard ──
-  // Only reduce font size if the text is EXTREMELY long relative to
-  // the box. This is a gentle 15% reduction, applied at most once.
-  // The old approach divided by line count which could shrink by 60%+.
-  if (boxWidthPx > 0) {
-    const avgCharWidth = script === "cjk" ? 1.0 : 0.6;
-    const charsPerLine = Math.max(1, Math.floor(boxWidthPx / (size * avgCharWidth)));
-    const estimatedLines = Math.ceil(text.length / charsPerLine);
-    const maxLines = Math.max(1, Math.floor(boxHeightPx / (size * 1.3)));
-    // Only trigger for text that would need 1.5x more lines than the
-    // box can fit at the current size — catches extreme cases like
-    // 200-character translations in a small box.
-    if (estimatedLines > maxLines * 1.5) {
-      size *= 0.85;
-    }
-  }
-
-  // ── Step 5: Clamp ──
+  // ── Step 4: Clamp ──
   return Math.round(
-    Math.max(MIN_FONT_SIZE, Math.min(size, MAX_FONT_SIZE, boxHeightPx * 0.9))
+    Math.max(MIN_FONT_SIZE, Math.min(size, MAX_FONT_SIZE, boxHeightPx * 0.85))
   );
 }
