@@ -956,7 +956,7 @@ export async function generateTranslatedImageForPayload(
           const imgFontBuffer = await fetchGoogleFont(imgFontFamily, imgFullText);
 
           const imgMaxCoord = Math.max(...visSegs.map(s => Math.max(s.boxX + s.boxWidth, s.boxY + s.boxHeight)));
-          const imgNorm = imgMaxCoord > 1.5 ? (imgMaxCoord > 100 ? 1000 : imgMaxCoord) : 1;
+          const imgNorm = imgMaxCoord > 100 ? 1000 : imgMaxCoord > 1.5 ? 100 : 1;
           const imgSafeW = Math.min(imgW, 2048);
           const imgSafeH = Math.min(imgH, 2048);
 
