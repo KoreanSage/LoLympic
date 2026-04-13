@@ -135,7 +135,7 @@ export async function POST(req: NextRequest) {
         )
       )
     );
-    const norm = maxCoord > 1.5 ? (maxCoord > 100 ? 1000 : maxCoord) : 1;
+    const norm = maxCoord > 100 ? 1000 : maxCoord > 1.5 ? 100 : 1;
 
     // 1. Collect ALL translated text for font subsetting
     const fullText = visibleSegments
