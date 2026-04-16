@@ -64,3 +64,24 @@ export async function uploadBufferToR2(
   );
   return `${publicUrl}/${key}`;
 }
+
+/**
+ * Delete an object from R2 by its public URL. No-op if R2 isn't configured
+ * or URL doesn't belong to R2. Errors are swallowed (best-effort cleanup).
+ */
+export async function deleteFromR2(publicUrl: string): Promise<void> {
+  const r2PublicBase = process.env.R2_PUBLIC_URL?.replace(/\/$/, "");
+  if (!r2PublicBase || !publicUrl.startsWith(r2PublicBase)) return;
+  const s3 = await getR2Client();
+  if (!s3) return;
+  const key = publicUrl.slice(r2PublicBase.length + 1); // strip base + "/"
+  try {
+    const { DeleteObjectCommand } = await import("@aws-sdk/client-s3");
+    await s3.send(new DeleteObjectCommand({
+      Bucket: process.env.R2_BUCKET_NAME!,
+      Key: key,
+    }));
+  } catch {
+    // best-effort — don't break the caller
+  }
+}

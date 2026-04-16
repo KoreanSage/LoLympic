@@ -24,7 +24,7 @@ Upload memes in your language, and AI automatically translates them into 7 langu
 - **Database**: PostgreSQL (Neon) + Prisma ORM
 - **Auth**: NextAuth.js (Google OAuth + Credentials)
 - **AI Translation**: Google Gemini API
-- **Storage**: Vercel Blob
+- **Storage**: Cloudflare R2
 - **Deployment**: Vercel
 - **Styling**: Tailwind CSS
 

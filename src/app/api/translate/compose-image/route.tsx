@@ -25,7 +25,7 @@ async function fetchGoogleFont(
   textToRender: string
 ): Promise<ArrayBuffer> {
   // Deduplicate characters for minimal font subset
-  const uniqueChars = Array.from(new Set(textToRender.split(""))).join("");
+  const uniqueChars = Array.from(new Set(Array.from(textToRender))).join("");
 
   const url = `https://fonts.googleapis.com/css2?family=${fontFamily}:wght@900&text=${encodeURIComponent(uniqueChars)}`;
 

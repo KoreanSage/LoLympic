@@ -37,6 +37,8 @@ export function calculateFontSize(opts: FontSizeOptions): number {
 
   const script = detectScript(text);
   const avgCharWidth = script === "cjk" ? 1.0 : 0.6;
+  // Use proper Unicode-aware character count (handles emoji, surrogate pairs)
+  const charCount = Array.from(text).length;
 
   // ── Step 1: Start from original size or height+width estimate ──
   let size: number;
@@ -44,13 +46,13 @@ export function calculateFontSize(opts: FontSizeOptions): number {
     size = originalSizePx;
   } else {
     const heightBased = boxHeightPx * 0.65;
-    const widthBased = boxWidthPx / Math.max(1, text.length * avgCharWidth) * (text.length > 10 ? text.length * 0.3 : 1);
+    const widthBased = boxWidthPx / Math.max(1, charCount * avgCharWidth) * (charCount > 10 ? charCount * 0.3 : 1);
     size = Math.min(heightBased, Math.max(widthBased, heightBased * 0.3));
   }
 
   // ── Step 2: Scale down to fit, but NEVER below 70% ──
   const charsPerLine = Math.max(1, Math.floor(boxWidthPx / (size * avgCharWidth)));
-  const estimatedLines = Math.ceil(text.length / charsPerLine);
+  const estimatedLines = Math.ceil(charCount / charsPerLine);
   const totalTextHeight = estimatedLines * size * 1.35;
 
   if (totalTextHeight > boxHeightPx && boxHeightPx > 0) {
