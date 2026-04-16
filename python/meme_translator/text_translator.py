@@ -31,13 +31,58 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 LANGUAGE_INSTRUCTIONS: dict[str, str] = {
     "ko": "Korean (한국어): Preserve original meaning first. Do NOT replace with unrelated idioms. Natural everyday Korean. Keep compact.",
-    "ja": "Japanese (日本語): Subtle humor. Appropriate politeness for comedy. ツッコミ/ボケ dynamics. Preserve double-meaning wordplay.",
-    "zh": "Chinese (中文): Compact, efficient. 网络用语, twisted four-character idioms, phonetic puns. Maximize impact per character.",
-    "en": "English: Sarcastic, exaggerated. Irony, self-deprecation, absurdist escalation. Internet-native phrasing (all caps, deliberate misspellings).",
-    "es": "Spanish (Español): Expressive, colloquial. Regional slang, diminutives for comedy, exaggerated emotion. Latin American / Iberian variations.",
+    "ja": "Japanese (日本語): CRITICAL — Natural internet Japanese (ネット用語), NOT textbook. Casual register (タメ口) by default. ツッコミ/ボケ, deadpan delivery. Internet expressions: 草/w, ワロタ, それな, マジで, やばい. English loanwords in katakana naturally. WORD PRECISION: 適当 = 'appropriate' OR 'sloppy' — pick from context. Concise.",
+    "zh": "Chinese (中文): CRITICAL — Simplified Chinese (简体中文). Natural internet style (网络用语), NOT formal. Bilibili/Weibo tone. Slang: 绝绝子, 6/666, 笑死, 蚌埠住了, yyds. Character count LOW — shorter than English. Casual spoken Chinese (口语), not written (书面语).",
+    "en": "English: CRITICAL — American internet English default. Irony, self-deprecation, absurdist escalation. Internet-native (all caps, misspellings: 'smol', 'boi'). Adapt cultural references to Western/American equivalents. Punchy — shorter hits harder.",
+    "es": "Spanish (Español): CRITICAL — Latin American Spanish (LATAM) default. Mexican/general LATAM register. Internet Spanish: wey, neta, no mames, pana. Dramatic, exaggerated. Diminutives for comedy. WORD PRECISION: coger = 'take' in Spain but vulgar in LATAM. Iberian-origin memes keep Iberian register.",
     "hi": "Hinglish (Roman script): CRITICAL — Write ALL Hindi in Roman/Latin script ONLY (e.g. 'Bhai ye kya hai' NOT Devanagari). Bollywood-influenced, filmi dialogues. Always Roman script.",
-    "ar": "Arabic (العربية): Rich, expressive. MSA with dialect (Egyptian/Gulf). Internet-native Arabic expressions. Egyptian dialect when unsure.",
+    "ar": "Arabic (العربية): CRITICAL — Egyptian colloquial Arabic (عامية مصرية) as default. WORD PRECISION: pick the contextually correct word, not just a close synonym (e.g. 'sexually active' = 'نشط جنسياً' NOT 'نشيط جنسياً'). Use STANDARD Arabic equivalents for medical/technical/idiomatic English — do NOT translate word-by-word. Short, punchy, internet-native (يعني، والله، يلا). Street humor = street Arabic, not MSA.",
 }
+
+# ---------------------------------------------------------------------------
+# Language-specific quality checklists
+# ---------------------------------------------------------------------------
+_QUALITY_CHECKLISTS: dict[str, str] = {
+    "ja": """
+## JAPANESE QUALITY CHECKLIST
+- Use casual internet Japanese (タメ口), NOT polite textbook form (です/ます), unless the meme's tone is deliberately formal.
+- WORD PRECISION: 適当 = 'appropriate' or 'sloppy' depending on context. やばい = positive or negative depending on context.
+- For English internet slang: use established Japanese equivalents. Do NOT invent katakana words JP internet doesn't use.
+- Keep it SHORT. Japanese memes are punchy. Preserve punchline timing.
+""",
+    "zh": """
+## CHINESE QUALITY CHECKLIST
+- Use Simplified Chinese (简体中文) ONLY.
+- Write in casual internet Chinese (口语), NOT literary/formal Chinese (书面语).
+- WORD PRECISION: 可以 vs 行 (formal vs casual OK), 不要 vs 别 (formal vs casual don't).
+- Keep translations SHORTER than English. Use internet expressions naturally: 笑死, 绝了, 6/666, 蚌埠住了.
+""",
+    "es": """
+## SPANISH QUALITY CHECKLIST
+- Default to Latin American Spanish (LATAM). Mexican/general LATAM register.
+- WORD PRECISION: coger = 'to take' in Spain but VULGAR in LATAM — use agarrar/tomar.
+- Natural internet tone. Dramatic, exaggerated. Diminutives for comedy.
+""",
+    "en": """
+## ENGLISH QUALITY CHECKLIST
+- American internet English as default register.
+- Adapt culture-specific references to Western/American equivalents — don't leave untranslated.
+- Keep translations SHORT and punchy. Preserve meme format conventions.
+""",
+    "ar": """
+## ARABIC QUALITY CHECKLIST
+- Use the EXACT correct Arabic word — near-synonyms are NOT interchangeable.
+  Common pitfalls: نشط vs نشيط (active vs diligent), حامل vs شايلة, بخيل vs اقتصادي
+- Translate IDIOMS as whole units (e.g. 'sexually active' = 'نشط جنسياً' as fixed phrase).
+- Prefer Egyptian colloquial: إيه، ده، كده، عشان، دلوقتي
+- Avoid over-formal MSA. Real memes sound like someone talking, not a textbook.
+""",
+}
+
+
+def _build_quality_checklist(target_lang: str) -> str:
+    """Return language-specific quality checklist, or empty string."""
+    return _QUALITY_CHECKLISTS.get(target_lang, "")
 
 
 def _build_prompt(
@@ -65,7 +110,7 @@ Create TRANSCENDENT translations — culturally adapted versions that hit just a
 
 ## Target Language
 {target_inst}
-
+{_build_quality_checklist(target_lang)}
 ## Meme Type: {meme_type.value}
 
 ## Text Regions to Translate

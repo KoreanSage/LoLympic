@@ -73,13 +73,80 @@ export { getGenAI, getGenAI2, saveGeneratedImage };
 // ---------------------------------------------------------------------------
 export const LANGUAGE_INSTRUCTIONS: Record<string, string> = {
   ko: "Korean (한국어): CRITICAL — Preserve the ORIGINAL MEANING accurately first. Do NOT replace with unrelated Korean idioms or food expressions. Translate naturally using everyday Korean (반말 또는 자연스러운 구어체). Keep sentences compact. Korean slang (신조어) is OK only when it directly matches the original meaning — never substitute meaning with unrelated slang. Example: 'all bark no bite' = '말만 많고 행동은 없는' NOT '겉바속촉'.",
-  ja: "Japanese (日本語): Subtle and restrained humor. Use appropriate levels of politeness for comedic effect. Japanese memes often rely on understatement, ツッコミ/ボケ dynamics, and visual puns. Preserve any double-meaning wordplay.",
-  zh: "Chinese (中文): Compact and efficient. Chinese internet humor uses 网络用语, four-character idioms twisted for comedy, and phonetic puns. Keep character count low. Maximize impact per character.",
-  en: "English: Sarcastic and exaggerated. English memes lean into irony, self-deprecation, and absurdist escalation. Use internet-native phrasing (all caps for emphasis, deliberate misspellings for tone). Match the energy.",
-  es: "Spanish (Español): Expressive and colloquial. Spanish memes use regional slang, diminutives for comedic effect, and exaggerated emotion. Capture the warmth and dramatic flair. Consider Latin American vs. Iberian variations.",
+  ja: "Japanese (日本語): CRITICAL — Use natural internet Japanese (ネット用語), NOT textbook Japanese. Memes use casual register (タメ口) by default. Leverage ツッコミ/ボケ dynamics, understatement, and deadpan delivery. Use internet-native expressions: 草/w (lol), ワロタ, それな, マジで, やばい, なんでやねん. For English loanwords, use katakana naturally (e.g. 'cringe' = not 'きまずい' but 'クリンジ' if that's what JP internet uses). WORD PRECISION: 適当 means both 'appropriate' AND 'sloppy' — pick the right reading from context. Keep translations concise — Japanese memes are punchier than English ones.",
+  zh: "Chinese (中文): CRITICAL — Use Simplified Chinese (简体中文). Write in natural Chinese internet style (网络用语), NOT formal/literary Chinese. Prefer Bilibili/Weibo meme culture tone. Use popular internet slang when appropriate: 绝绝子, 6/666, 笑死, 真的会谢, 蚌埠住了, yyds. Keep character count LOW — Chinese is information-dense, so translations should be SHORTER than English, not longer. WORD PRECISION: 不要 vs 别 (formal vs casual 'don't'), 可以 vs 行 (formal vs casual 'ok'). Default to casual spoken Chinese (口语) for memes, not written Chinese (书面语).",
+  en: "English: CRITICAL — Use American internet English as default. Memes lean into irony, self-deprecation, and absurdist escalation. Use internet-native phrasing (all caps for emphasis, deliberate misspellings for tone like 'smol', 'boi'). When adapting cultural references from other languages, find the closest equivalent in Western/American pop culture — do NOT leave untranslated references that English speakers won't understand. Match the energy and register: if the source is unhinged, go unhinged. Keep it punchy — shorter hits harder.",
+  es: "Spanish (Español): CRITICAL — Use Latin American Spanish (LATAM) as default — it reaches the largest audience. Mexican/general LATAM register preferred unless the meme is clearly Iberian. Use natural internet Spanish: wey/güey, neta, no mames, pana, literal, re (Argentine intensifier is OK). Embrace dramatic flair and exaggerated emotion — Spanish memes are LOUD. Use diminutives for comedy (chiquito, pobrecito). WORD PRECISION: coger means 'to take' in Spain but is vulgar in LATAM — always consider regional meaning. For Iberian-origin memes, keep Iberian register (tío, mola, flipar).",
   hi: "Hinglish (Roman script Hindi): CRITICAL — Write ALL Hindi text in Roman/Latin script (e.g. 'Bhai ye kya hai' NOT 'भाई ये क्या है'). NEVER use Devanagari script. Bollywood-influenced humor with dramatic flair. Use Hinglish (Hindi-English mix), filmi dialogues, and cultural references. Use colloquial Delhi/Mumbai street Hindi for authenticity. Embrace the dramatic and emotional style. Think Instagram/Twitter Indian meme culture — always Roman script.",
-  ar: "Arabic (العربية): Rich and expressive. Arabic memes blend Modern Standard Arabic with dialect (Egyptian/Gulf). Use internet-native Arabic expressions, cultural references, and wordplay. Keep it casual and relatable. Use Egyptian dialect when unsure.",
+  ar: "Arabic (العربية): CRITICAL — Use Egyptian colloquial Arabic (عامية مصرية) as default dialect — it is the most universally understood across Arab internet. WORD PRECISION: Arabic has many near-synonyms with VERY different connotations — always pick the contextually correct word, not just a close synonym. Example: 'sexually active' = 'نشط جنسياً' NOT 'نشيط جنسياً' (نشيط means diligent/hardworking — completely wrong meaning). For medical, technical, or idiomatic English phrases, use the STANDARD Arabic equivalent — do NOT translate word-by-word. Keep it SHORT and punchy like real Egyptian memes. Use internet-native Arabic expressions (يعني، والله، يلا). Match register: street humor = street Arabic, not news-anchor MSA.",
 };
+
+// ---------------------------------------------------------------------------
+// Language-specific quality checklists (injected into prompts when target matches)
+// ---------------------------------------------------------------------------
+function buildQualityChecklist(targetLanguage: string): string {
+  switch (targetLanguage) {
+    case "ja":
+      return `
+## JAPANESE QUALITY CHECKLIST (must follow)
+- Use casual internet Japanese (タメ口), NOT polite textbook form (です/ます), unless the meme's tone is deliberately formal.
+- WORD PRECISION: 適当 = 'appropriate' or 'sloppy' depending on context. 微妙 = 'subtle' or 'iffy'.
+  やばい = positive or negative depending on context. Always read the meme context.
+- For English internet slang: use the established Japanese equivalent (e.g. 'based' = ベースド, 'cringe' = キツい or クリンジ).
+  Do NOT invent katakana words that Japanese internet doesn't actually use.
+- Keep it SHORT. Japanese memes are punchy — 1-2 lines max per segment. Avoid long explanatory translations.
+- Preserve punchline timing: if the joke is in the last word, keep it in the last word.
+`;
+    case "zh":
+      return `
+## CHINESE QUALITY CHECKLIST (must follow)
+- Use Simplified Chinese (简体中文) ONLY.
+- Write in casual internet Chinese (口语), NOT literary/formal Chinese (书面语).
+  Memes should sound like someone typing on Bilibili/Weibo, not writing an essay.
+- WORD PRECISION: 可以 vs 行 (formal vs casual OK), 不要 vs 别 (formal vs casual don't).
+  厉害 = impressive/awesome (positive), NOT 'fierce' (negative reading).
+- Keep translations SHORTER than the English original. Chinese is information-dense.
+  If the English is 10 words, the Chinese should be ~5-8 characters.
+- Use popular internet expressions naturally: 笑死, 绝了, 真的会谢, 6/666, 蚌埠住了 — but only when they fit the tone.
+`;
+    case "es":
+      return `
+## SPANISH QUALITY CHECKLIST (must follow)
+- Default to Latin American Spanish (LATAM). Use general LATAM/Mexican register.
+- WORD PRECISION: coger = 'to take' in Spain but VULGAR in LATAM — use agarrar/tomar instead.
+  carro (LATAM) vs coche (Spain), computadora (LATAM) vs ordenador (Spain).
+  Always pick the LATAM word unless the meme is clearly from Spain.
+- For humor: use the dramatic, exaggerated LATAM internet style. Embrace excess.
+- Keep it natural — memes should sound like someone posting on Twitter/IG in Mexico City, not a Spanish textbook.
+- Common LATAM internet expressions: wey, neta, no mames, literal, pana, marico (use with caution).
+`;
+    case "en":
+      return `
+## ENGLISH QUALITY CHECKLIST (must follow)
+- Use American internet English as the base register.
+- When the source meme references culture-specific people, shows, or concepts that English speakers
+  won't recognize, adapt to the closest Western/American pop culture equivalent.
+  Do NOT leave untranslated references or add parenthetical explanations — the joke should just WORK.
+- Keep translations SHORT and punchy. If the original is 3 words, don't make it 10.
+- Internet tone: all-caps for emphasis, deliberate misspellings (smol, boi, ur) are fine when they match the vibe.
+- Preserve the meme format conventions (e.g., "nobody: / me:" structure, "POV:" format).
+`;
+    case "ar":
+      return `
+## ARABIC QUALITY CHECKLIST (must follow)
+- Use the EXACT correct Arabic word — near-synonyms are NOT interchangeable.
+  Common pitfalls: نشط vs نشيط (active vs diligent), حامل vs شايلة (pregnant vs carrying),
+  بخيل vs اقتصادي (stingy vs economical), غبي vs ساذج (stupid vs naive)
+- Translate IDIOMS as whole units. "Sexually active" = "نشط جنسياً" as a fixed phrase.
+  Do NOT decompose English idioms into separate Arabic words.
+- Prefer Egyptian colloquial (مصري) for meme humor: إيه، ده، كده، عشان، دلوقتي
+- Avoid over-formal MSA that sounds robotic. Real Arabic memes sound like someone talking, not a textbook.
+- For dialogue memes (doctor-patient, parent-child), use the way Egyptians ACTUALLY speak in that context.
+`;
+    default:
+      return "";
+  }
+}
 
 // ---------------------------------------------------------------------------
 // System prompt for Gemini translation
@@ -109,7 +176,7 @@ ${sourceLangInstruction}
 
 ## Target Language Instructions
 ${targetLangInstruction}
-
+${buildQualityChecklist(targetLanguage)}
 ## CRITICAL: Detect meme type and translate accordingly
 
 **Type A — Overlay memes** (Impact font captions on top of a photo/reaction image):
@@ -1402,6 +1469,8 @@ export async function POST(request: NextRequest) {
             // at low temperature flash-lite tends to paraphrase the source back
             // instead of translating to the target (e.g. Japanese prompt →
             // Korean output bug).
+            const qualityChecklist = buildQualityChecklist(targetLang).trim();
+
             const buildPrompt = (extraGuard = "") => `You are a professional translator for mimzy, a global meme platform.
 
 ${targetLangInstruction}
@@ -1411,6 +1480,7 @@ CRITICAL RULES:
 - Output MUST be in ${targetLangName} only. Do NOT output Korean, English, or any other language.
 - Keep the humor, tone, and cultural adaptation. Short, punchy, native-feeling.
 - Preserve the array order — one output per input.
+${qualityChecklist ? `\n${qualityChecklist}\n` : ""}
 ${extraGuard}
 
 English texts to translate:
