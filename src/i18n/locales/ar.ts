@@ -829,6 +829,26 @@ const ar: Record<TranslationKeys, string> = {
   "translation.postsCountPlural": "منشورات",
   "translation.failedShort": "فشل",
   "translation.defaultTitle": "منشور",
+
+  // ── Landing Page ────────────────────────────────────────────────────────────
+  "landing.howItWorks": "إزاي بيشتغل",
+  "landing.step1.title": "ارفع ميم",
+  "landing.step1.desc": "شارك أضحك ميم عندك بأي لغة",
+  "landing.step2.title": "الذكاء الاصطناعي بيترجم",
+  "landing.step2.desc": "بيتترجم لـ 7 لغات في ثواني",
+  "landing.step3.title": "باتل عالمي",
+  "landing.step3.desc": "صوّت، نافس، واطلع في الترتيب",
+  "landing.showcase.title": "تريند دلوقتي",
+  "landing.leaderboard.title": "ترتيب الدول",
+  "landing.stats.posts": "ميمز",
+  "landing.stats.translations": "ترجمات",
+  "landing.stats.countries": "دول",
+  "landing.stats.users": "صنّاع محتوى",
+  "landing.cta.title": "مستعد تبقى عالمي؟",
+  "landing.cta.subtitle": "انضم لأول منصة ترجمة ميمز في العالم",
+  "landing.cta.button": "ابدأ رحلتك — مجاناً",
+  "landing.login": "تسجيل دخول",
+  "landing.signup": "إنشاء حساب",
 } as const;
 
 export default ar;

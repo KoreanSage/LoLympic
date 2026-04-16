@@ -391,6 +391,13 @@ export async function PATCH(
       );
     }
 
+    if (newBody.length > 2000) {
+      return NextResponse.json(
+        { error: "Comment too long (max 2000 chars)" },
+        { status: 400 }
+      );
+    }
+
     const existing = await prisma.comment.findUnique({
       where: { id: commentId },
       select: { id: true, postId: true, authorId: true, status: true },
@@ -507,24 +514,26 @@ export async function DELETE(
       );
     }
 
-    // Soft delete and decrement counts (with guards to prevent negative values)
-    await prisma.comment.update({
-      where: { id: commentId },
-      data: { status: "REMOVED" },
-    });
-
-    await prisma.post.updateMany({
-      where: { id: postId, commentCount: { gt: 0 } },
-      data: { commentCount: { decrement: 1 } },
-    });
-
-    // If it's a reply, decrement parent's reply count
-    if (existing.parentId) {
-      await prisma.comment.updateMany({
-        where: { id: existing.parentId, replyCount: { gt: 0 } },
-        data: { replyCount: { decrement: 1 } },
-      });
-    }
+    // Soft delete and decrement counts in a transaction (with guards to prevent negative values)
+    await prisma.$transaction([
+      prisma.comment.update({
+        where: { id: commentId },
+        data: { status: "REMOVED" },
+      }),
+      prisma.post.updateMany({
+        where: { id: postId, commentCount: { gt: 0 } },
+        data: { commentCount: { decrement: 1 } },
+      }),
+      // If it's a reply, decrement parent's reply count
+      ...(existing.parentId
+        ? [
+            prisma.comment.updateMany({
+              where: { id: existing.parentId, replyCount: { gt: 0 } },
+              data: { replyCount: { decrement: 1 } },
+            }),
+          ]
+        : []),
+    ]);
 
     // Recalculate ranking score after comment removal
     updateRankingScore(postId).catch((e) => { console.error("Failed to update ranking score after comment delete:", e); });

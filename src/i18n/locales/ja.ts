@@ -825,6 +825,26 @@ const ja: Record<TranslationKeys, string> = {
   "translation.postsCountPlural": "件の投稿",
   "translation.failedShort": "失敗",
   "translation.defaultTitle": "投稿",
+
+  // ── Landing Page ────────────────────────────────────────────────────────────
+  "landing.howItWorks": "使い方",
+  "landing.step1.title": "ミームをアップロード",
+  "landing.step1.desc": "どの言語でも面白いミームを共有しよう",
+  "landing.step2.title": "AIが翻訳",
+  "landing.step2.desc": "7言語に即座に翻訳されます",
+  "landing.step3.title": "グローバルバトル",
+  "landing.step3.desc": "投票して競い合い、ランキングを上げよう",
+  "landing.showcase.title": "今バズってるミーム",
+  "landing.leaderboard.title": "国別ランキング",
+  "landing.stats.posts": "ミーム",
+  "landing.stats.translations": "翻訳",
+  "landing.stats.countries": "国",
+  "landing.stats.users": "クリエイター",
+  "landing.cta.title": "世界デビューする？",
+  "landing.cta.subtitle": "世界初のミーム翻訳プラットフォームに参加しよう",
+  "landing.cta.button": "ミームの旅を始める — 無料",
+  "landing.login": "ログイン",
+  "landing.signup": "新規登録",
 };
 
 export default ja;

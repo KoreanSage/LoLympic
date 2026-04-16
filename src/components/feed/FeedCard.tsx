@@ -951,17 +951,4 @@ function formatCount(n: number): string {
   return n.toString();
 }
 
-const LANG_FLAG_MAP: Record<string, string> = {
-  ko: "\uD83C\uDDF0\uD83C\uDDF7",
-  en: "\uD83C\uDDFA\uD83C\uDDF8",
-  ja: "\uD83C\uDDEF\uD83C\uDDF5",
-  zh: "\uD83C\uDDE8\uD83C\uDDF3",
-  es: "\uD83C\uDDEA\uD83C\uDDF8",
-  hi: "\uD83C\uDDEE\uD83C\uDDF3",
-  ar: "\uD83C\uDDF8\uD83C\uDDE6",
-};
-
-function langToFlag(code: string): string {
-  return LANG_FLAG_MAP[code] || code.toUpperCase();
-}
 

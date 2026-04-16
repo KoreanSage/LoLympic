@@ -825,6 +825,26 @@ const zh: Record<TranslationKeys, string> = {
   "translation.postsCountPlural": "个帖子",
   "translation.failedShort": "失败",
   "translation.defaultTitle": "帖子",
+
+  // ── Landing Page ────────────────────────────────────────────────────────────
+  "landing.howItWorks": "玩法介绍",
+  "landing.step1.title": "上传梗图",
+  "landing.step1.desc": "用任何语言分享你最搞笑的梗图",
+  "landing.step2.title": "AI翻译",
+  "landing.step2.desc": "秒翻7种语言",
+  "landing.step3.title": "全球对战",
+  "landing.step3.desc": "投票、竞技、冲榜",
+  "landing.showcase.title": "热门梗图",
+  "landing.leaderboard.title": "国家排行榜",
+  "landing.stats.posts": "梗图",
+  "landing.stats.translations": "翻译",
+  "landing.stats.countries": "国家",
+  "landing.stats.users": "创作者",
+  "landing.cta.title": "准备好出圈了吗？",
+  "landing.cta.subtitle": "加入全球首个梗图翻译平台",
+  "landing.cta.button": "开始你的梗图之旅 — 免费",
+  "landing.login": "登录",
+  "landing.signup": "注册",
 };
 
 export default zh;

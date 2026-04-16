@@ -839,6 +839,26 @@ const ko: Record<TranslationKeys, string> = {
   "translation.postsCountPlural": "개 게시물",
   "translation.failedShort": "실패",
   "translation.defaultTitle": "게시물",
+
+  // ── Landing Page ────────────────────────────────────────────────────────────
+  "landing.howItWorks": "이용 방법",
+  "landing.step1.title": "밈 업로드",
+  "landing.step1.desc": "어떤 언어로든 재미있는 밈을 공유하세요",
+  "landing.step2.title": "AI 번역",
+  "landing.step2.desc": "7개 언어로 즉시 번역됩니다",
+  "landing.step3.title": "글로벌 배틀",
+  "landing.step3.desc": "투표하고 경쟁하며 랭킹을 올리세요",
+  "landing.showcase.title": "지금 뜨는 밈",
+  "landing.leaderboard.title": "국가 랭킹",
+  "landing.stats.posts": "밈",
+  "landing.stats.translations": "번역",
+  "landing.stats.countries": "국가",
+  "landing.stats.users": "크리에이터",
+  "landing.cta.title": "글로벌 무대에 올라볼까요?",
+  "landing.cta.subtitle": "세계 최초 밈 번역 플랫폼에 참여하세요",
+  "landing.cta.button": "밈 여정 시작하기 — 무료",
+  "landing.login": "로그인",
+  "landing.signup": "회원가입",
 };
 
 export default ko;

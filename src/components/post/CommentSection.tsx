@@ -92,17 +92,22 @@ function MentionDropdown({
     }
     setLoading(true);
     const controller = new AbortController();
-    fetch(`/api/users/mentions?q=${encodeURIComponent(query)}&postId=${postId}`, {
-      signal: controller.signal,
-    })
-      .then((r) => r.json())
-      .then((d) => {
-        setUsers(d.users || []);
-        setActiveIndex(0);
+    const timer = setTimeout(() => {
+      fetch(`/api/users/mentions?q=${encodeURIComponent(query)}&postId=${postId}`, {
+        signal: controller.signal,
       })
-      .catch((e) => { console.error("Failed to fetch mention suggestions:", e); })
-      .finally(() => setLoading(false));
-    return () => controller.abort();
+        .then((r) => r.json())
+        .then((d) => {
+          setUsers(d.users || []);
+          setActiveIndex(0);
+        })
+        .catch((e) => { console.error("Failed to fetch mention suggestions:", e); })
+        .finally(() => setLoading(false));
+    }, 300);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
   }, [query, postId, visible]);
 
   if (!visible) return null;
@@ -227,7 +232,7 @@ export default function CommentSection({
   const { t } = useTranslation();
   const [comments, setComments] = useState<Comment[]>(initialComments);
   const [newComment, setNewComment] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [sortBy, setSortBy] = useState<"top" | "newest" | "oldest">("top");
   const mainTextareaRef = useRef<HTMLTextAreaElement>(null);
   const mainMention = useMention(mainTextareaRef);
@@ -274,8 +279,8 @@ export default function CommentSection({
   }, [fetchComments]);
 
   const handleSubmit = async () => {
-    if (!newComment.trim()) return;
-    setIsSubmitting(true);
+    if (!newComment.trim() || submitting) return;
+    setSubmitting(true);
     try {
       const res = await fetch(`/api/posts/${postId}/comments`, {
         method: "POST",
@@ -306,7 +311,7 @@ export default function CommentSection({
     } catch {
       toast("Failed to post comment", "error");
     } finally {
-      setIsSubmitting(false);
+      setSubmitting(false);
     }
   };
 
@@ -392,7 +397,8 @@ export default function CommentSection({
               mainMention.handleInputChange(e.target.value, e.target.selectionStart);
             }}
             placeholder={t("comment.add")}
-            className="w-full bg-background-surface border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder-foreground-subtle resize-none focus:outline-none focus:border-border-active transition-colors"
+            disabled={submitting}
+            className="w-full bg-background-surface border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder-foreground-subtle resize-none focus:outline-none focus:border-border-active transition-colors disabled:opacity-50"
             rows={2}
             onKeyDown={(e) => {
               if (e.key === "Escape" && mainMention.mentionVisible) {
@@ -423,9 +429,9 @@ export default function CommentSection({
               size="sm"
               variant="primary"
               onClick={handleSubmit}
-              disabled={!newComment.trim() || isSubmitting}
+              disabled={!newComment.trim() || submitting}
             >
-              {isSubmitting ? t("comment.posting") : t("comment.post")}
+              {submitting ? t("comment.posting") : t("comment.post")}
             </Button>
           </div>
         </div>

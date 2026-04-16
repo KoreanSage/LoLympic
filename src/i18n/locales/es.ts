@@ -825,6 +825,26 @@ const es: Record<TranslationKeys, string> = {
   "translation.postsCountPlural": "publicaciones",
   "translation.failedShort": "fallido",
   "translation.defaultTitle": "Publicación",
+
+  // ── Landing Page ────────────────────────────────────────────────────────────
+  "landing.howItWorks": "Cómo Funciona",
+  "landing.step1.title": "Sube un Meme",
+  "landing.step1.desc": "Comparte tu meme más chistoso en cualquier idioma",
+  "landing.step2.title": "La IA Traduce",
+  "landing.step2.desc": "Traducido a 7 idiomas al instante",
+  "landing.step3.title": "Batalla Global",
+  "landing.step3.desc": "Vota, compite y sube en el ranking",
+  "landing.showcase.title": "Trending Ahora",
+  "landing.leaderboard.title": "Rankings por País",
+  "landing.stats.posts": "Memes",
+  "landing.stats.translations": "Traducciones",
+  "landing.stats.countries": "Países",
+  "landing.stats.users": "Creadores",
+  "landing.cta.title": "¿Listo para ser global?",
+  "landing.cta.subtitle": "Únete a la primera plataforma de traducción de memes",
+  "landing.cta.button": "Empieza tu viaje memero — Es gratis",
+  "landing.login": "Iniciar Sesión",
+  "landing.signup": "Registrarse",
 };
 
 export default es;
