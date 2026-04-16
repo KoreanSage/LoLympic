@@ -29,7 +29,8 @@ export async function GET(request: NextRequest) {
       Math.max(1, parseInt(searchParams.get("limit") || "20", 10))
     );
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
-    const skip = (page - 1) * limit;
+    const safePage = Math.min(page, 100);
+    const skip = (safePage - 1) * limit;
     const timeRange = searchParams.get("timeRange") || "all";
     const sort = searchParams.get("sort") || "relevance";
     const country = searchParams.get("country");
@@ -270,7 +271,7 @@ export async function GET(request: NextRequest) {
       postCount: results.posts?.length ?? 0,
       userCount: results.users?.length ?? 0,
       pagination: {
-        page,
+        page: safePage,
         limit,
       },
     });

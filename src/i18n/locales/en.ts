@@ -858,6 +858,26 @@ const en = {
   "translation.postsCountPlural": "posts",
   "translation.failedShort": "failed",
   "translation.defaultTitle": "Post",
+
+  // ── Landing Page ────────────────────────────────────────────────────────────
+  "landing.howItWorks": "How It Works",
+  "landing.step1.title": "Upload a Meme",
+  "landing.step1.desc": "Share your funniest meme in any language",
+  "landing.step2.title": "AI Translates",
+  "landing.step2.desc": "Translated into 7 languages instantly",
+  "landing.step3.title": "Battle Globally",
+  "landing.step3.desc": "Vote, compete, and climb the leaderboard",
+  "landing.showcase.title": "Trending Now",
+  "landing.leaderboard.title": "Country Rankings",
+  "landing.stats.posts": "Memes",
+  "landing.stats.translations": "Translations",
+  "landing.stats.countries": "Countries",
+  "landing.stats.users": "Creators",
+  "landing.cta.title": "Ready to Go Global?",
+  "landing.cta.subtitle": "Join the world's first meme translation platform",
+  "landing.cta.button": "Start Your Meme Journey — It's Free",
+  "landing.login": "Log In",
+  "landing.signup": "Sign Up",
 } as const;
 
 export type TranslationKeys = keyof typeof en;

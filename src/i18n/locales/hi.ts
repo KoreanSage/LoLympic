@@ -829,6 +829,26 @@ const hi: Record<TranslationKeys, string> = {
   "translation.postsCountPlural": "posts",
   "translation.failedShort": "fail",
   "translation.defaultTitle": "Post",
+
+  // ── Landing Page ────────────────────────────────────────────────────────────
+  "landing.howItWorks": "Kaise Kaam Karta Hai",
+  "landing.step1.title": "Meme Upload Karo",
+  "landing.step1.desc": "Apna sabse funny meme kisi bhi language mein share karo",
+  "landing.step2.title": "AI Translate Karega",
+  "landing.step2.desc": "7 languages mein turant translate ho jayega",
+  "landing.step3.title": "Global Battle",
+  "landing.step3.desc": "Vote karo, compete karo, ranking mein upar jao",
+  "landing.showcase.title": "Abhi Trend Ho Raha Hai",
+  "landing.leaderboard.title": "Country Rankings",
+  "landing.stats.posts": "Memes",
+  "landing.stats.translations": "Translations",
+  "landing.stats.countries": "Countries",
+  "landing.stats.users": "Creators",
+  "landing.cta.title": "Global hone ke liye ready ho?",
+  "landing.cta.subtitle": "Duniya ka pehla meme translation platform join karo",
+  "landing.cta.button": "Apna Meme Journey Shuru Karo — Free Hai",
+  "landing.login": "Log In",
+  "landing.signup": "Sign Up",
 } as const;
 
 export default hi;

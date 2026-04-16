@@ -9,6 +9,10 @@ import { calculateFontSize } from "@/lib/font-size";
 
 export const maxDuration = 60;
 
+// NOTE: This cron is NOT registered in vercel.json because the Hobby tier
+// limits the number of cron jobs. Call this endpoint manually or via an
+// external scheduler, or upgrade to the Vercel Pro plan to add it as a cron.
+
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 function isAuthorized(request: NextRequest): boolean {
   const cronSecret = process.env.CRON_SECRET;

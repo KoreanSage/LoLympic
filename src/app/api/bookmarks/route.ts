@@ -49,6 +49,15 @@ export async function POST(req: NextRequest) {
 
 // DELETE /api/bookmarks — remove a saved post
 export async function DELETE(req: NextRequest) {
+  const rlKey = getRateLimitKey(req.headers, "bookmark");
+  const rl = await checkRateLimit(rlKey, RATE_LIMITS.write);
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: "Too many requests" },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfter) } }
+    );
+  }
+
   const user = await getSessionUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
