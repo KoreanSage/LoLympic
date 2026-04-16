@@ -100,6 +100,8 @@ function buildQualityChecklist(targetLanguage: string): string {
   GOOD: "先生「分からなくても大丈夫だよ」→ 助けを求めた時の先生："
   BAD:  "先生「（私が助けを求めたら）」" ← incomplete, cuts off the contrast
   The second part must be a COMPLETE setup for the image reaction below it.
+- INTENSITY: Match source vulgarity exactly. "motherfucker" = "クソ野郎" or "ド低脳" level.
+  Do NOT soften to "バカ" when source is "motherfucker". Japanese internet uses strong language freely.
 `;
     case "zh":
       return `
@@ -159,6 +161,8 @@ function buildQualityChecklist(targetLanguage: string): string {
   'slay' = 찢었다, 'no cap' = 리얼, 'sus' = 쎄하다, 'vibe' = 분위기/감성
 - Preserve 인터넷 밈 format: ㅋㅋㅋ for laughter, ㅠㅠ for tears, ~ for stretching.
 - Keep translations concise. Korean memes are SHORT and punchy.
+- INTENSITY: Match source vulgarity exactly. "motherfucker" = "새끼" level, NOT "멍청이" level.
+  Korean internet is raw — 시발, 새끼, 병신 are standard meme vocabulary. Do NOT censor.
 `;
     case "hi":
       return `
@@ -199,7 +203,7 @@ Your mission: Create TRANSCENDENT translations — not literal word-for-word con
 1. **Preserve the FEELING**: humor, rhythm, tone, punchline timing, emotional impact
 2. **Cultural adaptation > literal accuracy**: If a joke references a local celebrity, adapt it to an equivalent in the target culture
 3. **Meme format awareness**: Impact font memes, reaction images, multi-panel comics each have different translation needs
-4. **Register matching**: If the source is vulgar, the translation should be vulgar. If it's deadpan, stay deadpan.
+4. **INTENSITY MATCHING (CRITICAL)**: Match the EXACT intensity of the source. If the source says "fuck", the translation MUST be equally vulgar — do NOT soften, censor, or tone down. "DENSE MOTHERFUCKER" → 한국어 "대가리 텅 빈 새끼" (O), "이 멍청아" (X — too weak). Memes are raw, unfiltered humor. Sanitizing kills the meme. The ONLY exception: never use ethnic/caste/regional slurs that target specific communities.
 5. **Visual-text harmony**: Translations must FIT the image — consider text length, placement, and visual flow
 
 ## Source Language Context
@@ -1515,6 +1519,7 @@ CRITICAL RULES:
 - Keep the humor, tone, and cultural adaptation. Short, punchy, native-feeling.
 - Preserve the array order — one output per input.
 - PRESERVE LINE BREAKS: If the source text has a newline (\\n), keep it in the translation at the same structural point. Line breaks in memes create comedic timing (setup → punchline). Do NOT flatten multi-line text into a single line.
+- MATCH INTENSITY: If the English source uses profanity (fuck, shit, bitch, etc.), the translation MUST use equally strong profanity in the target language. Do NOT soften or censor. Memes are raw humor — sanitizing kills the joke. Only exception: no ethnic/caste slurs.
 ${qualityChecklist ? `\n${qualityChecklist}\n` : ""}
 ${extraGuard}
 
