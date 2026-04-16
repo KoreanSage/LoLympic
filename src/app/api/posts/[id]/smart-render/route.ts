@@ -3,7 +3,7 @@ import { getSessionUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import sharp from "sharp";
 import crypto from "crypto";
-import { uploadBufferToR2 } from "@/lib/storage";
+import { uploadBufferToR2, deleteFromR2 } from "@/lib/storage";
 import { calculateFontSize } from "@/lib/font-size";
 
 export const maxDuration = 60;
@@ -95,6 +95,15 @@ export async function POST(
       return url;
     };
 
+    // Pre-compute the Satori-compatible data URI once (shared across all languages).
+    // Satori only supports PNG/JPEG, so decode WebP → PNG if needed.
+    const satoriBuffer = metadata.format === "webp"
+      ? Buffer.from(await sharp(originalBuffer).png().toBuffer())
+      : originalBuffer;
+    const cachedBase64 = satoriBuffer.toString("base64");
+    const cachedMime = metadata.format === "jpeg" ? "image/jpeg" : "image/png";
+    const cachedDataUri = `data:${cachedMime};base64,${cachedBase64}`;
+
     // Re-render each language using ORIGINAL image + opaque rects.
     // Large intermediate buffers (`composedBuffer`, `pngBuffer`, `webpBuffer`)
     // are declared inside the loop and explicitly cleared at the end of each
@@ -138,6 +147,10 @@ export async function POST(
           const composedRaw = await composeTranslatedImage(originalBuffer, composerSegments, { watermark: false });
           const sharpMod = (await import("sharp")).default;
           composedBuffer = await sharpMod(composedRaw).webp({ quality: 70 }).toBuffer();
+          // Delete old image from R2 before saving new one
+          if (payload.translatedImageUrl && payload.translatedImageUrl !== "SKIPPED") {
+            deleteFromR2(payload.translatedImageUrl).catch(() => {});
+          }
           const url = await saveImage(composedBuffer, `smart_ar`);
           await prisma.translationPayload.update({ where: { id: payload.id }, data: { translatedImageUrl: url } });
           rendered++;
@@ -145,7 +158,6 @@ export async function POST(
         }
 
         // For other languages: Satori rendering with ORIGINAL image + opaque rects
-        const { GoogleGenerativeAI } = await import("@google/generative-ai");
         const fullText = visibleSegments.map(s => s.translatedText).join("");
 
         // Fetch font (each network call bounded by FONT_FETCH_TIMEOUT_MS)
@@ -204,13 +216,8 @@ export async function POST(
         const safeW = Math.min(imgWidth, 2048);
         const safeH = Math.min(imgHeight, 2048);
 
-        // Convert original to PNG for Satori
-        const satoriBuffer = metadata.format === "webp"
-          ? Buffer.from(await sharp(originalBuffer).png().toBuffer())
-          : originalBuffer;
-        const base64 = satoriBuffer.toString("base64");
-        const mime = metadata.format === "jpeg" ? "image/jpeg" : "image/png";
-        const dataUri = `data:${mime};base64,${base64}`;
+        // Use pre-computed data URI (converted once outside the loop)
+        const dataUri = cachedDataUri;
 
         // Build Satori element tree with OPAQUE background rects
         const element = {
@@ -301,6 +308,10 @@ export async function POST(
         // 2-3x larger than the webp, and we don't need it anymore.
         pngBuffer = null;
         satoriPngBase64 = null;
+        // Delete old image from R2 before saving new one
+        if (payload.translatedImageUrl && payload.translatedImageUrl !== "SKIPPED") {
+          deleteFromR2(payload.translatedImageUrl).catch(() => {});
+        }
         const url = await saveImage(webpBuffer, `smart_${payload.targetLanguage}`);
         await prisma.translationPayload.update({ where: { id: payload.id }, data: { translatedImageUrl: url } });
         rendered++;

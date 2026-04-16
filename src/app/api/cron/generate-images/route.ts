@@ -39,11 +39,11 @@ async function fetchFont(_family: string, _text: string): Promise<ArrayBuffer> {
 
 // ─── Save image ───────────────────────────────────────────────────────────────
 async function saveImage(buffer: Buffer, prefix: string): Promise<string> {
-  const filename = `${prefix}_${crypto.randomUUID()}.png`;
-  // R2 is the sole production storage backend.
-  const r2Url = await uploadBufferToR2(buffer, `uploads/${filename}`, "image/png");
+  // Compress to WebP for ~3-5x storage savings vs PNG
+  const webpBuffer = await sharp(buffer).webp({ quality: 70 }).toBuffer();
+  const filename = `${prefix}_${crypto.randomUUID()}.webp`;
+  const r2Url = await uploadBufferToR2(webpBuffer, `uploads/${filename}`, "image/webp");
   if (r2Url) return r2Url;
-  // Dev fallback: served by src/app/api/uploads/[filename]/route.ts from disk.
   return `/api/uploads/${filename}`;
 }
 

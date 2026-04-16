@@ -13,7 +13,7 @@ import {
 
 /** Detect a CJK-heavy segment by checking the translated text */
 function detectLanguageFromText(text: string): string | null {
-  if (/[\u3131-\uD79D]/.test(text)) return "ko";
+  if (/[\u3131-\u318E\uAC00-\uD7AF]/.test(text)) return "ko";
   if (/[\u3040-\u309F\u30A0-\u30FF]/.test(text)) return "ja";
   if (/[\u4E00-\u9FFF]/.test(text)) return "zh";
   // Hinglish uses Roman script — detect via Latin chars, not Devanagari
@@ -58,12 +58,13 @@ function resolveFont(segment: TranslationSegmentData): string {
 
 /** Check if a character is CJK (can break anywhere) */
 function isCJK(ch: string): boolean {
-  const code = ch.charCodeAt(0);
+  const code = ch.codePointAt(0) || 0;
   return (
-    (code >= 0x3131 && code <= 0xD79D) || // Korean
-    (code >= 0x3040 && code <= 0x30FF) || // Japanese Hiragana/Katakana
-    (code >= 0x4E00 && code <= 0x9FFF) || // CJK Unified
-    (code >= 0xAC00 && code <= 0xD7AF)    // Korean Syllables
+    (code >= 0x3131 && code <= 0x318E) || // Korean Jamo
+    (code >= 0xAC00 && code <= 0xD7AF) || // Korean Syllables
+    (code >= 0x3040 && code <= 0x309F) || // Japanese Hiragana
+    (code >= 0x30A0 && code <= 0x30FF) || // Japanese Katakana
+    (code >= 0x4E00 && code <= 0x9FFF)    // CJK Unified Ideographs
   );
 }
 

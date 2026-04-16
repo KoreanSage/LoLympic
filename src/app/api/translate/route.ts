@@ -77,7 +77,7 @@ export const LANGUAGE_INSTRUCTIONS: Record<string, string> = {
   zh: "Chinese (中文): CRITICAL — Use Simplified Chinese (简体中文). Write in natural Chinese internet style (网络用语), NOT formal/literary Chinese. Prefer Bilibili/Weibo meme culture tone. Use popular internet slang when appropriate: 绝绝子, 6/666, 笑死, 真的会谢, 蚌埠住了, yyds. Keep character count LOW — Chinese is information-dense, so translations should be SHORTER than English, not longer. WORD PRECISION: 不要 vs 别 (formal vs casual 'don't'), 可以 vs 行 (formal vs casual 'ok'). Default to casual spoken Chinese (口语) for memes, not written Chinese (书面语).",
   en: "English: CRITICAL — Use American internet English as default. Memes lean into irony, self-deprecation, and absurdist escalation. Use internet-native phrasing (all caps for emphasis, deliberate misspellings for tone like 'smol', 'boi'). When adapting cultural references from other languages, find the closest equivalent in Western/American pop culture — do NOT leave untranslated references that English speakers won't understand. Match the energy and register: if the source is unhinged, go unhinged. Keep it punchy — shorter hits harder.",
   es: "Spanish (Español): CRITICAL — Use Latin American Spanish (LATAM) as default — it reaches the largest audience. Mexican/general LATAM register preferred unless the meme is clearly Iberian. Use natural internet Spanish: wey/güey, neta, no mames, pana, literal, re (Argentine intensifier is OK). Embrace dramatic flair and exaggerated emotion — Spanish memes are LOUD. Use diminutives for comedy (chiquito, pobrecito). WORD PRECISION: coger means 'to take' in Spain but is vulgar in LATAM — always consider regional meaning. For Iberian-origin memes, keep Iberian register (tío, mola, flipar).",
-  hi: "Hinglish (Roman script Hindi): CRITICAL — Write ALL Hindi text in Roman/Latin script (e.g. 'Bhai ye kya hai' NOT 'भाई ये क्या है'). NEVER use Devanagari script. Bollywood-influenced humor with dramatic flair. Use Hinglish (Hindi-English mix), filmi dialogues, and cultural references. Use colloquial Delhi/Mumbai street Hindi for authenticity. Embrace the dramatic and emotional style. Think Instagram/Twitter Indian meme culture — always Roman script.",
+  hi: "Hinglish (Roman script Hindi): CRITICAL — Write ALL Hindi text in Roman/Latin script (e.g. 'Bhai ye kya hai' NOT 'भाई ये क्या है'). NEVER use Devanagari script. Bollywood-influenced humor with dramatic flair. Use Hinglish (Hindi-English mix), filmi dialogues, and cultural references. Use colloquial Delhi/Mumbai street Hindi for authenticity. Embrace the dramatic and emotional style. Think Instagram/Twitter Indian meme culture — always Roman script. IMPORTANT: Translate ALL segments including short labels — do NOT leave them in English. Even single words like 'Biologist' should become Hinglish (e.g. 'Biology wala'). NEVER use ethnic, caste, or regional slurs (e.g. never use community names like Marwari, Bihari, Bania, etc. as insults). Translate insults using universal Hindi slang (bewakoof, gadha, chutiya) not community-targeting language.",
   ar: "Arabic (العربية): CRITICAL — Use Egyptian colloquial Arabic (عامية مصرية) as default dialect — it is the most universally understood across Arab internet. WORD PRECISION: Arabic has many near-synonyms with VERY different connotations — always pick the contextually correct word, not just a close synonym. Example: 'sexually active' = 'نشط جنسياً' NOT 'نشيط جنسياً' (نشيط means diligent/hardworking — completely wrong meaning). For medical, technical, or idiomatic English phrases, use the STANDARD Arabic equivalent — do NOT translate word-by-word. Keep it SHORT and punchy like real Egyptian memes. Use internet-native Arabic expressions (يعني، والله، يلا). Match register: street humor = street Arabic, not news-anchor MSA.",
 };
 
@@ -96,6 +96,10 @@ function buildQualityChecklist(targetLanguage: string): string {
   Do NOT invent katakana words that Japanese internet doesn't actually use.
 - Keep it SHORT. Japanese memes are punchy — 1-2 lines max per segment. Avoid long explanatory translations.
 - Preserve punchline timing: if the joke is in the last word, keep it in the last word.
+- MEME CONTRAST FORMAT: "A: says X / Also A when Y:" must be translated as a complete contrast.
+  GOOD: "先生「分からなくても大丈夫だよ」→ 助けを求めた時の先生："
+  BAD:  "先生「（私が助けを求めたら）」" ← incomplete, cuts off the contrast
+  The second part must be a COMPLETE setup for the image reaction below it.
 `;
     case "zh":
       return `
@@ -142,6 +146,33 @@ function buildQualityChecklist(targetLanguage: string): string {
 - Prefer Egyptian colloquial (مصري) for meme humor: إيه، ده، كده، عشان، دلوقتي
 - Avoid over-formal MSA that sounds robotic. Real Arabic memes sound like someone talking, not a textbook.
 - For dialogue memes (doctor-patient, parent-child), use the way Egyptians ACTUALLY speak in that context.
+`;
+    case "ko":
+      return `
+## KOREAN QUALITY CHECKLIST (must follow)
+- Use natural 반말 (casual register) by default. Only use 존댓말 if the meme's original tone is deliberately formal/polite.
+- Keep meme format structure: "A: says X / 근데 A가 Y하면:" contrast format must be preserved.
+  Do NOT flatten the contrast into a single sentence.
+- WORD PRECISION: 빡세다 = strict/tough (not 'angry'), 개 = intensifier (not literal 'dog').
+  쎄하다 = suspicious, not 'strong'. Context determines meaning.
+- For English slang, use the natural Korean internet equivalent:
+  'slay' = 찢었다, 'no cap' = 리얼, 'sus' = 쎄하다, 'vibe' = 분위기/감성
+- Preserve 인터넷 밈 format: ㅋㅋㅋ for laughter, ㅠㅠ for tears, ~ for stretching.
+- Keep translations concise. Korean memes are SHORT and punchy.
+`;
+    case "hi":
+      return `
+## HINGLISH QUALITY CHECKLIST (must follow)
+- ALWAYS use Roman/Latin script. NEVER output Devanagari (हिंदी). Not even a single word.
+- Translate EVERY segment including short labels — do NOT leave single words in English.
+  'Biologist' → 'Biology wala', 'Astronaut' → 'Astronaut bhai', 'Teacher' → 'Teacher ji'
+  Even if the Hinglish word IS the English word, adapt the format (add bhai/wala/ji).
+- NEVER use ethnic, caste, or regional slurs as insults. Never reference specific communities
+  (Marwari, Bihari, Bania, Jatt, etc.) as punchlines or insults.
+  For insults use universal Hindi: bewakoof, gadha, chutiya, kachra, nalayak, tharki.
+- Use natural Hinglish code-switching: 'Bro ye kya scene hai' not 'Brother ye kya drishya hai'.
+- Internet Hinglish expressions: sach mein, matlab, ekdum, full on, scene hai, kya baat hai.
+- Preserve Bollywood/filmi energy: dramatic delivery, over-the-top reactions.
 `;
     default:
       return "";
@@ -194,6 +225,9 @@ ${buildQualityChecklist(targetLanguage)}
 - Each speech bubble or text block = one segment
 
 First determine the meme type, then translate ALL relevant text for that type.
+
+## CRITICAL: Preserve line breaks
+If the original meme text has line breaks (separate lines for setup vs punchline, or "A: says X / Also A when Y:" contrast format), keep those line breaks in translatedText using \\n. Line breaks are part of the meme's comedic timing and MUST be preserved.
 
 ## CRITICAL: Do NOT hallucinate text
 If the image contains NO readable text at all (just illustrations, photos, or icons without words), return an EMPTY segments array: "segments": []. NEVER invent, add, or imagine text that is not visually present in the image.
@@ -619,7 +653,7 @@ For each text area, seamlessly fill with the background that would naturally be 
 // Google Font fetcher for Satori (returns font ArrayBuffer)
 // ---------------------------------------------------------------------------
 async function fetchGoogleFont(fontFamily: string, text: string, weight: number = 900): Promise<ArrayBuffer> {
-  const uniqueChars = Array.from(new Set(text.split(""))).join("");
+  const uniqueChars = Array.from(new Set(Array.from(text))).join("");
   // Try requested weight first, fall back to 700 then 400
   const weights = [weight, 700, 400].filter((v, i, a) => a.indexOf(v) === i);
 
@@ -1480,6 +1514,7 @@ CRITICAL RULES:
 - Output MUST be in ${targetLangName} only. Do NOT output Korean, English, or any other language.
 - Keep the humor, tone, and cultural adaptation. Short, punchy, native-feeling.
 - Preserve the array order — one output per input.
+- PRESERVE LINE BREAKS: If the source text has a newline (\\n), keep it in the translation at the same structural point. Line breaks in memes create comedic timing (setup → punchline). Do NOT flatten multi-line text into a single line.
 ${qualityChecklist ? `\n${qualityChecklist}\n` : ""}
 ${extraGuard}
 
@@ -1675,14 +1710,32 @@ Return JSON only (no markdown fences):
         const confidence = firstParsed.confidence ?? null;
         const memeType = firstParsed.memeType ?? null;
         const payload = await prisma.$transaction(async (tx) => {
-          const latestPayload = await tx.translationPayload.findFirst({
+          // Find old payloads to clean up their R2 images after commit
+          const oldPayloads = await tx.translationPayload.findMany({
             where: {
               postId,
               targetLanguage: targetLang as LanguageCode,
             },
+            select: { id: true, translatedImageUrl: true, translatedImageUrls: true, version: true },
             orderBy: { version: "desc" },
           });
+          const latestPayload = oldPayloads[0] ?? null;
           const nextVersion = (latestPayload?.version ?? 0) + 1;
+
+          // Schedule R2 cleanup for old translated images (best-effort, after tx)
+          if (oldPayloads.length > 0) {
+            const { deleteFromR2 } = await import("@/lib/storage");
+            for (const old of oldPayloads) {
+              if (old.translatedImageUrl && old.translatedImageUrl !== "SKIPPED") {
+                deleteFromR2(old.translatedImageUrl).catch(() => {});
+              }
+              if (Array.isArray(old.translatedImageUrls)) {
+                for (const u of old.translatedImageUrls as string[]) {
+                  if (u) deleteFromR2(u).catch(() => {});
+                }
+              }
+            }
+          }
 
           const translationPayload = await tx.translationPayload.create({
             data: {

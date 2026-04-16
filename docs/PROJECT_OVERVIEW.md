@@ -13,7 +13,7 @@
 | Database | PostgreSQL (Neon) + Prisma ORM |
 | Auth | NextAuth.js (Google OAuth + Credentials) |
 | AI Translation | Google Gemini API (gemini-2.5-flash) |
-| Storage | Vercel Blob (prod) / Local filesystem (dev) |
+| Storage | Cloudflare R2 (prod) / Local filesystem (dev) |
 | Image Processing | Sharp |
 | Styling | Tailwind CSS |
 | Deployment | Vercel |
@@ -70,7 +70,7 @@ src/
 ```
 User uploads meme
   → POST /api/posts (image + title + sourceLanguage)
-  → POST /api/upload (image → Vercel Blob / local)
+  → POST /api/upload (image → Cloudflare R2 / local)
   → POST /api/translate (Gemini API → segments + cultureNote)
   → TranslationPayload + TranslationSegment + CultureNote saved to DB
   → Feed shows translated title based on user's preferred language
@@ -332,8 +332,12 @@ GOOGLE_CLIENT_SECRET=<oauth-secret>
 # AI Translation
 GEMINI_API_KEY=<google-generative-ai-key>
 
-# Storage (optional, falls back to local)
-BLOB_READ_WRITE_TOKEN=<vercel-blob-token>
+# Storage — Cloudflare R2 (falls back to local disk in dev)
+R2_ACCESS_KEY_ID=<r2-access-key>
+R2_SECRET_ACCESS_KEY=<r2-secret-key>
+R2_ENDPOINT=<r2-endpoint>
+R2_BUCKET_NAME=<r2-bucket>
+R2_PUBLIC_URL=<r2-public-url>
 
 # Cron Security
 CRON_SECRET=<bearer-token-for-cron>

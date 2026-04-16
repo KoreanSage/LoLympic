@@ -114,7 +114,11 @@ curl -X POST https://lolympic.app/api/seasons \
 | `GOOGLE_CLIENT_ID` | Google Cloud Console | Yes (for OAuth) |
 | `GOOGLE_CLIENT_SECRET` | Google Cloud Console | Yes (for OAuth) |
 | `GEMINI_API_KEY` | Google AI Studio | Yes (for translation) |
-| `BLOB_READ_WRITE_TOKEN` | Vercel Storage > Blob | Yes (for image upload) |
+| `R2_ACCESS_KEY_ID` | Cloudflare R2 | Yes (for image upload) |
+| `R2_SECRET_ACCESS_KEY` | Cloudflare R2 | Yes (for image upload) |
+| `R2_ENDPOINT` | Cloudflare R2 | Yes (for image upload) |
+| `R2_BUCKET_NAME` | Cloudflare R2 | Yes (for image upload) |
+| `R2_PUBLIC_URL` | Cloudflare R2 | Yes (for image upload) |
 | `CRON_SECRET` | Generate random string | Yes (for cron jobs) |
 
 ---
@@ -146,8 +150,8 @@ curl -X POST https://lolympic.app/api/seasons \
 4. Re-trigger translation from Admin panel
 
 ### "Images not loading"
-1. Check Vercel Blob storage dashboard
-2. Verify `BLOB_READ_WRITE_TOKEN` is set
+1. Check Cloudflare R2 storage dashboard
+2. Verify R2 env vars are set (`R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_ENDPOINT`, `R2_BUCKET_NAME`, `R2_PUBLIC_URL`)
 3. Check if image URL returns 200
 
 ### "Login not working"

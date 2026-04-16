@@ -55,7 +55,7 @@ async function readImageAsBuffer(imageUrl: string): Promise<{ buffer: Buffer; mi
 
 async function saveGeneratedImage(buffer: Buffer, prefix: string, ext: string): Promise<string> {
   const filename = `uploads/${prefix}_${crypto.randomUUID()}${ext}`;
-  const mimeMap: Record<string, string> = { ".png": "image/png", ".jpg": "image/jpeg" };
+  const mimeMap: Record<string, string> = { ".png": "image/png", ".jpg": "image/jpeg", ".webp": "image/webp" };
   const contentType = mimeMap[ext] || "image/jpeg";
 
   if (USE_R2) {
@@ -126,7 +126,7 @@ async function generateCleanImageWithLama(
     }
     const cleanBuffer = Buffer.from(await cleanRes.arrayBuffer());
 
-    // Upload to storage (Vercel Blob or local)
+    // Upload to storage (R2 or local)
     const cleanUrl = await saveGeneratedImage(cleanBuffer, "clean_lama", ".png");
     console.log(`[LaMa] Clean image generated for post ${postId} image ${imageIndex}: ${cleanUrl}`);
     return cleanUrl;

@@ -89,14 +89,16 @@ function wrapText(
   const effectiveWidth = maxWidthPx * 0.95;
   const maxChars = Math.max(1, Math.floor(effectiveWidth / charWidth));
 
-  if (text.length <= maxChars) return [text];
+  // Use Array.from for proper Unicode grapheme counting (emoji, surrogate pairs)
+  const chars = Array.from(text);
+  if (chars.length <= maxChars) return [text];
 
   const lines: string[] = [];
 
   if (hasCJK) {
     // Character-by-character wrapping for CJK
-    for (let i = 0; i < text.length; i += maxChars) {
-      lines.push(text.slice(i, i + maxChars));
+    for (let i = 0; i < chars.length; i += maxChars) {
+      lines.push(chars.slice(i, i + maxChars).join(""));
     }
   } else {
     // Word-based wrapping for Latin and Arabic (both use space-separated words)
@@ -105,15 +107,16 @@ function wrapText(
 
     for (const word of words) {
       const test = currentLine ? `${currentLine} ${word}` : word;
-      if (test.length <= maxChars) {
+      if (Array.from(test).length <= maxChars) {
         currentLine = test;
       } else {
         if (currentLine) lines.push(currentLine);
         // If a single word is longer than maxChars, break it to avoid
         // horizontal overflow (rare for Arabic but defensive).
-        if (word.length > maxChars) {
-          for (let i = 0; i < word.length; i += maxChars) {
-            lines.push(word.slice(i, i + maxChars));
+        const wordChars = Array.from(word);
+        if (wordChars.length > maxChars) {
+          for (let i = 0; i < wordChars.length; i += maxChars) {
+            lines.push(wordChars.slice(i, i + maxChars).join(""));
           }
           currentLine = "";
         } else {
