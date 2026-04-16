@@ -8,22 +8,17 @@ import FeedList from "@/components/feed/FeedList";
 import MonthlyWinnerBanner from "@/components/competition/MonthlyWinnerBanner";
 import WinnerPopup from "@/components/competition/WinnerPopup";
 import RankChangeToast from "@/components/feed/RankChangeToast";
-import LandingPage from "@/components/landing/LandingPage";
+import HeroBanner from "@/components/feed/HeroBanner";
 import { trackEvent } from "@/lib/analytics";
 
 export default function HomePage() {
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
   const [freshLang, setFreshLang] = useState<string | null>(null);
 
   // Track page view
   useEffect(() => {
     trackEvent("page_view", { page: "home" });
   }, []);
-
-  // Show full landing page for unauthenticated users
-  if (status !== "loading" && !session) {
-    return <LandingPage />;
-  }
 
   // Get the user's ACTUAL preferredLanguage: localStorage (instant) > DB > session JWT
   useEffect(() => {
@@ -71,6 +66,7 @@ export default function HomePage() {
       <WinnerPopup />
       <RankChangeToast />
       <div className="space-y-0">
+        <HeroBanner />
         <MonthlyWinnerBanner />
         <FeedFilters onFilterChange={setFeedFilters} />
 
