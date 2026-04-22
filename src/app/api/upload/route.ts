@@ -30,7 +30,9 @@ async function ensureR2Cors() {
     r2CorsConfigured = true;
     console.log("[R2] CORS configured successfully");
   } catch (err) {
-    console.warn("[R2] Could not configure CORS (non-fatal):", err);
+    // Surface loudly — silent failure here causes canvas crossOrigin loads to
+    // break site-wide. Fix: run `npx tsx scripts/check-r2-cors.ts --fix`.
+    console.error("[R2] Could not configure CORS:", err);
     r2CorsConfigured = true; // Don't retry on every upload
   }
 }
