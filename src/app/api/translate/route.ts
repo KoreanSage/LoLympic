@@ -1213,19 +1213,20 @@ export async function setCachedTranslation(
 // ---------------------------------------------------------------------------
 export async function POST(request: NextRequest) {
   try {
-    // Rate limit: expensive AI calls
-    const rlKey = getRateLimitKey(request.headers, "translate");
+    const user = await getSessionUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Rate limit: expensive AI calls. Keyed by user ID so shared IPs don't
+    // collide, and the upload flow (6 translate calls per post) fits comfortably.
+    const rlKey = getRateLimitKey(request.headers, "translate", user.id);
     const rl = await checkRateLimit(rlKey, RATE_LIMITS.translate);
     if (!rl.allowed) {
       return NextResponse.json(
         { error: "Too many requests. Try again later." },
         { status: 429, headers: { "Retry-After": String(rl.retryAfter) } }
       );
-    }
-
-    const user = await getSessionUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const rawBody = await request.json();

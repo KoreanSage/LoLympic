@@ -38,19 +38,18 @@ const QSTASH_MAX_PAYLOAD_BYTES = 1.5 * 1024 * 1024;
 
 export async function POST(request: NextRequest) {
   try {
-    // Rate limit
-    const rlKey = getRateLimitKey(request.headers, "translate");
+    const user = await getSessionUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const rlKey = getRateLimitKey(request.headers, "translate", user.id);
     const rl = await checkRateLimit(rlKey, RATE_LIMITS.translate);
     if (!rl.allowed) {
       return NextResponse.json(
         { error: "Too many requests. Try again later." },
         { status: 429, headers: { "Retry-After": String(rl.retryAfter) } }
       );
-    }
-
-    const user = await getSessionUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await request.json();
