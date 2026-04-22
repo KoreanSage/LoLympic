@@ -40,8 +40,10 @@ interface RateLimitConfig {
 
 /** Preset configs for different endpoint types */
 export const RATE_LIMITS = {
-  /** Expensive AI calls: 5 per minute */
-  translate: { max: 5, windowSeconds: 60 } as RateLimitConfig,
+  /** Expensive AI calls: 30 per minute. A single post upload fires 6 translate
+   *  calls (one per target language), plus the post page's auto-retry can
+   *  re-fire on navigation — 5/min was too tight and broke normal flows. */
+  translate: { max: 30, windowSeconds: 60 } as RateLimitConfig,
   /** File uploads: 20 per minute */
   upload: { max: 20, windowSeconds: 60 } as RateLimitConfig,
   /** Auth attempts: 10 per minute */
@@ -161,11 +163,16 @@ export function checkRateLimitInMemory(
 }
 
 /**
- * Extract a rate-limit key from headers (IP-based).
- * Uses x-forwarded-for (set by Vercel/reverse proxies) to get the real
- * client IP, falling back to x-real-ip and then "unknown".
+ * Extract a rate-limit key. When `userId` is provided, key by user so shared
+ * IPs (corporate NAT, mobile carriers) don't collide. Otherwise fall back to
+ * the client IP from x-forwarded-for / x-real-ip.
  */
-export function getRateLimitKey(headers: Headers, prefix: string): string {
+export function getRateLimitKey(
+  headers: Headers,
+  prefix: string,
+  userId?: string | null,
+): string {
+  if (userId) return `${prefix}:u:${userId}`;
   const forwarded = headers.get("x-forwarded-for");
   const ip =
     (forwarded ? forwarded.split(",")[0]?.trim() : null) ||

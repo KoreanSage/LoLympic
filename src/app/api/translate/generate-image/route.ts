@@ -204,19 +204,18 @@ Output only the modified image.`,
  */
 export async function POST(request: NextRequest) {
   try {
-    // Rate limit - expensive AI image generation
-    const rlKey = getRateLimitKey(request.headers, "generate-image");
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const rlKey = getRateLimitKey(request.headers, "generate-image", (session.user as { id?: string }).id);
     const rl = await checkRateLimit(rlKey, RATE_LIMITS.translate);
     if (!rl.allowed) {
       return NextResponse.json(
         { error: "Too many requests. Try again later." },
         { status: 429, headers: { "Retry-After": String(rl.retryAfter) } }
       );
-    }
-
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await request.json();

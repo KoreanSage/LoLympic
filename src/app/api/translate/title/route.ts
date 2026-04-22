@@ -13,20 +13,18 @@ const VALID_LANGUAGES = ["ko", "en", "ja", "zh", "es", "hi", "ar"];
 // ---------------------------------------------------------------------------
 export async function POST(request: NextRequest) {
   try {
-    // Rate limit - AI translation call
-    const rlKey = getRateLimitKey(request.headers, "translate-title");
+    const user = await getSessionUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const rlKey = getRateLimitKey(request.headers, "translate-title", user.id);
     const rl = await checkRateLimit(rlKey, RATE_LIMITS.translate);
     if (!rl.allowed) {
       return NextResponse.json(
         { error: "Too many requests. Try again later." },
         { status: 429, headers: { "Retry-After": String(rl.retryAfter) } }
       );
-    }
-
-    // Auth check
-    const user = await getSessionUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await request.json();

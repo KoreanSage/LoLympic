@@ -82,20 +82,18 @@ Return JSON only (no markdown fences): { "title": "translated title", "body": "t
 // ---------------------------------------------------------------------------
 export async function POST(request: NextRequest) {
   try {
-    // Rate limit
-    const rlKey = getRateLimitKey(request.headers, "translate-text");
+    const user = await getSessionUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const rlKey = getRateLimitKey(request.headers, "translate-text", user.id);
     const rl = await checkRateLimit(rlKey, RATE_LIMITS.translate);
     if (!rl.allowed) {
       return NextResponse.json(
         { error: "Too many requests. Try again later." },
         { status: 429, headers: { "Retry-After": String(rl.retryAfter) } }
       );
-    }
-
-    // Auth
-    const user = await getSessionUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Parse request body
