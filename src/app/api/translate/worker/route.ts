@@ -103,18 +103,40 @@ async function runEnglishAnalysis(
             { inlineData: { data: imgData.base64, mimeType: imgData.mimeType } },
           ]);
           if (idx === 0) checkContentSafety(postId, result.response).catch(() => {});
+          const resp = result.response as unknown as {
+            promptFeedback?: { blockReason?: string; safetyRatings?: unknown };
+            candidates?: Array<{ finishReason?: string; safetyRatings?: unknown }>;
+          };
+          const blockReason = resp.promptFeedback?.blockReason;
+          const finishReason = resp.candidates?.[0]?.finishReason;
+          if (blockReason || (finishReason && finishReason !== "STOP")) {
+            console.warn(`[Worker] Post ${postId} img ${idx} attempt ${attempt + 1}: blockReason=${blockReason ?? "(none)"}, finishReason=${finishReason ?? "(none)"}`);
+          }
           const text = result.response.text();
-          if (!text) continue;
+          if (!text) {
+            console.warn(`[Worker] Post ${postId} img ${idx} attempt ${attempt + 1}: empty text from Gemini`);
+            continue;
+          }
           const parsed = JSON.parse(stripMarkdownFences(text)) as AITranslationResult;
-          if (!Array.isArray(parsed.segments)) continue;
+          if (!Array.isArray(parsed.segments)) {
+            console.warn(`[Worker] Post ${postId} img ${idx} attempt ${attempt + 1}: parsed JSON has no segments array`);
+            continue;
+          }
           return { idx, parsed };
         } catch (err) {
-          console.warn(`[Worker] English analysis attempt ${attempt + 1} failed for image ${idx}:`, err instanceof Error ? err.message : String(err));
+          const msg = err instanceof Error ? err.message : String(err);
+          const errName = err instanceof Error ? err.name : typeof err;
+          console.warn(`[Worker] Post ${postId} img ${idx} attempt ${attempt + 1} threw (${errName}): ${msg}`);
         }
       }
       return null;
     })
   );
+
+  const successCount = analysisResults.filter((r) => r !== null).length;
+  if (successCount === 0 && validImages.length > 0) {
+    console.error(`[Worker] Post ${postId}: English Vision analysis failed for ALL ${validImages.length} images after 2 attempts each.`);
+  }
 
   // Merge in original image order
   for (const r of analysisResults) {

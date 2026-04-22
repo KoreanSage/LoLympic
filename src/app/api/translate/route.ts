@@ -1279,9 +1279,15 @@ export async function POST(request: NextRequest) {
         const imageData = await readImageAsBase64(url);
         imageDataList.push(imageData);
       } catch (err) {
-        console.error(`Failed to read image ${url}:`, err);
+        console.error(`[Translate] Failed to read image for post ${postId} (url=${url}):`, err);
         imageDataList.push({ base64: "", mimeType: "image/jpeg" }); // placeholder for failed reads
       }
+    }
+    const validImageCount = imageDataList.filter((d) => !!d.base64).length;
+    if (validImageCount === 0) {
+      console.error(`[Translate] Post ${postId}: 0/${imageUrls.length} images could be fetched — all translations will save as REJECTED. URLs: ${imageUrls.join(", ")}`);
+    } else if (validImageCount < imageUrls.length) {
+      console.warn(`[Translate] Post ${postId}: only ${validImageCount}/${imageUrls.length} images fetched successfully`);
     }
 
     // Process each target language
@@ -1392,18 +1398,44 @@ export async function POST(request: NextRequest) {
                 { inlineData: { data: imgData.base64, mimeType: imgData.mimeType } },
               ]);
               if (idx === 0) checkContentSafety(postId, result.response).catch(() => {});
+              // Diagnostic: surface the raw response shape so safety blocks and
+              // empty candidates are distinguishable in logs.
+              const resp = result.response as unknown as {
+                promptFeedback?: { blockReason?: string; safetyRatings?: unknown };
+                candidates?: Array<{ finishReason?: string; safetyRatings?: unknown; content?: { parts?: Array<{ text?: string }> } }>;
+              };
+              const blockReason = resp.promptFeedback?.blockReason;
+              const finishReason = resp.candidates?.[0]?.finishReason;
+              if (blockReason || (finishReason && finishReason !== "STOP")) {
+                console.warn(`[Translate] Post ${postId} img ${idx} attempt ${attempt + 1}: Gemini returned non-STOP — blockReason=${blockReason ?? "(none)"}, finishReason=${finishReason ?? "(none)"}, safetyRatings=${JSON.stringify(resp.promptFeedback?.safetyRatings ?? resp.candidates?.[0]?.safetyRatings ?? null)}`);
+              }
               const text = result.response.text();
-              if (!text) continue;
+              if (!text) {
+                console.warn(`[Translate] Post ${postId} img ${idx} attempt ${attempt + 1}: empty text from Gemini (finishReason=${finishReason})`);
+                continue;
+              }
               const parsed = JSON.parse(stripMarkdownFences(text)) as AITranslationResult;
-              if (!Array.isArray(parsed.segments)) continue;
+              if (!Array.isArray(parsed.segments)) {
+                console.warn(`[Translate] Post ${postId} img ${idx} attempt ${attempt + 1}: parsed JSON has no segments array. Raw text (trimmed): ${text.slice(0, 200)}`);
+                continue;
+              }
               return { idx, parsed };
             } catch (err) {
-              console.warn(`English analysis attempt ${attempt + 1} failed for image ${idx}:`, err instanceof Error ? err.message : String(err));
+              const msg = err instanceof Error ? err.message : String(err);
+              // Gemini SDK throws "Text not available" when response was
+              // safety-blocked; include the class name so that's visible.
+              const errName = err instanceof Error ? err.name : typeof err;
+              console.warn(`[Translate] Post ${postId} img ${idx} attempt ${attempt + 1} threw (${errName}): ${msg}`);
             }
           }
           return null;
         })
       );
+
+      const successCount = analysisResults.filter((r) => r !== null).length;
+      if (successCount === 0 && validImages.length > 0) {
+        console.error(`[Translate] Post ${postId}: English Vision analysis failed for ALL ${validImages.length} images after 2 attempts each. Downstream translations will save as REJECTED.`);
+      }
 
       // Merge in original image order (idx) to keep segment ordering stable
       for (const r of analysisResults) {
