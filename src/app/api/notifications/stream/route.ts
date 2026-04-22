@@ -2,14 +2,16 @@ import { NextRequest } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
-// Per-user SSE connection tracking
-const activeConnections = new Map<string, number>();
-const MAX_CONNECTIONS_PER_USER = 2;
-
 /**
  * SSE endpoint that streams notification updates to the client.
  * Polls the DB every 5 seconds for new unread notifications.
  * Auto-closes after 5 minutes (Vercel serverless limit).
+ *
+ * No per-user connection limiter: in-memory counters don't work across
+ * serverless instances (each instance has its own Map), and a sticky instance
+ * accumulated stale counts from aborts that hadn't fired yet — manifesting as
+ * spurious 429s on tab refresh / React strict-mode double-mount. Resource
+ * bounds are enforced by MAX_DURATION_MS below.
  */
 export async function GET(request: NextRequest) {
   const user = await getSessionUser();
@@ -21,16 +23,6 @@ export async function GET(request: NextRequest) {
   }
 
   const userId = user.id;
-
-  // Enforce per-user connection limit
-  const currentCount = activeConnections.get(userId) || 0;
-  if (currentCount >= MAX_CONNECTIONS_PER_USER) {
-    return new Response(
-      JSON.stringify({ error: "Too many active connections" }),
-      { status: 429, headers: { "Content-Type": "application/json" } }
-    );
-  }
-  activeConnections.set(userId, currentCount + 1);
   const watchPostId = request.nextUrl.searchParams.get("watchPostId");
   const MAX_DURATION_MS = 5 * 60 * 1000; // 5 minutes
   const POLL_INTERVAL_MS = 5000; // 5 seconds
@@ -40,18 +32,6 @@ export async function GET(request: NextRequest) {
     async start(controller) {
       const encoder = new TextEncoder();
 
-      function decrementConnection() {
-        const count = activeConnections.get(userId) || 0;
-        if (count <= 1) {
-          activeConnections.delete(userId);
-        } else {
-          activeConnections.set(userId, count - 1);
-        }
-      }
-
-      // Decrement on abort
-      request.signal.addEventListener("abort", decrementConnection, { once: true });
-
       function send(event: string, data: unknown) {
         try {
           controller.enqueue(
@@ -59,7 +39,6 @@ export async function GET(request: NextRequest) {
           );
         } catch {
           // Stream closed
-          decrementConnection();
         }
       }
 
@@ -70,7 +49,6 @@ export async function GET(request: NextRequest) {
           // Check if we've exceeded the max duration
           if (Date.now() - startTime > MAX_DURATION_MS) {
             send("close", { reason: "timeout" });
-            decrementConnection();
             controller.close();
             return;
           }
@@ -196,7 +174,6 @@ export async function GET(request: NextRequest) {
           setTimeout(poll, POLL_INTERVAL_MS);
         } else {
           try {
-            decrementConnection();
             controller.close();
           } catch {
             // Already closed
