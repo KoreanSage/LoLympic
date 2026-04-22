@@ -1613,7 +1613,13 @@ Return JSON only (no markdown fences):
             }
           }
         } else {
-          // No English analysis available (image had no text) — create empty payload
+          // No English analysis available — Gemini Vision returned nothing for
+          // every image. Most common causes: safety-filter block on the source
+          // image, transient API error, or the image truly has no text. We
+          // still set firstParsed so downstream title/body translation runs;
+          // the create-payload step below detects the empty case and marks
+          // status=REJECTED so the client can retry.
+          console.warn(`[Translate] English analysis returned null for post ${postId} — no segments detected, marking as REJECTED after title/body attempt`);
           firstParsed = { memeType: "A", segments: [], cultureNote: { summary: "", explanation: "" }, confidence: 0.9 };
         }
 
@@ -1742,13 +1748,24 @@ Return JSON only (no markdown fences):
             }
           }
 
+          // Empty result = nothing translated at all. Save as REJECTED so the
+          // post page shows a retry button (via TranslationProgress.failed) and
+          // the auto-retry path can run. Without this, a failed Vision call
+          // would silently save an empty COMPLETED payload that the renderer
+          // treats as "no text to overlay".
+          const isEmptyResult =
+            allSegments.length === 0 && !translatedTitle && !translatedBody;
+          if (isEmptyResult) {
+            console.warn(`[Translate] Marking ${postId}:${targetLang} as REJECTED — 0 segments and no title/body translation`);
+          }
+
           const translationPayload = await tx.translationPayload.create({
             data: {
               postId,
               sourceLanguage: sourceLanguage as LanguageCode,
               targetLanguage: targetLang as LanguageCode,
               version: nextVersion,
-              status: "COMPLETED",
+              status: isEmptyResult ? "REJECTED" : "COMPLETED",
               confidence,
               memeType,
               translatedTitle,

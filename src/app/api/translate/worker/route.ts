@@ -391,10 +391,19 @@ Return JSON only (no markdown fences):
         where: { translationPayloadId: existingPayloadId },
       });
 
+      // Empty result = Vision returned nothing AND no title/body translated.
+      // Mark REJECTED so the retry path can re-run (otherwise the empty payload
+      // silently satisfies the "already translated" check on every future load).
+      const isEmptyResult =
+        allSegments.length === 0 && !translatedTitle && !translatedBody;
+      if (isEmptyResult) {
+        console.warn(`[Worker] Marking ${postId}:${targetLanguage} as REJECTED — 0 segments and no title/body translation`);
+      }
+
       await tx.translationPayload.update({
         where: { id: existingPayloadId },
         data: {
-          status: "COMPLETED",
+          status: isEmptyResult ? "REJECTED" : "COMPLETED",
           confidence,
           memeType,
           translatedTitle,
@@ -488,7 +497,9 @@ Return JSON only (no markdown fences):
       ).catch((e) => console.error(`[Worker] Compose failed for ${targetLanguage}:`, e));
     }
 
-    return { status: "COMPLETED" };
+    const wasEmpty =
+      allSegments.length === 0 && !translatedTitle && !translatedBody;
+    return { status: wasEmpty ? "REJECTED" : "COMPLETED" };
   } catch (err) {
     console.error(`[Worker] Translation failed for ${opts.targetLanguage}:`, err);
     await prisma.translationPayload
