@@ -87,7 +87,7 @@ async function composeImage(
   const maxCoord = Math.max(...visible.map(s => Math.max(s.boxX + s.boxWidth, s.boxY + s.boxHeight)));
   const norm = maxCoord > 100 ? 1000 : maxCoord > 1.5 ? 100 : 1;
 
-  const MAX_DIM = 400;
+  const MAX_DIM = 800;
   let safeW = imgW;
   let safeH = imgH;
   if (safeW > MAX_DIM || safeH > MAX_DIM) {
@@ -99,11 +99,11 @@ async function composeImage(
   // Resize image to safe dimensions before embedding
   const resizedBuffer = await sharp(imgBuffer)
     .resize(safeW, safeH, { fit: "inside" })
-    .jpeg({ quality: 80 })
+    .png()
     .toBuffer();
 
   const imgBase64 = resizedBuffer.toString("base64");
-  const imgMime = "image/jpeg";
+  const imgMime = "image/png";
 
   // Build Satori element tree
   const element = {
@@ -115,7 +115,7 @@ async function composeImage(
           type: "img" as const,
           props: {
             src: `data:${imgMime};base64,${imgBase64}`,
-            style: { position: "absolute" as const, top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover" as const },
+            style: { position: "absolute" as const, top: 0, left: 0, width: "100%", height: "100%", objectFit: "contain" as const },
           },
         },
         ...visible.map(seg => {
